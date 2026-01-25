@@ -1,0 +1,82 @@
+{
+  "TranslationProperties": {
+    "Name": "items.Tool_Colony_Clockwork_Kit.name",
+    "Description": "items.Tool_Colony_Clockwork_Kit.description"
+  },
+  "Categories": [
+    "Items.Tools"
+  ],
+  "Quality": "Rare",
+  "ItemLevel": 40,
+  "Model": "Items/Tools/Repair_Kit/Repair_Kit_Iron.blockymodel",
+  "Texture": "Items/Tools/Repair_Kit/Repair_Kit_Iron_Texture.png",
+  "Icon": "Icons/ItemsGenerated/Tool_Repair_Kit_Iron.png",
+  "DroppedItemAnimation": "Items/Animations/Dropped/Dropped_Diagonal_Left.blockyanim",
+  "MaxStack": 1,
+  "Tags": {
+    "Type": [
+      "Tool"
+    ],
+    "Family": [
+      "Colony"
+    ]
+  },
+  "Interactions": {
+    "Primary": {
+      "Interactions": [
+        {
+          "Type": "Charging",
+          "AllowIndefiniteHold": true,
+          "HorizontalSpeedMultiplier": 0.8,
+          "CancelOnItemChange": true,
+          "RunTime": 0,
+          "Next": {
+            "0": {
+              "Type": "Simple",
+              "Effects": {
+                "ItemAnimationId": "Interact"
+              }
+            },
+            "0.8": {
+              "Type": "BlockCondition",
+              "Matchers": [
+                {
+                  "Block": {
+                    "Id": "Tinkering_Target_Dummy"
+                  }
+                }
+              ],
+              "Next": {
+                "Type": "Serial",
+                "Interactions": [
+                  {
+                    "Type": "SpawnNPC",
+                    "EntityId": "Empty_Role"
+                  },
+                  {
+                    "Type": "DestroyBlock"
+                  }
+                ]
+              },
+              "Failed": {
+                "Type": "Simple",
+                "Effects": {
+                  "WorldSoundEventId": "SFX_Clay_Pot_Large_Break"
+                }
+              }
+            }
+          },
+          "Failed": {
+            "Type": "Simple",
+            "Effects": {
+              "ItemAnimationId": "Interact"
+            }
+          },
+          "Effects": {
+            "ItemAnimationId": "CastHurlCharging"
+          }
+        }
+      ]
+    }
+  }
+}
