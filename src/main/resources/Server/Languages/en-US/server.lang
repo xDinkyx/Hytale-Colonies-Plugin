@@ -1,3 +1,5 @@
 items.Example_Block.name=Example Block
 items.Tool_Colony_Clockwork_Kit.name=Colony Clockwork Kit
 items.Tool_Colony_Clockwork_Kit.description=This kit contains all the necessary components to assemble a functional Colony Clockwork.
+server.npcRoles.Colonist_Clockwork_Dummy.name=Clockwork Colonist
+server.npcRoles.Colonist_Clockwork_Dummy.description=A mechanical colonist designed to perform simple tasks around the colony.

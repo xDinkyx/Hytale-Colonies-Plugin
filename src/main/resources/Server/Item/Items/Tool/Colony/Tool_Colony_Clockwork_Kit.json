@@ -50,8 +50,8 @@
                 "Type": "Serial",
                 "Interactions": [
                   {
-                    "Type": "SpawnNPC",
-                    "EntityId": "Empty_Role"
+                    "Type": "SpawnColonist",
+                    "EntityId": "Colonist_Dummy"
                   },
                   {
                     "Type": "DestroyBlock"

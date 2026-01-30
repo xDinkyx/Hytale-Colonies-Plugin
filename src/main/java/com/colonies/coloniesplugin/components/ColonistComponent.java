@@ -33,6 +33,14 @@ public class ColonistComponent implements Component<EntityStore> {
         return new ColonistComponent(this);
     }
 
+    public String getColonyId() {
+        return colonyId;
+    }
+
+    public void setColonyId(String colonyId) {
+        this.colonyId = colonyId;
+    }
+
     public String getColonistName() {
         return colonistName;
     }
