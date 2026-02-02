@@ -1,7 +1,7 @@
 package com.colonies.coloniesplugin.interactions;
 
 import com.colonies.coloniesplugin.ColoniesPlugin;
-import com.colonies.coloniesplugin.components.ColonistComponent;
+import com.colonies.coloniesplugin.components.npc.ColonistComponent;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -71,15 +71,17 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction {
     protected Vector3d spawnOffset = new Vector3d();
     protected float spawnYawOffset;
 
-    private void spawnNPC(@Nonnull Store<EntityStore> store, @Nonnull Vector3i targetBlock) {
+    private void spawnColonist(@Nonnull Store<EntityStore> store, @Nonnull Vector3i targetBlock) {
         World world = store.getExternalData().getWorld();
         SpawnColonistInteraction.SpawnData spawnData = this.computeSpawnData(world, targetBlock);
 
+        // Spawn the NPC
         Pair<Ref<EntityStore>, INonPlayerCharacter> result = NPCPlugin.get().spawnNPC(store, this.entityId, null, spawnData.position(), spawnData.rotation());
 
         Ref<EntityStore> npcRef = result.first();
         NPCEntity npcComponent = store.getComponent(npcRef, Objects.requireNonNull(NPCEntity.getComponentType()));
 
+        // Add the ColonistComponent to the spawned NPC
         ColonistComponent colonistComponent = new ColonistComponent("DefaultColonyId", "Colonist_Name", 1);
         store.addComponent(npcRef, ColoniesPlugin.getInstance().getColonistComponent(), colonistComponent);
     }
@@ -128,7 +130,7 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction {
             @Nonnull Vector3i targetBlock,
             @Nonnull CooldownHandler cooldownHandler
     ) {
-        commandBuffer.run(store -> this.spawnNPC(world.getEntityStore().getStore(), targetBlock));
+        commandBuffer.run(store -> this.spawnColonist(world.getEntityStore().getStore(), targetBlock));
     }
 
     @Override
@@ -139,7 +141,7 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction {
 
         assert commandBuffer != null;
 
-        commandBuffer.run(store -> this.spawnNPC(world.getEntityStore().getStore(), targetBlock));
+        commandBuffer.run(store -> this.spawnColonist(world.getEntityStore().getStore(), targetBlock));
     }
 
     private record SpawnData(@Nonnull Vector3d position, @Nonnull Vector3f rotation) {
