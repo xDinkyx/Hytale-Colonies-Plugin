@@ -1,13 +1,17 @@
-package com.colonies.coloniesplugin.components;
+package com.colonies.coloniesplugin.components.npc;
 
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nullable;
+import java.util.UUID;
 
 public class ColonistComponent implements Component<EntityStore> {
+
     private String colonyId;
     private String colonistName;
     private int colonistLevel;
+
+    private UUID jobProviderEntityId = null; // Stores the JobProvider entity ID assigned to this colonist (i.e., the job they are working at).
 
     public ColonistComponent() {
         this.colonyId = "default_colony";
@@ -55,5 +59,9 @@ public class ColonistComponent implements Component<EntityStore> {
 
     public void setColonistLevel(int colonistLevel) {
         this.colonistLevel = colonistLevel;
+    }
+
+    public boolean isEmployed() {
+        return jobProviderEntityId != null;
     }
 }

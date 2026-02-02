@@ -1,7 +1,7 @@
 package com.colonies.coloniesplugin.systems;
 
 import com.colonies.coloniesplugin.ColoniesPlugin;
-import com.colonies.coloniesplugin.components.ColonistComponent;
+import com.colonies.coloniesplugin.components.npc.ColonistComponent;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
