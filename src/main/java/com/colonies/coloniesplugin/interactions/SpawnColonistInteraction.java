@@ -35,7 +35,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-// Ideally this would extend SpawnColonistInteraction and override the spawn logic,
+// Ideally this would extend SpawnNPCInteraction and override the spawn logic,
 // but since that's currently not possible we duplicate the code.
 public class SpawnColonistInteraction extends SimpleBlockInteraction {
     @Nonnull
@@ -83,14 +83,16 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction {
 
         // Add the ColonistComponent to the spawned NPC
         ColonistComponent colonistComponent = new ColonistComponent("DefaultColonyId", "Colonist_Name", 1);
-        store.addComponent(npcRef, ColoniesPlugin.getInstance().getColonistComponent(), colonistComponent);
+        store.addComponent(npcRef, ColoniesPlugin.getInstance().getColonistComponentType(), colonistComponent);
     }
 
     @Nonnull
     private SpawnColonistInteraction.SpawnData computeSpawnData(@Nonnull World world, @Nonnull Vector3i targetBlock) {
+
         long chunkIndex = ChunkUtil.indexChunkFromBlock(targetBlock.x, targetBlock.z);
         ChunkStore chunkStore = world.getChunkStore();
         Ref<ChunkStore> chunkRef = chunkStore.getChunkReference(chunkIndex);
+
         if (chunkRef != null && chunkRef.isValid()) {
             WorldChunk worldChunkComponent = chunkStore.getStore().getComponent(chunkRef, WorldChunk.getComponentType());
 
@@ -99,7 +101,8 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction {
             BlockType blockType = worldChunkComponent.getBlockType(targetBlock.x, targetBlock.y, targetBlock.z);
             if (blockType == null) {
                 return new SpawnColonistInteraction.SpawnData(this.spawnOffset.clone().add(targetBlock).add(0.5, 0.5, 0.5), Vector3f.ZERO);
-            } else {
+            }
+            else {
                 BlockChunk blockChunkComponent = chunkStore.getStore().getComponent(chunkRef, BlockChunk.getComponentType());
                 if (blockChunkComponent == null) {
                     return new SpawnColonistInteraction.SpawnData(this.spawnOffset.clone().add(targetBlock).add(0.5, 0.5, 0.5), Vector3f.ZERO);

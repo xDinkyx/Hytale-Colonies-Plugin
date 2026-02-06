@@ -13,10 +13,6 @@ public class ColonistJobComponent implements Component<EntityStore> {
     public UUID jobProviderEntityId; // Pointer to the JobProvider entity
     public String currentTask = "IDLE"; // TRAVELING, WORKING, REFUELING // ToDo: Make this an enum?
 
-    public static ComponentType<EntityStore, ColonistJobComponent> getComponentType() {
-        return EntityModule.get().getKnockbackComponentType();
-    }
-
     public ColonistJobComponent() {}
 
     public ColonistJobComponent(UUID jobProviderEntityId) {
