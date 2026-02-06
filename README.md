@@ -70,3 +70,6 @@ Dragons, goblins, orcs, enemy colonies, etc.
 - Should reward winner, but not necessarily punish loser?
 - Or alternatively add a hardcore setting where there is real loss.
 - Perhaps there should be a way to 
+
+### Religion system
+### Magic system
