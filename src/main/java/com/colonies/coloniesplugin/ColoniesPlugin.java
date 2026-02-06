@@ -6,12 +6,15 @@ import com.colonies.coloniesplugin.components.jobs.WoodcutterJobComponent;
 import com.colonies.coloniesplugin.components.npc.ColonistComponent;
 import com.colonies.coloniesplugin.interactions.SpawnColonistInteraction;
 import com.colonies.coloniesplugin.systems.ColonySystem;
+import com.colonies.coloniesplugin.systems.debug.BlockInfoSystem;
 import com.colonies.coloniesplugin.systems.jobs.JobAssignmentSystem;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.modules.entity.BlockEntitySystems;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
@@ -22,12 +25,13 @@ public class ColoniesPlugin extends JavaPlugin {
     private static ColoniesPlugin instance;
 
     private ComponentType<EntityStore, ColonistComponent> colonistComponentType;
-    private ComponentType<EntityStore, JobProviderComponent> jobProviderComponentType;
+    private ComponentType<ChunkStore, JobProviderComponent> jobProviderComponentType;
     private ComponentType<EntityStore, ColonistJobComponent> colonistJobComponentType;
     private ComponentType<EntityStore, WoodcutterJobComponent> woodCutterJobComponentType;
 
     public ColoniesPlugin(@Nonnull JavaPluginInit init) {
         super(init);
+
         LOGGER.atInfo().log("Hello from %s version %s", this.getName(), this.getManifest().getVersion().toString());
         instance = this;
     }
@@ -43,23 +47,24 @@ public class ColoniesPlugin extends JavaPlugin {
 
         // Components
         this.colonistComponentType = this.getEntityStoreRegistry().registerComponent(ColonistComponent.class, ColonistComponent::new);
-        this.jobProviderComponentType = this.getEntityStoreRegistry().registerComponent(JobProviderComponent.class, JobProviderComponent::new);
         this.colonistJobComponentType = this.getEntityStoreRegistry().registerComponent(ColonistJobComponent.class, ColonistJobComponent::new);
         this.woodCutterJobComponentType = this.getEntityStoreRegistry().registerComponent(WoodcutterJobComponent.class, WoodcutterJobComponent::new);
+        this.jobProviderComponentType = this.getChunkStoreRegistry().registerComponent(JobProviderComponent.class, JobProviderComponent::new);
 
         // Interactions
         Interaction.CODEC.register("SpawnColonist", SpawnColonistInteraction.class, SpawnColonistInteraction.CODEC);
 
         // Systems
         this.getEntityStoreRegistry().registerSystem(new ColonySystem(this.colonistComponentType));
-        this.getEntityStoreRegistry().registerSystem(new JobAssignmentSystem());
+        this.getEntityStoreRegistry().registerSystem(new BlockInfoSystem());
+        this.getChunkStoreRegistry().registerSystem(new JobAssignmentSystem());
     }
 
     public ComponentType<EntityStore, ColonistComponent> getColonistComponentType() {
         return colonistComponentType;
     }
 
-    public ComponentType<EntityStore, JobProviderComponent> getJobProviderComponentType() {
+    public ComponentType<ChunkStore, JobProviderComponent> getJobProviderComponentType() {
         return jobProviderComponentType;
     }
 
