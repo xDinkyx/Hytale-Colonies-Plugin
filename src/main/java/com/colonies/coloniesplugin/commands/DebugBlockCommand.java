@@ -1,22 +1,34 @@
 package com.colonies.coloniesplugin.commands;
 
+import com.colonies.coloniesplugin.ColoniesPlugin;
 import com.hypixel.hytale.component.*;
+import com.hypixel.hytale.function.predicate.BiIntPredicate;
+import com.hypixel.hytale.math.iterator.BlockIterator;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.math.vector.*;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.blockhitbox.BlockBoundingBoxes;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.arguments.system.OptionalArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.command.system.arguments.types.RelativeIntPosition;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractWorldCommand;
 import com.hypixel.hytale.server.core.command.system.exceptions.GeneralCommandException;
+import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hypixel.hytale.server.core.modules.collision.WorldUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.ChunkColumn;
+import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.util.FillerBlockUtil;
 import com.hypixel.hytale.server.core.util.TargetUtil;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.function.IntPredicate;
 
 public class DebugBlockCommand extends AbstractWorldCommand {
 
@@ -39,6 +51,7 @@ public class DebugBlockCommand extends AbstractWorldCommand {
             @Nonnull CommandContext context,
             @Nonnull World world,
             @Nonnull Store<EntityStore> store) {
+
         Vector3i position;
 
         // 1. Resolve Position (Argument or Look-at)
@@ -48,42 +61,76 @@ public class DebugBlockCommand extends AbstractWorldCommand {
             if (!context.isPlayer()) {
                 throw new GeneralCommandException(MESSAGE_COMMANDS_ERRORS_PROVIDE_POSITION);
             }
-
-            Ref<EntityStore> playerRef = context.senderAsPlayerRef();
-            // Using 10.0 range as per the BlockSpawnerSetCommand reference
-            position = TargetUtil.getTargetBlock(playerRef, 10.0, store);
-
+            position = TargetUtil.getTargetBlock(context.senderAsPlayerRef(), blockId -> blockId != 0, 10.0, store);
             if (position == null) {
                 throw new GeneralCommandException(MESSAGE_GENERAL_BLOCK_TARGET_NOT_IN_RANGE);
             }
         }
 
-        // 2. Locate the Block Entity
-        WorldChunk chunk = world.getChunk(ChunkUtil.indexChunkFromBlock(position.x, position.z));
-        Ref<ChunkStore> blockRef = chunk.getBlockComponentEntity(position.x, position.y, position.z);
+        // 2. Get chunk reference and store
+        long chunkIndex = ChunkUtil.indexChunkFromBlock(position.x, position.z);
+        var chunkStore = world.getChunkStore().getStore();
+        var chunkRef = world.getChunkStore().getChunkReference(chunkIndex);
 
-        if (blockRef == null) {
-            context.sendMessage(Message.raw("No BlockEntity found at " + position.toString()));
+        if (chunkRef == null || !chunkRef.isValid()) {
+            context.sendMessage(Message.raw("Chunk not loaded at " + position));
             return;
         }
 
-        // 3. Inspect and Log Components
-        Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
-        Archetype<ChunkStore> archetype = chunkStore.getArchetype(blockRef);
+        // 3. Get block and block type
+        BlockChunk blockChunk = chunkStore.getComponent(chunkRef, BlockChunk.getComponentType());
+        if (blockChunk == null) {
+            context.sendMessage(Message.raw("No BlockChunk found at " + position));
+            return;
+        }
+        int blockId = blockChunk.getBlock(position.x, position.y, position.z);
+        BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
 
-        context.sendMessage(Message.raw("--- BlockEntity Components at " + position.toString() + " ---"));
+        // 4. Check for filler block
+        BlockSection blockSection = blockChunk.getSectionAtBlockY(position.y);
+        BlockBoundingBoxes hitbox = BlockBoundingBoxes.getAssetMap().getAsset(blockType.getHitboxTypeIndex());
+        if (blockSection != null && hitbox != null && hitbox.protrudesUnitBox()) {
+            int idx = ChunkUtil.indexBlock(position.x, position.y, position.z);
+            int filler = blockSection.getFiller(idx);
+            int fillerX = FillerBlockUtil.unpackX(filler);
+            int fillerY = FillerBlockUtil.unpackY(filler);
+            int fillerZ = FillerBlockUtil.unpackZ(filler);
+            // Subtract the filler local coordinates from the look position to get the main block's position.
+            position = Vector3i.add(position, new Vector3i(-fillerX, -fillerY, -fillerZ));
+            // Re-fetch blockId and blockType for the main block
+            blockId = blockChunk.getBlock(fillerX, fillerY, fillerZ);
+            blockType = BlockType.getAssetMap().getAsset(blockId);
+        }
+
+        // 5. Now use 'position' to get block entity as usual
+        var blockEntity = BlockModule.getBlockEntity(world, position.x, position.y, position.z);
+        if (blockEntity == null) {
+            context.sendMessage(Message.raw("No BlockEntity found for block " + blockId + "-" + blockType.getId() + " at " + position));
+            return;
+        }
+
+        // 6. Inspect and Log Components
+        Store<ChunkStore> entityChunkStore = blockEntity.getStore();
+        Archetype<ChunkStore> archetype = entityChunkStore.getArchetype(blockEntity);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("BlockEntity found for block at ").append(position)
+                .append(": ").append(blockType.getId())
+                .append(" (Block ID: ").append(blockId).append(")\n")
+                .append("--- BlockEntity Components ---\n");
 
         for (int i = 0; i < archetype.length(); i++) {
             ComponentType<ChunkStore, ? extends Component<ChunkStore>> componentType =
                     (ComponentType<ChunkStore, ? extends Component<ChunkStore>>) archetype.get(i);
 
             if (componentType != null) {
-                Object componentInstance = chunkStore.getComponent(blockRef, componentType);
+                Object componentInstance = chunkStore.getComponent(blockEntity, componentType);
                 String className = componentType.getTypeClass().getSimpleName();
                 String data = (componentInstance != null) ? componentInstance.toString() : "null";
-
-                context.sendMessage(Message.raw("-> " + className + ": " + data));
+                sb.append("-> ").append(className).append(": ").append(data).append("\n");
             }
         }
+
+        context.sendMessage(Message.raw(sb.toString()));
     }
 }
