@@ -11,7 +11,7 @@ public class ColonistComponent implements Component<EntityStore> {
     private String colonistName;
     private int colonistLevel;
 
-    private UUID jobProviderEntityId = null; // Stores the JobProvider entity ID assigned to this colonist (i.e., the job they are working at).
+    public int JobProviderEntityIndex = -1; // Index of JobProvider component this colonist is currently working for.
 
     public ColonistComponent() {
         this.colonyId = "default_colony";
@@ -62,6 +62,6 @@ public class ColonistComponent implements Component<EntityStore> {
     }
 
     public boolean isEmployed() {
-        return jobProviderEntityId != null;
+        return JobProviderEntityIndex != -1;
     }
 }
