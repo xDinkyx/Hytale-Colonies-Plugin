@@ -66,13 +66,7 @@
     "BlockSoundSetId": "Wood",
     "BlockEntity": {
       "Components": {
-        "LaunchPad": {
-          "VelocityY": 20
-        },
-        "JobProviderComponent": {},
-        "JobProvider": {},
-        "ColoniesPlugin:JobProvider": {},
-        "ColoniesPlugin:JobProviderComponent": {}
+        "JobProvider": {}
       }
     }
   },
