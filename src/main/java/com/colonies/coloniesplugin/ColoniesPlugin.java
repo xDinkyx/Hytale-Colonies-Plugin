@@ -7,11 +7,9 @@ import com.colonies.coloniesplugin.components.jobs.WoodcutterJobComponent;
 import com.colonies.coloniesplugin.components.npc.ColonistComponent;
 import com.colonies.coloniesplugin.interactions.SpawnColonistInteraction;
 import com.colonies.coloniesplugin.systems.ColonySystem;
-import com.colonies.coloniesplugin.systems.debug.BlockInfoSystem;
 import com.colonies.coloniesplugin.systems.jobs.JobAssignmentSystem;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.modules.entity.BlockEntitySystems;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -58,7 +56,6 @@ public class ColoniesPlugin extends JavaPlugin {
 
         // Systems
         this.getEntityStoreRegistry().registerSystem(new ColonySystem(this.colonistComponentType));
-        this.getEntityStoreRegistry().registerSystem(new BlockInfoSystem());
         this.getChunkStoreRegistry().registerSystem(new JobAssignmentSystem());
     }
 
