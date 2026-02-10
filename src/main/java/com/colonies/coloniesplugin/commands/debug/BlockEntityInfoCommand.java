@@ -1,9 +1,6 @@
-package com.colonies.coloniesplugin.commands;
+package com.colonies.coloniesplugin.commands.debug;
 
-import com.colonies.coloniesplugin.ColoniesPlugin;
 import com.hypixel.hytale.component.*;
-import com.hypixel.hytale.function.predicate.BiIntPredicate;
-import com.hypixel.hytale.math.iterator.BlockIterator;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.*;
 import com.hypixel.hytale.server.core.Message;
@@ -16,10 +13,8 @@ import com.hypixel.hytale.server.core.command.system.arguments.types.RelativeInt
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractWorldCommand;
 import com.hypixel.hytale.server.core.command.system.exceptions.GeneralCommandException;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
-import com.hypixel.hytale.server.core.modules.collision.WorldUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
-import com.hypixel.hytale.server.core.universe.world.chunk.ChunkColumn;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -27,10 +22,8 @@ import com.hypixel.hytale.server.core.util.FillerBlockUtil;
 import com.hypixel.hytale.server.core.util.TargetUtil;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.function.IntPredicate;
 
-public class DebugBlockCommand extends AbstractWorldCommand {
+public class BlockEntityInfoCommand extends AbstractWorldCommand {
 
     @Nonnull
     private static final Message MESSAGE_GENERAL_BLOCK_TARGET_NOT_IN_RANGE = Message.translation("server.general.blockTargetNotInRange");
@@ -42,8 +35,8 @@ public class DebugBlockCommand extends AbstractWorldCommand {
             "position", "The coordinates of the block to inspect", ArgTypes.RELATIVE_BLOCK_POSITION
     );
 
-    public DebugBlockCommand() {
-        super("logcomponents", "Logs all components on a block entity");
+    public BlockEntityInfoCommand() {
+        super("blockentityinfo", "Logs all components on a block entity");
     }
 
     @Override
@@ -120,14 +113,10 @@ public class DebugBlockCommand extends AbstractWorldCommand {
                 .append("--- BlockEntity Components ---\n");
 
         for (int i = 0; i < archetype.length(); i++) {
-            ComponentType<ChunkStore, ? extends Component<ChunkStore>> componentType =
-                    (ComponentType<ChunkStore, ? extends Component<ChunkStore>>) archetype.get(i);
-
+            var componentType = archetype.get(i);
             if (componentType != null) {
-                Object componentInstance = chunkStore.getComponent(blockEntity, componentType);
                 String className = componentType.getTypeClass().getSimpleName();
-                String data = (componentInstance != null) ? componentInstance.toString() : "null";
-                sb.append("-> ").append(className).append(": ").append(data).append("\n");
+                sb.append("-> ").append(className).append("\n");
             }
         }
 
