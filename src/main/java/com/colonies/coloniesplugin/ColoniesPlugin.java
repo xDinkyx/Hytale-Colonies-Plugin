@@ -1,6 +1,6 @@
 package com.colonies.coloniesplugin;
 
-import com.colonies.coloniesplugin.commands.DebugBlockCommand;
+import com.colonies.coloniesplugin.commands.debug.BlockEntityInfoCommand;
 import com.colonies.coloniesplugin.components.jobs.ColonistJobComponent;
 import com.colonies.coloniesplugin.components.jobs.JobProviderComponent;
 import com.colonies.coloniesplugin.components.jobs.WoodcutterJobComponent;
@@ -45,7 +45,7 @@ public class ColoniesPlugin extends JavaPlugin {
     protected void setup() {
         // Commands
         this.getCommandRegistry().registerCommand(new ColoniesCommand(this.getName(), this.getManifest().getVersion().toString()));
-        this.getCommandRegistry().registerCommand(new DebugBlockCommand());
+        this.getCommandRegistry().registerCommand(new BlockEntityInfoCommand());
 
         // Components
         this.colonistComponentType = this.getEntityStoreRegistry().registerComponent(ColonistComponent.class, ColonistComponent::new);
