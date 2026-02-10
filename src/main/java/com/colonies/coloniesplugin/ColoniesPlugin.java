@@ -51,7 +51,7 @@ public class ColoniesPlugin extends JavaPlugin {
         this.colonistComponentType = this.getEntityStoreRegistry().registerComponent(ColonistComponent.class, ColonistComponent::new);
         this.colonistJobComponentType = this.getEntityStoreRegistry().registerComponent(ColonistJobComponent.class, ColonistJobComponent::new);
         this.woodCutterJobComponentType = this.getEntityStoreRegistry().registerComponent(WoodcutterJobComponent.class, WoodcutterJobComponent::new);
-        this.jobProviderComponentType = this.getChunkStoreRegistry().registerComponent(JobProviderComponent.class, JobProviderComponent::new);
+        this.jobProviderComponentType = this.getChunkStoreRegistry().registerComponent(JobProviderComponent.class, "JobProvider", JobProviderComponent.CODEC);
 
         // Interactions
         Interaction.CODEC.register("SpawnColonist", SpawnColonistInteraction.class, SpawnColonistInteraction.CODEC);
