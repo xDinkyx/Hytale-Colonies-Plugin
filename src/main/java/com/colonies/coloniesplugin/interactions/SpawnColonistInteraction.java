@@ -36,7 +36,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 // Ideally this would extend SpawnNPCInteraction and override the spawn logic,
-// but since that's currently not possible we duplicate the code.
+// but since the functions are not overridable we duplicate the code.
 public class SpawnColonistInteraction extends SimpleBlockInteraction {
     @Nonnull
     public static final BuilderCodec<SpawnColonistInteraction> CODEC = BuilderCodec.builder(
@@ -66,8 +66,8 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction {
             .documentation("The yaw rotation offset in radians to apply to the NPC rotation, relative to the block's yaw.")
             .add()
             .build();
+
     protected String entityId;
-    @Nonnull
     protected Vector3d spawnOffset = new Vector3d();
     protected float spawnYawOffset;
 
