@@ -7,6 +7,10 @@ import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.UUID;
+
 /// <summary>
 /// Component for entities that provide jobs to colonists.
 /// </summary>
@@ -18,6 +22,8 @@ public class JobProviderComponent implements Component<ChunkStore> {
             .build();
 
     public String JobType;
+    public int MaxWorkers = 1; // ToDo: Add to codec
+    public Set<UUID> AssignedColonists = Set.of(); // ToDo: Add to codec (but first figure out how)
 
     public JobProviderComponent() {
     }
