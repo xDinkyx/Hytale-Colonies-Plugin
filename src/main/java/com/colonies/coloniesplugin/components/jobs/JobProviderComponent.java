@@ -8,6 +8,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,7 +24,7 @@ public class JobProviderComponent implements Component<ChunkStore> {
 
     public String JobType;
     public int MaxWorkers = 1; // ToDo: Add to codec
-    public Set<UUID> AssignedColonists = Set.of(); // ToDo: Add to codec (but first figure out how)
+    public Set<UUID> AssignedColonists = new HashSet<>(); // ToDo: Add to codec (but first figure out how)
 
     public JobProviderComponent() {
     }
