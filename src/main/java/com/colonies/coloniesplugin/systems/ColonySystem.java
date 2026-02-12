@@ -25,8 +25,6 @@ public class ColonySystem extends EntityTickingSystem<EntityStore> {
         Ref<EntityStore> ref = archetypeChunk.getReferenceTo(index);
 
         assert colonist != null;
-        // Log the colonist's name and level each tick
-        ColoniesPlugin.LOGGER.atInfo().log("Ticking Colonist: " + colonist.getColonistName() + " | Colony: " + colonist.getColonyId() + " | Level: " + colonist.getColonistLevel());
     }
 
     @Nonnull
