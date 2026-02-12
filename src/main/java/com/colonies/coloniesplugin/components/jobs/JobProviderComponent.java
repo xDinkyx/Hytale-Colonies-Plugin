@@ -32,4 +32,15 @@ public class JobProviderComponent implements Component<ChunkStore> {
     public @Nullable Component<ChunkStore> clone() {
         return new JobProviderComponent();
     }
+
+    public int getAvailableJobSlots() {
+        return Math.max(0, MaxWorkers - AssignedColonists.size());
+    }
+
+    public void assignColonist(UUID colonistId) {
+        if (AssignedColonists.size() >= MaxWorkers) {
+            throw new IllegalStateException("No available job slots to assign colonist.");
+        }
+        AssignedColonists.add(colonistId);
+    }
 }
