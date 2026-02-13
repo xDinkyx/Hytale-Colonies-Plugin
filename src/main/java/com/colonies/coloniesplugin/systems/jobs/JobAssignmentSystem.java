@@ -4,15 +4,14 @@ import com.colonies.coloniesplugin.ColoniesPlugin;
 import com.colonies.coloniesplugin.components.jobs.ColonistJobComponent;
 import com.colonies.coloniesplugin.components.jobs.JobProviderComponent;
 import com.colonies.coloniesplugin.components.npc.ColonistComponent;
+import com.colonies.coloniesplugin.utils.BlockStateInfoUtil;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.jspecify.annotations.NonNull;
@@ -45,12 +44,8 @@ public class JobAssignmentSystem extends DelayedEntitySystem<ChunkStore> {
         if (blockStateInfo == null) return;
 
         // Get the world position of the job provider block entity
-        WorldChunk worldChunkComponent = commandBuffer.getComponent(blockStateInfo.getChunkRef(), WorldChunk.getComponentType());
-        Vector3i jobProviderPos = new Vector3i(
-                ChunkUtil.worldCoordFromLocalCoord(worldChunkComponent.getX(), ChunkUtil.xFromBlockInColumn(blockStateInfo.getIndex())),
-                ChunkUtil.yFromBlockInColumn(blockStateInfo.getIndex()),
-                ChunkUtil.worldCoordFromLocalCoord(worldChunkComponent.getZ(), ChunkUtil.zFromBlockInColumn(blockStateInfo.getIndex()))
-        );
+        Vector3i jobProviderPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
+
         ColoniesPlugin.LOGGER.atInfo().log(String.format("Job Provider at position %s has %d available job slots. Attempting to assign unemployed colonists...", jobProviderPos, jobProvider.getAvailableJobSlots()));
 
         // Iterate through unemployed colonists and assign them to this job provider until we run out of job slots or unemployed colonists.
