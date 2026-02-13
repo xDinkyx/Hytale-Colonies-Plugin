@@ -13,12 +13,12 @@ import org.jspecify.annotations.Nullable;
 /**
  * Added to colonist to assign them a job.
  */
-public class ColonistJobComponent implements Component<EntityStore> {
+public class JobComponent implements Component<EntityStore> {
     // ===== Codec =====
-    public static final BuilderCodec<ColonistJobComponent> CODEC = BuilderCodec.builder(ColonistJobComponent.class, ColonistJobComponent::new)
-            .append(new KeyedCodec<>("JobProviderBlockPosition", Vector3i.CODEC),
-                    (o, v) -> o.jobProviderBlockPosition = v,
-                    o -> o.jobProviderBlockPosition)
+    public static final BuilderCodec<JobComponent> CODEC = BuilderCodec.builder(JobComponent.class, JobComponent::new)
+            .append(new KeyedCodec<>("WorkStationBlockPosition", Vector3i.CODEC),
+                    (o, v) -> o.workStationBlockPosition = v,
+                    o -> o.workStationBlockPosition)
             .add()
             .append(new KeyedCodec<>("JobState", JobState.CODEC),
                     (o, v) -> o.jobState = v,
@@ -26,40 +26,40 @@ public class ColonistJobComponent implements Component<EntityStore> {
             .add().build();
 
     // ===== Fields =====
-    protected @Nullable Vector3i jobProviderBlockPosition = null;
+    protected @Nullable Vector3i workStationBlockPosition = null;
     protected @Nullable JobState jobState = null;
 
     // ===== Constructors =====
-    public ColonistJobComponent() {}
+    public JobComponent() {}
 
-    public ColonistJobComponent(@Nullable Vector3i jobProviderBlockPosition) {
-        this.jobProviderBlockPosition = jobProviderBlockPosition;
+    public JobComponent(@Nullable Vector3i workStationBlockPos) {
+        this.workStationBlockPosition = workStationBlockPos;
     }
 
     // ===== Component Type =====
-    public static ComponentType<EntityStore, ColonistJobComponent> getComponentType() {
+    public static ComponentType<EntityStore, JobComponent> getComponentType() {
         return ColoniesPlugin.getInstance().getColonistJobComponentType();
     }
 
     // ===== Component Clone =====
     @Override
     public @Nullable Component<EntityStore> clone() {
-        ColonistJobComponent copy = new ColonistJobComponent(this.jobProviderBlockPosition);
+        JobComponent copy = new JobComponent(this.workStationBlockPosition);
         copy.jobState = this.jobState;
         return copy;
     }
 
     // ===== Public Methods =====
     public boolean isEmployed() {
-        return jobProviderBlockPosition != null;
+        return workStationBlockPosition != null;
     }
 
     // ===== Getters and Setters =====
-    public @Nullable Vector3i getJobProviderBlockPosition() {
-        return jobProviderBlockPosition;
+    public @Nullable Vector3i getWorkStationBlockPosition() {
+        return workStationBlockPosition;
     }
-    public void setJobProviderBlockPosition(@Nullable Vector3i jobProviderBlockPosition) {
-        this.jobProviderBlockPosition = jobProviderBlockPosition;
+    public void setWorkStationBlockPosition(@Nullable Vector3i workStationBlockPosition) {
+        this.workStationBlockPosition = workStationBlockPosition;
     }
     public @Nullable JobState getCurrentTask() {
         return jobState;
