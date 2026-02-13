@@ -8,6 +8,7 @@ import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
@@ -55,30 +56,36 @@ public class JobAssignmentSystem extends DelayedEntitySystem<ChunkStore> {
         // Iterate through unemployed colonists and assign them to this job provider until we run out of job slots or unemployed colonists.
         World world = chunkStore.getExternalData().getWorld();
         EntityStore entityStore = world.getEntityStore();
-        entityStore.getStore().forEachEntityParallel(unemployedQuery, (colonistId, _archetypeChunk, _cb) ->
+        entityStore.getStore().forEachChunk(unemployedQuery, (_archetypeChunk, _commandBuffer) ->
         {
-            ColonistComponent colonist = _archetypeChunk.getComponent(colonistId, ColoniesPlugin.getInstance().getColonistComponentType());
-            assert colonist != null;
+            for (int colonistId = 0; colonistId < _archetypeChunk.size(); colonistId++) {
+                ColonistComponent colonist = _archetypeChunk.getComponent(colonistId, ColoniesPlugin.getInstance().getColonistComponentType());
+                assert colonist != null;
+                if (colonist.isEmployed()) continue; // Skip employed colonists.
 
-            if (colonist.isEmployed()) {
-                return; // Skip employed colonists.
+                UUIDComponent colonistEntityUuid = _archetypeChunk.getComponent(colonistId, UUIDComponent.getComponentType());
+                Ref<EntityStore> colonistRef = _archetypeChunk.getReferenceTo(colonistId);
+
+                assert colonistEntityUuid != null;
+
+                ColoniesPlugin.LOGGER.atInfo().log(String.format("Colonist #%d : %s is UNEMPLOYED | Colonist info: %s", colonistId, colonist.getColonistName(), colonist));
+
+                // Assign the colonist to the job provider.
+                jobProvider.assignColonist(colonistEntityUuid.getUuid());
+
+                // Add job component to colonist with reference to job provider block.
+                ColonistJobComponent newColonistJobComponent = new ColonistJobComponent();
+                newColonistJobComponent.jobProviderBlockPosition = jobProviderPos;
+
+                _commandBuffer.addComponent(colonistRef, ColoniesPlugin.getInstance().getColonistJobComponentType(), newColonistJobComponent);
+
+                ColoniesPlugin.LOGGER.atInfo().log(String.format("Assigned Colonist #%d : %s to job at %s.", colonistId, colonist.getColonistName(), jobProvider.JobType));
+
+                // Move on to the next job provider after assigning one colonist to this provider.
+                // We only assign one colonist per tick to prevent all colonists from being assigned to the first job provider we find.
+                // ToDo: Implement more complex job assignment logic that considers distance to job providers and colonist preferences, etc.
+                break;
             }
-
-            UUIDComponent colonistEntityUuid = _archetypeChunk.getComponent(colonistId, UUIDComponent.getComponentType());
-            assert colonistEntityUuid != null;
-
-            ColoniesPlugin.LOGGER.atInfo().log(String.format("Colonist #%d : %s is UNEMPLOYED | Colonist info: %s", colonistId, colonist.getColonistName(), colonist));
-
-            // Assign the colonist to the job provider.
-            jobProvider.assignColonist(colonistEntityUuid.getUuid());
-
-            // Add job component to colonist with reference to job provider block.
-            var colonistRef = entityStore.getRefFromUUID(colonistEntityUuid.getUuid());
-            ColonistJobComponent newColonistJobComponent = new ColonistJobComponent();
-            newColonistJobComponent.jobProviderBlockPosition = jobProviderPos;
-            _cb.addComponent(colonistRef, ColoniesPlugin.getInstance().getColonistJobComponentType(), newColonistJobComponent);
-
-            ColoniesPlugin.LOGGER.atInfo().log(String.format("Assigned Colonist #%d : %s to job at %s.", colonistId, colonist.getColonistName(), jobProvider.JobType));
         });
     }
 
