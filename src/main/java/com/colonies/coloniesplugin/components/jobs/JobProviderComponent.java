@@ -1,47 +1,101 @@
 package com.colonies.coloniesplugin.components.jobs;
 
+// Imports
+import com.colonies.coloniesplugin.ColoniesPlugin;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
+import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.component.Component;
+import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
-/// <summary>
-/// Component for entities that provide jobs to colonists.
-/// </summary>
+/**
+ * Component for blocks that provide jobs to colonists.
+ */
 public class JobProviderComponent implements Component<ChunkStore> {
 
+    // ===== Codec =====
     public static final BuilderCodec<JobProviderComponent> CODEC = BuilderCodec.builder(JobProviderComponent.class, JobProviderComponent::new)
-            .append(new KeyedCodec<>("JobType", Codec.STRING), (jobProviderComponent, s) -> jobProviderComponent.JobType = s, jobProviderComponent -> jobProviderComponent.JobType)
+            .append(new KeyedCodec<>("JobType", JobType.CODEC),
+                    (o, v) -> o.jobType = v,
+                    o -> o.jobType)
             .add()
-            .build();
+            .append(new KeyedCodec<>("MaxWorkers", Codec.INTEGER),
+                    (o, v) -> o.maxWorkers = v,
+                    o -> o.maxWorkers)
+            .add()
+            .append(new KeyedCodec<>("AssignedColonists", new ArrayCodec<>(Codec.UUID_STRING, UUID[]::new)),
+                    (o, v) -> {
+                        o.assignedColonists = new HashSet<>();
+                        Collections.addAll(o.assignedColonists, v);
+                    }, o -> o.assignedColonists.toArray(UUID[]::new))
+            .add().build();
 
-    public String JobType;
-    public int MaxWorkers = 1; // ToDo: Add to codec
-    public Set<UUID> AssignedColonists = new HashSet<>(); // ToDo: Add to codec (but first figure out how)
+    // ===== Fields =====
+    protected JobType jobType;
+    protected int maxWorkers = 1;
+    protected Set<UUID> assignedColonists = new HashSet<>();
 
+    // ===== Constructors =====
     public JobProviderComponent() {
     }
 
+    public JobProviderComponent(JobType jobType, int maxWorkers) {
+        this.jobType = jobType;
+        this.maxWorkers = maxWorkers;
+    }
+
+    // ===== Component Type =====
+    public static ComponentType<ChunkStore, JobProviderComponent> getComponentType() {
+        return ColoniesPlugin.getInstance().getJobProviderComponentType();
+    }
+
+    // ===== Component Clone =====
     @Override
     public @Nullable Component<ChunkStore> clone() {
-        return new JobProviderComponent();
+        var copy = new JobProviderComponent(this.jobType, this.maxWorkers);
+        copy.assignedColonists = new HashSet<>(this.assignedColonists);
+        return copy;
     }
 
-    public int getAvailableJobSlots() {
-        return Math.max(0, MaxWorkers - AssignedColonists.size());
-    }
-
+    // ===== Public Methods =====
     public void assignColonist(UUID colonistId) {
-        if (AssignedColonists.size() >= MaxWorkers) {
+        if (assignedColonists.size() >= maxWorkers) {
             throw new IllegalStateException("No available job slots to assign colonist.");
         }
-        AssignedColonists.add(colonistId);
+        assignedColonists.add(colonistId);
+    }
+
+    // ===== Getters and Setters =====
+    public int getAvailableJobSlots() {
+        return Math.max(0, maxWorkers - assignedColonists.size());
+    }
+
+    public JobType getJobType() {
+        return jobType;
+    }
+
+    public void setJobType(JobType jobType) {
+        this.jobType = jobType;
+    }
+
+    public int getMaxWorkers() {
+        return maxWorkers;
+    }
+
+    public void setMaxWorkers(int maxWorkers) {
+        this.maxWorkers = maxWorkers;
+    }
+
+    public Set<UUID> getAssignedColonists() {
+        return assignedColonists;
+    }
+
+    public void setAssignedColonists(Set<UUID> assignedColonists) {
+        this.assignedColonists = assignedColonists;
     }
 }
