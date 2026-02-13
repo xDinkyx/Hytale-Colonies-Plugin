@@ -36,6 +36,7 @@ public class JobAssignmentSystem extends DelayedEntitySystem<ChunkStore> {
                      @NonNull CommandBuffer<ChunkStore> commandBuffer)
     {
         JobProviderComponent jobProvider = archetypeChunk.getComponent(index, ColoniesPlugin.getInstance().getJobProviderComponentType());
+        assert jobProvider != null;
 
         // If no job slots are available, do nothing.
         if(jobProvider.getAvailableJobSlots() <= 0) return;
@@ -64,7 +65,7 @@ public class JobAssignmentSystem extends DelayedEntitySystem<ChunkStore> {
 
                 // Get colonist UUID and entity ref.
                 UUIDComponent colonistEntityUuid = _archetypeChunk.getComponent(colonistId, UUIDComponent.getComponentType());
-                Ref<EntityStore> colonistRef = _archetypeChunk.getReferenceTo(colonistId);
+                assert colonistEntityUuid != null;
 
                 ColoniesPlugin.LOGGER.atInfo().log(String.format("Colonist #%d : %s is UNEMPLOYED | Colonist info: %s", colonistId, colonist.getColonistName(), colonist));
 
@@ -75,6 +76,7 @@ public class JobAssignmentSystem extends DelayedEntitySystem<ChunkStore> {
                 ColonistJobComponent newColonistJobComponent = new ColonistJobComponent();
                 newColonistJobComponent.setJobProviderBlockPosition(jobProviderPos);
 
+                Ref<EntityStore> colonistRef = _archetypeChunk.getReferenceTo(colonistId);
                 _commandBuffer.addComponent(colonistRef, ColoniesPlugin.getInstance().getColonistJobComponentType(), newColonistJobComponent);
 
                 ColoniesPlugin.LOGGER.atInfo().log(String.format("Assigned Colonist #%d : %s to job at %s.", colonistId, colonistEntityUuid.getUuid(), jobProvider.getJobType()));
