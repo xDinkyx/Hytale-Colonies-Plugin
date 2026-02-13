@@ -1,37 +1,70 @@
 package com.colonies.coloniesplugin.components.jobs;
 
-import com.hypixel.hytale.codec.Codec;
+// Imports
+import com.colonies.coloniesplugin.ColoniesPlugin;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
+import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.jspecify.annotations.Nullable;
 
-import java.util.UUID;
-
+/**
+ * Added to colonist to assign them a job.
+ */
 public class ColonistJobComponent implements Component<EntityStore> {
+    // ===== Codec =====
+    public static final BuilderCodec<ColonistJobComponent> CODEC = BuilderCodec.builder(ColonistJobComponent.class, ColonistJobComponent::new)
+            .append(new KeyedCodec<>("JobProviderBlockPosition", Vector3i.CODEC),
+                    (o, v) -> o.jobProviderBlockPosition = v,
+                    o -> o.jobProviderBlockPosition)
+            .add()
+            .append(new KeyedCodec<>("JobState", JobState.CODEC),
+                    (o, v) -> o.jobState = v,
+                    o -> o.jobState)
+            .add().build();
 
-//    public static final BuilderCodec<ColonistJobComponent> CODEC = BuilderCodec.builder(ColonistJobComponent.class, ColonistJobComponent::new)
-//            .append(new KeyedCodec<>("JobProviderEntityIndex", Vector3i.CODEC), (colonistJobComponent, s) -> colonistJobComponent.jobProviderBlockPosition = s, colonistJobComponent -> colonistJobComponent.jobProviderBlockPosition)
-//            .add()
-//            .append(new KeyedCodec<>("CurrentTask", Codec.STRING), (colonistJobComponent, s) -> colonistJobComponent.CurrentTask = s, colonistJobComponent -> colonistJobComponent.CurrentTask)
-//            .add()
-//            .build();
+    // ===== Fields =====
+    protected @Nullable Vector3i jobProviderBlockPosition = null;
+    protected @Nullable JobState jobState = null;
 
-    public @Nullable Vector3i jobProviderBlockPosition = null;
-    public @Nullable String CurrentTask = null; // TRAVELING, WORKING, REFUELING // ToDo: Make this an enum?
-
+    // ===== Constructors =====
     public ColonistJobComponent() {}
 
+    public ColonistJobComponent(@Nullable Vector3i jobProviderBlockPosition) {
+        this.jobProviderBlockPosition = jobProviderBlockPosition;
+    }
+
+    // ===== Component Type =====
+    public static ComponentType<EntityStore, ColonistJobComponent> getComponentType() {
+        return ColoniesPlugin.getInstance().getColonistJobComponentType();
+    }
+
+    // ===== Component Clone =====
     @Override
     public @Nullable Component<EntityStore> clone() {
-        ColonistJobComponent copy = new ColonistJobComponent();
-        copy.jobProviderBlockPosition = this.jobProviderBlockPosition;
-        copy.CurrentTask = this.CurrentTask;
+        ColonistJobComponent copy = new ColonistJobComponent(this.jobProviderBlockPosition);
+        copy.jobState = this.jobState;
         return copy;
     }
 
+    // ===== Public Methods =====
     public boolean isEmployed() {
         return jobProviderBlockPosition != null;
-    }}
+    }
+
+    // ===== Getters and Setters =====
+    public @Nullable Vector3i getJobProviderBlockPosition() {
+        return jobProviderBlockPosition;
+    }
+    public void setJobProviderBlockPosition(@Nullable Vector3i jobProviderBlockPosition) {
+        this.jobProviderBlockPosition = jobProviderBlockPosition;
+    }
+    public @Nullable JobState getCurrentTask() {
+        return jobState;
+    }
+    public void setCurrentTask(@Nullable JobState currentTask) {
+        this.jobState = currentTask;
+    }
+}
