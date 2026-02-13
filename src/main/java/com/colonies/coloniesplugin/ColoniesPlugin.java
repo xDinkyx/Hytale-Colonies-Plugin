@@ -1,8 +1,8 @@
 package com.colonies.coloniesplugin;
 
 import com.colonies.coloniesplugin.commands.debug.BlockEntityInfoCommand;
-import com.colonies.coloniesplugin.components.jobs.ColonistJobComponent;
-import com.colonies.coloniesplugin.components.jobs.JobProviderComponent;
+import com.colonies.coloniesplugin.components.jobs.JobComponent;
+import com.colonies.coloniesplugin.components.jobs.WorkStationComponent;
 import com.colonies.coloniesplugin.components.jobs.WoodcutterJobComponent;
 import com.colonies.coloniesplugin.components.npc.ColonistComponent;
 import com.colonies.coloniesplugin.interactions.SpawnColonistInteraction;
@@ -24,8 +24,8 @@ public class ColoniesPlugin extends JavaPlugin {
     private static ColoniesPlugin instance;
 
     private ComponentType<EntityStore, ColonistComponent> colonistComponentType;
-    private ComponentType<ChunkStore, JobProviderComponent> jobProviderComponentType;
-    private ComponentType<EntityStore, ColonistJobComponent> colonistJobComponentType;
+    private ComponentType<ChunkStore, WorkStationComponent> workStationComponentType;
+    private ComponentType<EntityStore, JobComponent> colonistJobComponentType;
     private ComponentType<EntityStore, WoodcutterJobComponent> woodCutterJobComponentType;
 
     public ColoniesPlugin(@Nonnull JavaPluginInit init) {
@@ -47,9 +47,9 @@ public class ColoniesPlugin extends JavaPlugin {
 
         // Components
         this.colonistComponentType = this.getEntityStoreRegistry().registerComponent(ColonistComponent.class, ColonistComponent::new);
-        this.colonistJobComponentType = this.getEntityStoreRegistry().registerComponent(ColonistJobComponent.class, ColonistJobComponent::new);
+        this.colonistJobComponentType = this.getEntityStoreRegistry().registerComponent(JobComponent.class, JobComponent::new);
         this.woodCutterJobComponentType = this.getEntityStoreRegistry().registerComponent(WoodcutterJobComponent.class, WoodcutterJobComponent::new);
-        this.jobProviderComponentType = this.getChunkStoreRegistry().registerComponent(JobProviderComponent.class, "JobProvider", JobProviderComponent.CODEC);
+        this.workStationComponentType = this.getChunkStoreRegistry().registerComponent(WorkStationComponent.class, "WorkStation", WorkStationComponent.CODEC);
 
         // Interactions
         Interaction.CODEC.register("SpawnColonist", SpawnColonistInteraction.class, SpawnColonistInteraction.CODEC);
@@ -63,11 +63,11 @@ public class ColoniesPlugin extends JavaPlugin {
         return colonistComponentType;
     }
 
-    public ComponentType<ChunkStore, JobProviderComponent> getJobProviderComponentType() {
-        return jobProviderComponentType;
+    public ComponentType<ChunkStore, WorkStationComponent> getWorkStationComponentType() {
+        return workStationComponentType;
     }
 
-    public ComponentType<EntityStore, ColonistJobComponent> getColonistJobComponentType() {
+    public ComponentType<EntityStore, JobComponent> getColonistJobComponentType() {
         return colonistJobComponentType;
     }
 

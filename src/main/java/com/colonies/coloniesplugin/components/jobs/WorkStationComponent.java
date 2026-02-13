@@ -14,12 +14,12 @@ import org.jspecify.annotations.Nullable;
 import java.util.*;
 
 /**
- * Component for blocks that provide jobs to colonists.
+ * Component for blocks that provide jobs for colonists.
  */
-public class JobProviderComponent implements Component<ChunkStore> {
+public class WorkStationComponent implements Component<ChunkStore> {
 
     // ===== Codec =====
-    public static final BuilderCodec<JobProviderComponent> CODEC = BuilderCodec.builder(JobProviderComponent.class, JobProviderComponent::new)
+    public static final BuilderCodec<WorkStationComponent> CODEC = BuilderCodec.builder(WorkStationComponent.class, WorkStationComponent::new)
             .append(new KeyedCodec<>("JobType", JobType.CODEC),
                     (o, v) -> o.jobType = v,
                     o -> o.jobType)
@@ -41,23 +41,23 @@ public class JobProviderComponent implements Component<ChunkStore> {
     protected Set<UUID> assignedColonists = new HashSet<>();
 
     // ===== Constructors =====
-    public JobProviderComponent() {
+    public WorkStationComponent() {
     }
 
-    public JobProviderComponent(JobType jobType, int maxWorkers) {
+    public WorkStationComponent(JobType jobType, int maxWorkers) {
         this.jobType = jobType;
         this.maxWorkers = maxWorkers;
     }
 
     // ===== Component Type =====
-    public static ComponentType<ChunkStore, JobProviderComponent> getComponentType() {
-        return ColoniesPlugin.getInstance().getJobProviderComponentType();
+    public static ComponentType<ChunkStore, WorkStationComponent> getComponentType() {
+        return ColoniesPlugin.getInstance().getWorkStationComponentType();
     }
 
     // ===== Component Clone =====
     @Override
     public @Nullable Component<ChunkStore> clone() {
-        var copy = new JobProviderComponent(this.jobType, this.maxWorkers);
+        var copy = new WorkStationComponent(this.jobType, this.maxWorkers);
         copy.assignedColonists = new HashSet<>(this.assignedColonists);
         return copy;
     }

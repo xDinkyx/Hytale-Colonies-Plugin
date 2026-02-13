@@ -1,8 +1,8 @@
 package com.colonies.coloniesplugin.systems.jobs;
 
 import com.colonies.coloniesplugin.ColoniesPlugin;
-import com.colonies.coloniesplugin.components.jobs.ColonistJobComponent;
-import com.colonies.coloniesplugin.components.jobs.JobProviderComponent;
+import com.colonies.coloniesplugin.components.jobs.JobComponent;
+import com.colonies.coloniesplugin.components.jobs.WorkStationComponent;
 import com.colonies.coloniesplugin.components.npc.ColonistComponent;
 import com.colonies.coloniesplugin.utils.BlockStateInfoUtil;
 import com.hypixel.hytale.component.*;
@@ -22,8 +22,8 @@ import org.jspecify.annotations.Nullable;
 public class JobAssignmentSystem extends DelayedEntitySystem<ChunkStore> {
 
     // Query for Job Sources (Workstations/Blocks)
-    private final Query<ChunkStore> jobProviderQuery = Archetype.of(ColoniesPlugin.getInstance().getJobProviderComponentType());
-    private final Query<EntityStore> unemployedQuery = Archetype.of(ColoniesPlugin.getInstance().getColonistComponentType());
+    private final Query<ChunkStore> workStationQuery = Archetype.of(ColoniesPlugin.getInstance().getWorkStationComponentType());
+    private final Query<EntityStore> colonistQuery = Archetype.of(ColoniesPlugin.getInstance().getColonistComponentType()); // ToDo: Replace later with unemployed component query.
 
     public JobAssignmentSystem() {
         super(1.0f); // Run once every 1 second.
@@ -35,24 +35,24 @@ public class JobAssignmentSystem extends DelayedEntitySystem<ChunkStore> {
                      @NonNull Store<ChunkStore> chunkStore,
                      @NonNull CommandBuffer<ChunkStore> commandBuffer)
     {
-        JobProviderComponent jobProvider = archetypeChunk.getComponent(index, ColoniesPlugin.getInstance().getJobProviderComponentType());
-        assert jobProvider != null;
+        WorkStationComponent workStation = archetypeChunk.getComponent(index, ColoniesPlugin.getInstance().getWorkStationComponentType());
+        assert workStation != null;
 
         // If no job slots are available, do nothing.
-        if(jobProvider.getAvailableJobSlots() <= 0) return;
+        if(workStation.getAvailableJobSlots() <= 0) return;
 
         BlockModule.BlockStateInfo blockStateInfo = archetypeChunk.getComponent(index, BlockModule.BlockStateInfo.getComponentType());
         if (blockStateInfo == null) return;
 
-        // Get the world position of the job provider block entity
-        Vector3i jobProviderPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
+        // Get the world position of the work station block entity
+        Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
 
-        ColoniesPlugin.LOGGER.atInfo().log(String.format("Job Provider at position %s has %d available job slots. Attempting to assign unemployed colonists...", jobProviderPos, jobProvider.getAvailableJobSlots()));
+        ColoniesPlugin.LOGGER.atInfo().log(String.format("Work station at position %s has %d available job slots of type %s. Attempting to assign unemployed colonists...", workStationPos, workStation.getAvailableJobSlots(), workStation.getJobType().toString()));
 
-        // Iterate through unemployed colonists and assign them to this job provider until we run out of job slots or unemployed colonists.
+        // Iterate through unemployed colonists and assign them to this work station until we run out of job slots or unemployed colonists.
         World world = chunkStore.getExternalData().getWorld();
         EntityStore entityStore = world.getEntityStore();
-        entityStore.getStore().forEachChunk(unemployedQuery, (_archetypeChunk, _commandBuffer) ->
+        entityStore.getStore().forEachChunk(colonistQuery, (_archetypeChunk, _commandBuffer) ->
         {
             for (int colonistId = 0; colonistId < _archetypeChunk.size(); colonistId++) {
 
@@ -60,7 +60,7 @@ public class JobAssignmentSystem extends DelayedEntitySystem<ChunkStore> {
                 assert colonist != null;
 
                 // Check if colonist already has a job. If so, skip them.
-                ColonistJobComponent colonistJob = _archetypeChunk.getComponent(colonistId, ColonistJobComponent.getComponentType());
+                JobComponent colonistJob = _archetypeChunk.getComponent(colonistId, JobComponent.getComponentType());
                 if (colonistJob != null) continue; // Skip employed colonists.
 
                 // Get colonist UUID and entity ref.
@@ -69,21 +69,19 @@ public class JobAssignmentSystem extends DelayedEntitySystem<ChunkStore> {
 
                 ColoniesPlugin.LOGGER.atInfo().log(String.format("Colonist #%d : %s is UNEMPLOYED | Colonist info: %s", colonistId, colonist.getColonistName(), colonist));
 
-                // Assign the colonist to the job provider.
-                jobProvider.assignColonist(colonistEntityUuid.getUuid());
+                // Assign the colonist to the work station.
+                workStation.assignColonist(colonistEntityUuid.getUuid());
 
-                // Add job component to colonist with reference to job provider block.
-                ColonistJobComponent newColonistJobComponent = new ColonistJobComponent();
-                newColonistJobComponent.setJobProviderBlockPosition(jobProviderPos);
-
+                // Add job component to colonist.
                 Ref<EntityStore> colonistRef = _archetypeChunk.getReferenceTo(colonistId);
-                _commandBuffer.addComponent(colonistRef, ColoniesPlugin.getInstance().getColonistJobComponentType(), newColonistJobComponent);
+                JobComponent newJobComponent = new JobComponent(workStationPos);
+                _commandBuffer.addComponent(colonistRef, ColoniesPlugin.getInstance().getColonistJobComponentType(), newJobComponent);
 
-                ColoniesPlugin.LOGGER.atInfo().log(String.format("Assigned Colonist #%d : %s to job at %s.", colonistId, colonistEntityUuid.getUuid(), jobProvider.getJobType()));
+                ColoniesPlugin.LOGGER.atInfo().log(String.format("Assigned Colonist #%d : %s to job at %s.", colonistId, colonistEntityUuid.getUuid(), workStation.getJobType()));
 
-                // Move on to the next job provider after assigning one colonist to this provider.
-                // We only assign one colonist per tick to prevent all colonists from being assigned to the first job provider we find.
-                // ToDo: Implement more complex job assignment logic that considers distance to job providers and colonist preferences, etc.
+                // Move on to the next work station after assigning one colonist.
+                // We only assign one colonist per tick to keep it gradual.
+                // ToDo: Implement more complex job assignment logic that considers distance and colonist preferences, etc.
                 break;
             }
         });
@@ -91,6 +89,6 @@ public class JobAssignmentSystem extends DelayedEntitySystem<ChunkStore> {
 
     @Override
     public @Nullable Query<ChunkStore> getQuery() {
-        return jobProviderQuery;
+        return workStationQuery;
     }
 }
