@@ -1,6 +1,7 @@
 package com.colonies.coloniesplugin.interactions;
 
 import com.colonies.coloniesplugin.ColoniesPlugin;
+import com.colonies.coloniesplugin.components.jobs.UnemployedComponent;
 import com.colonies.coloniesplugin.components.npc.ColonistComponent;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
@@ -81,9 +82,10 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction {
         Ref<EntityStore> npcRef = result.first();
         NPCEntity npcComponent = store.getComponent(npcRef, Objects.requireNonNull(NPCEntity.getComponentType()));
 
-        // Add the ColonistComponent to the spawned NPC
+        // Add the ColonistComponent to the spawned NPC.
         ColonistComponent colonistComponent = new ColonistComponent("DefaultColonyId", "Colonist_Name", 1);
-        store.addComponent(npcRef, ColoniesPlugin.getInstance().getColonistComponentType(), colonistComponent);
+        store.addComponent(npcRef, ColonistComponent.getComponentType(), colonistComponent);
+        store.addComponent(npcRef, UnemployedComponent.getComponentType(), new UnemployedComponent()); // Unemployed initially.
     }
 
     @Nonnull

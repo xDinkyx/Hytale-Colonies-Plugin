@@ -63,18 +63,26 @@ public class WorkStationComponent implements Component<ChunkStore> {
     }
 
     // ===== Public Methods =====
-    public void assignColonist(UUID colonistId) {
+    public void assignColonist(UUID colonistUuid) {
         if (assignedColonists.size() >= maxWorkers) {
             throw new IllegalStateException("No available job slots to assign colonist.");
         }
-        assignedColonists.add(colonistId);
+        assignedColonists.add(colonistUuid);
     }
 
-    // ===== Getters and Setters =====
     public int getAvailableJobSlots() {
         return Math.max(0, maxWorkers - assignedColonists.size());
     }
 
+    public void clearAssignedColonists() {
+        assignedColonists.clear();
+    }
+
+    public void removeAssignedColonist(UUID colonistId) {
+        assignedColonists.remove(colonistId);
+    }
+
+    // ===== Getters and Setters =====
     public JobType getJobType() {
         return jobType;
     }
