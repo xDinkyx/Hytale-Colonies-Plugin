@@ -27,7 +27,7 @@ public class JobComponent implements Component<EntityStore> {
 
     // ===== Fields =====
     protected @Nullable Vector3i workStationBlockPosition = null;
-    protected @Nullable JobState jobState = null;
+    protected @Nullable JobState jobState = null; // ToDo: Probably move state logic to separate component.
 
     // ===== Constructors =====
     public JobComponent() {}
@@ -38,7 +38,7 @@ public class JobComponent implements Component<EntityStore> {
 
     // ===== Component Type =====
     public static ComponentType<EntityStore, JobComponent> getComponentType() {
-        return ColoniesPlugin.getInstance().getColonistJobComponentType();
+        return ColoniesPlugin.getInstance().getJobComponentType();
     }
 
     // ===== Component Clone =====
