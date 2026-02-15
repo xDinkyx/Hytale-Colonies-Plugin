@@ -28,6 +28,7 @@ public class WorkStationComponent implements Component<ChunkStore> {
                     (o, v) -> o.maxWorkers = v,
                     o -> o.maxWorkers)
             .add()
+            // ToDo: This isn't working properly. Need to test if codec works in general and then figure out why this array codec is broken. Maybe convert to single string?
             .append(new KeyedCodec<>("AssignedColonists", new ArrayCodec<>(Codec.UUID_STRING, UUID[]::new)),
                     (o, v) -> {
                         o.assignedColonists = new HashSet<>();

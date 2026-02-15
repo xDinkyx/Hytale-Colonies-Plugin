@@ -54,7 +54,13 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         // Get the world position of the work station block entity
         Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
 
-        ColoniesPlugin.LOGGER.atInfo().log(String.format("Work station at position %s has %d available job slots of type %s. Attempting to assign unemployed colonists...", workStationPos, workStation.getAvailableJobSlots(), workStation.getJobType().toString()));
+        StringBuilder workStationInfo = new StringBuilder(String.format("Work Station Job Type: %s | Available Job Slots: %d | Assigned Colonists: %d", workStation.getJobType(), workStation.getAvailableJobSlots(), workStation.getAssignedColonists().size()));
+        int i = 0;
+        for(UUID colonistUuid : workStation.getAssignedColonists()) {
+            workStationInfo.append(String.format("\n- Colonist %d UUID %s.", i, colonistUuid));
+            i++;
+        }
+        ColoniesPlugin.LOGGER.atInfo().log(workStationInfo.toString());
 
         // Iterate through unemployed colonists and assign them to this work station until we run out of job slots or unemployed colonists.
         World world = chunkStore.getExternalData().getWorld();
@@ -67,13 +73,6 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                 assert colonist != null;
                 UUIDComponent colonistEntityUuid = _archetypeChunk.getComponent(colonistId, UUIDComponent.getComponentType());
                 assert colonistEntityUuid != null;
-
-//                // We queried for unemployed components, but ensure there is no issue with them having a job component assigned.
-//                JobComponent colonistJob = _archetypeChunk.getComponent(colonistId, JobComponent.getComponentType());
-//                if (colonistJob != null) {
-//                    ColoniesPlugin.LOGGER.atWarning().log(String.format("Unemployed colonist #%d : %s is not allowed to have a job component. Skipping assignment. UUID: %s", colonistId, colonist.getColonistName(), colonistEntityUuid.getUuid()));
-//                    continue; // Skip employed colonists.
-//                }
 
                 ColoniesPlugin.LOGGER.atInfo().log(String.format("Colonist #%d : %s is marked as unemployed | Colonist info: %s", colonistId, colonist.getColonistName(), colonist));
 
