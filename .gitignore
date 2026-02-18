@@ -34,3 +34,5 @@ build/
 ### Misc ###
 /run/
 hytale-server
+
+lib/
