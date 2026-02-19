@@ -1,7 +1,13 @@
 ﻿---
 name: hytale-commands
-description: Documents Hytale's command system for creating custom commands in plugins. Covers AbstractAsyncCommand, AbstractPlayerCommand, AbstractTargetPlayerCommand, AbstractTargetEntityCommand, AbstractCommandCollection, arguments (RequiredArg, OptionalArg, DefaultArg, FlagArg), ArgTypes, argument validators, custom validators, permissions, command variants, aliases, subcommands, and registration. Use when creating commands, adding arguments, validating input, requiring permissions, building command trees, or registering commands. Triggers - command, custom command, AbstractPlayerCommand, AbstractAsyncCommand, AbstractTargetPlayerCommand, AbstractTargetEntityCommand, AbstractCommandCollection, CommandContext, RequiredArg, OptionalArg, DefaultArg, FlagArg, ArgTypes, Validator, requirePermission, addUsageVariant, addAliases, addSubCommand, registerCommand, CommandRegistry.
+source: https://github.com/HytaleModding/site/blob/main/content/docs/en/guides/plugin/creating-commands.mdx
+summary: "This skill documents how to create and manage server commands in Hytale plugins. It covers various command types (`AbstractAsyncCommand`, `AbstractPlayerCommand`), argument handling (`RequiredArg`, `FlagArg`), permission management (`requirePermission`), and advanced patterns like subcommands and command collections. Use this skill when you need to add new commands, parse arguments, or control command access."
+references:
+  - ./references/commands-reference.md
 ---
+This skill documents how to create and manage server commands in Hytale plugins. It covers various command types (`AbstractAsyncCommand`, `AbstractPlayerCommand`), argument handling (`RequiredArg`, `FlagArg`), permission management (`requirePermission`), and advanced patterns like subcommands and command collections. Use this skill when you need to add new commands, parse arguments, or control command access.
+
+See the [commands reference](./references/commands-reference.md) for a detailed guide.
 
 # Hytale Command System
 

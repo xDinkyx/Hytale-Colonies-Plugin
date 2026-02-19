@@ -1,6 +1,8 @@
 ---
 name: hytale-blocks
 description: Documents how to create custom blocks in Hytale plugins using asset packs and JSON definitions. Use when creating blocks, defining block JSON, configuring block textures, materials, gathering, block types, or setting up block asset folder structure. Triggers - block, create block, custom block, BlockType, block JSON, block definition, block texture, block material, DrawType, Gathering, block creation, asset pack, IncludesAssetPack, block item, Cube block, block sound, block particle.
+references:
+  - animated-textures.md
 ---
 
 # Hytale Custom Blocks
@@ -20,10 +22,11 @@ Reference for creating custom blocks in Hytale plugins via asset packs and JSON 
 | Define a block | Create `Server/Item/Items/<name>.json` with a `BlockType` section |
 | Set block texture | `"Textures": [{ "All": "BlockTextures/<name>.png" }]` |
 | Set block material | `"Material": "Solid"` (or `Liquid`, `NonSolid`, etc.) |
-| Set draw type | `"DrawType": "Cube"` (or `Cross`, `Slab`, etc.) |
+| Set draw type | `"DrawType": "Cube"` (or `Cross`, `Slab`, `Model`) |
 | Add localized name | `Server/Languages/en-US/items.lang` → `<name>.name = Display Name` |
 | Set gathering/breaking | `"Gathering": { "Breaking": { "GatherType": "...", "ItemId": "..." } }` |
 | Set block icon | `"Icon": "Icons/ItemsGenerated/<name>.png"` |
+| Create an animated block | Use `DrawType: "Model"` and specify `CustomModel`, `CustomModelAnimation`, and `CustomModelTexture`. See the [Animated Textures](references/animated-textures.md) guide. |
 
 ---
 
@@ -125,12 +128,20 @@ Create `Server/Item/Items/my_new_block.json`:
 
 ---
 
+## Animated Blocks
+
+To create blocks with animated textures, you use a custom model and an animation file instead of static textures. This involves setting `DrawType` to `"Model"` and providing paths to your assets.
+
+For a complete guide, see the [**Animated Block Textures**](references/animated-textures.md) reference.
+
+---
+
 ## BlockType Properties
 
 | Property | Description | Examples |
 |----------|-------------|---------|
 | `Material` | Physics material type | `"Solid"`, `"Liquid"`, `"NonSolid"` |
-| `DrawType` | How the block is rendered | `"Cube"`, `"Cross"`, `"Slab"` |
+| `DrawType` | How the block is rendered | `"Cube"`, `"Cross"`, `"Slab"`, `"Model"` |
 | `Group` | Block category group | `"Stone"`, `"Wood"`, `"Sand"` |
 | `Flags` | Additional block flags | `{}` (empty object for defaults) |
 | `Gathering.Breaking.GatherType` | Tool type needed to break | `"Rocks"`, `"Wood"`, `"Sand"` |
@@ -140,10 +151,14 @@ Create `Server/Item/Items/my_new_block.json`:
 | `ParticleColor` | Break particle color | Hex color string `"#aeae8c"` |
 | `BlockSoundSetId` | Sound set for interactions | `"Stone"`, `"Wood"`, `"Sand"` |
 | `BlockBreakingDecalId` | Breaking animation decal | `"Breaking_Decals_Rock"` |
+| `CustomModel` | Path to a `.blockymodel` file (used with `DrawType: "Model"`) | `"VFX/Fire/Fire.blockymodel"` |
+| `CustomModelAnimation` | Path to a `.blockyanim` file for the model | `"Blocks/Animations/Fire/Fire_Burn.blockyanim"` |
+| `CustomModelTexture` | Texture for the custom model | `[{ "Texture": "VFX/Fire/Fire.png", "Weight": 1 }]` |
+| `Looping` | Whether a `CustomModelAnimation` should loop | `true` |
 
 ### Texture Configuration
 
-Textures are defined as an array of objects. Use `"All"` to apply one texture to all faces, or specify per-face:
+For `DrawType: "Cube"`, textures are defined as an array of objects. Use `"All"` to apply one texture to all faces, or specify per-face:
 
 ```json
 "Textures": [
