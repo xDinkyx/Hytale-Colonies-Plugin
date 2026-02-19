@@ -1,13 +1,15 @@
 ---
 name: hytale-items
-description: Documents Hytale's item system including the Item Registry API, custom item JSON definitions, crafting recipes, custom interactions (SimpleInstantInteraction), interaction chaining (Condition, Charging, Serial, Replace), and linking interactions to items. Use when creating custom items, querying the item registry, defining crafting recipes, building item interactions, or working with ItemStack. Triggers - item, custom item, item registry, Item.getAssetMap, DefaultAssetMap, ItemStack, item JSON, item definition, crafting recipe, interaction, SimpleInstantInteraction, InteractionContext, InteractionType, item interaction, Charging, Condition, Serial, Replace, item properties, MaxStack, Categories, item ID.
+description: Documents Hytale's item system including the Item Registry API, custom item JSON definitions, crafting recipes, and the powerful data-driven Interaction system for creating custom item behaviors. Covers custom Java interactions (SimpleInstantInteraction), linking interactions to items, and chaining interactions using flow control (Condition, Serial), charging, and more. Use when creating custom items, querying the item registry, defining crafting recipes, building item interactions, or working with ItemStack. Triggers - item, custom item, item registry, Item.getAssetMap, DefaultAssetMap, ItemStack, item JSON, item definition, crafting recipe, interaction, SimpleInstantInteraction, InteractionContext, InteractionType, item interaction, Charging, Condition, Serial, Replace, item properties, MaxStack, Categories, item ID.
+references:
+  - ./references/interaction-reference.md
 ---
 
 # Hytale Items & Interactions
 
-Comprehensive reference for creating custom items, querying the item registry, defining crafting recipes, and building custom interactions in Hytale plugins.
+Comprehensive reference for creating custom items, querying the item registry, defining crafting recipes, and building custom behaviors using Hytale's data-driven Interaction system.
 
-> **Related skills:** For persistent data/Codec patterns, see `hytale-persistent-data`. For ECS fundamentals, see `hytale-ecs`. For inventory management, see the Hytale inventory APIs. For entity effects applied by items, see `hytale-entity-effects`.
+> **Related skills:** For persistent data/Codec patterns, see `hytale-persistent-data`. For ECS fundamentals, see `hytale-ecs`. For inventory management, see `hytale-inventory`. For entity effects applied by items, see `hytale-entity-effects`.
 
 ## Quick Reference
 
@@ -19,9 +21,12 @@ Comprehensive reference for creating custom items, querying the item registry, d
 | List all items | `Item.getAssetMap().getAssetMap().entrySet()` |
 | Define custom item | JSON in `Server/Item/Items/<name>.json` |
 | Define crafting recipe | `"Recipe"` block inside item JSON |
-| Create custom interaction | Extend `SimpleInstantInteraction`, add `BuilderCodec`, register in `setup()` |
+| Create custom Java interaction | Extend `SimpleInstantInteraction`, add `BuilderCodec`, register in `setup()` |
 | Link interaction to item | `"Interactions"` block in item JSON with interaction type ID |
-| Chain interactions | Nest `Condition`, `Charging`, `Serial`, `Replace` in JSON |
+| Chain interactions | Use flow control interactions like `Serial`, `Condition`, `Parallel`. |
+| Create charging ability | Use the `Charging` interaction. |
+| Damage an entity | Use the `DamageEntity` interaction. |
+| Apply a status effect | Use the `ApplyEffect` interaction. |
 
 ---
 
@@ -197,9 +202,75 @@ Add a `"Recipe"` block to the item JSON to make it craftable:
 
 ---
 
-## Custom Interactions
+## Interaction System
 
-Custom interactions define what happens when a player uses an item. They are implemented in Java and linked via JSON.
+Hytale features a powerful, data-driven Interaction system that allows you to define complex item behaviors entirely in JSON. While you can create custom interactions in Java, most behaviors can be achieved by combining the built-in interaction types.
+
+### Interaction Reference
+
+For a complete list of all available interaction types, their fields, and how they work, see the **[Interaction Reference](./references/interaction-reference.md)**.
+
+This reference covers:
+*   **Flow Control**: `Condition`, `Serial`, `Parallel`, `Selector`, etc.
+*   **Combo Chains**: `Chaining`, `CancelChain`.
+*   **Charging**: `Charging`, `Wielding`.
+*   **Block Interactions**: `PlaceBlock`, `BreakBlock`, `ChangeState`.
+*   **Item Interactions**: `ModifyInventory`, `EquipItem`.
+*   **Entity Interactions**: `DamageEntity`, `Projectile`, `ApplyEffect`.
+*   **And many more.**
+
+### Linking Interactions to Items
+
+To make an item do something, you link it to a `RootInteraction` in its JSON file. The key (`"Secondary"`, `"Primary"`, `"Ability1"`, etc.) determines which player action triggers the interaction chain.
+
+```json
+{
+  "Id": "My_New_Item",
+  "Interactions": {
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "SendMessage",
+          "Message": "You used the secondary action!"
+        }
+      ]
+    }
+  }
+}
+```
+
+### Chaining Interactions
+
+You can create complex behaviors by nesting interactions. For example, to require a player to be crouching before sending a message:
+
+```json
+{
+  "Interactions": {
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "Condition",
+          "Crouching": true,
+          "Next": {
+            "Type": "SendMessage",
+            "Message": "You used the item while crouching!"
+          },
+          "Failed": {
+            "Type": "SendMessage",
+            "Message": "You must be crouching to use this."
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+---
+
+## Custom Java Interactions
+
+For behaviors that cannot be achieved with the built-in JSON interactions, you can create your own in Java.
 
 ### Step 1: Create the Interaction Class
 
@@ -207,13 +278,7 @@ Extend `SimpleInstantInteraction` and override `firstRun`:
 
 ```java
 import com.hypixel.hytale.server.core.asset.type.item.interaction.SimpleInstantInteraction;
-import com.hypixel.hytale.server.core.asset.type.item.interaction.InteractionType;
-import com.hypixel.hytale.server.core.asset.type.item.interaction.InteractionContext;
-import com.hypixel.hytale.server.core.asset.type.item.interaction.CooldownHandler;
-import com.hypixel.hytale.server.core.asset.type.item.interaction.Interaction;
-import com.hypixel.hytale.codec.BuilderCodec;
-
-import javax.annotation.Nonnull;
+// ... other imports
 
 public class MyCustomInteraction extends SimpleInstantInteraction {
 
@@ -227,21 +292,21 @@ public class MyCustomInteraction extends SimpleInstantInteraction {
             @Nonnull InteractionContext interactionContext,
             @Nonnull CooldownHandler cooldownHandler) {
         // Custom behavior when the item is used
+        Player player = interactionContext.getCommandBuffer().getComponent(interactionContext.getEntity(), Player.getComponentType());
+        if (player != null) {
+            player.sendMessage(Message.raw("Custom Java interaction executed!"));
+        }
     }
 }
 ```
 
 ### Step 2: Register the Interaction
 
-Register in your plugin's `setup()` method:
+Register your custom interaction in your plugin's `setup()` method. This makes the `Type` available in JSON.
 
 ```java
 public class MyPlugin extends JavaPlugin {
-
-    public MyPlugin(@Nonnull JavaPluginInit init) {
-        super(init);
-    }
-
+    // ...
     @Override
     protected void setup() {
         this.getCodecRegistry(Interaction.CODEC)
@@ -250,9 +315,9 @@ public class MyPlugin extends JavaPlugin {
 }
 ```
 
-### Step 3: Link Interaction to Item JSON
+### Step 3: Link to Item JSON
 
-Add the `"Interactions"` block to the item definition:
+Use the registered ID in your item's interaction block:
 
 ```json
 {
@@ -269,228 +334,9 @@ Add the `"Interactions"` block to the item definition:
 }
 ```
 
-The interaction type key (`"Secondary"`, `"Primary"`, etc.) determines which player action triggers it.
+### Custom Fields in Java Interactions
 
----
-
-## Full Interaction Example
-
-A complete interaction that sends a message with the item ID to the player:
-
-```java
-import com.hypixel.hytale.server.core.asset.type.item.interaction.SimpleInstantInteraction;
-import com.hypixel.hytale.server.core.asset.type.item.interaction.InteractionType;
-import com.hypixel.hytale.server.core.asset.type.item.interaction.InteractionContext;
-import com.hypixel.hytale.server.core.asset.type.item.interaction.InteractionState;
-import com.hypixel.hytale.server.core.asset.type.item.interaction.CooldownHandler;
-import com.hypixel.hytale.server.ecs.store.EntityStore;
-import com.hypixel.hytale.server.ecs.ref.Ref;
-import com.hypixel.hytale.server.ecs.store.Store;
-import com.hypixel.hytale.server.ecs.CommandBuffer;
-import com.hypixel.hytale.server.player.Player;
-import com.hypixel.hytale.server.item.ItemStack;
-import com.hypixel.hytale.server.world.World;
-import com.hypixel.hytale.codec.BuilderCodec;
-import com.hypixel.hytale.server.logging.HytaleLogger;
-import com.hypixel.hytale.server.text.Message;
-
-import javax.annotation.Nonnull;
-
-public class SendMessageInteraction extends SimpleInstantInteraction {
-
-    public static final BuilderCodec<SendMessageInteraction> CODEC = BuilderCodec.builder(
-            SendMessageInteraction.class, SendMessageInteraction::new, SimpleInstantInteraction.CODEC
-    ).build();
-
-    public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-
-    @Override
-    protected void firstRun(
-            @Nonnull InteractionType interactionType,
-            @Nonnull InteractionContext interactionContext,
-            @Nonnull CooldownHandler cooldownHandler) {
-
-        CommandBuffer<EntityStore> commandBuffer = interactionContext.getCommandBuffer();
-        if (commandBuffer == null) {
-            interactionContext.getState().state = InteractionState.Failed;
-            LOGGER.atInfo().log("CommandBuffer is null");
-            return;
-        }
-
-        World world = commandBuffer.getExternalData().getWorld();
-        Store<EntityStore> store = commandBuffer.getExternalData().getStore();
-        Ref<EntityStore> ref = interactionContext.getEntity();
-
-        Player player = commandBuffer.getComponent(ref, Player.getComponentType());
-        if (player == null) {
-            interactionContext.getState().state = InteractionState.Failed;
-            LOGGER.atInfo().log("Player is null");
-            return;
-        }
-
-        ItemStack itemStack = interactionContext.getHeldItem();
-        if (itemStack == null) {
-            interactionContext.getState().state = InteractionState.Failed;
-            LOGGER.atInfo().log("ItemStack is null");
-            return;
-        }
-
-        player.sendMessage(Message.raw("You have used the custom item +" + itemStack.getItemId()));
-    }
-}
-```
-
-### Key InteractionContext Methods
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `getCommandBuffer()` | `CommandBuffer<EntityStore>` | Access the command buffer for entity/component changes |
-| `getEntity()` | `Ref<EntityStore>` | Reference to the entity using the item |
-| `getHeldItem()` | `ItemStack` | The item being used |
-| `getState()` | `InteractionStateHolder` | Get/set the interaction state (`Failed`, etc.) |
-
-### Key CommandBuffer Methods (from InteractionContext)
-
-| Method | Description |
-|--------|-------------|
-| `commandBuffer.getExternalData().getWorld()` | Get the current `World` |
-| `commandBuffer.getExternalData().getStore()` | Get the entity `Store` |
-| `commandBuffer.getComponent(ref, Type)` | Read a component from an entity |
-
----
-
-## Advanced Interaction Chaining
-
-Interactions are nestable — combine them to create complex behaviors triggered by a single item use.
-
-### Condition
-
-Check conditions before allowing the interaction to proceed:
-
-```json
-{
-  "Type": "Condition",
-  "Crouching": true,
-  "Failed": "Block_Secondary",
-  "Next": {
-    // interaction to run if condition is met
-  }
-}
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `Crouching` | `boolean` | Only proceed if player is crouching |
-| `Failed` | `String` | Interaction type to run if condition fails |
-| `Next` | `Object` | Interaction to run if condition passes |
-
-### Charging
-
-Require the player to hold the interaction for a duration before it activates:
-
-```json
-{
-  "Type": "Charging",
-  "FailsOnDamage": true,
-  "HorizontalSpeedMultiplier": 0.4,
-  "Next": {
-    "2.5": {
-      // interaction after 2.5 seconds of charging
-    }
-  },
-  "Failed": {
-    // interaction to run if charging fails/cancelled
-  }
-}
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `FailsOnDamage` | `boolean` | Cancel charge if player takes damage |
-| `HorizontalSpeedMultiplier` | `float` | Movement speed multiplier while charging |
-| `Next` | `Object` | Map of duration (seconds) → interaction |
-| `Failed` | `Object` | Interaction if charging is interrupted |
-
-### Serial
-
-Execute a sequence of interactions in order:
-
-```json
-{
-  "Type": "Serial",
-  "Interactions": [
-    { /* first interaction */ },
-    { /* second interaction */ }
-  ]
-}
-```
-
-### Replace
-
-Replace the default interaction behavior (e.g., inherited from parent):
-
-```json
-{
-  "Type": "Replace",
-  "Var": "Item_Default_Interaction",
-  "DefaultValue": {
-    "Interactions": [
-      { /* replacement interaction */ }
-    ]
-  }
-}
-```
-
-### Simple
-
-A basic interaction that performs a single action:
-
-```json
-{
-  "Type": "Simple"
-}
-```
-
----
-
-## Advanced Interaction Example
-
-Require crouching + 2.5-second charge before executing a custom interaction:
-
-```json
-{
-  "Interactions": {
-    "Secondary": {
-      "Interactions": [
-        {
-          "Type": "Condition",
-          "Crouching": true,
-          "Failed": "Block_Secondary",
-          "Next": {
-            "Type": "Charging",
-            "FailsOnDamage": true,
-            "HorizontalSpeedMultiplier": 0.5,
-            "Next": {
-              "2.5": {
-                "Type": "my_custom_interaction_id"
-              }
-            },
-            "Failed": {
-              "Type": "Simple"
-            }
-          }
-        }
-      ]
-    }
-  }
-}
-```
-
----
-
-## Interaction Codec with Custom Fields
-
-If your interaction needs serialized fields, add them to the `BuilderCodec`:
+To pass data from JSON to your Java interaction, add fields to the `BuilderCodec`.
 
 ```java
 public class MyParameterizedInteraction extends SimpleInstantInteraction {
@@ -505,35 +351,20 @@ public class MyParameterizedInteraction extends SimpleInstantInteraction {
     .add("EffectId", KeyedCodec.STRING, i -> i.effectId, (i, v) -> i.effectId = v)
     .build();
 
-    @Override
-    protected void firstRun(
-            @Nonnull InteractionType interactionType,
-            @Nonnull InteractionContext interactionContext,
-            @Nonnull CooldownHandler cooldownHandler) {
-        // Use this.radius and this.effectId from JSON
-    }
+    // ... firstRun implementation can now use this.radius and this.effectId
 }
 ```
 
-These fields can then be set from the item JSON:
-
+JSON usage:
 ```json
 {
-  "Interactions": {
-    "Secondary": {
-      "Interactions": [
-        {
-          "Type": "my_parameterized_interaction",
-          "Radius": 5.0,
-          "EffectId": "Burn"
-        }
-      ]
-    }
-  }
+  "Type": "my_parameterized_interaction",
+  "Radius": 5.0,
+  "EffectId": "Burn"
 }
 ```
 
-> **See also:** `hytale-persistent-data` skill for full Codec/BuilderCodec/KeyedCodec reference.
+> **See also:** `hytale-persistent-data` skill for a full `BuilderCodec`/`KeyedCodec` reference.
 
 ---
 
@@ -541,7 +372,7 @@ These fields can then be set from the item JSON:
 
 ### Defensive Null Checks in Interactions
 
-Always validate `CommandBuffer`, `Player`, and `ItemStack` before using them:
+Always validate `CommandBuffer`, `Player`, and `ItemStack` before using them in Java interactions:
 
 ```java
 @Override
@@ -593,6 +424,7 @@ public Item resolveItem(String itemId) {
 4. [ ] Create 3D model in `Common/Items/<name>/model.blockymodel`
 5. [ ] Create model texture in `Common/Items/<name>/model_texture.png`
 6. [ ] (Optional) Add `"Recipe"` block for crafting
-7. [ ] (Optional) Create interaction class extending `SimpleInstantInteraction`
-8. [ ] (Optional) Register interaction in plugin `setup()` via `getCodecRegistry(Interaction.CODEC).register(...)`
-9. [ ] (Optional) Link interaction in item JSON via `"Interactions"` block
+7. [ ] (Optional) Add `"Interactions"` block using built-in JSON interactions.
+8. [ ] (Optional) For advanced use cases, create a Java interaction class extending `SimpleInstantInteraction`.
+9. [ ] (Optional) If using Java, register the interaction in plugin `setup()` via `getCodecRegistry(Interaction.CODEC).register(...)`.
+10. [ ] (Optional) If using Java, link the interaction in item JSON via its registered ID.

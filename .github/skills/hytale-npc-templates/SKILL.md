@@ -1,104 +1,60 @@
 ---
 name: hytale-npc-templates
-description: Documents Hytale's JSON-based NPC template and behavior system for defining NPC AI via data-driven templates. Covers template structure, variants, states, substates, sensors, actions, motions, state transitions, components, detection (sight/hearing), combat (melee attacks, chaining), inter-NPC interaction (beacons), leashing, searching, and reusable instruction components. Use when creating NPC behavior, defining NPC templates, adding NPC states, configuring NPC detection/combat, or building reusable NPC components. Triggers - NPC template, NPC behavior, NPC state, NPC sensor, NPC action, NPC motion, state transition, NPC combat, NPC detection, NPC component, Template_, Variant, BlankTemplate, Instructions, StartState, Random action, Timeout, PlayAnimation, StateTransitions, Component_Instruction, Component_Sensor, Intelligent_Chase, Soft_Leash, Standard_Detection, Damage_Check, beacon, NPC group, AttitudeGroup, DefaultPlayerAttitude, InteractionVars, melee attack, attack chaining, Root Interaction.
+version: 2
+source: https://hytalemodding.com/official-documentation/npc/
+authors:
+  - name: "HytaleModding"
+    url: "https://github.com/HytaleModding"
+  - name: "Hypixel Studios"
+    url: "https://hytale.com/"
+references:
+  - name: "NPC Template Reference"
+    url: "references/npc-template-reference.md"
+tags: [hytale, npc, behavior, templates, ai, json]
 ---
 
-# Hytale NPC Template & Behavior System
+# Hytale NPC Templates
 
-Use this skill when defining NPC behavior through JSON templates. This covers the data-driven side of NPC creation — how NPCs think, act, detect threats, fight, interact with other NPCs, and transition between behavioral states. For programmatic NPC spawning via Java, see the `hytale-spawning-npcs` skill instead.
+Documents Hytale's JSON-based NPC template and behavior system for defining NPC AI via data-driven templates. Covers template structure, variants, states, substates, sensors, actions, motions, state transitions, components, detection (sight/hearing), combat (melee attacks, chaining), inter-NPC interaction (beacons), leashing, searching, and reusable instruction components.
 
-> **Prerequisite:** Familiarity with JSON asset structure under `Server/` directories and the Hytale ECS architecture.
+Use when creating NPC behavior, defining NPC templates, adding NPC states, configuring NPC detection/combat, or building reusable NPC components.
 
----
+## Triggers
 
-## Quick Reference
+- NPC template
+- NPC behavior
+- NPC state
+- NPC sensor
+- NPC action
+- NPC motion
+- state transition
+- NPC combat
+- NPC detection
+- NPC component
+- Template_
+- Variant
+- BlankTemplate
+- Instructions
+- StartState
+- Random action
+- Timeout
+- PlayAnimation
+- StateTransitions
+- Component_Instruction
+- Component_Sensor
+- Intelligent_Chase
+- Soft_Leash
+- Standard_Detection
+- Damage_Check
+- beacon
+- NPC group
+- AttitudeGroup
+- DefaultPlayerAttitude
+- InteractionVars
+- melee attack
+- attack chaining
+- Root Interaction
 
-| Concept | Description |
-|---------|-------------|
-| **Template** | Abstract JSON file defining base NPC behavior, parameters, and states |
-| **Variant** | Concrete NPC role that extends a template with specific parameter overrides |
-| **State** | A top-level behavioral mode (e.g., `Idle`, `Sleep`, `Combat`) |
-| **Substate** | A state nested within another, prefixed with `.` (e.g., `.Default`, `.Guard`) |
-| **Sensor** | Condition that gates instruction execution (e.g., `State`, `Target`, `Beacon`, `Mob`, `Damage`) |
-| **Action** | Operations performed when sensor conditions are met (e.g., `State`, `Timeout`, `Random`, `Attack`) |
-| **Motion** | Movement behavior (e.g., `Seek`, `Wander`, `Nothing`, `Follow_Path`) |
-| **StateTransition** | Actions performed sequentially when transitioning between states (e.g., animations) |
-| **Component** | Reusable instruction/sensor module referenced via `"Reference"` |
-| **Parameter** | Configurable value exposed in the template's `Parameters` block |
-| **Beacon** | Message-based inter-NPC communication system |
-| **NPC Group** | Named set of NPC roles used for filtering (attitudes, beacons, food targets) |
-| **Attitude Group** | Defines Friendly/Hostile/Neutral relationships between NPC groups |
-
----
-
-## File Locations
-
-| File Type | Path |
-|-----------|------|
-| NPC Templates | `Server/NPC/Templates/Template_<Name>.json` |
-| NPC Variants (Roles) | `Server/NPC/Roles/<Name>.json` |
-| NPC Components | `Server/NPC/Components/Component_<Class>_<Name>.json` |
-| NPC Groups | `Server/NPC/Groups/<GroupName>.json` |
-| Attitude Groups | `Server/NPC/AttitudeGroups/<Name>.json` |
-| Appearance files | `Server/NPC/Appearances/<Name>.json` |
-| Root Interactions | `Server/Item/RootInteractions/Root_NPC_<Name>.json` |
-| Attack Interactions | `Server/Item/Interactions/<Name>.json` |
-| Spawn Beacons | `Server/NPC/SpawnBeacons/<Name>.json` |
-
----
-
-## Template Structure
-
-### Blank Template (Starting Point)
-
-Always start from `BlankTemplate` and customize. A template is `"Type": "Abstract"` and defines defaults through `Parameters`.
-
-```json
-{
-  "Type": "Abstract",
-  "Parameters": {
-    "Appearance": {
-      "Value": "Bear_Grizzly",
-      "Description": "Model to be used"
-    },
-    "DropList": {
-      "Value": "Empty",
-      "Description": "Drop Items"
-    },
-    "MaxHealth": {
-      "Value": 100,
-      "Description": "Max health for the NPC"
-    },
-    "NameTranslationKey": {
-      "Value": "server.npcRoles.Template.name",
-      "Description": "Translation key for NPC name display"
-    }
-  },
-  "Appearance": { "Compute": "Appearance" },
-  "DropList": { "Compute": "DropList" },
-  "MaxHealth": { "Compute": "MaxHealth" },
-  "MotionControllerList": [
-    {
-      "Type": "Walk",
-      "MaxWalkSpeed": 3,
-      "Gravity": 10,
-      "MaxFallSpeed": 8,
-      "Acceleration": 10
-    }
-  ],
-  "Instructions": [
-    {
-      "Sensor": {
-        "Type": "Any"
-      },
-      "BodyMotion": {
-        "Type": "Nothing"
-      }
-    }
-  ],
-  "NameTranslationKey": { "Compute": "NameTranslationKey" }
-}
-```
 
 ### Variant (Role) File
 

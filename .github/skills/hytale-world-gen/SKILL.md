@@ -354,8 +354,12 @@ ZoneDiscoveryConfig discovery = new ZoneDiscoveryConfig(
 Beyond the Java plugin API, Hytale's world generation is primarily **data-driven** through JSON asset files and an in-game **Node Editor**. Biomes, terrain shapes, materials, and content placement are all defined declaratively.
 
 > **Detailed references** for every node type are in the `references/` subdirectory of this skill.
+> **Source:** [hytalemodding.dev — World Generation System](https://hytalemodding.dev/en/docs/guides/plugin/world-gen)
+> **Source:** [HytaleModding/site — Official World Generation Documentation](https://github.com/HytaleModding/site/tree/main/content/docs/en/official-documentation/worldgen)
 
 ### Asset Directory Structure
+
+World generation assets are located in the `Server/HytaleGenerator/` directory within your asset pack.
 
 ```
 Server/HytaleGenerator/
@@ -367,13 +371,13 @@ Server/HytaleGenerator/
 
 ### World Instance Configuration
 
-Instances are separate worlds that players can join. Each instance has an `Instance.bson` that specifies which generator to use:
+To test your world generation, you need to create an `Instance` that uses your generator. Instances are separate worlds players can join via `/instances`. The instance configuration is a `.bson` file in `Server/Instances/`.
 
 ```json
 {
   "WorldGen": {
     "Type": "HytaleGenerator",
-    "WorldStructure": "Basic",
+    "WorldStructure": "Basic", // Change to your WorldStructure asset name
     "playerSpawn": {
       "X": 123, "Y": 480, "Z": 10000,
       "Pitch": 0, "Yaw": 0, "Roll": 0

@@ -34,6 +34,7 @@ Important: use native UI only. Do not use HyUI.
 - references/assets-and-packaging.md
 - references/examples.md
 - references/troubleshooting.md
+- references/tab-navigation.md
 
 ## Project conventions
 
@@ -52,3 +53,5 @@ Important: use native UI only. Do not use HyUI.
 
 - The official type documentation is a generated index. Use it when you need the exact property name, type, or enum values for an element.
 - Common.ui is the preferred source for cohesive styling. Import it and reference styles instead of duplicating them.
+
+- **TabNavigation Known Issue**: The default styles for `TabNavigation` in `Common.ui` are broken. See `references/tab-navigation.md` for details and workarounds.
