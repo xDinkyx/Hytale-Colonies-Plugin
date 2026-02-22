@@ -6,9 +6,11 @@ import com.colonies.coloniesplugin.components.jobs.UnemployedComponent;
 import com.colonies.coloniesplugin.components.jobs.WorkStationComponent;
 import com.colonies.coloniesplugin.components.jobs.WoodcutterJobComponent;
 import com.colonies.coloniesplugin.components.npc.ColonistComponent;
+import com.colonies.coloniesplugin.components.npc.MoveToTargetComponent;
 import com.colonies.coloniesplugin.interactions.SpawnColonistInteraction;
 import com.colonies.coloniesplugin.systems.ColonySystem;
 import com.colonies.coloniesplugin.systems.jobs.JobAssignmentSystems;
+import com.colonies.coloniesplugin.systems.npc.PathFindingSystem;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
@@ -29,6 +31,7 @@ public class ColoniesPlugin extends JavaPlugin {
     private ComponentType<EntityStore, UnemployedComponent> unemployedComponentType;
     private ComponentType<EntityStore, WoodcutterJobComponent> woodCutterJobComponentType;
     private ComponentType<ChunkStore, WorkStationComponent> workStationComponentType;
+    private ComponentType<EntityStore, MoveToTargetComponent> moveToTargetComponentType;
 
     public ColoniesPlugin(@Nonnull JavaPluginInit init) {
         super(init);
@@ -53,6 +56,7 @@ public class ColoniesPlugin extends JavaPlugin {
         this.unemployedComponentType = this.getEntityStoreRegistry().registerComponent(UnemployedComponent.class, UnemployedComponent::new);
         this.woodCutterJobComponentType = this.getEntityStoreRegistry().registerComponent(WoodcutterJobComponent.class, WoodcutterJobComponent::new);
         this.workStationComponentType = this.getChunkStoreRegistry().registerComponent(WorkStationComponent.class, "WorkStation", WorkStationComponent.CODEC);
+        this.moveToTargetComponentType = this.getEntityStoreRegistry().registerComponent(MoveToTargetComponent.class, MoveToTargetComponent::new);
 
         // Interactions
         Interaction.CODEC.register("SpawnColonist", SpawnColonistInteraction.class, SpawnColonistInteraction.CODEC);
@@ -64,6 +68,7 @@ public class ColoniesPlugin extends JavaPlugin {
         this.getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.ColonistEntitySystem());
         this.getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.JobAssignedSystem());
         this.getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());
+        this.getEntityStoreRegistry().registerSystem(new PathFindingSystem());
     }
 
     public ComponentType<EntityStore, ColonistComponent> getColonistComponentType() {
@@ -84,6 +89,10 @@ public class ColoniesPlugin extends JavaPlugin {
 
     public ComponentType<EntityStore, WoodcutterJobComponent> getWoodCutterJobComponentType() {
         return woodCutterJobComponentType;
+    }
+
+    public ComponentType<EntityStore, MoveToTargetComponent> getMoveToTargetComponentType() {
+        return moveToTargetComponentType;
     }
 }
 
