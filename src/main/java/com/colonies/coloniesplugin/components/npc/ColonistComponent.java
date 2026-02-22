@@ -2,7 +2,6 @@ package com.colonies.coloniesplugin.components.npc;
 
 // Imports
 import com.colonies.coloniesplugin.ColoniesPlugin;
-import com.colonies.coloniesplugin.components.jobs.JobComponent;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
