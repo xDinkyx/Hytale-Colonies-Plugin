@@ -1,21 +1,14 @@
 {
-  "Group": "${plugin_group}",
-  "Name": "${plugin_name}",
-  "Version": "${plugin_version}",
-  "Description": "${plugin_description}",
-  "Authors": [
-    {
-      "Name": "${plugin_author}"
-    }
-  ],
-  "Website": "${plugin_website}",
-  "ServerVersion": "${server_version}",
-  "Dependencies": {
-    "Hytale:BlockModule": "*",
-    "Hytale:EntityModule": "*"
-  },
-  "OptionalDependencies": {},
-  "DisabledByDefault": false,
+  "Group": "com.hytalecolonies",
+  "Name": "HytaleColonies",
+  "Version": "1.0.0",
+  "Description": "A colonies plugin for Hytale!",
+  "Authors": [{"Name": "xDinkyx"}],
+  "Main": "com.hytalecolonies.HytaleColoniesPlugin",
+  "LoadOrder": "POSTWORLD",
   "IncludesAssetPack": true,
-  "Main": "${plugin_main_entrypoint}"
+  "Dependencies": {
+    "Hytale:EntityModule": "*",
+    "Hytale:BlockModule": "*"
+  }
 }
