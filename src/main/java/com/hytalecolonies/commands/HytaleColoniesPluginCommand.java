@@ -1,30 +1,36 @@
 package com.hytalecolonies.commands;
 
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractCommandCollection;
+import com.hytalecolonies.commands.debug.BlockEntityInfoCommand;
 
 /**
- * Main command for HytaleColonies plugin.
+ * Main command for the Colonies plugin.
  *
  * Usage:
- * - /hc help - Show available commands
- * - /hc info - Show plugin information
- * - /hc reload - Reload plugin configuration
- * - /hc ui - Open the plugin dashboard
+ * - /hc help     - Show available commands
+ * - /hc info     - Show plugin information
+ * - /hc reload   - Reload plugin configuration
+ * - /hc ui       - Open the plugin dashboard
+ * - /hc testpath - Test NPC pathfinding
+ *
+ * Aliases: /hc, /colony, /col
  */
 public class HytaleColoniesPluginCommand extends AbstractCommandCollection {
 
-    public HytaleColoniesPluginCommand() {
+    public HytaleColoniesPluginCommand(String pluginName, String pluginVersion) {
         super("hc", "HytaleColonies plugin commands");
+        this.addAliases("colony", "col");
 
-        // Add subcommands
         this.addSubCommand(new HelpSubCommand());
-        this.addSubCommand(new InfoSubCommand());
+        this.addSubCommand(new InfoSubCommand(pluginName, pluginVersion));
         this.addSubCommand(new ReloadSubCommand());
         this.addSubCommand(new UISubCommand());
+        this.addSubCommand(new BlockEntityInfoCommand());
+        this.addSubCommand(new TestMoveCommand());
     }
 
     @Override
     protected boolean canGeneratePermission() {
-        return false; // No permission required for base command
+        return false;
     }
 }

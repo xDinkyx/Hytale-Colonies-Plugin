@@ -25,10 +25,12 @@ public class HelpSubCommand extends CommandBase {
     protected void executeSync(@Nonnull CommandContext context) {
         context.sendMessage(Message.raw(""));
         context.sendMessage(Message.raw("=== HytaleColonies Commands ==="));
-        context.sendMessage(Message.raw("/hc help - Show this help message"));
-        context.sendMessage(Message.raw("/hc info - Show plugin information"));
-        context.sendMessage(Message.raw("/hc reload - Reload configuration"));
-        context.sendMessage(Message.raw("/hc ui - Open the dashboard UI"));
-        context.sendMessage(Message.raw("========================"));
+        context.sendMessage(Message.raw("/hc help              - Show this help message"));
+        context.sendMessage(Message.raw("/hc info              - Show plugin information"));
+        context.sendMessage(Message.raw("/hc reload            - Reload configuration"));
+        context.sendMessage(Message.raw("/hc ui                - Open the dashboard UI"));
+        context.sendMessage(Message.raw("/hc testpath          - Test NPC pathfinding"));
+        context.sendMessage(Message.raw("/hc blockentityinfo   - Inspect block entity components"));
+        context.sendMessage(Message.raw("================================"));
     }
 }

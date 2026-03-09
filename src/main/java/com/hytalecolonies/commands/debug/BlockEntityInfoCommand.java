@@ -37,6 +37,7 @@ public class BlockEntityInfoCommand extends AbstractWorldCommand {
 
     public BlockEntityInfoCommand() {
         super("blockentityinfo", "Logs all components on a block entity");
+        this.addAliases("bei", "blockentity");
     }
 
     @Override

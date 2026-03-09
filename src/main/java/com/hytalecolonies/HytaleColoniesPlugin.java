@@ -10,7 +10,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 
 import com.hytalecolonies.commands.HytaleColoniesPluginCommand;
-import com.hytalecolonies.commands.debug.BlockEntityInfoCommand;
 import com.hytalecolonies.listeners.PlayerListener;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
@@ -74,8 +73,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
      */
     private void registerCommands() {
         try {
-            getCommandRegistry().registerCommand(new HytaleColoniesPluginCommand());
-            getCommandRegistry().registerCommand(new BlockEntityInfoCommand());
+            getCommandRegistry().registerCommand(new HytaleColoniesPluginCommand(this.getName(), this.getManifest().getVersion().toString()));
             LOGGER.at(Level.INFO).log("[HytaleColonies] Registered plugin commands");
         } catch (Exception e) {
             LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register commands");

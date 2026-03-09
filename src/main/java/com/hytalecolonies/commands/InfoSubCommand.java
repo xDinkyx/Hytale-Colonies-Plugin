@@ -9,13 +9,18 @@ import com.hytalecolonies.HytaleColoniesPlugin;
 import javax.annotation.Nonnull;
 
 /**
- * /hc info - Show plugin information
+ * /colonies info - Show plugin information
  */
 public class InfoSubCommand extends CommandBase {
 
-    public InfoSubCommand() {
+    private final String pluginName;
+    private final String pluginVersion;
+
+    public InfoSubCommand(String pluginName, String pluginVersion) {
         super("info", "Show plugin information");
         this.setPermissionGroup(null);
+        this.pluginName = pluginName;
+        this.pluginVersion = pluginVersion;
     }
 
     @Override
@@ -28,9 +33,8 @@ public class InfoSubCommand extends CommandBase {
         HytaleColoniesPlugin plugin = HytaleColoniesPlugin.getInstance();
 
         context.sendMessage(Message.raw(""));
-        context.sendMessage(Message.raw("=== HytaleColonies Info ==="));
-        context.sendMessage(Message.raw("Name: HytaleColonies"));
-        context.sendMessage(Message.raw("Version: 1.0.0"));
+        context.sendMessage(Message.raw("=== " + pluginName + " Info ==="));
+        context.sendMessage(Message.raw("Version: " + pluginVersion));
         context.sendMessage(Message.raw("Author: xDinkyx"));
         context.sendMessage(Message.raw("Status: " + (plugin != null ? "Running" : "Not loaded")));
         context.sendMessage(Message.raw("===================="));
