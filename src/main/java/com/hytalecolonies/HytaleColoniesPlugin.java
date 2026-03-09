@@ -20,6 +20,7 @@ import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
 import com.hytalecolonies.systems.ColonySystem;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
+import com.hytalecolonies.systems.jobs.TreeScannerSystem;
 import com.hytalecolonies.systems.npc.PathFindingSystem;
 
 import javax.annotation.Nonnull;
@@ -132,6 +133,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new ColonySystem(colonistComponentType));
         getChunkStoreRegistry().registerSystem(new JobAssignmentSystems());
         getChunkStoreRegistry().registerSystem(new JobAssignmentSystems.WorkStationEntitySystem());
+        getChunkStoreRegistry().registerSystem(new TreeScannerSystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.ColonistEntitySystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.JobAssignedSystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());
