@@ -151,8 +151,19 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             }
         }
 
-        // Draw all wood blocks of each confirmed BFS tree using a distinct cycling colour,
-        // and mark the base with a larger white cube so each tree's anchor is easy to spot.
+        debugDrawTrees(world, treeBases, confirmedTrees);
+
+        HytaleColoniesPlugin.LOGGER.atInfo().log(
+                "[TreeScanner] Found %d trees within %d chunk radius of workstation at %s.",
+                treeBases.size(), SCAN_RADIUS_CHUNKS, centerPos);
+    }
+
+    private void debugDrawTrees(World world, List<Vector3i> treeBases,
+            List<TreeDetectorBFS.TreeCandidate> confirmedTrees) {
+        // Draw all wood blocks of each confirmed BFS tree using a distinct cycling
+        // colour,
+        // and mark the base with a larger white cube so each tree's anchor is easy to
+        // spot.
         int colorIdx = 0;
         for (TreeDetectorBFS.TreeCandidate tree : confirmedTrees) {
             var treeColor = DebugUtils.INDEXED_COLORS[colorIdx % DebugUtils.INDEXED_COLORS.length];
@@ -173,10 +184,6 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
                 DebugUtils.addCube(world, cubePos, DebugUtils.COLOR_CYAN, 1.1, 20.0f);
             }
         }
-
-        HytaleColoniesPlugin.LOGGER.atInfo().log(
-                "[TreeScanner] Found %d trees within %d chunk radius of workstation at %s.",
-                treeBases.size(), SCAN_RADIUS_CHUNKS, centerPos);
     }
 
     /**
