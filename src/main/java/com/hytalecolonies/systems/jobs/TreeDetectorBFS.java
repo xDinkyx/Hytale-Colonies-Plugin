@@ -75,13 +75,27 @@ public class TreeDetectorBFS implements ITreeDetector {
         visitedWood.add(pack(start));
         queue.add(start);
 
-        Vector3i lowestBase = start;
+        // lowestBase   — minimum Y across all wood blocks (for consumedBlocks bookkeeping).
+        // lowestTrunkBase — minimum Y restricted to trunk/roots blocks (never a branch).
+        Vector3i lowestBase      = start;
+        Vector3i lowestTrunkBase = null;
+
+        String startKey = TreeDetector.getBlockKey(world, start.x, start.y, start.z);
+        if (startKey != null && !isBranchBlock(startKey)) {
+            lowestTrunkBase = start;
+        }
 
         while (!queue.isEmpty() && visitedWood.size() <= MAX_WOOD_VISITED) {
             Vector3i current = queue.poll();
 
-            if (current.y < lowestBase.y) {
-                lowestBase = current;
+            if (current.y < lowestBase.y) lowestBase = current;
+
+            // Look up the current block's key so we know whether we are in a branch.
+            String currentKey = TreeDetector.getBlockKey(world, current.x, current.y, current.z);
+            boolean currentIsBranch = currentKey != null && isBranchBlock(currentKey);
+
+            if (!currentIsBranch && (lowestTrunkBase == null || current.y < lowestTrunkBase.y)) {
+                lowestTrunkBase = current;
             }
 
             for (int[] d : NEIGHBORS) {
@@ -94,6 +108,11 @@ public class TreeDetectorBFS implements ITreeDetector {
 
                 long packed = pack(nx, ny, nz);
                 if (woodKeys.contains(key)) {
+                    // Block branch→trunk expansion: branches can only spread to other branches,
+                    // never back into a trunk. This prevents BFS from crossing into a neighbouring
+                    // tree's trunk via touching branch blocks.
+                    if (currentIsBranch && !isBranchBlock(key)) continue;
+
                     if (visitedWood.add(packed)) {
                         queue.add(new Vector3i(nx, ny, nz));
                     }
@@ -108,8 +127,21 @@ public class TreeDetectorBFS implements ITreeDetector {
                 && visitedWood.size() >= MIN_WOOD_BLOCKS
                 && visitedLeaf.size() >= MIN_LEAF_BLOCKS;
 
-        return new TreeCandidate(isTree, lowestBase, visitedWood.size(), visitedLeaf.size(),
+        // Report the lowest trunk/roots block as the tree base.  Fall back to the
+        // overall lowest wood block only if no trunk was encountered (safety net).
+        Vector3i reportedBase = (lowestTrunkBase != null) ? lowestTrunkBase : lowestBase;
+
+        return new TreeCandidate(isTree, reportedBase, visitedWood.size(), visitedLeaf.size(),
                 Collections.unmodifiableSet(visitedWood));
+    }
+
+    /**
+     * Returns {@code true} if the block key belongs to a branch block
+     * (i.e. contains {@code "_Branch_"} — e.g. {@code Wood_Oak_Branch_Short}).
+     * Trunk and Roots blocks never contain this substring.
+     */
+    private static boolean isBranchBlock(String key) {
+        return key.contains("_Branch_");
     }
 
     // -------------------------------------------------------------------------
