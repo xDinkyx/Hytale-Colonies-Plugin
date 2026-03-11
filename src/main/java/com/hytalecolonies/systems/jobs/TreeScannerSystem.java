@@ -230,6 +230,12 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
                         if (blockType == null || !treeWoodKeys.contains(blockType.getId()))
                             continue;
 
+                        // Only trunk/roots blocks are valid segment bottoms — branches should never
+                        // be a tree base candidate (a low-hanging branch would otherwise be mistaken
+                        // for the trunk base).
+                        if (blockType.getId().contains("_Branch_"))
+                            continue;
+
                         // Check if the block directly below is also wood.
                         // If it is, this block is mid-trunk — not a segment bottom.
                         if (worldY > 0) {
