@@ -1,5 +1,6 @@
 package com.hytalecolonies.systems.jobs;
 
+import com.hypixel.hytale.math.vector.Vector3d;
 import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
@@ -14,6 +15,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.buildertool.config.BlockTypeListAsset;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
@@ -25,6 +27,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -37,7 +40,7 @@ import java.util.Set;
  */
 public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
 
-    private static final int SCAN_RADIUS_CHUNKS = 8;
+    private static final int SCAN_RADIUS_CHUNKS = 1;
     private static final String TREE_WOOD_LIST_ID = "TreeWood";
 
     private final Query<ChunkStore> query = Query.and(
@@ -47,6 +50,9 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
     /** Guards against overlapping scans. */
     // ToDo: Store per workstation.
     private volatile boolean isRunning = false;
+
+    // Swap to new TreeDetectorBFS() to use the flood-fill algorithm instead.
+    private final ITreeDetector treeDetector = new TreeDetectorBFS();
 
     /**
      * Lazy-initialised cache — assets are not guaranteed loaded at construction
@@ -97,7 +103,10 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         int centerChunkX = ChunkUtil.chunkCoordinate(centerPos.x);
         int centerChunkZ = ChunkUtil.chunkCoordinate(centerPos.z);
 
-        List<Vector3i> foundBlocks = new ArrayList<>();
+        // Collect segment bottoms: wood blocks where the block directly below is NOT wood.
+        // Each one is an independent trunk/segment start — this correctly handles multiple
+        // trees at different heights in the same XZ column.
+        List<Vector3i> segmentBottoms = new ArrayList<>();
 
         // ToDo: We should probably do bounds checking.
         for (int cx = centerChunkX - SCAN_RADIUS_CHUNKS; cx <= centerChunkX + SCAN_RADIUS_CHUNKS; cx++) {
@@ -114,13 +123,60 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
                 if (!chunkContainsTreeWood(blockChunk, treeWoodKeys))
                     continue;
 
-                scanChunkForTreeWood(cx, cz, blockChunk, treeWoodKeys, foundBlocks);
+                scanChunkForTreeWood(cx, cz, blockChunk, treeWoodKeys, segmentBottoms);
+            }
+        }
+
+        // Run each segment bottom through the tree detector.
+        // consumedBlocks tracks every wood position already claimed by a confirmed (or rejected)
+        // BFS run, so we never re-run BFS on a block that's part of an already-evaluated structure.
+        Set<Long> consumedBlocks = new HashSet<>();
+        List<Vector3i> treeBases = new ArrayList<>();
+        List<TreeDetectorBFS.TreeCandidate> confirmedTrees = new ArrayList<>();
+
+        for (Vector3i candidate : segmentBottoms) {
+            if (treeDetector instanceof TreeDetectorBFS bfsDetector) {
+                if (consumedBlocks.contains(TreeDetectorBFS.pack(candidate))) continue;
+
+                TreeDetectorBFS.TreeCandidate result = bfsDetector.evaluate(candidate, world);
+                consumedBlocks.addAll(result.visitedWoodPacked()); // mark whole component consumed
+                if (result.isTree()) {
+                    treeBases.add(result.base()); // BFS may find a lower true base
+                    confirmedTrees.add(result);
+                }
+            } else {
+                if (treeDetector.isTreeBase(candidate, world)) {
+                    treeBases.add(candidate);
+                }
+            }
+        }
+
+        // Draw all wood blocks of each confirmed BFS tree using a distinct cycling colour,
+        // and mark the base with a larger white cube so each tree's anchor is easy to spot.
+        int colorIdx = 0;
+        for (TreeDetectorBFS.TreeCandidate tree : confirmedTrees) {
+            var treeColor = DebugUtils.INDEXED_COLORS[colorIdx % DebugUtils.INDEXED_COLORS.length];
+            colorIdx++;
+            for (long packed : tree.visitedWoodPacked()) {
+                Vector3i pos = TreeDetectorBFS.unpack(packed);
+                Vector3d cubePos = new Vector3d(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5);
+                DebugUtils.addCube(world, cubePos, treeColor, 1.2, 20.0f);
+            }
+            // Large white base marker so each tree's anchor is unambiguous.
+            Vector3d basePos = tree.base().toVector3d().add(0.5, 0.5, 0.5);
+            DebugUtils.addCube(world, basePos, DebugUtils.COLOR_WHITE, 1.4, 20.0f);
+        }
+        // Fallback for non-BFS detector: just mark the bases.
+        if (!(treeDetector instanceof TreeDetectorBFS)) {
+            for (Vector3i treeBase : treeBases) {
+                Vector3d cubePos = treeBase.toVector3d().add(0.5, 0.5, 0.5);
+                DebugUtils.addCube(world, cubePos, DebugUtils.COLOR_CYAN, 1.1, 20.0f);
             }
         }
 
         HytaleColoniesPlugin.LOGGER.atInfo().log(
-                "[TreeScanner] Found %d TreeWood blocks within %d chunk radius of workstation at %s.",
-                foundBlocks.size(), SCAN_RADIUS_CHUNKS, centerPos);
+                "[TreeScanner] Found %d trees within %d chunk radius of workstation at %s.",
+                treeBases.size(), SCAN_RADIUS_CHUNKS, centerPos);
     }
 
     /**
@@ -129,21 +185,32 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
      */
     private boolean chunkContainsTreeWood(BlockChunk blockChunk, Set<String> treeWoodKeys) {
         IntSet blockIds = blockChunk.blocks();
+
         for (int blockId : blockIds) {
             BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
+
             if (blockType != null && treeWoodKeys.contains(blockType.getId())) {
                 return true;
             }
         }
+
         return false;
     }
 
     /**
-     * Iterates every block in the chunk section-by-section and collects world
-     * positions of all TreeWood blocks.
+     * Iterates every block in the chunk section-by-section and adds all
+     * <em>segment bottoms</em> to {@code segmentBottoms}.
+     *
+     * <p>A segment bottom is a TreeWood block whose block directly below is NOT
+     * a TreeWood block. These are the independent trunk-start candidates — one
+     * per continuous vertical wood column, supporting multiple trees at
+     * different heights in the same XZ column.
      */
-    private void scanChunkForTreeWood(int chunkX, int chunkZ, BlockChunk blockChunk,
-            Set<String> treeWoodKeys, List<Vector3i> foundBlocks) {
+    private void scanChunkForTreeWood(
+            int chunkX, int chunkZ,
+            BlockChunk blockChunk,
+            Set<String> treeWoodKeys,
+            List<Vector3i> segmentBottoms) {
         BlockSection[] sections = blockChunk.getChunkSections();
         for (int sectionIdx = 0; sectionIdx < sections.length; sectionIdx++) {
             BlockSection section = sections[sectionIdx];
@@ -163,9 +230,21 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
                         if (blockType == null || !treeWoodKeys.contains(blockType.getId()))
                             continue;
 
+                        // Check if the block directly below is also wood.
+                        // If it is, this block is mid-trunk — not a segment bottom.
+                        if (worldY > 0) {
+                            BlockSection belowSection = blockChunk.getSectionAtBlockY(worldY - 1);
+                            int belowId = belowSection.get(localX, worldY - 1, localZ);
+                            if (belowId != 0) {
+                                BlockType belowType = BlockType.getAssetMap().getAsset(belowId);
+                                if (belowType != null && treeWoodKeys.contains(belowType.getId()))
+                                    continue; // mid-trunk, skip
+                            }
+                        }
+
                         int worldX = ChunkUtil.worldCoordFromLocalCoord(chunkX, localX);
                         int worldZ = ChunkUtil.worldCoordFromLocalCoord(chunkZ, localZ);
-                        foundBlocks.add(new Vector3i(worldX, worldY, worldZ));
+                        segmentBottoms.add(new Vector3i(worldX, worldY, worldZ));
                     }
                 }
             }
