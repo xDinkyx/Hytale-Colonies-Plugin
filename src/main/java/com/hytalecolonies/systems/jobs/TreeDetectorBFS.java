@@ -36,7 +36,7 @@ import java.util.Set;
 public class TreeDetectorBFS implements ITreeDetector {
 
     /** Abort BFS if more than this many connected wood blocks are found — likely a player build. */
-    private static final int MAX_WOOD_VISITED = 200;
+    private static final int MAX_WOOD_VISITED = 50;
     private static final int MIN_WOOD_BLOCKS  = 4;
     private static final int MIN_LEAF_BLOCKS  = 8;
 
