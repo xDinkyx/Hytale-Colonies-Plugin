@@ -61,7 +61,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
     private Set<String> treeWoodBlockKeys;
 
     public TreeScannerSystem() {
-        super(10.0f); // Run once every 10 seconds
+        super(60.0f); // Run once every 60 seconds
     }
 
     @Override
