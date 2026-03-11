@@ -55,6 +55,8 @@ tasks.register('deployToServer', Copy) {
     // Using 'from shadowJar' automatically adds task dependency and proper input tracking
     from shadowJar
     into 'server/mods'
+    // Always re-deploy — the server may delete/replace the JAR between builds
+    outputs.upToDateWhen { false }
     doLast {
         println "Deployed to server/mods/"
     }
