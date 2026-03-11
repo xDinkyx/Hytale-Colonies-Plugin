@@ -19,8 +19,8 @@ import java.util.Set;
  * <ol>
  *   <li>BFS expands through all face-connected TreeWood blocks reachable from
  *       {@code candidatePos}, up to {@value #MAX_WOOD_VISITED} blocks.
- *       Exceeding the cap signals a player-built structure (rejected).</li>
- *   <li>For each visited wood block, the six face-neighbours are tested for
+ *       Exceeding the cap signals a player-built structure or just a really cool old tree (rejected).</li>
+ *   <li>For each visited wood block, the neighbours are tested for
  *       TreeLeaves to build a deduplicated leaf count.</li>
  *   <li>The component is accepted as a tree if it meets the minimum wood and
  *       leaf thresholds.</li>
@@ -28,10 +28,6 @@ import java.util.Set;
  *       position in the connected component — which is not necessarily the
  *       block the scanner handed in.</li>
  * </ol>
- *
- * <p><b>Why 6-connectivity (no diagonals)?</b>  Vanilla Hytale tree trunks
- * and branches are always face-connected. Allowing diagonals would risk
- * merging two nearby trees into one BFS region.
  */
 public class TreeDetectorBFS implements ITreeDetector {
 
@@ -138,7 +134,6 @@ public class TreeDetectorBFS implements ITreeDetector {
     /**
      * Returns {@code true} if the block key belongs to a branch block
      * (i.e. contains {@code "_Branch_"} — e.g. {@code Wood_Oak_Branch_Short}).
-     * Trunk and Roots blocks never contain this substring.
      */
     private static boolean isBranchBlock(String key) {
         return key.contains("_Branch_");
@@ -147,8 +142,6 @@ public class TreeDetectorBFS implements ITreeDetector {
     // -------------------------------------------------------------------------
     // Pack (x, y, z) into a single long for visited-set membership tests.
     // Uses 21-bit fields: y uses bits 0-20, z uses 21-41, x uses 42-62.
-    // Hytale world coordinates fit comfortably in 21 signed bits.
-    // Public so the scanner can pack candidate positions for the consumed-block check.
     // -------------------------------------------------------------------------
 
     public static long pack(Vector3i v) {
@@ -201,9 +194,9 @@ public class TreeDetectorBFS implements ITreeDetector {
      * @param isTree             whether the component qualifies as a harvestable tree
      * @param base               lowest wood position found in the connected component
      * @param woodCount          number of connected wood blocks visited
-     * @param leafCount          number of unique leaf blocks adjacent to the component
+     * @param leafCount          number of leaf blocks inthe component
      * @param visitedWoodPacked  packed positions of every wood block visited — used by the
-     *                           scanner to skip already-processed blocks (deduplication)
+     *                           scanner to skip already-processed blocks
      */
     public record TreeCandidate(boolean isTree, Vector3i base, int woodCount, int leafCount,
                                 Set<Long> visitedWoodPacked) {}

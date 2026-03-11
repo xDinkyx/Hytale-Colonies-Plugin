@@ -35,8 +35,7 @@ import java.util.Set;
  * Periodically scans a configurable chunk radius around each Woodsman
  * workstation
  * for TreeWood blocks. Results are logged for now; they will feed the
- * harvestable-tree
- * registry used by woodcutter NPCs in a future step.
+ * harvestable-tree registry used by woodcutter NPCs in a future step.
  */
 public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
 
@@ -81,7 +80,8 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         if (workStation.getJobType() != JobType.Woodsman)
             return;
 
-        BlockModule.BlockStateInfo blockStateInfo = archetypeChunk.getComponent(index, BlockModule.BlockStateInfo.getComponentType());
+        BlockModule.BlockStateInfo blockStateInfo = archetypeChunk.getComponent(index,
+                BlockModule.BlockStateInfo.getComponentType());
         if (blockStateInfo == null)
             return;
 
@@ -103,8 +103,10 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         int centerChunkX = ChunkUtil.chunkCoordinate(centerPos.x);
         int centerChunkZ = ChunkUtil.chunkCoordinate(centerPos.z);
 
-        // Collect segment bottoms: wood blocks where the block directly below is NOT wood.
-        // Each one is an independent trunk/segment start — this correctly handles multiple
+        // Collect segment bottoms: wood blocks where the block directly below is NOT
+        // wood.
+        // Each one is an independent trunk/segment start — this correctly handles
+        // multiple
         // trees at different heights in the same XZ column.
         List<Vector3i> segmentBottoms = new ArrayList<>();
 
@@ -128,15 +130,18 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         }
 
         // Run each segment bottom through the tree detector.
-        // consumedBlocks tracks every wood position already claimed by a confirmed (or rejected)
-        // BFS run, so we never re-run BFS on a block that's part of an already-evaluated structure.
+        // consumedBlocks tracks every wood position already claimed by a confirmed (or
+        // rejected)
+        // BFS run, so we never re-run BFS on a block that's part of an
+        // already-evaluated structure.
         Set<Long> consumedBlocks = new HashSet<>();
         List<Vector3i> treeBases = new ArrayList<>();
         List<TreeDetectorBFS.TreeCandidate> confirmedTrees = new ArrayList<>();
 
         for (Vector3i candidate : segmentBottoms) {
             if (treeDetector instanceof TreeDetectorBFS bfsDetector) {
-                if (consumedBlocks.contains(TreeDetectorBFS.pack(candidate))) continue;
+                if (consumedBlocks.contains(TreeDetectorBFS.pack(candidate)))
+                    continue;
 
                 TreeDetectorBFS.TreeCandidate result = bfsDetector.evaluate(candidate, world);
                 consumedBlocks.addAll(result.visitedWoodPacked()); // mark whole component consumed
@@ -208,10 +213,9 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
      * Iterates every block in the chunk section-by-section and adds all
      * <em>segment bottoms</em> to {@code segmentBottoms}.
      *
-     * <p>A segment bottom is a TreeWood block whose block directly below is NOT
-     * a TreeWood block. These are the independent trunk-start candidates — one
-     * per continuous vertical wood column, supporting multiple trees at
-     * different heights in the same XZ column.
+     * <p>
+     * A segment bottom is a TreeWood block whose block directly below is NOT
+     * a TreeWood block. These are the independent trunk-start candidates.
      */
     private void scanChunkForTreeWood(
             int chunkX, int chunkZ,
