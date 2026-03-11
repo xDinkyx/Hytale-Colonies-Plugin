@@ -13,6 +13,7 @@ import com.hytalecolonies.commands.HytaleColoniesPluginCommand;
 import com.hytalecolonies.listeners.PlayerListener;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
+import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.WoodcutterJobComponent;
@@ -41,6 +42,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     private ComponentType<EntityStore, WoodcutterJobComponent> woodCutterJobComponentType;
     private ComponentType<ChunkStore, WorkStationComponent> workStationComponentType;
     private ComponentType<EntityStore, MoveToTargetComponent> moveToTargetComponentType;
+    private ComponentType<ChunkStore, HarvestableTreeComponent> harvestableTreeComponentType;
 
     public HytaleColoniesPlugin(@Nonnull JavaPluginInit init) {
         super(init);
@@ -91,6 +93,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         woodCutterJobComponentType = getEntityStoreRegistry().registerComponent(WoodcutterJobComponent.class, WoodcutterJobComponent::new);
         workStationComponentType = getChunkStoreRegistry().registerComponent(WorkStationComponent.class, "WorkStation", WorkStationComponent.CODEC);
         moveToTargetComponentType = getEntityStoreRegistry().registerComponent(MoveToTargetComponent.class, MoveToTargetComponent::new);
+        harvestableTreeComponentType = getChunkStoreRegistry().registerComponent(HarvestableTreeComponent.class, "HarvestableTree", HarvestableTreeComponent.CODEC);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ECS components");
     }
 
@@ -112,6 +115,9 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     }
     public ComponentType<EntityStore, MoveToTargetComponent> getMoveToTargetComponentType() {
         return moveToTargetComponentType;
+    }
+    public ComponentType<ChunkStore, HarvestableTreeComponent> getHarvestableTreeComponentType() {
+        return harvestableTreeComponentType;
     }
 
     /**

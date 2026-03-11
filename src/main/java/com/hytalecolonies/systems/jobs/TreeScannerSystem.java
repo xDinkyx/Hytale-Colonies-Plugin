@@ -4,9 +4,13 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
+import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Holder;
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
@@ -18,6 +22,7 @@ import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -90,27 +95,40 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         isRunning = true; // Set running flag before starting the scan to prevent overlaps
 
         try {
-            scanForTreeWoodBlocks(workStationPos, chunkStore);
+            scanForTreeWoodBlocks(workStationPos, chunkStore, commandBuffer);
         } finally {
             isRunning = false;
         }
     }
 
-    private void scanForTreeWoodBlocks(Vector3i centerPos, Store<ChunkStore> chunkStore) {
-        Set<String> treeWoodKeys = getTreeWoodBlockKeys();
+    /** Orchestrates a full scan cycle: collect candidates → detect trees → register → debug draw. */
+    private void scanForTreeWoodBlocks(Vector3i centerPos, Store<ChunkStore> chunkStore,
+            CommandBuffer<ChunkStore> commandBuffer) {
         World world = chunkStore.getExternalData().getWorld();
+        Set<String> treeWoodKeys = getTreeWoodBlockKeys();
 
+        List<Vector3i> segmentBottoms = collectSegmentBottoms(world, centerPos, treeWoodKeys);
+        List<TreeDetectorBFS.TreeCandidate> confirmedTrees = detectTrees(segmentBottoms, world);
+
+        HytaleColoniesPlugin.LOGGER.atInfo().log(
+                "[TreeScanner] Found %d trees within %d chunk radius of workstation at %s.",
+                confirmedTrees.size(), SCAN_RADIUS_CHUNKS, centerPos);
+
+        debugDrawTrees(world, confirmedTrees);
+        registerHarvestableTrees(confirmedTrees, world, chunkStore, commandBuffer);
+    }
+
+    /**
+     * Scans the chunk grid in {@value #SCAN_RADIUS_CHUNKS}-chunk radius around
+     * {@code centerPos} and returns every trunk segment bottom it finds.
+     * A segment bottom is a trunk block with a non-wood block directly below it.
+     */
+    // ToDo: We should probably do bounds checking.
+    private List<Vector3i> collectSegmentBottoms(World world, Vector3i centerPos, Set<String> treeWoodKeys) {
         int centerChunkX = ChunkUtil.chunkCoordinate(centerPos.x);
         int centerChunkZ = ChunkUtil.chunkCoordinate(centerPos.z);
-
-        // Collect segment bottoms: wood blocks where the block directly below is NOT
-        // wood.
-        // Each one is an independent trunk/segment start — this correctly handles
-        // multiple
-        // trees at different heights in the same XZ column.
         List<Vector3i> segmentBottoms = new ArrayList<>();
 
-        // ToDo: We should probably do bounds checking.
         for (int cx = centerChunkX - SCAN_RADIUS_CHUNKS; cx <= centerChunkX + SCAN_RADIUS_CHUNKS; cx++) {
             for (int cz = centerChunkZ - SCAN_RADIUS_CHUNKS; cz <= centerChunkZ + SCAN_RADIUS_CHUNKS; cz++) {
                 WorldChunk worldChunk = world.getChunkIfInMemory(ChunkUtil.indexChunk(cx, cz));
@@ -121,21 +139,21 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
                 if (blockChunk == null)
                     continue;
 
-                // Quick pre-filter: skip chunks that contain no TreeWood blocks at all.
                 if (!chunkContainsTreeWood(blockChunk, treeWoodKeys))
                     continue;
 
                 scanChunkForTreeWood(cx, cz, blockChunk, treeWoodKeys, segmentBottoms);
             }
         }
+        return segmentBottoms;
+    }
 
-        // Run each segment bottom through the tree detector.
-        // consumedBlocks tracks every wood position already claimed by a confirmed (or
-        // rejected)
-        // BFS run, so we never re-run BFS on a block that's part of an
-        // already-evaluated structure.
+    /**
+     * Runs the tree detector over each segment bottom, deduplicating via
+     * {@code consumedBlocks}, and returns only the confirmed trees.
+     */
+    private List<TreeDetectorBFS.TreeCandidate> detectTrees(List<Vector3i> segmentBottoms, World world) {
         Set<Long> consumedBlocks = new HashSet<>();
-        List<Vector3i> treeBases = new ArrayList<>();
         List<TreeDetectorBFS.TreeCandidate> confirmedTrees = new ArrayList<>();
 
         for (Vector3i candidate : segmentBottoms) {
@@ -144,31 +162,121 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
                     continue;
 
                 TreeDetectorBFS.TreeCandidate result = bfsDetector.evaluate(candidate, world);
-                consumedBlocks.addAll(result.visitedWoodPacked()); // mark whole component consumed
+                consumedBlocks.addAll(result.visitedWoodPacked());
                 if (result.isTree()) {
-                    treeBases.add(result.base()); // BFS may find a lower true base
                     confirmedTrees.add(result);
                 }
             } else {
                 if (treeDetector.isTreeBase(candidate, world)) {
-                    treeBases.add(candidate);
+                    confirmedTrees.add(new TreeDetectorBFS.TreeCandidate(
+                            true, candidate, 0, 0, Collections.emptySet()));
                 }
             }
         }
-
-        debugDrawTrees(world, treeBases, confirmedTrees);
-
-        HytaleColoniesPlugin.LOGGER.atInfo().log(
-                "[TreeScanner] Found %d trees within %d chunk radius of workstation at %s.",
-                treeBases.size(), SCAN_RADIUS_CHUNKS, centerPos);
+        return confirmedTrees;
     }
 
-    private void debugDrawTrees(World world, List<Vector3i> treeBases,
-            List<TreeDetectorBFS.TreeCandidate> confirmedTrees) {
-        // Draw all wood blocks of each confirmed BFS tree using a distinct cycling
-        // colour,
-        // and mark the base with a larger white cube so each tree's anchor is easy to
-        // spot.
+    /**
+     * Iterates confirmed trees, calling {@link #ensureHarvestableBlockEntity} for
+     * each one, then logs a summary.
+     */
+    private void registerHarvestableTrees(
+            List<TreeDetectorBFS.TreeCandidate> confirmedTrees, World world,
+            Store<ChunkStore> chunkStore, CommandBuffer<ChunkStore> commandBuffer) {
+        int created = 0;
+        int updated = 0;
+        int skipped = 0;
+        int failed  = 0;
+
+        for (TreeDetectorBFS.TreeCandidate tree : confirmedTrees) {
+            int result = ensureHarvestableBlockEntity(tree, world, chunkStore, commandBuffer);
+            if      (result > 0) created++;
+            else if (result == 0) updated++;
+            else if (result == -1) skipped++;
+            else failed++;
+        }
+
+        HytaleColoniesPlugin.LOGGER.atInfo().log(
+                "[TreeScanner] HarvestableTree registration — created: %d, updated: %d, already registered: %d, failed: %d.",
+                created, updated, skipped, failed);
+    }
+
+    /**
+     * Ensures a {@link HarvestableTreeComponent} exists on the block entity at the
+     * tree's base position, creating the block entity if necessary.
+     *
+     * @return {@code 1}  — new block entity created with component<br>
+     *         {@code 0}  — existing block entity updated with component<br>
+     *         {@code -1} — component already present, nothing changed<br>
+     *         {@code -2} — failed (missing block type or chunk)
+     */
+    private int ensureHarvestableBlockEntity(
+            TreeDetectorBFS.TreeCandidate tree,
+            World world,
+            Store<ChunkStore> chunkStore,
+            CommandBuffer<ChunkStore> commandBuffer) {
+        Vector3i base = tree.base();
+
+        int blockId = world.getBlock(base);
+        BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
+        if (blockType == null) {
+            HytaleColoniesPlugin.LOGGER.atWarning().log(
+                    "[TreeScanner] No block type found at tree base %s — skipping registration.", base);
+            return -2;
+        }
+
+        WorldChunk baseChunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(base.x, base.z));
+        if (baseChunk == null) {
+            HytaleColoniesPlugin.LOGGER.atWarning().log(
+                    "[TreeScanner] Chunk not in memory for tree base %s — skipping registration.", base);
+            return -2;
+        }
+
+        Ref<ChunkStore> chunkRef = baseChunk.getReference();
+        BlockComponentChunk blockComponentChunk = chunkStore.getComponent(
+                chunkRef, BlockComponentChunk.getComponentType());
+        if (blockComponentChunk == null) {
+            HytaleColoniesPlugin.LOGGER.atWarning().log(
+                    "[TreeScanner] No BlockComponentChunk at tree base %s — skipping registration.", base);
+            return -2;
+        }
+
+        int blockIndex = ChunkUtil.indexBlockInColumn(base.x, base.y, base.z);
+        Ref<ChunkStore> existingRef = blockComponentChunk.getEntityReference(blockIndex);
+
+        if (existingRef != null && existingRef.isValid()) {
+            if (chunkStore.getComponent(existingRef, HarvestableTreeComponent.getComponentType()) != null) {
+                HytaleColoniesPlugin.LOGGER.atInfo().log(
+                        "[TreeScanner] Tree at %s already registered — skipping.", base);
+                return -1;
+            }
+            // Block entity exists (e.g. from another plugin) but lacks our component — add it.
+            commandBuffer.addComponent(existingRef, HarvestableTreeComponent.getComponentType(),
+                    new HarvestableTreeComponent(blockType.getId(), tree.woodCount(), base));
+            HytaleColoniesPlugin.LOGGER.atInfo().log(
+                    "[TreeScanner] Added HarvestableTreeComponent to existing block entity at %s (%s, %d wood blocks).",
+                    base, blockType.getId(), tree.woodCount());
+            return 0;
+        }
+
+        // Plain blocks have no block entity — create one now.
+        // BlockStateInfo is the mandatory anchor; BlockStateInfoRefSystem wires the
+        // new Ref<ChunkStore> into BlockComponentChunk on AddReason.SPAWN automatically.
+        Holder<ChunkStore> holder = ChunkStore.REGISTRY.newHolder();
+        holder.putComponent(BlockModule.BlockStateInfo.getComponentType(),
+                new BlockModule.BlockStateInfo(blockIndex, chunkRef));
+        holder.putComponent(HarvestableTreeComponent.getComponentType(),
+                new HarvestableTreeComponent(blockType.getId(), tree.woodCount(), base));
+
+        commandBuffer.addEntity(holder, AddReason.SPAWN);
+        HytaleColoniesPlugin.LOGGER.atInfo().log(
+                "[TreeScanner] Created block entity with HarvestableTreeComponent at %s (%s, %d wood blocks).",
+                base, blockType.getId(), tree.woodCount());
+        return 1;
+    }
+
+    /** Draws all BFS wood blocks in a per-tree cycling colour with a white base marker. */
+    private void debugDrawTrees(World world, List<TreeDetectorBFS.TreeCandidate> confirmedTrees) {
         int colorIdx = 0;
         for (TreeDetectorBFS.TreeCandidate tree : confirmedTrees) {
             var treeColor = DebugUtils.INDEXED_COLORS[colorIdx % DebugUtils.INDEXED_COLORS.length];
@@ -178,16 +286,8 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
                 Vector3d cubePos = new Vector3d(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5);
                 DebugUtils.addCube(world, cubePos, treeColor, 1.2, 20.0f);
             }
-            // Large white base marker so each tree's anchor is unambiguous.
             Vector3d basePos = tree.base().toVector3d().add(0.5, 0.5, 0.5);
             DebugUtils.addCube(world, basePos, DebugUtils.COLOR_WHITE, 1.4, 20.0f);
-        }
-        // Fallback for non-BFS detector: just mark the bases.
-        if (!(treeDetector instanceof TreeDetectorBFS)) {
-            for (Vector3i treeBase : treeBases) {
-                Vector3d cubePos = treeBase.toVector3d().add(0.5, 0.5, 0.5);
-                DebugUtils.addCube(world, cubePos, DebugUtils.COLOR_CYAN, 1.1, 20.0f);
-            }
         }
     }
 
