@@ -21,7 +21,9 @@ import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
 import com.hytalecolonies.systems.ColonySystem;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
+import com.hytalecolonies.systems.jobs.TreeBlockChangeEventSystem;
 import com.hytalecolonies.systems.jobs.TreeScannerSystem;
+import com.hytalecolonies.systems.jobs.WorkstationTreeInitSystem;
 import com.hytalecolonies.systems.npc.PathFindingSystem;
 
 import javax.annotation.Nonnull;
@@ -136,14 +138,19 @@ public class HytaleColoniesPlugin extends JavaPlugin {
      * Register plugin systems.
      */
     private void registerSystems() {
+        TreeScannerSystem treeScannerSystem = new TreeScannerSystem();
+
         getEntityStoreRegistry().registerSystem(new ColonySystem(colonistComponentType));
         getChunkStoreRegistry().registerSystem(new JobAssignmentSystems());
         getChunkStoreRegistry().registerSystem(new JobAssignmentSystems.WorkStationEntitySystem());
-        getChunkStoreRegistry().registerSystem(new TreeScannerSystem());
+        getChunkStoreRegistry().registerSystem(treeScannerSystem);
+        getChunkStoreRegistry().registerSystem(new WorkstationTreeInitSystem(treeScannerSystem));
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.ColonistEntitySystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.JobAssignedSystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());
         getEntityStoreRegistry().registerSystem(new PathFindingSystem());
+        getEntityStoreRegistry().registerSystem(new TreeBlockChangeEventSystem.OnBreak(treeScannerSystem));
+        getEntityStoreRegistry().registerSystem(new TreeBlockChangeEventSystem.OnPlace(treeScannerSystem));
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered plugin systems");
     }
 
