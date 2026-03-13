@@ -26,34 +26,36 @@ import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * Periodically scans a configurable chunk radius around each Woodsman
- * workstation
- * for TreeWood blocks. Results are logged for now; they will feed the
- * harvestable-tree registry used by woodcutter NPCs in a future step.
+ * workstation for new TreeWood blocks (e.g. saplings that have grown).
+ * The initial full scan is handled by {@link WorkstationTreeInitSystem} on
+ * workstation load. Block-break / block-place updates are handled reactively
+ * by {@link TreeBlockChangeEventSystem}. This system therefore only needs to
+ * run infrequently to catch world-generated growth events that have no
+ * dedicated event hook.
  */
 public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
 
-    private static final int SCAN_RADIUS_CHUNKS = 1;
+    static final int SCAN_RADIUS_CHUNKS = 1;
     private static final String TREE_WOOD_LIST_ID = "TreeWood";
 
     private final Query<ChunkStore> query = Query.and(
             WorkStationComponent.getComponentType(),
             BlockModule.BlockStateInfo.getComponentType());
-
-    /** Guards against overlapping scans. */
-    // ToDo: Store per workstation.
-    private volatile boolean isRunning = false;
 
     // Swap to new TreeDetectorBFS() to use the flood-fill algorithm instead.
     private final ITreeDetector treeDetector = new TreeDetectorBFS();
@@ -64,8 +66,17 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
      */
     private Set<String> treeWoodBlockKeys;
 
+    /**
+     * Per-chunk wood block count from the last periodic scan.
+     * Key: chunk index ({@link ChunkUtil#indexChunk}).
+     * Value: total wood-block count across all sections.
+     * Chunks whose count matches the cached value are skipped during the
+     * periodic scan so unchanged ticks are near-free regardless of world size.
+     */
+    private final Map<Long, Integer> chunkWoodCountCache = new HashMap<>();
+
     public TreeScannerSystem() {
-        super(60.0f); // Run once every 60 seconds
+        super(60.0f); // Run every 60 s — count-comparison ensures BFS only fires for chunks whose wood count changed
     }
 
     @Override
@@ -73,11 +84,6 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk,
             @Nonnull Store<ChunkStore> chunkStore,
             @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
-
-        if (isRunning) {
-            HytaleColoniesPlugin.LOGGER.atInfo().log("[TreeScanner] Previous scan still running, skipping tick.");
-            return;
-        }
 
         WorkStationComponent workStation = archetypeChunk.getComponent(index, WorkStationComponent.getComponentType());
         assert workStation != null;
@@ -92,17 +98,12 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
 
         Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
 
-        isRunning = true; // Set running flag before starting the scan to prevent overlaps
-
-        try {
-            scanForTreeWoodBlocks(workStationPos, chunkStore, commandBuffer);
-        } finally {
-            isRunning = false;
-        }
+        HytaleColoniesPlugin.LOGGER.atInfo().log("[TreeScanner Periodic] Growth scan around workstation at %s.", workStationPos);
+        scanForTreeWoodBlocks(workStationPos, chunkStore, commandBuffer);
     }
 
     /** Orchestrates a full scan cycle: collect candidates → detect trees → register → debug draw. */
-    private void scanForTreeWoodBlocks(Vector3i centerPos, Store<ChunkStore> chunkStore,
+    void scanForTreeWoodBlocks(Vector3i centerPos, Store<ChunkStore> chunkStore,
             CommandBuffer<ChunkStore> commandBuffer) {
         World world = chunkStore.getExternalData().getWorld();
         Set<String> treeWoodKeys = getTreeWoodBlockKeys();
@@ -205,16 +206,21 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
      * Ensures a {@link HarvestableTreeComponent} exists on the block entity at the
      * tree's base position, creating the block entity if necessary.
      *
+     * <p>When {@code commandBuffer} is non-null the entity creation / component
+     * add is deferred through it (safe inside an ECS tick).  When it is
+     * {@code null} the store is mutated directly — only call with a {@code null}
+     * buffer from a {@code world.execute()} callback on the world thread.
+     *
      * @return {@code 1}  — new block entity created with component<br>
      *         {@code 0}  — existing block entity updated with component<br>
      *         {@code -1} — component already present, nothing changed<br>
      *         {@code -2} — failed (missing block type or chunk)
      */
-    private int ensureHarvestableBlockEntity(
+    int ensureHarvestableBlockEntity(
             TreeDetectorBFS.TreeCandidate tree,
             World world,
             Store<ChunkStore> chunkStore,
-            CommandBuffer<ChunkStore> commandBuffer) {
+            @Nullable CommandBuffer<ChunkStore> commandBuffer) {
         Vector3i base = tree.base();
 
         int blockId = world.getBlock(base);
@@ -251,8 +257,12 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
                 return -1;
             }
             // Block entity exists (e.g. from another plugin) but lacks our component — add it.
-            commandBuffer.addComponent(existingRef, HarvestableTreeComponent.getComponentType(),
-                    new HarvestableTreeComponent(blockType.getId(), tree.woodCount(), base));
+            HarvestableTreeComponent newComp = new HarvestableTreeComponent(blockType.getId(), tree.woodCount(), base);
+            if (commandBuffer != null) {
+                commandBuffer.addComponent(existingRef, HarvestableTreeComponent.getComponentType(), newComp);
+            } else {
+                chunkStore.putComponent(existingRef, HarvestableTreeComponent.getComponentType(), newComp);
+            }
             HytaleColoniesPlugin.LOGGER.atInfo().log(
                     "[TreeScanner] Added HarvestableTreeComponent to existing block entity at %s (%s, %d wood blocks).",
                     base, blockType.getId(), tree.woodCount());
@@ -268,7 +278,11 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         holder.putComponent(HarvestableTreeComponent.getComponentType(),
                 new HarvestableTreeComponent(blockType.getId(), tree.woodCount(), base));
 
-        commandBuffer.addEntity(holder, AddReason.SPAWN);
+        if (commandBuffer != null) {
+            commandBuffer.addEntity(holder, AddReason.SPAWN);
+        } else {
+            chunkStore.addEntity(holder, AddReason.SPAWN);
+        }
         HytaleColoniesPlugin.LOGGER.atInfo().log(
                 "[TreeScanner] Created block entity with HarvestableTreeComponent at %s (%s, %d wood blocks).",
                 base, blockType.getId(), tree.woodCount());
@@ -289,6 +303,21 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             Vector3d basePos = tree.base().toVector3d().add(0.5, 0.5, 0.5);
             DebugUtils.addCube(world, basePos, DebugUtils.COLOR_WHITE, 1.4, 20.0f);
         }
+    }
+
+    /**
+     * Counts all tree-wood blocks in the chunk via the palette-based
+     * {@link BlockChunk#blockCounts()} map — O(unique block types), not O(volume).
+     */
+    private int countWoodBlocksInChunk(BlockChunk blockChunk, Set<String> treeWoodKeys) {
+        int total = 0;
+        for (Int2IntMap.Entry entry : blockChunk.blockCounts().int2IntEntrySet()) {
+            BlockType bt = BlockType.getAssetMap().getAsset(entry.getIntKey());
+            if (bt != null && treeWoodKeys.contains(bt.getId())) {
+                total += entry.getIntValue();
+            }
+        }
+        return total;
     }
 
     /**
@@ -368,8 +397,115 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         }
     }
 
+    /**
+     * Called (from {@link TreeBlockChangeEventSystem}) after a tree-wood block at
+     * {@code pos} has been removed from the world.
+     *
+     * <p>If there is remaining wood below {@code pos} the tree still exists but
+     * has lost blocks; re-evaluate via BFS and update (or remove) the
+     * {@link HarvestableTreeComponent} at the surviving base.  If there is no
+     * wood below, the base itself was broken and its block entity (with our
+     * component) is auto-removed by the server — nothing to do.
+     *
+     * <p>Must be called on the world thread (e.g. inside a {@code world.execute()}
+     * callback).
+     */
+    void onTreeWoodBlockRemoved(Vector3i pos, World world, Store<ChunkStore> chunkStore) {
+        if (pos.y <= 0) return;
+
+        Set<String> woodKeys = getTreeWoodBlockKeys();
+
+        // Check if there is any wood directly below the broken block.
+        // If not, the base was at pos and its block entity is auto-cleaned by the engine.
+        int belowBlockId = world.getBlock(new Vector3i(pos.x, pos.y - 1, pos.z));
+        BlockType belowType = BlockType.getAssetMap().getAsset(belowBlockId);
+        if (belowType == null || !woodKeys.contains(belowType.getId())) return;
+
+        // Walk down to find the lowest surviving wood block (the surviving tree base).
+        int baseY = pos.y - 1;
+        while (baseY > 0) {
+            int belowId = world.getBlock(new Vector3i(pos.x, baseY - 1, pos.z));
+            BlockType btBelow = BlockType.getAssetMap().getAsset(belowId);
+            if (btBelow == null || !woodKeys.contains(btBelow.getId())) break;
+            baseY--;
+        }
+
+        Vector3i basePos = new Vector3i(pos.x, baseY, pos.z);
+        WorldChunk baseChunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(basePos.x, basePos.z));
+        if (baseChunk == null) return;
+
+        Ref<ChunkStore> blockRef = baseChunk.getBlockComponentEntity(basePos.x, basePos.y, basePos.z);
+        if (blockRef == null || !blockRef.isValid()) return;
+
+        HarvestableTreeComponent existingComp = chunkStore.getComponent(blockRef,
+                HarvestableTreeComponent.getComponentType());
+        if (existingComp == null) return;
+
+        // Re-evaluate whether the remaining structure is still a valid tree.
+        TreeDetectorBFS.TreeCandidate result = new TreeDetectorBFS().evaluate(basePos, world);
+        if (result.isTree()) {
+            HarvestableTreeComponent updated = existingComp.clone();
+            updated.setWoodCount(result.woodCount());
+            chunkStore.putComponent(blockRef, HarvestableTreeComponent.getComponentType(), updated);
+            HytaleColoniesPlugin.LOGGER.atInfo().log(
+                    "[TreeScanner] Tree at %s updated — %d wood blocks remaining after break.", basePos, result.woodCount());
+        } else {
+            chunkStore.removeComponent(blockRef, HarvestableTreeComponent.getComponentType());
+            HytaleColoniesPlugin.LOGGER.atInfo().log(
+                    "[TreeScanner] Tree at %s removed — no valid structure remains.", basePos);
+        }
+    }
+
+    /**
+     * Called (from {@link TreeBlockChangeEventSystem}) after a tree-wood block has
+     * been placed at {@code pos}.
+     *
+     * <p>Walks down to find the segment bottom of the new trunk, runs BFS, and
+     * registers a new {@link HarvestableTreeComponent} if the structure qualifies
+     * as a tree and is not already registered.
+     *
+     * <p>Must be called on the world thread (e.g. inside a {@code world.execute()}
+     * callback).
+     */
+    void onTreeWoodBlockAdded(Vector3i pos, World world, Store<ChunkStore> chunkStore) {
+        int blockId = world.getBlock(pos);
+        BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
+        if (blockType == null) return;
+
+        Set<String> woodKeys = getTreeWoodBlockKeys();
+        if (!woodKeys.contains(blockType.getId())) return;
+        // Branch blocks cannot be tree bases.
+        if (blockType.getId().contains("_Branch_")) return;
+
+        // Walk down to find the segment bottom — the lowest connected wood block.
+        int baseY = pos.y;
+        while (baseY > 0) {
+            int belowId = world.getBlock(new Vector3i(pos.x, baseY - 1, pos.z));
+            BlockType btBelow = BlockType.getAssetMap().getAsset(belowId);
+            if (btBelow == null || !woodKeys.contains(btBelow.getId())) break;
+            baseY--;
+        }
+
+        Vector3i segmentBottom = new Vector3i(pos.x, baseY, pos.z);
+        TreeDetectorBFS.TreeCandidate result = new TreeDetectorBFS().evaluate(segmentBottom, world);
+        if (!result.isTree()) return;
+
+        ensureHarvestableBlockEntity(result, world, chunkStore, null /* direct store mutation */);
+    }
+
+    /**
+     * Marks the chunk containing the given world position as dirty so the next
+     * periodic scan will re-evaluate it regardless of whether its current wood
+     * count differs.  Should be called by event handlers after they have already
+     * handled the immediate change, as a signal to the periodic scan to verify.
+     */
+    void invalidateChunkCacheAt(int worldX, int worldZ) {
+        long key = ChunkUtil.indexChunkFromBlock(worldX, worldZ);
+        chunkWoodCountCache.remove(key);
+    }
+
     /** Lazy-loads and caches the TreeWood block key set from the asset registry. */
-    private Set<String> getTreeWoodBlockKeys() {
+    Set<String> getTreeWoodBlockKeys() {
         if (treeWoodBlockKeys == null) {
             BlockTypeListAsset treeWoodList = BlockTypeListAsset.getAssetMap().getAsset(TREE_WOOD_LIST_ID);
             treeWoodBlockKeys = treeWoodList != null ? treeWoodList.getBlockTypeKeys() : Collections.emptySet();
