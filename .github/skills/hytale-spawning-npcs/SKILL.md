@@ -74,16 +74,15 @@ Pair<Ref<EntityStore>, INonPlayerCharacter> result = NPCPlugin.get().spawnNPC(
 
 ### 2. Handle the Result
 
-The method returns a `Pair`. Always check for `null` to confirm the spawn succeeded.
+The method returns a `Pair`, or `null` if the NPC role failed to load. Always null-check before accessing `result.first()`.
 
 ```java
-if (result != null) {
-    Ref<EntityStore> npcRef = result.first();       // ECS entity reference
-    INonPlayerCharacter npc = result.second();       // NPC-specific interface
-
-    // Proceed with customization...
-    setupNPCInventory(npcRef, store);
+if (result == null) {
+    LOGGER.atWarning().log("spawnNPC returned null for entity ID '%s'", entityId);
+    return;
 }
+Ref<EntityStore> npcRef = result.first();       // ECS entity reference
+INonPlayerCharacter npc = result.second();       // NPC-specific interface
 ```
 
 | Return | Type | Description |

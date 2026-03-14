@@ -199,6 +199,28 @@ These properties are standard item fields that the block also uses:
 
 ---
 
+## Querying Block Data at Runtime
+
+`BlockChunk` (obtained via `chunkStore.getComponent(chunkRef, BlockChunk.getComponentType())`) provides palette-based query methods that are O(unique block types), not O(chunk volume):
+
+```java
+// Count all blocks of a specific type in this chunk (palette-based, cheap)
+int count = blockChunk.count(blockTypeIndex);
+
+// Map of blockTypeIndex → count for every type present (iterate unique types only)
+Int2IntMap counts = blockChunk.blockCounts();
+
+// Set of all block type indices present in the chunk
+IntSet presentTypes = blockChunk.blocks();
+
+// Fast existence check — no iteration
+boolean hasWood = blockChunk.contains(blockTypeIndex);
+```
+
+Use these to cheaply detect whether a chunk's content has changed (e.g. compare a cached count against the current value) before doing an expensive per-block scan.
+
+---
+
 ## Edge Cases & Gotchas
 
 - All referenced files (textures, models, icons) must exist at the specified paths or the block will fail to load
