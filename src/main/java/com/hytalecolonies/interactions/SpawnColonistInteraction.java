@@ -85,7 +85,6 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction {
         }
 
         Ref<EntityStore> npcRef = result.first();
-        NPCEntity npcComponent = store.getComponent(npcRef, Objects.requireNonNull(NPCEntity.getComponentType()));
 
         // Add the ColonistComponent to the spawned NPC.
         ColonistComponent colonistComponent = new ColonistComponent("DefaultColonyId", "Colonist_Name", 1);
