@@ -5,88 +5,98 @@ import javax.annotation.Nullable;
 
 import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
-import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
-import com.hypixel.hytale.math.vector.Transform;
+import com.hypixel.hytale.component.system.RefChangeSystem;
 import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.path.WorldPath;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
-import com.hypixel.hytale.server.npc.entities.PathManager;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import com.hypixel.hytale.server.npc.role.Role;
 
 /**
- * A one-shot system that runs when an entity has a {@link MoveToTargetComponent}.
- * It calculates a path to the target and assigns it to the NPC's {@link PathManager},
- * then removes the component to prevent running again.
- * ToDo:
- * - Maybe this is not the correct type of system. Its probably better to use a RefChangeSystem<> that triggers when MoveToTargetComponent is added. 
- *   This way we can guarantee it runs immediately when the component is added, instead of waiting for the next tick.
- *   Alternatively we keep as is. A path is calculated when changing job state. This way we can ignore world changes and optimizations.
- * - Stop NPC following old path when new one is assigned. Now it first completes its path before following the new one.
- * - Store the calculated path. Reload path instead of recalculating. 
- * - Optimize pathfinding by only recalculating when necessary (e.g. target moved, path blocked, blocks changed, etc.). 
+ * Fires when a {@link MoveToTargetComponent} is added to an NPC entity.
+ * Writes the target position to the NPC role's "NavTarget" stored position slot
+ * (slot 0). The colonist role JSON has a flat ReadPosition + Seek instruction
+ * that activates automatically when this slot is set, driving A* pathfinding.
+ * The sensor becomes inactive again once the NPC reaches within MinRange of the target.
  */
-public class PathFindingSystem extends EntityTickingSystem<EntityStore> {
+public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTargetComponent> {
 
-    public PathFindingSystem() {
+    /**
+     * Slot index for the "NavTarget" stored position in the colonist role JSON.
+     * Corresponds to the first named position slot used in Template_Colonist_Base.json.
+     */
+    private static final int NAV_TARGET_SLOT = 0;
+
+    @Override
+    public ComponentType<EntityStore, MoveToTargetComponent> componentType() {
+        return MoveToTargetComponent.getComponentType();
     }
 
     @Override
-    public void tick(
-            float value,
-            int index,
-            @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
+    public void onComponentAdded(
+            @Nonnull Ref<EntityStore> ref,
+            @Nonnull MoveToTargetComponent component,
             @Nonnull Store<EntityStore> store,
             @Nonnull CommandBuffer<EntityStore> commandBuffer) {
 
-        Ref<EntityStore> entityRef = archetypeChunk.getReferenceTo(index);
+        // Remove the trigger component immediately — this is a one-shot navigation request.
+        commandBuffer.removeComponent(ref, MoveToTargetComponent.getComponentType());
 
-        // Get relevant components.
-        MoveToTargetComponent moveTo = store.getComponent(entityRef, MoveToTargetComponent.getComponentType());
-        TransformComponent transformComponent = store.getComponent(entityRef, TransformComponent.getComponentType());
-        NPCEntity npcEntity = store.getComponent(entityRef, NPCEntity.getComponentType());
-        UUIDComponent uuidComponent = store.getComponent(entityRef, UUIDComponent.getComponentType());
-
-        // This is a one-shot system. Remove the component immediately so we don't process this entity again.
-        commandBuffer.removeComponent(entityRef, MoveToTargetComponent.getComponentType());
-
-        if (moveTo == null || transformComponent == null || npcEntity == null || uuidComponent == null) {
-            HytaleColoniesPlugin.LOGGER.atWarning().log(String.format("Entity %s is missing required components for PathFindingSystem", index));
+        NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
+        if (npcEntity == null) {
+            HytaleColoniesPlugin.LOGGER.atWarning().log("PathFindingSystem: entity has no NPCEntity component, cannot navigate.");
             return;
         }
 
-        Vector3d from = transformComponent.getTransform().getPosition();
-        Vector3d to = moveTo.target;
-
-        // Create a new WorldPath object with the start and end points.
-        // This path is "transient" and only exists for this movement.
-        ObjectArrayList<Transform> waypoints = new ObjectArrayList<>();
-        waypoints.add(transformComponent.getTransform().clone()); // Current location
-        waypoints.add(new Transform(to)); // Target location
-        WorldPath transientPath = new WorldPath("transient-path-" + uuidComponent.getUuid(), waypoints);
-
-        // Get the NPC's PathManager and assign the new transient path.
-        PathManager pathManager = npcEntity.getPathManager();
-        if (pathManager != null) {
-            pathManager.setTransientPath(transientPath);
+        Role role = npcEntity.getRole();
+        if (role == null) {
+            HytaleColoniesPlugin.LOGGER.atWarning().log("PathFindingSystem: NPC role is null, cannot navigate.");
+            return;
         }
 
-        // Display debug shapes to visualize the path for 20 seconds.
-        showDebugPath(store.getExternalData().getWorld(), from, to);
+        // Write the target to the "NavTarget" stored position slot (slot 0).
+        // The ReadPosition sensor in Template_Colonist_Base.json checks this slot
+        // every tick and activates the Seek body motion while the NPC is outside MinRange.
+        role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(component.target);
+
+        // Debug visualization — blue = NPC position, red = target, green line = intent.
+        TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
+        if (transform != null) {
+            showDebugPath(
+                    store.getExternalData().getWorld(),
+                    transform.getTransform().getPosition(),
+                    component.target);
+        }
+    }
+
+    @Override
+    public void onComponentSet(
+            @Nonnull Ref<EntityStore> ref,
+            @Nullable MoveToTargetComponent oldComponent,
+            @Nonnull MoveToTargetComponent newComponent,
+            @Nonnull Store<EntityStore> store,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        // Update the navigation target if the component is replaced with a new destination.
+        onComponentAdded(ref, newComponent, store, commandBuffer);
+    }
+
+    @Override
+    public void onComponentRemoved(
+            @Nonnull Ref<EntityStore> ref,
+            @Nonnull MoveToTargetComponent component,
+            @Nonnull Store<EntityStore> store,
+            @Nonnull CommandBuffer<EntityStore> commandBuffer) {
     }
 
     @Override
     public @Nullable Query<EntityStore> getQuery() {
-        // This system will only run on entities that have the MoveToTargetComponent.
         return Query.and(MoveToTargetComponent.getComponentType());
     }
 

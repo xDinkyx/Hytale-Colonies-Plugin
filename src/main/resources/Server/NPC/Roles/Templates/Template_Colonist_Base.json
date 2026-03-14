@@ -1,127 +1,47 @@
 {
   "Type": "Abstract",
-  "StartState": "Idle",
   "Parameters": {
     "Appearance": {
       "Value": "Mannequin",
       "Description": "Model to be used"
     },
-    "ViewRange": {
-      "Value": 12,
-      "Description": "View range"
-    },
-    "ViewSector": {
-      "Value": 180,
-      "Description": "View sector"
-    },
-    "HearingRange": {
-      "Value": 8,
-      "Description": "Hearing range"
-    },
-    "AlertedRange": {
+    "MaxHealth": {
       "Value": 20,
-      "Description": "Alerted range"
-    },
-    "DropList": {
-      "Value": "Drop_Kweebec_Seedling",
-      "Description": "Drop Items"
+      "Description": "Max health for the NPC"
     },
     "MaxSpeed": {
       "Value": 4,
       "Description": "Maximum walking speed"
-    },
-    "IdleMotionComponent": {
-      "Value": "Component_Instruction_Intelligent_Idle_Motion_Wander",
-      "Description": "Idle motion component"
-    },
-    "AttitudeGroup": {
-      "Value": "Kweebec",
-      "Description": "Attitude group"
-    },
-    "Weapons": {
-      "Value": [],
-      "TypeHint": "String",
-      "Description": "NPC Weapons"
-    },
-    "HideWhenScared": {
-      "Value": false,
-      "Description": "Hide instead of flee"
-    },
-    "MaxHealth": {
-      "Value": 30,
-      "Description": "Max health"
-    },
-    "IsMemory": {
-      "Value": false,
-      "Description": "Is memory"
-    },
-    "MemoriesCategory": {
-      "Value": "Other",
-      "Description": "Memory category"
-    },
-    "MemoriesNameOverride": {
-      "Value": "",
-      "Description": "Memory name override"
     },
     "NameTranslationKey": {
       "Value": "server.npcRoles.Colonist_Clockwork_Dummy.name",
       "Description": "Translation key for NPC name display"
     }
   },
-  "IsMemory": { "Compute": "IsMemory" },
-  "MemoriesCategory": { "Compute": "MemoriesCategory" },
-  "MemoriesNameOverride": { "Compute": "MemoriesNameOverride" },
   "Appearance": { "Compute": "Appearance" },
-  "DropList": { "Compute": "DropList" },
-  "DisableDamageGroups": [ "Self" ],
-  "HotbarItems": { "Compute": "Weapons" },
-  "DefaultNPCAttitude": "Ignore",
-  "DefaultPlayerAttitude": "Neutral",
-  "AttitudeGroup": { "Compute": "AttitudeGroup" },
-  "KnockbackScale": 0.5,
+  "MaxHealth": { "Compute": "MaxHealth" },
   "MotionControllerList": [
     {
       "Type": "Walk",
-      "MaxWalkSpeed": { "Compute": "MaxSpeed" },
-      "Gravity": 10,
-      "RunThreshold": 0.3,
-      "MaxFallSpeed": 15,
-      "MaxRotationSpeed": 360,
-      "Acceleration": 10
+      "MaxWalkSpeed": { "Compute": "MaxSpeed" }
     }
   ],
-  "MaxHealth": { "Compute": "MaxHealth" },
-  "CombatConfig": {
-    "EntityEffect": "Immunity_Environmental"
-  },
   "Instructions": [
     {
       "Instructions": [
         {
           "Sensor": {
-            "Type": "State",
-            "State": "Idle"
+            "Type": "ReadPosition",
+            "Slot": "NavTarget",
+            "Range": 200.0,
+            "MinRange": 1.5
           },
-          "Instructions": [
-            {
-              "Reference": "Component_Instruction_Clear_Status_Animation"
-            },
-            {
-              "Type": "Random",
-              "Name": "Colonist_Idle_Random",
-              "Instructions": [
-                {
-                  "Weight": 100,
-                  "Instructions": [
-                    {
-                      "Reference": { "Compute": "IdleMotionComponent" },
-                      "Interfaces": [ "Hytale.Instruction.Intelligent.Idle.Motion" ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+          "BodyMotion": {
+            "Type": "Seek",
+            "StopDistance": 1.5,
+            "SlowDownDistance": 3.0,
+            "RelativeSpeed": 1.0
+          }
         }
       ]
     }

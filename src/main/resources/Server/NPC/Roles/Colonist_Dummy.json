@@ -1,19 +1,4 @@
 {
   "Type": "Variant",
-  "Reference": "Template_Kweebec_Youngling",
-  "Modify": {
-    "Appearance": "Mannequin",
-    "MaxHealth": 20,
-    "IsMemory": false,
-    "NameTranslationKey": {
-      "Compute": "NameTranslationKey"
-    },
-    "IdleMotionComponent": "Component_Instruction_Intelligent_Idle_Motion_Follow_Path"
-  },
-  "Parameters": {
-    "NameTranslationKey": {
-      "Value": "server.npcRoles.Colonist_Clockwork_Dummy.name",
-      "Description": "Translation key for NPC name display"
-    }
-  }
+  "Reference": "Template_Colonist_Base"
 }
