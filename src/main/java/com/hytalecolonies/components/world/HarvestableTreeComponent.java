@@ -1,7 +1,5 @@
 package com.hytalecolonies.components.world;
 
-import java.util.Vector;
-
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
