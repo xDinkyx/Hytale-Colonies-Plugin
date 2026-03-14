@@ -10,14 +10,14 @@ authors:
 references:
   - name: "NPC Template Reference"
     url: "references/npc-template-reference.md"
-tags: [hytale, npc, behavior, templates, ai, json]
+tags: [hytale, npc, behavior, templates, ai, json, pathfinding, navigation]
 ---
 
 # Hytale NPC Templates
 
-Documents Hytale's JSON-based NPC template and behavior system for defining NPC AI via data-driven templates. Covers template structure, variants, states, substates, sensors, actions, motions, state transitions, components, detection (sight/hearing), combat (melee attacks, chaining), inter-NPC interaction (beacons), leashing, searching, and reusable instruction components.
+Documents Hytale's JSON-based NPC template and behavior system for defining NPC AI via data-driven templates. Covers template structure, variants, states, substates, sensors, actions, motions, state transitions, components, detection (sight/hearing), combat (melee attacks, chaining), inter-NPC interaction (beacons), leashing, searching, and reusable instruction components. Also covers plugin-driven A* pathfinding via stored position slots.
 
-Use when creating NPC behavior, defining NPC templates, adding NPC states, configuring NPC detection/combat, or building reusable NPC components.
+Use when creating NPC behavior, defining NPC templates, adding NPC states, configuring NPC detection/combat, building reusable NPC components, or making NPCs navigate to plugin-specified positions.
 
 ## Triggers
 
@@ -54,24 +54,155 @@ Use when creating NPC behavior, defining NPC templates, adding NPC states, confi
 - melee attack
 - attack chaining
 - Root Interaction
+- pathfinding
+- NPC navigation
+- ReadPosition
+- StoredPosition
+- NavTarget
+- navigate NPC
+- plugin pathfinding
 
 
-### Variant (Role) File
+### Variant with No Overrides
 
-A variant extends a template with concrete parameter values. Place next to the template.
+A Variant that inherits all defaults from an Abstract template needs no `Modify` block:
 
 ```json
 {
   "Type": "Variant",
-  "Reference": "Template_Goblin_Ogre",
-  "Modify": {
-    "Appearance": "Goblin",
-    "MaxHealth": 124
-  }
+  "Reference": "Template_Colonist_Base"
 }
 ```
 
-Variants can also override `InteractionVars`, `Parameters`, and `NameTranslationKey`.
+---
+
+## Minimal Working NPC (Generic)
+
+The safest base for a custom plugin NPC. Mirrors `Empty_Role.json` from `lib/Server/NPC/Roles/`.
+
+```json
+{
+  "Type": "Generic",
+  "Appearance": "Mannequin",
+  "MaxHealth": { "Compute": "MaxHealth" },
+  "Parameters": {
+    "MaxHealth": {
+      "Value": 20,
+      "Description": "Max health for the NPC"
+    }
+  },
+  "MotionControllerList": [
+    { "Type": "Walk" }
+  ],
+  "Instructions": [
+    { }
+  ],
+  "NameTranslationKey": "server.npcRoles.My_NPC.name"
+}
+```
+
+---
+
+## Plugin-Driven A* Pathfinding (ReadPosition + Seek)
+
+The correct way to make a plugin navigate an NPC to a position with full A* obstacle avoidance.
+
+### How it works
+
+Hytale's A* system (`BodyMotionFind`, JSON type `"Seek"`) is driven by sensors. The `ReadPosition` sensor reads a **named stored position slot** from `role.getMarkedEntitySupport()`. When the plugin writes a position to that slot, the sensor activates and `Seek` runs A* pathfinding every tick. The NPC stops once within `MinRange`. The sensor is inactive naturally when the slot is at its default `(0,0,0)` and the NPC is far away.
+
+> **Do NOT use `PathManager.setTransientPath()`** for obstacle-aware navigation. That drives scripted waypoint paths (straight lines), not A*.
+
+### JSON (flat ReadPosition + Seek instruction)
+
+```json
+"Instructions": [
+  {
+    "Instructions": [
+      {
+        "Sensor": {
+          "Type": "ReadPosition",
+          "Slot": "NavTarget",
+          "Range": 200.0,
+          "MinRange": 1.5
+        },
+        "BodyMotion": {
+          "Type": "Seek",
+          "StopDistance": 1.5,
+          "SlowDownDistance": 3.0,
+          "RelativeSpeed": 1.0
+        }
+      }
+    ]
+  }
+]
+```
+
+| `ReadPosition` field | Description |
+|---|---|
+| `Slot` | Named position slot — auto-allocated by name; index 0 = first slot declared in the role |
+| `Range` | Max distance from stored position to match |
+| `MinRange` | Arrival condition — sensor deactivates when NPC is this close |
+| `UseMarkedTarget` | If `true`, reads entity position from a `LockedTargetSlot` instead |
+
+### Java — write position to trigger navigation
+
+```java
+NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
+Role role = npcEntity.getRole();
+
+// Slot index 0 = first ReadPosition slot declared in the role JSON
+role.getMarkedEntitySupport().getStoredPosition(0).assign(targetPosition);
+```
+
+### RefChangeSystem trigger pattern
+
+Add a `MoveToTargetComponent` whenever you want the NPC to navigate. A `RefChangeSystem` fires immediately, writes the slot, then removes the component.
+
+```java
+public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTargetComponent> {
+
+    private static final int NAV_TARGET_SLOT = 0;
+
+    @Override
+    public ComponentType<EntityStore, MoveToTargetComponent> componentType() {
+        return MoveToTargetComponent.getComponentType();
+    }
+
+    @Override
+    public void onComponentAdded(Ref<EntityStore> ref, MoveToTargetComponent component,
+            Store<EntityStore> store, CommandBuffer<EntityStore> commandBuffer) {
+        commandBuffer.removeComponent(ref, MoveToTargetComponent.getComponentType());
+        NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
+        if (npcEntity == null) return;
+        Role role = npcEntity.getRole();
+        if (role == null) return;
+        role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(component.target);
+    }
+
+    @Override
+    public void onComponentSet(Ref<EntityStore> ref, MoveToTargetComponent old,
+            MoveToTargetComponent updated, Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        onComponentAdded(ref, updated, store, commandBuffer);
+    }
+
+    @Override
+    public void onComponentRemoved(Ref<EntityStore> ref, MoveToTargetComponent component,
+            Store<EntityStore> store, CommandBuffer<EntityStore> commandBuffer) {}
+
+    @Override
+    public Query<EntityStore> getQuery() {
+        return Query.and(MoveToTargetComponent.getComponentType());
+    }
+}
+```
+
+Trigger navigation from anywhere:
+
+```java
+store.addComponent(npcRef, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(targetPos));
+```
 
 ---
 

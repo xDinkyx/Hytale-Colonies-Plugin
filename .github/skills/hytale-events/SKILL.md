@@ -279,8 +279,8 @@ These events extend `CancellableEcsEvent` and support `setCancelled(true)`:
 
 | Event | Sub-Events | Description |
 |-------|------------|-------------|
-| `BreakBlockEvent` | — | Player breaking a block |
-| `PlaceBlockEvent` | — | Player placing a block |
+| `BreakBlockEvent` | — | Block broken by any entity (player or NPC) via `BlockHarvestUtils` |
+| `PlaceBlockEvent` | — | Block placed by any entity via `BlockPlaceUtils` — fires **before** placement, block is not yet in the world |
 | `ChangeGameModeEvent` | — | Game mode change |
 | `ChunkSaveEvent` | — | Chunk saving |
 | `ChunkUnloadEvent` | — | Chunk unloading |
@@ -405,6 +405,17 @@ public class MyPlugin extends JavaPlugin {
     }
 }
 ```
+
+---
+
+## Block Event Caveats
+
+- `BreakBlockEvent` and `PlaceBlockEvent` **only fire when a non-null entity `Ref` is passed** to `BlockHarvestUtils.performBlockBreak` / `BlockPlaceUtils`. This covers players and NPCs using interactions (e.g. `DestroyBlockInteraction`). It does **not** cover:
+  - Physics-based removal (`naturallyRemoveBlockByPhysics`) — no entity ref, no event
+  - World-generated block changes (`world.setBlock()`) — e.g. sapling growth via `BasicChanceBlockGrowthProcedure`
+  - There is no global block-change listener in the API; poll periodically to catch growth events
+- `PlaceBlockEvent` fires **before** the block is written to the world. Use `world.execute(() -> { ... })` to schedule logic that needs to read the newly placed block.
+- Both event systems are registered on `EntityStore` (not `ChunkStore`) — use `Archetype.empty()` as the query to receive all events regardless of entity type.
 
 ---
 
