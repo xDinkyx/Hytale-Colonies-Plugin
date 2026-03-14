@@ -1,5 +1,6 @@
 package com.hytalecolonies.interactions;
 
+import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hypixel.hytale.codec.Codec;
@@ -77,6 +78,11 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction {
 
         // Spawn the NPC
         Pair<Ref<EntityStore>, INonPlayerCharacter> result = NPCPlugin.get().spawnNPC(store, this.entityId, null, spawnData.position(), spawnData.rotation());
+
+        if (result == null) {
+            HytaleColoniesPlugin.LOGGER.atWarning().log("Failed to spawn colonist: spawnNPC returned null for entity ID '%s'", this.entityId);
+            return;
+        }
 
         Ref<EntityStore> npcRef = result.first();
         NPCEntity npcComponent = store.getComponent(npcRef, Objects.requireNonNull(NPCEntity.getComponentType()));
