@@ -90,10 +90,10 @@ public class HytaleColoniesPlugin extends JavaPlugin {
      * Register ECS components.
      */
     private void registerComponents() {
-        colonistComponentType = getEntityStoreRegistry().registerComponent(ColonistComponent.class, ColonistComponent::new);
-        colonistJobComponentType = getEntityStoreRegistry().registerComponent(JobComponent.class, JobComponent::new);
-        unemployedComponentType = getEntityStoreRegistry().registerComponent(UnemployedComponent.class, UnemployedComponent::new);
-        woodCutterJobComponentType = getEntityStoreRegistry().registerComponent(WoodcutterJobComponent.class, WoodcutterJobComponent::new);
+        colonistComponentType = getEntityStoreRegistry().registerComponent(ColonistComponent.class, "Colonist", ColonistComponent.CODEC);
+        colonistJobComponentType = getEntityStoreRegistry().registerComponent(JobComponent.class, "ColonistJob", JobComponent.CODEC);
+        unemployedComponentType = getEntityStoreRegistry().registerComponent(UnemployedComponent.class, "Unemployed", UnemployedComponent.CODEC);
+        woodCutterJobComponentType = getEntityStoreRegistry().registerComponent(WoodcutterJobComponent.class, "WoodcutterJob", WoodcutterJobComponent.CODEC);
         workStationComponentType = getChunkStoreRegistry().registerComponent(WorkStationComponent.class, "WorkStation", WorkStationComponent.CODEC);
         moveToTargetComponentType = getEntityStoreRegistry().registerComponent(MoveToTargetComponent.class, MoveToTargetComponent::new);
         harvestableTreeComponentType = getChunkStoreRegistry().registerComponent(HarvestableTreeComponent.class, "HarvestableTree", HarvestableTreeComponent.CODEC);
@@ -144,6 +144,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new ColonySystem(colonistComponentType));
         getChunkStoreRegistry().registerSystem(new JobAssignmentSystems());
         getChunkStoreRegistry().registerSystem(new JobAssignmentSystems.WorkStationEntitySystem());
+        getChunkStoreRegistry().registerSystem(new JobAssignmentSystems.StaleMarkCleanupSystem());
         getChunkStoreRegistry().registerSystem(treeScannerSystem);
         getChunkStoreRegistry().registerSystem(new WorkstationTreeInitSystem(treeScannerSystem));
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.ColonistEntitySystem());

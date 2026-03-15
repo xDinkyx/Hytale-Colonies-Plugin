@@ -2,6 +2,7 @@ package com.hytalecolonies.systems.jobs;
 
 import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
@@ -11,6 +12,7 @@ import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.component.system.DelayedSystem;
 import com.hypixel.hytale.component.system.RefChangeSystem;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
@@ -24,7 +26,9 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -32,7 +36,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
     // Query for Job Sources (Workstations/Blocks)
     private final Query<ChunkStore> workStationQuery = Archetype.of(WorkStationComponent.getComponentType());
-    private final Query<EntityStore> unemployedQuery = Archetype.of(UnemployedComponent.getComponentType());
+    private final Query<EntityStore> unemployedQuery = Query.and(UnemployedComponent.getComponentType(), ColonistComponent.getComponentType());
 
     public JobAssignmentSystems() {
         super(5.0f); // Run once every 5 seconds.
@@ -98,11 +102,16 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
     private static void removeGhostWorkers(WorkStationComponent workStation, EntityStore entityStore) {
         List<UUID> ghosts = null;
+        List<UUID> zombies = null;
         for (UUID colonistUuid : workStation.getAssignedColonists()) {
             Ref<EntityStore> ref = entityStore.getRefFromUUID(colonistUuid);
             if (ref == null || !ref.isValid()) {
                 if (ghosts == null) ghosts = new ArrayList<>();
                 ghosts.add(colonistUuid);
+            } else if (entityStore.getStore().getComponent(ref, JobComponent.getComponentType()) == null) {
+                // Entity exists but lost its JobComponent (e.g. loaded from old save without codec).
+                if (zombies == null) zombies = new ArrayList<>();
+                zombies.add(colonistUuid);
             }
         }
         if (ghosts != null) {
@@ -111,6 +120,21 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                 HytaleColoniesPlugin.LOGGER.atWarning().log(
                         "[JobAssignment] Removed ghost worker %s from workstation %s.",
                         ghost, workStation.getJobType());
+            }
+        }
+        if (zombies != null) {
+            for (UUID zombie : zombies) {
+                workStation.removeAssignedColonist(zombie);
+                Ref<EntityStore> ref = entityStore.getRefFromUUID(zombie);
+                if (ref != null && ref.isValid()) {
+                    entityStore.getStore().tryRemoveComponent(ref, WoodcutterJobComponent.getComponentType());
+                    if (entityStore.getStore().getComponent(ref, UnemployedComponent.getComponentType()) == null) {
+                        entityStore.getStore().addComponent(ref, UnemployedComponent.getComponentType(), new UnemployedComponent());
+                    }
+                }
+                HytaleColoniesPlugin.LOGGER.atWarning().log(
+                        "[JobAssignment] Restored zombie worker %s from workstation %s as unemployed.",
+                        zombie, workStation.getJobType());
             }
         }
     }
@@ -206,7 +230,25 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                                   @Nonnull AddReason reason,
                                   @Nonnull Store<EntityStore> store,
                                   @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+            if (reason != AddReason.LOAD) return;
 
+            // On server load, transient fields (targetTreePosition etc.) are gone.
+            // Reset any in-progress travel state back to Idle so the movement system
+            // cleanly picks up the colonist and finds a new tree.
+            JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
+            if (job == null) return;
+            JobState state = job.getCurrentTask();
+            if (state == JobState.TravelingToJob || state == JobState.TravelingHome || state == JobState.Working) {
+                HytaleColoniesPlugin.LOGGER.atInfo().log(
+                        "[JobAssignment] Resetting colonist job state from %s to Idle on load.", state);
+                job.setCurrentTask(JobState.Idle);
+                // Null the target so this colonist doesn't hold a phantom claim.
+                // The periodic StaleMarkCleanupSystem will clear the matching tree mark.
+                WoodcutterJobComponent woodcutterJob = store.getComponent(ref, WoodcutterJobComponent.getComponentType());
+                if (woodcutterJob != null) {
+                    woodcutterJob.targetTreePosition = null;
+                }
+            }
         }
 
         @Override
@@ -282,6 +324,54 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         @Override
         public Query<EntityStore> getQuery() {
             return Query.and(ColonistComponent.getComponentType(), JobComponent.getComponentType());
+        }
+    }
+
+    /**
+     * Periodically scans every {@link HarvestableTreeComponent} and clears the
+     * {@code markedForHarvest} flag on any tree that has no active colonist
+     * claiming it.  This covers orphaned marks left behind by crashes, hard
+     * removal of colonists, or server restarts.
+     */
+    public static class StaleMarkCleanupSystem extends DelayedSystem<ChunkStore> {
+
+        public StaleMarkCleanupSystem() {
+            super(30.0f); // Audit every 30 seconds.
+        }
+
+        @Override
+        public void delayedTick(float dt, int systemIndex, @Nonnull Store<ChunkStore> store) {
+            World world = store.getExternalData().getWorld();
+            EntityStore entityStore = world.getEntityStore();
+
+            // Collect positions of trees that are actively claimed by a colonist.
+            Set<Vector3i> activelyClaimed = new HashSet<>();
+            Query<EntityStore> woodcutterQuery = Query.and(WoodcutterJobComponent.getComponentType());
+            entityStore.getStore().forEachChunk(woodcutterQuery, (chunk, _cb) -> {
+                for (int i = 0; i < chunk.size(); i++) {
+                    WoodcutterJobComponent wc = chunk.getComponent(i, WoodcutterJobComponent.getComponentType());
+                    if (wc != null && wc.targetTreePosition != null) {
+                        activelyClaimed.add(wc.targetTreePosition);
+                    }
+                }
+            });
+
+            // Clear marks on any tree not in the active-claim set.
+            int[] cleared = {0};
+            Query<ChunkStore> treeQuery = Query.and(HarvestableTreeComponent.getComponentType());
+            store.forEachChunk(treeQuery, (chunk, _cb) -> {
+                for (int i = 0; i < chunk.size(); i++) {
+                    HarvestableTreeComponent tree = chunk.getComponent(i, HarvestableTreeComponent.getComponentType());
+                    if (tree != null && tree.isMarkedForHarvest() && !activelyClaimed.contains(tree.getBasePosition())) {
+                        tree.setMarkedForHarvest(false);
+                        cleared[0]++;
+                    }
+                }
+            });
+
+            if (cleared[0] > 0) {
+                HytaleColoniesPlugin.LOGGER.atInfo().log("[StaleMarks] Cleared %d orphaned tree mark(s).", cleared[0]);
+            }
         }
     }
 
