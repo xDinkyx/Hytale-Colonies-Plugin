@@ -88,6 +88,10 @@ public class HarvestableTreeComponent implements Component<ChunkStore> {
         this.markedForHarvest = true;
     }
 
+    public void setMarkedForHarvest(boolean markedForHarvest) {
+        this.markedForHarvest = markedForHarvest;
+    }
+
     public void setWoodCount(int woodCount) {
         this.woodCount = woodCount;
     }

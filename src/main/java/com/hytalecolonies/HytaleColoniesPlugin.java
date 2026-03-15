@@ -24,6 +24,7 @@ import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
 import com.hytalecolonies.systems.jobs.TreeBlockChangeEventSystem;
 import com.hytalecolonies.systems.jobs.TreeScannerSystem;
 import com.hytalecolonies.systems.jobs.WorkstationTreeInitSystem;
+import com.hytalecolonies.systems.jobs.WoodcutterMovementSystem;
 import com.hytalecolonies.systems.npc.PathFindingSystem;
 
 import javax.annotation.Nonnull;
@@ -149,6 +150,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.JobAssignedSystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());
         getEntityStoreRegistry().registerSystem(new PathFindingSystem());
+        getEntityStoreRegistry().registerSystem(new WoodcutterMovementSystem());
         getEntityStoreRegistry().registerSystem(new TreeBlockChangeEventSystem.OnBreak(treeScannerSystem));
         getEntityStoreRegistry().registerSystem(new TreeBlockChangeEventSystem.OnPlace(treeScannerSystem));
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered plugin systems");
