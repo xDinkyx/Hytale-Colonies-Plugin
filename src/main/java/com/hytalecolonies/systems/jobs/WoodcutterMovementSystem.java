@@ -196,8 +196,28 @@ public class WoodcutterMovementSystem extends DelayedEntitySystem<EntityStore> {
         if (dist <= WORKSTATION_ARRIVAL_3D) {
             unmarkClaimedTree(woodcutter, store);
             woodcutter.targetTreePosition = null;
+            woodcutter.stuckTicks = 0;
+            woodcutter.lastKnownPosition = null;
             job.setCurrentTask(JobState.Idle);
             HytaleColoniesPlugin.LOGGER.atInfo().log("[Woodcutter] Arrived home at workstation.");
+            return;
+        }
+
+        // Stuck detection — re-dispatch nav if the colonist hasn't moved (e.g. after server restart).
+        Vector3i currentCell = new Vector3i((int) colonistPos.x, (int) colonistPos.y, (int) colonistPos.z);
+        if (currentCell.equals(woodcutter.lastKnownPosition)) {
+            woodcutter.stuckTicks++;
+        } else {
+            woodcutter.stuckTicks = 0;
+            woodcutter.lastKnownPosition = currentCell;
+        }
+
+        if (woodcutter.stuckTicks >= STUCK_TICKS_LIMIT) {
+            woodcutter.stuckTicks = 0;
+            woodcutter.lastKnownPosition = null;
+            Vector3d wsTarget = new Vector3d(workStationPos.x + 0.5, workStationPos.y, workStationPos.z + 0.5);
+            commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(wsTarget));
+            HytaleColoniesPlugin.LOGGER.atInfo().log("[Woodcutter] TravelingHome — stuck, re-dispatching nav to workstation.");
         }
     }
 
