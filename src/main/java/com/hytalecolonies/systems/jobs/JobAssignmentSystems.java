@@ -2,9 +2,12 @@ package com.hytalecolonies.systems.jobs;
 
 import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.jobs.WoodcutterJobComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
+import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
@@ -20,18 +23,19 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 
-// ToDo: Make more efficient by adding unemployed component and only querying those entities.
 public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
     // Query for Job Sources (Workstations/Blocks)
     private final Query<ChunkStore> workStationQuery = Archetype.of(WorkStationComponent.getComponentType());
-    private final Query<EntityStore> unemployedQuery = Archetype.of(UnemployedComponent.getComponentType()); // ToDo: Replace later with unemployed component query.
+    private final Query<EntityStore> unemployedQuery = Archetype.of(UnemployedComponent.getComponentType());
 
     public JobAssignmentSystems() {
-        super(1.0f); // Run once every 1 second.
+        super(5.0f); // Run once every 5 seconds.
     }
 
     @Override
@@ -42,22 +46,35 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         WorkStationComponent workStation = archetypeChunk.getComponent(index, WorkStationComponent.getComponentType());
         assert workStation != null;
 
-        // ToDo: Perhaps add check to see that all assigned colonists still exist? If not remove from work station.
+        World world = chunkStore.getExternalData().getWorld();
+        EntityStore entityStore = world.getEntityStore();
 
-        //LogWorkStationInfo(workStation);
+        // Remove ghost workers — colonists recorded in the workstation that no longer exist.
+        removeGhostWorkers(workStation, entityStore);
+
+        LogWorkStationInfo(workStation);
 
         // If no job slots are available, do nothing.
         if (workStation.getAvailableJobSlots() <= 0) return;
 
         BlockModule.BlockStateInfo blockStateInfo = archetypeChunk.getComponent(index, BlockModule.BlockStateInfo.getComponentType());
-        if (blockStateInfo == null) return;
+        if (blockStateInfo == null) {
+            HytaleColoniesPlugin.LOGGER.atWarning().log("[JobAssignment] WorkStation has no BlockStateInfo — skipping.");
+            return;
+        }
 
         // Get the world position of the work station block entity
         Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
 
         // Iterate through unemployed colonists and assign them to this work station until we run out of job slots or unemployed colonists.
-        World world = chunkStore.getExternalData().getWorld();
-        EntityStore entityStore = world.getEntityStore();
+
+        int unemployedCount = entityStore.getStore().getEntityCountFor(unemployedQuery);
+        HytaleColoniesPlugin.LOGGER.atInfo().log(
+                "[JobAssignment] WorkStation %s (%s) | slots: %d | unemployed colonists: %d",
+                workStation.getJobType(), workStationPos, workStation.getAvailableJobSlots(), unemployedCount);
+
+        if (unemployedCount == 0) return;
+
         entityStore.getStore().forEachChunk(unemployedQuery, (_archetypeChunk, _commandBuffer) ->
         {
             // Move on to the next work station after assigning one colonist.
@@ -71,8 +88,31 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             UUIDComponent colonistEntityUuid = _archetypeChunk.getComponent(colonistId, UUIDComponent.getComponentType());
             assert colonistEntityUuid != null;
 
+            HytaleColoniesPlugin.LOGGER.atInfo().log(
+                    "[JobAssignment] Assigning colonist '%s' (%s) to WorkStation %s at %s.",
+                    colonist.getColonistName(), colonistEntityUuid.getUuid(), workStation.getJobType(), workStationPos);
+
             EmployInWorkStation(_commandBuffer, workStation, colonistEntityUuid, colonistRef, workStationPos);
         });
+    }
+
+    private static void removeGhostWorkers(WorkStationComponent workStation, EntityStore entityStore) {
+        List<UUID> ghosts = null;
+        for (UUID colonistUuid : workStation.getAssignedColonists()) {
+            Ref<EntityStore> ref = entityStore.getRefFromUUID(colonistUuid);
+            if (ref == null || !ref.isValid()) {
+                if (ghosts == null) ghosts = new ArrayList<>();
+                ghosts.add(colonistUuid);
+            }
+        }
+        if (ghosts != null) {
+            for (UUID ghost : ghosts) {
+                workStation.removeAssignedColonist(ghost);
+                HytaleColoniesPlugin.LOGGER.atWarning().log(
+                        "[JobAssignment] Removed ghost worker %s from workstation %s.",
+                        ghost, workStation.getJobType());
+            }
+        }
     }
 
     private static void EmployInWorkStation(CommandBuffer<EntityStore> _commandBuffer, WorkStationComponent workStation, UUIDComponent colonistEntityUuid, Ref<EntityStore> colonistRef, Vector3i workStationPos) {
@@ -82,6 +122,11 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         // Add job component to colonist.
         _commandBuffer.removeComponent(colonistRef, UnemployedComponent.getComponentType()); // Remove unemployed component since colonist is now employed.
         _commandBuffer.addComponent(colonistRef, JobComponent.getComponentType(), new JobComponent(workStationPos));
+
+        // Add job-type-specific component.
+        if (workStation.getJobType() == JobType.Woodsman) {
+            _commandBuffer.addComponent(colonistRef, WoodcutterJobComponent.getComponentType(), new WoodcutterJobComponent());
+        }
 
         HytaleColoniesPlugin.LOGGER.atInfo().log(String.format("Assigned Colonist %s to job at %s.", colonistEntityUuid.getUuid(), workStation.getJobType()));
     }
@@ -122,9 +167,9 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
             WorkStationComponent workStation = commandBuffer.getComponent(ref, WorkStationComponent.getComponentType());
             assert workStation != null;
-            workStation.clearAssignedColonists();
 
             fireColonists(workStation, commandBuffer);
+            workStation.clearAssignedColonists();
         }
 
         private void fireColonists(WorkStationComponent workStation, CommandBuffer<ChunkStore> commandBuffer) {
@@ -134,6 +179,12 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             // Make colonists assigned to this work station unemployed.
             for (UUID colonistUuid : workStation.getAssignedColonists()) {
                 var colonistRef = entityStore.getRefFromUUID(colonistUuid);
+                // Clean up job-type-specific state before removing the job.
+                WoodcutterJobComponent woodcutterJob = entityStore.getStore().getComponent(colonistRef, WoodcutterJobComponent.getComponentType());
+                if (woodcutterJob != null) {
+                    WoodcutterMovementSystem.unmarkClaimedTree(woodcutterJob, entityStore.getStore());
+                    entityStore.getStore().tryRemoveComponent(colonistRef, WoodcutterJobComponent.getComponentType());
+                }
                 entityStore.getStore().tryRemoveComponent(colonistRef, JobComponent.getComponentType());
                 entityStore.getStore().addComponent(colonistRef, UnemployedComponent.getComponentType(), new UnemployedComponent()); // Mark colonist as unemployed again.
                 HytaleColoniesPlugin.LOGGER.atInfo().log(String.format("Unassigned colonist with UUID %s from work station.", colonistUuid));
@@ -171,6 +222,12 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             assert jobComponent != null;
             UUIDComponent uuidComponent = commandBuffer.getComponent(ref, UUIDComponent.getComponentType());
             assert uuidComponent != null;
+
+            // Release any claimed tree before removing.
+            WoodcutterJobComponent woodcutterJob = commandBuffer.getComponent(ref, WoodcutterJobComponent.getComponentType());
+            if (woodcutterJob != null) {
+                WoodcutterMovementSystem.unmarkClaimedTree(woodcutterJob, store);
+            }
 
             // Get work station from position.
             Vector3i workStationPos = jobComponent.getWorkStationBlockPosition();
