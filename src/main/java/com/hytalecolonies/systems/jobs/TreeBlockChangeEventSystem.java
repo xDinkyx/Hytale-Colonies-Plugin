@@ -1,6 +1,7 @@
 package com.hytalecolonies.systems.jobs;
 
-import com.hytalecolonies.HytaleColoniesPlugin;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Store;
@@ -113,7 +114,7 @@ public class TreeBlockChangeEventSystem {
                 if (blockType == null) return;
                 if (!scanner.getTreeWoodBlockKeys().contains(blockType.getId())) return;
 
-                HytaleColoniesPlugin.LOGGER.atInfo().log(
+                DebugLog.log(DebugCategory.TREE_SCANNER,
                         "[TreeScanner] Tree-wood block placed at %s — checking for new tree.", pos);
                 Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
                 scanner.onTreeWoodBlockAdded(pos, world, chunkStore);

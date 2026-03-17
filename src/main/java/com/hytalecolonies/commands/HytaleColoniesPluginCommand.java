@@ -2,6 +2,7 @@ package com.hytalecolonies.commands;
 
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractCommandCollection;
 import com.hytalecolonies.commands.debug.BlockEntityInfoCommand;
+import com.hytalecolonies.commands.debug.DebugGuiCommand;
 
 /**
  * Main command for the Colonies plugin.
@@ -27,6 +28,7 @@ public class HytaleColoniesPluginCommand extends AbstractCommandCollection {
         this.addSubCommand(new UISubCommand());
         this.addSubCommand(new BlockEntityInfoCommand());
         this.addSubCommand(new TestMoveCommand());
+        this.addSubCommand(new DebugGuiCommand());
     }
 
     @Override

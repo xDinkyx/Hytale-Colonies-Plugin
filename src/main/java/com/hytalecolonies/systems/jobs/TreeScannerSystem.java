@@ -1,7 +1,8 @@
 package com.hytalecolonies.systems.jobs;
 
 import com.hypixel.hytale.math.vector.Vector3d;
-import com.hytalecolonies.HytaleColoniesPlugin;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
@@ -19,6 +20,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.buildertool.config.BlockTypeListAsset;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
@@ -31,6 +33,7 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.logging.Level;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,6 +54,7 @@ import java.util.Set;
 public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
 
     static final int SCAN_RADIUS_CHUNKS = 1;
+    public static final float SCAN_DELAY_SECONDS = 60.0f;
     private static final String TREE_WOOD_LIST_ID = "TreeWood";
 
     private final Query<ChunkStore> query = Query.and(
@@ -76,7 +80,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
     private final Map<Long, Integer> chunkWoodCountCache = new HashMap<>();
 
     public TreeScannerSystem() {
-        super(60.0f); // Run every 60 s — count-comparison ensures BFS only fires for chunks whose wood count changed
+        super(SCAN_DELAY_SECONDS); // Run every 60 s — count-comparison ensures BFS only fires for chunks whose wood count changed
     }
 
     @Override
@@ -98,7 +102,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
 
         Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
 
-        HytaleColoniesPlugin.LOGGER.atInfo().log("[TreeScanner Periodic] Growth scan around workstation at %s.", workStationPos);
+        DebugLog.log(DebugCategory.TREE_SCANNER, "[TreeScanner Periodic] Growth scan around workstation at %s.", workStationPos);
         scanForTreeWoodBlocks(workStationPos, chunkStore, commandBuffer);
     }
 
@@ -111,11 +115,13 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         List<Vector3i> segmentBottoms = collectSegmentBottoms(world, centerPos, treeWoodKeys);
         List<TreeDetectorBFS.TreeCandidate> confirmedTrees = detectTrees(segmentBottoms, world);
 
-        HytaleColoniesPlugin.LOGGER.atInfo().log(
+        DebugLog.log(DebugCategory.TREE_SCANNER,
                 "[TreeScanner] Found %d trees within %d chunk radius of workstation at %s.",
                 confirmedTrees.size(), SCAN_RADIUS_CHUNKS, centerPos);
 
-        debugDrawTrees(world, confirmedTrees);
+        if (HytaleColoniesPlugin.getInstance().getDebugConfig().get().isDrawTreeDetection()) {
+            debugDrawTrees(world, confirmedTrees);
+        }
         registerHarvestableTrees(confirmedTrees, world, chunkStore, commandBuffer);
     }
 
@@ -197,7 +203,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             else failed++;
         }
 
-        HytaleColoniesPlugin.LOGGER.atInfo().log(
+        DebugLog.log(DebugCategory.TREE_SCANNER,
                 "[TreeScanner] HarvestableTree registration — created: %d, updated: %d, already registered: %d, failed: %d.",
                 created, updated, skipped, failed);
     }
@@ -226,14 +232,14 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         int blockId = world.getBlock(base);
         BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
         if (blockType == null) {
-            HytaleColoniesPlugin.LOGGER.atWarning().log(
+            DebugLog.log(DebugCategory.TREE_SCANNER, Level.WARNING,
                     "[TreeScanner] No block type found at tree base %s — skipping registration.", base);
             return -2;
         }
 
         WorldChunk baseChunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(base.x, base.z));
         if (baseChunk == null) {
-            HytaleColoniesPlugin.LOGGER.atWarning().log(
+            DebugLog.log(DebugCategory.TREE_SCANNER,
                     "[TreeScanner] Chunk not in memory for tree base %s — skipping registration.", base);
             return -2;
         }
@@ -242,7 +248,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         BlockComponentChunk blockComponentChunk = chunkStore.getComponent(
                 chunkRef, BlockComponentChunk.getComponentType());
         if (blockComponentChunk == null) {
-            HytaleColoniesPlugin.LOGGER.atWarning().log(
+            DebugLog.log(DebugCategory.TREE_SCANNER, Level.WARNING,
                     "[TreeScanner] No BlockComponentChunk at tree base %s — skipping registration.", base);
             return -2;
         }
@@ -252,7 +258,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
 
         if (existingRef != null && existingRef.isValid()) {
             if (chunkStore.getComponent(existingRef, HarvestableTreeComponent.getComponentType()) != null) {
-                HytaleColoniesPlugin.LOGGER.atInfo().log(
+                DebugLog.log(DebugCategory.TREE_SCANNER,
                         "[TreeScanner] Tree at %s already registered — skipping.", base);
                 return -1;
             }
@@ -263,7 +269,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             } else {
                 chunkStore.putComponent(existingRef, HarvestableTreeComponent.getComponentType(), newComp);
             }
-            HytaleColoniesPlugin.LOGGER.atInfo().log(
+            DebugLog.log(DebugCategory.TREE_SCANNER, Level.INFO,
                     "[TreeScanner] Added HarvestableTreeComponent to existing block entity at %s (%s, %d wood blocks).",
                     base, blockType.getId(), tree.woodCount());
             return 0;
@@ -283,7 +289,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         } else {
             chunkStore.addEntity(holder, AddReason.SPAWN);
         }
-        HytaleColoniesPlugin.LOGGER.atInfo().log(
+        DebugLog.log(DebugCategory.TREE_SCANNER, Level.INFO,
                 "[TreeScanner] Created block entity with HarvestableTreeComponent at %s (%s, %d wood blocks).",
                 base, blockType.getId(), tree.woodCount());
         return 1;
@@ -298,10 +304,10 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             for (long packed : tree.visitedWoodPacked()) {
                 Vector3i pos = TreeDetectorBFS.unpack(packed);
                 Vector3d cubePos = new Vector3d(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5);
-                DebugUtils.addCube(world, cubePos, treeColor, 1.2, 20.0f);
+                DebugUtils.addCube(world, cubePos, treeColor, 1.2, SCAN_DELAY_SECONDS);
             }
             Vector3d basePos = tree.base().toVector3d().add(0.5, 0.5, 0.5);
-            DebugUtils.addCube(world, basePos, DebugUtils.COLOR_WHITE, 1.4, 20.0f);
+            DebugUtils.addCube(world, basePos, DebugUtils.COLOR_WHITE, 1.4, SCAN_DELAY_SECONDS);
         }
     }
 
@@ -447,11 +453,11 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             HarvestableTreeComponent updated = existingComp.clone();
             updated.setWoodCount(result.woodCount());
             chunkStore.putComponent(blockRef, HarvestableTreeComponent.getComponentType(), updated);
-            HytaleColoniesPlugin.LOGGER.atInfo().log(
+            DebugLog.log(DebugCategory.TREE_SCANNER, Level.INFO,
                     "[TreeScanner] Tree at %s updated — %d wood blocks remaining after break.", basePos, result.woodCount());
         } else {
             chunkStore.removeComponent(blockRef, HarvestableTreeComponent.getComponentType());
-            HytaleColoniesPlugin.LOGGER.atInfo().log(
+            DebugLog.log(DebugCategory.TREE_SCANNER, Level.INFO,
                     "[TreeScanner] Tree at %s removed — no valid structure remains.", basePos);
         }
     }

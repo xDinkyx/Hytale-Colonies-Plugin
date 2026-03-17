@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 
 import com.hytalecolonies.commands.HytaleColoniesPluginCommand;
+import com.hytalecolonies.debug.DebugConfig;
 import com.hytalecolonies.listeners.PlayerListener;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
@@ -31,6 +32,7 @@ import com.hytalecolonies.systems.npc.PathFindingSystem;
 
 import javax.annotation.Nonnull;
 import java.util.logging.Level;
+import com.hypixel.hytale.server.core.util.Config;
 
 /**
  * HytaleColonies - A Hytale server plugin.
@@ -39,6 +41,8 @@ public class HytaleColoniesPlugin extends JavaPlugin {
 
     public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static HytaleColoniesPlugin instance;
+
+    private final Config<DebugConfig> debugConfig = this.withConfig("DebugConfig", DebugConfig.CODEC);
 
     // ECS Component Types
     private ComponentType<EntityStore, ColonistComponent> colonistComponentType;
@@ -64,9 +68,16 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         return instance;
     }
 
+    public Config<DebugConfig> getDebugConfig() {
+        return debugConfig;
+    }
+
     @Override
     protected void setup() {
         LOGGER.at(Level.INFO).log("[HytaleColonies] Setting up...");
+
+        debugConfig.save();
+        debugConfig.get().applyToCategories();
 
         registerCommands();
         registerListeners();

@@ -2,9 +2,12 @@ package com.hytalecolonies.systems.npc;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.logging.Level;
 
 import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
@@ -51,13 +54,13 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
 
         NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
         if (npcEntity == null) {
-            HytaleColoniesPlugin.LOGGER.atWarning().log("PathFindingSystem: entity has no NPCEntity component, cannot navigate.");
+            DebugLog.log(DebugCategory.MOVEMENT, Level.WARNING, "PathFindingSystem: entity has no NPCEntity component, cannot navigate.");
             return;
         }
 
         Role role = npcEntity.getRole();
         if (role == null) {
-            HytaleColoniesPlugin.LOGGER.atWarning().log("PathFindingSystem: NPC role is null, cannot navigate.");
+            DebugLog.log(DebugCategory.MOVEMENT, Level.WARNING, "PathFindingSystem: NPC role is null, cannot navigate.");
             return;
         }
 
@@ -68,7 +71,7 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
 
         // Debug visualization — blue = NPC position, red = target, green line = intent.
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
-        if (transform != null) {
+        if (transform != null && HytaleColoniesPlugin.getInstance().getDebugConfig().get().isDrawColonistPaths()) {
             showDebugPath(
                     store.getExternalData().getWorld(),
                     transform.getTransform().getPosition(),

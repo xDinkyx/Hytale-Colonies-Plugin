@@ -1,8 +1,9 @@
 package com.hytalecolonies.systems.jobs;
 
-import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ComponentType;
@@ -16,6 +17,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.logging.Level;
 
 /**
  * Performs the initial tree scan around a Woodsman workstation the moment the
@@ -57,13 +59,13 @@ public class WorkstationTreeInitSystem extends RefChangeSystem<ChunkStore, WorkS
         BlockModule.BlockStateInfo blockStateInfo = store.getComponent(
                 ref, BlockModule.BlockStateInfo.getComponentType());
         if (blockStateInfo == null) {
-            HytaleColoniesPlugin.LOGGER.atWarning().log(
+            DebugLog.log(DebugCategory.TREE_SCANNER, Level.WARNING,
                     "[TreeScanner Init] WorkStationComponent added without BlockStateInfo — skipping initial scan.");
             return;
         }
 
         Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
-        HytaleColoniesPlugin.LOGGER.atInfo().log(
+        DebugLog.log(DebugCategory.TREE_SCANNER, Level.INFO,
                 "[TreeScanner Init] Initial scan triggered for Woodsman workstation at %s.", workStationPos);
         scanner.scanForTreeWoodBlocks(workStationPos, store, commandBuffer);
     }

@@ -1,0 +1,109 @@
+package com.hytalecolonies.debug;
+
+import com.hypixel.hytale.codec.Codec;
+import com.hypixel.hytale.codec.KeyedCodec;
+import com.hypixel.hytale.codec.builder.BuilderCodec;
+
+import java.util.logging.Level;
+
+/**
+ * Persistent configuration for per-category debug log levels.
+ * Saved to the plugin's mods folder so settings survive server restarts.
+ *
+ * <p>Each field stores the {@link Level} name for the corresponding
+ * {@link DebugCategory} (e.g. {@code "OFF"}, {@code "FINE"}, {@code "INFO"},
+ * {@code "WARNING"}, {@code "SEVERE"}). Default is {@code "INFO"} for all
+ * categories, meaning INFO/WARNING/SEVERE are visible and FINE (debug) is hidden.
+ *
+ * <p>Call {@link #applyToCategories()} once after loading to push the stored
+ * levels into the live enum values. Call {@link #setLevelForCategory} when
+ * changing a setting at runtime — it updates both the in-memory enum and this
+ * config object so a subsequent {@code config.save()} persists it.
+ */
+public class DebugConfig {
+
+    public static final BuilderCodec<DebugConfig> CODEC =
+        BuilderCodec.builder(DebugConfig.class, DebugConfig::new)
+            .append(new KeyedCodec<>("MovementLevel", Codec.STRING),
+                    (c, v) -> c.movementLevel = v, c -> c.movementLevel)
+            .add()
+            .append(new KeyedCodec<>("JobAssignmentLevel", Codec.STRING),
+                    (c, v) -> c.jobAssignmentLevel = v, c -> c.jobAssignmentLevel)
+            .add()
+            .append(new KeyedCodec<>("WoodcutterJobLevel", Codec.STRING),
+                    (c, v) -> c.woodcutterJobLevel = v, c -> c.woodcutterJobLevel)
+            .add()
+            .append(new KeyedCodec<>("TreeScannerLevel", Codec.STRING),
+                    (c, v) -> c.treeScannerLevel = v, c -> c.treeScannerLevel)
+            .add()
+            .append(new KeyedCodec<>("DrawColonistPaths", Codec.BOOLEAN),
+                    (c, v) -> c.drawColonistPaths = v, c -> c.drawColonistPaths)
+            .add()
+            .append(new KeyedCodec<>("DrawTreeDetection", Codec.BOOLEAN),
+                    (c, v) -> c.drawTreeDetection = v, c -> c.drawTreeDetection)
+            .add()
+            .build();
+
+    private String movementLevel     = "INFO";
+    private String jobAssignmentLevel = "INFO";
+    private String woodcutterJobLevel = "INFO";
+    private String treeScannerLevel   = "INFO";
+    private boolean drawColonistPaths = false;
+    private boolean drawTreeDetection = false;
+
+    public DebugConfig() {}
+
+    /** Parses all stored level strings and applies them to the live {@link DebugCategory} values. */
+    public void applyToCategories() {
+        DebugCategory.MOVEMENT.setMinLevel(parseLevel(movementLevel));
+        DebugCategory.JOB_ASSIGNMENT.setMinLevel(parseLevel(jobAssignmentLevel));
+        DebugCategory.WOODCUTTER_JOB.setMinLevel(parseLevel(woodcutterJobLevel));
+        DebugCategory.TREE_SCANNER.setMinLevel(parseLevel(treeScannerLevel));
+    }
+
+    /**
+     * Updates both the config field and the live category threshold.
+     * Persist the change by calling {@code config.save()} afterwards.
+     */
+    public void setLevelForCategory(DebugCategory category, Level level) {
+        String name = level.getName();
+        switch (category) {
+            case MOVEMENT      -> movementLevel = name;
+            case JOB_ASSIGNMENT -> jobAssignmentLevel = name;
+            case WOODCUTTER_JOB -> woodcutterJobLevel = name;
+            case TREE_SCANNER  -> treeScannerLevel = name;
+        }
+        category.setMinLevel(level);
+    }
+
+    /** Returns the stored level name string for the given category. */
+    public String getLevelNameForCategory(DebugCategory category) {
+        return switch (category) {
+            case MOVEMENT       -> movementLevel;
+            case JOB_ASSIGNMENT -> jobAssignmentLevel;
+            case WOODCUTTER_JOB -> woodcutterJobLevel;
+            case TREE_SCANNER   -> treeScannerLevel;
+        };
+    }
+
+    private static Level parseLevel(String name) {
+        return switch (name.toUpperCase()) {
+            case "OFF"     -> Level.OFF;
+            case "SEVERE"  -> Level.SEVERE;
+            case "WARNING" -> Level.WARNING;
+            case "FINE"    -> Level.FINE;
+            default        -> Level.INFO;
+        };
+    }
+
+    public boolean isDrawColonistPaths() { return drawColonistPaths; }
+    public void setDrawColonistPaths(boolean v) { drawColonistPaths = v; }
+
+    public boolean isDrawTreeDetection() { return drawTreeDetection; }
+    public void setDrawTreeDetection(boolean v) { drawTreeDetection = v; }
+
+    /** Parses a level name string into a {@link Level}. */
+    public static Level parseLevelName(String name) {
+        return parseLevel(name);
+    }
+}

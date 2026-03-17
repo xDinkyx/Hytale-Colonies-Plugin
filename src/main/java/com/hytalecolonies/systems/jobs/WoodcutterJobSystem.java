@@ -1,6 +1,7 @@
 package com.hytalecolonies.systems.jobs;
 
-import com.hytalecolonies.HytaleColoniesPlugin;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
@@ -21,6 +22,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 
 /**
  * Woodcutter-specific job system. Handles the {@link JobState#Idle} and
@@ -64,8 +66,7 @@ public class WoodcutterJobSystem extends DelayedEntitySystem<EntityStore> {
         Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
         JobState state = job.getCurrentTask();
 
-        HytaleColoniesPlugin.LOGGER.atInfo().log(
-                "[WoodcutterJob] state=%s workStation=%s",
+        DebugLog.log(DebugCategory.WOODCUTTER_JOB, "[WoodcutterJob] state=%s workStation=%s",
                 state, job.getWorkStationBlockPosition());
 
         if (state == null || state == JobState.Idle) {
@@ -85,7 +86,7 @@ public class WoodcutterJobSystem extends DelayedEntitySystem<EntityStore> {
         World world = store.getExternalData().getWorld();
         Vector3i nearestTree = findNearestAvailableTree(woodcutter, workStationPos, world);
         if (nearestTree == null) {
-            HytaleColoniesPlugin.LOGGER.atInfo().log(
+            DebugLog.log(DebugCategory.WOODCUTTER_JOB,
                     "[WoodcutterJob] Idle — no available trees within radius %.1f of workstation %s (allowedTypes=%s).",
                     woodcutter.treeSearchRadius, workStationPos, woodcutter.allowedTreeTypes);
             return;
@@ -94,12 +95,12 @@ public class WoodcutterJobSystem extends DelayedEntitySystem<EntityStore> {
         // Claim the tree to prevent other colonists from taking it.
         Ref<ChunkStore> treeBlockRef = BlockModule.getBlockEntity(world, nearestTree.x, nearestTree.y, nearestTree.z);
         if (treeBlockRef == null) {
-            HytaleColoniesPlugin.LOGGER.atWarning().log("[WoodcutterJob] Found tree candidate at %s but BlockEntity is null.", nearestTree);
+            DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.WARNING, "[WoodcutterJob] Found tree candidate at %s but BlockEntity is null.", nearestTree);
             return;
         }
         HarvestableTreeComponent tree = treeBlockRef.getStore().getComponent(treeBlockRef, HarvestableTreeComponent.getComponentType());
         if (tree == null || tree.isMarkedForHarvest()) {
-            HytaleColoniesPlugin.LOGGER.atInfo().log("[WoodcutterJob] Tree at %s already claimed or missing — skipping.", nearestTree);
+            DebugLog.log(DebugCategory.WOODCUTTER_JOB, "[WoodcutterJob] Tree at %s already claimed or missing — skipping.", nearestTree);
             return; // Race: another colonist got there first.
         }
         tree.markForHarvest();
@@ -111,7 +112,7 @@ public class WoodcutterJobSystem extends DelayedEntitySystem<EntityStore> {
         commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(treeTarget));
 
         job.setCurrentTask(JobState.TravelingToJob);
-        HytaleColoniesPlugin.LOGGER.atInfo().log("[WoodcutterJob] Heading to tree at %s.", nearestTree);
+        DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.INFO, "[WoodcutterJob] Heading to tree at %s.", nearestTree);
     }
 
     private void handleWorking(Ref<EntityStore> ref, JobComponent job,
@@ -134,7 +135,7 @@ public class WoodcutterJobSystem extends DelayedEntitySystem<EntityStore> {
         commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(wsTarget));
 
         job.setCurrentTask(JobState.TravelingHome);
-        HytaleColoniesPlugin.LOGGER.atInfo().log("[WoodcutterJob] Harvesting done, returning home to %s.", workStationPos);
+        DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.INFO, "[WoodcutterJob] Harvesting done, returning home to %s.", workStationPos);
     }
 
     // ===== Helpers =====
@@ -178,7 +179,7 @@ public class WoodcutterJobSystem extends DelayedEntitySystem<EntityStore> {
             }
         });
 
-        HytaleColoniesPlugin.LOGGER.atInfo().log(
+        DebugLog.log(DebugCategory.WOODCUTTER_JOB,
                 "[WoodcutterJob] Tree scan: total=%d, marked=%d, wrongType=%d, candidates=%d",
                 totalTrees[0], markedTrees[0], wrongTypeTrees[0], candidates.size());
 
@@ -202,7 +203,7 @@ public class WoodcutterJobSystem extends DelayedEntitySystem<EntityStore> {
         }
 
         if (nearest == null && closestOutsideRadius != null) {
-            HytaleColoniesPlugin.LOGGER.atInfo().log(
+            DebugLog.log(DebugCategory.WOODCUTTER_JOB,
                     "[WoodcutterJob] Closest tree outside radius: %s at dist=%.1f (radius=%.1f).",
                     closestOutsideRadius, Math.sqrt(closestOutsideRadiusDist), woodcutter.treeSearchRadius);
         }

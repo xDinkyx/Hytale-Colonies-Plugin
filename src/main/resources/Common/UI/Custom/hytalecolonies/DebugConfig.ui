@@ -1,0 +1,118 @@
+Group {
+    Anchor: (Width: 420, Height: 460);
+    Background: #141c26;
+    LayoutMode: Top;
+    Padding: (Full: 20);
+
+    Label {
+        Text: "Debug Configuration";
+        Anchor: (Height: 36);
+        Style: (FontSize: 20, TextColor: #ffffff, HorizontalAlignment: Center, RenderBold: true);
+    }
+
+    Group { Anchor: (Height: 1); Background: #2b3542; }
+    Group { Anchor: (Height: 14); }
+
+    Label {
+        Text: "LOG LEVELS";
+        Anchor: (Height: 16);
+        Style: (FontSize: 10, TextColor: #6e7da1, RenderBold: true);
+    }
+    Group { Anchor: (Height: 8); }
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 32);
+        Label { Text: "Movement"; Anchor: (Width: 200, Height: 32); Style: (FontSize: 13, TextColor: #c8d0dc, VerticalAlignment: Center); }
+        TextButton #MovementButton {
+            Text: "INFO";
+            Anchor: (Width: 160, Height: 32);
+            Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 13, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 13, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+        }
+    }
+    Group { Anchor: (Height: 6); }
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 32);
+        Label { Text: "Job Assignment"; Anchor: (Width: 200, Height: 32); Style: (FontSize: 13, TextColor: #c8d0dc, VerticalAlignment: Center); }
+        TextButton #JobAssignmentButton {
+            Text: "INFO";
+            Anchor: (Width: 160, Height: 32);
+            Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 13, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 13, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+        }
+    }
+    Group { Anchor: (Height: 6); }
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 32);
+        Label { Text: "Woodcutter Job"; Anchor: (Width: 200, Height: 32); Style: (FontSize: 13, TextColor: #c8d0dc, VerticalAlignment: Center); }
+        TextButton #WoodcutterJobButton {
+            Text: "INFO";
+            Anchor: (Width: 160, Height: 32);
+            Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 13, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 13, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+        }
+    }
+    Group { Anchor: (Height: 6); }
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 32);
+        Label { Text: "Tree Scanner"; Anchor: (Width: 200, Height: 32); Style: (FontSize: 13, TextColor: #c8d0dc, VerticalAlignment: Center); }
+        TextButton #TreeScannerButton {
+            Text: "INFO";
+            Anchor: (Width: 160, Height: 32);
+            Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 13, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 13, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+        }
+    }
+
+    Group { Anchor: (Height: 14); }
+    Group { Anchor: (Height: 1); Background: #2b3542; }
+    Group { Anchor: (Height: 14); }
+
+    Label {
+        Text: "DEBUG DRAWING";
+        Anchor: (Height: 16);
+        Style: (FontSize: 10, TextColor: #6e7da1, RenderBold: true);
+    }
+    Group { Anchor: (Height: 8); }
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 32);
+        Label { Text: "Colonist Paths"; Anchor: (Width: 200, Height: 32); Style: (FontSize: 13, TextColor: #c8d0dc, VerticalAlignment: Center); }
+        TextButton #DrawColonistPathsButton {
+            Text: "OFF";
+            Anchor: (Width: 160, Height: 32);
+            Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 13, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 13, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+        }
+    }
+    Group { Anchor: (Height: 6); }
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 32);
+        Label { Text: "Tree Detection"; Anchor: (Width: 200, Height: 32); Style: (FontSize: 13, TextColor: #c8d0dc, VerticalAlignment: Center); }
+        TextButton #DrawTreeDetectionButton {
+            Text: "OFF";
+            Anchor: (Width: 160, Height: 32);
+            Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 13, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 13, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+        }
+    }
+
+    Group { FlexWeight: 1; }
+
+    Group { Anchor: (Height: 1); Background: #2b3542; }
+    Group { Anchor: (Height: 12); }
+
+    Group {
+        LayoutMode: CenterMiddle;
+        Anchor: (Height: 44);
+        TextButton #CloseButton {
+            Text: "Close";
+            Anchor: (Width: 120, Height: 44);
+            Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 14, TextColor: #96a9be, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 14, TextColor: #b6c9de, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)));
+        }
+    }
+}
