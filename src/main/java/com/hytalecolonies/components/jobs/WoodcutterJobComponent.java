@@ -7,9 +7,12 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.set.SetCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.server.core.asset.type.buildertool.config.BlockTypeListAsset;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nullable;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,10 +31,18 @@ public class WoodcutterJobComponent implements Component<EntityStore> {
             .add()
             .build();
 
-    // ToDo: Expand this list with all tree trunk types and make it configurable.
-    public Set<String> allowedTreeTypes = Set.of("Wood_Ash_Trunk", "Wood_Oak_Trunk", "Wood_Beech_Trunk", "Wood_Birch_Trunk", "Wood_Cedar_Trunk", "Wood_Fir_Trunk");
+    // ===== Fields =====
+    private static final String TREE_WOOD_LIST_ID   = "TreeWood";
+
+    public Set<String> allowedTreeTypes = getTreeWoodKeys();
     public float treeSearchRadius = 64.0f;
 
+    // Transient runtime state — not persisted, reset on server restart.
+    public @Nullable Vector3i targetTreePosition = null;
+    public @Nullable Vector3i lastKnownPosition = null;
+    public int stuckTicks = 0;
+
+    // ===== Constructors =====
     public WoodcutterJobComponent() {}
 
     public WoodcutterJobComponent(Set<String> allowedTreeTypes, float treeSearchRadius) {
@@ -44,8 +55,23 @@ public class WoodcutterJobComponent implements Component<EntityStore> {
         return HytaleColoniesPlugin.getInstance().getWoodCutterJobComponentType();
     }
 
+    // ===== Cloneable =====
     @Override
     public @Nullable Component<EntityStore> clone() {
         return new WoodcutterJobComponent(this.allowedTreeTypes, this.treeSearchRadius);
     }
+
+    // -------------------------------------------------------------------------
+    // Asset key set helpers
+    // -------------------------------------------------------------------------
+
+    private Set<String> getTreeWoodKeys() {
+        if (allowedTreeTypes == null) {
+            BlockTypeListAsset asset = BlockTypeListAsset.getAssetMap().getAsset(TREE_WOOD_LIST_ID);
+            allowedTreeTypes = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
+        }
+        return allowedTreeTypes;
+    }
+
+
 }
