@@ -45,7 +45,7 @@ import java.util.Set;
 /**
  * Periodically scans a configurable chunk radius around each Woodsman
  * workstation for new TreeWood blocks (e.g. saplings that have grown).
- * The initial full scan is handled by {@link WorkstationTreeInitSystem} on
+ * The initial full scan is handled by {@link WorkstationInitSystem} on
  * workstation load. Block-break / block-place updates are handled reactively
  * by {@link TreeBlockChangeEventSystem}. This system therefore only needs to
  * run infrequently to catch world-generated growth events that have no

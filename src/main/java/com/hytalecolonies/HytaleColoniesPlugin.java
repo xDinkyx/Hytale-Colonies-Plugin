@@ -24,7 +24,7 @@ import com.hytalecolonies.systems.ColonySystem;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
 import com.hytalecolonies.systems.jobs.TreeBlockChangeEventSystem;
 import com.hytalecolonies.systems.jobs.TreeScannerSystem;
-import com.hytalecolonies.systems.jobs.WorkstationTreeInitSystem;
+import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.systems.jobs.ColonistMovementSystem;
 import com.hytalecolonies.systems.jobs.WoodcutterJobSystem;
@@ -164,7 +164,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getChunkStoreRegistry().registerSystem(new JobAssignmentSystems.WorkStationEntitySystem());
         getChunkStoreRegistry().registerSystem(new JobAssignmentSystems.StaleMarkCleanupSystem());
         getChunkStoreRegistry().registerSystem(treeScannerSystem);
-        getChunkStoreRegistry().registerSystem(new WorkstationTreeInitSystem(treeScannerSystem));
+        getChunkStoreRegistry().registerSystem(new WorkstationInitSystem(treeScannerSystem));
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.ColonistEntitySystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.JobAssignedSystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());

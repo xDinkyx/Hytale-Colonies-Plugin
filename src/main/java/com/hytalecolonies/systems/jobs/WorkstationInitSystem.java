@@ -20,21 +20,19 @@ import javax.annotation.Nullable;
 import java.util.logging.Level;
 
 /**
- * Performs the initial tree scan around a Woodsman workstation the moment the
- * workstation entity is loaded or created.
+ * Performs initial setup for any workstation the moment its {@link WorkStationComponent}
+ * is loaded or created. Dispatches to per-{@link JobType} initialization logic so each
+ * job type can seed whatever state it needs.
  *
- * <p>This replaces the old approach of waiting for the first
- * {@link TreeScannerSystem} periodic tick. The periodic system is kept but runs
- * every 60 s solely to catch sapling growth (no API hook exists for those
- * world-generated block changes). It skips chunks whose wood count is unchanged
- * since the last scan so the per-tick overhead is near-free.
+ * <p>Woodsman: triggers an immediate tree scan via {@link TreeScannerSystem}.
+ * Other job types: no-op for now; add cases as needed.
  */
-public class WorkstationTreeInitSystem extends RefChangeSystem<ChunkStore, WorkStationComponent> {
+public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStationComponent> {
 
-    private final TreeScannerSystem scanner;
+    private final TreeScannerSystem treeScannerSystem;
 
-    public WorkstationTreeInitSystem(TreeScannerSystem scanner) {
-        this.scanner = scanner;
+    public WorkstationInitSystem(TreeScannerSystem treeScannerSystem) {
+        this.treeScannerSystem = treeScannerSystem;
     }
 
     @Override
@@ -53,21 +51,10 @@ public class WorkstationTreeInitSystem extends RefChangeSystem<ChunkStore, WorkS
             @Nonnull WorkStationComponent workStation,
             @Nonnull Store<ChunkStore> store,
             @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
-
-        if (workStation.getJobType() != JobType.Woodsman) return;
-
-        BlockModule.BlockStateInfo blockStateInfo = store.getComponent(
-                ref, BlockModule.BlockStateInfo.getComponentType());
-        if (blockStateInfo == null) {
-            DebugLog.log(DebugCategory.TREE_SCANNER, Level.WARNING,
-                    "[TreeScanner Init] WorkStationComponent added without BlockStateInfo — skipping initial scan.");
-            return;
+        switch (workStation.getJobType()) {
+            case Woodsman -> initWoodsman(ref, workStation, store, commandBuffer);
+            case Miner, Farmer, Builder -> { /* no-op: initialization not yet implemented */ }
         }
-
-        Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
-        DebugLog.log(DebugCategory.TREE_SCANNER, Level.INFO,
-                "[TreeScanner Init] Initial scan triggered for Woodsman workstation at %s.", workStationPos);
-        scanner.scanForTreeWoodBlocks(workStationPos, store, commandBuffer);
     }
 
     @Override
@@ -87,5 +74,26 @@ public class WorkstationTreeInitSystem extends RefChangeSystem<ChunkStore, WorkS
             @Nonnull Store<ChunkStore> store,
             @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
         // No action needed on removal.
+    }
+
+    // ===== Per-type initialization =====
+
+    private void initWoodsman(
+            Ref<ChunkStore> ref,
+            WorkStationComponent workStation,
+            Store<ChunkStore> store,
+            CommandBuffer<ChunkStore> commandBuffer) {
+        BlockModule.BlockStateInfo blockStateInfo = store.getComponent(
+                ref, BlockModule.BlockStateInfo.getComponentType());
+        if (blockStateInfo == null) {
+            DebugLog.log(DebugCategory.TREE_SCANNER, Level.WARNING,
+                    "[WorkstationInit] WorkStationComponent added without BlockStateInfo — skipping initial scan.");
+            return;
+        }
+
+        Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
+        DebugLog.log(DebugCategory.TREE_SCANNER, Level.INFO,
+                "[WorkstationInit] Initial tree scan triggered for Woodsman workstation at %s.", workStationPos);
+        treeScannerSystem.scanForTreeWoodBlocks(workStationPos, store, commandBuffer);
     }
 }
