@@ -22,13 +22,13 @@ import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
 import com.hytalecolonies.systems.ColonySystem;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
-import com.hytalecolonies.systems.jobs.TreeBlockChangeEventSystem;
-import com.hytalecolonies.systems.jobs.TreeScannerSystem;
 import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.systems.jobs.ColonistMovementSystem;
 import com.hytalecolonies.systems.jobs.WoodcutterJobSystem;
 import com.hytalecolonies.systems.npc.PathFindingSystem;
+import com.hytalecolonies.systems.treescan.TreeBlockChangeEventSystem;
+import com.hytalecolonies.systems.treescan.TreeScannerSystem;
 
 import javax.annotation.Nonnull;
 import java.util.logging.Level;

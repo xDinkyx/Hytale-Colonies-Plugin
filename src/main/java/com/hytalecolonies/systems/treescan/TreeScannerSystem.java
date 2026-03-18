@@ -1,8 +1,9 @@
-package com.hytalecolonies.systems.jobs;
+package com.hytalecolonies.systems.treescan;
 
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
 import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
@@ -107,7 +108,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
     }
 
     /** Orchestrates a full scan cycle: collect candidates → detect trees → register → debug draw. */
-    void scanForTreeWoodBlocks(Vector3i centerPos, Store<ChunkStore> chunkStore,
+    public void scanForTreeWoodBlocks(Vector3i centerPos, Store<ChunkStore> chunkStore,
             CommandBuffer<ChunkStore> commandBuffer) {
         World world = chunkStore.getExternalData().getWorld();
         Set<String> treeWoodKeys = getTreeWoodBlockKeys();

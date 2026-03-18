@@ -1,4 +1,4 @@
-package com.hytalecolonies.systems.jobs;
+package com.hytalecolonies.systems.treescan;
 
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
