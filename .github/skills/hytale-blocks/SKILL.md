@@ -145,6 +145,7 @@ For a complete guide, see the [**Animated Block Textures**](references/animated-
 | `Group` | Block category group | `"Stone"`, `"Wood"`, `"Sand"` |
 | `Flags` | Additional block flags | `{}` (empty object for defaults) |
 | `Gathering.Breaking.GatherType` | Tool type needed to break | `"Rocks"`, `"Wood"`, `"Sand"` |
+| `Gathering.Breaking.Quality` | Minimum tool quality tier (int, default 0). Tool spec quality must be ≥ this. | `0`, `1`, `2` |
 | `Gathering.Breaking.ItemId` | Item dropped when broken | ID string matching the block's `Id` |
 | `BlockParticleSetId` | Particle effect when breaking | `"Stone"`, `"Wood"`, `"Sand"` |
 | `Textures` | Array of texture definitions | See Texture Configuration below |

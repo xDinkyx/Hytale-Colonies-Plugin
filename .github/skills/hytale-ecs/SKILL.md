@@ -389,6 +389,20 @@ commandBuffer.removeComponent(ref, componentType);
 MyComponent comp = commandBuffer.getComponent(ref, componentType);
 ```
 
+### CommandBuffer as ComponentAccessor
+
+`CommandBuffer<EntityStore>` implements `ComponentAccessor<EntityStore>`. Pass it wherever a server API accepts `ComponentAccessor<EntityStore>` to defer any internal `store.addEntities()` calls to end-of-tick instead of executing them mid-tick (which throws `IllegalStateException: Store is currently processing!`).
+
+```java
+// WRONG — passes Store directly; crashes when the block break spawns drop entities mid-tick
+BlockHarvestUtils.performBlockDamage(entity, ref, pos, item, tool, null, false, 1f, 0,
+        chunkRef, store, world.getChunkStore().getStore());
+
+// CORRECT — pass commandBuffer; drop entity spawning is deferred safely
+BlockHarvestUtils.performBlockDamage(entity, ref, pos, item, tool, null, false, 1f, 0,
+        chunkRef, commandBuffer, world.getChunkStore().getStore());
+```
+
 ---
 
 ## SystemGroups and Dependencies
