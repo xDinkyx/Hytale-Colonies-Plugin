@@ -16,11 +16,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class WoodcutterJobComponent implements Component<EntityStore> {
+public class WoodsmanJobComponent implements Component<EntityStore> {
 
     // ===== Codec =====
-    public static final BuilderCodec<WoodcutterJobComponent> CODEC = BuilderCodec
-            .builder(WoodcutterJobComponent.class, WoodcutterJobComponent::new)
+    public static final BuilderCodec<WoodsmanJobComponent> CODEC = BuilderCodec
+            .builder(WoodsmanJobComponent.class, WoodsmanJobComponent::new)
             .append(new KeyedCodec<>("AllowedTreeTypes", new SetCodec<>(Codec.STRING, HashSet::new, false)),
                     (o, v) -> o.allowedTreeTypes = v,
                     o -> o.allowedTreeTypes)
@@ -43,22 +43,22 @@ public class WoodcutterJobComponent implements Component<EntityStore> {
     public int stuckTicks = 0;
 
     // ===== Constructors =====
-    public WoodcutterJobComponent() {}
+    public WoodsmanJobComponent() {}
 
-    public WoodcutterJobComponent(Set<String> allowedTreeTypes, float treeSearchRadius) {
+    public WoodsmanJobComponent(Set<String> allowedTreeTypes, float treeSearchRadius) {
         this.allowedTreeTypes = allowedTreeTypes;
         this.treeSearchRadius = treeSearchRadius;
     }
 
     // ===== Component Type =====
-    public static ComponentType<EntityStore, WoodcutterJobComponent> getComponentType() {
-        return HytaleColoniesPlugin.getInstance().getWoodCutterJobComponentType();
+    public static ComponentType<EntityStore, WoodsmanJobComponent> getComponentType() {
+        return HytaleColoniesPlugin.getInstance().getWoodsmanJobComponentType();
     }
 
     // ===== Cloneable =====
     @Override
     public @Nullable Component<EntityStore> clone() {
-        return new WoodcutterJobComponent(this.allowedTreeTypes, this.treeSearchRadius);
+        return new WoodsmanJobComponent(this.allowedTreeTypes, this.treeSearchRadius);
     }
 
     // -------------------------------------------------------------------------

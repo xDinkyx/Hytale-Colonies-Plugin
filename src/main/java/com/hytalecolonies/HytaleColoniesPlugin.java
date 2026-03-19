@@ -17,7 +17,7 @@ import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
-import com.hytalecolonies.components.jobs.WoodcutterJobComponent;
+import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
 import com.hytalecolonies.systems.ColonySystem;
@@ -25,7 +25,7 @@ import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
 import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.systems.jobs.ColonistMovementSystem;
-import com.hytalecolonies.systems.jobs.WoodcutterJobSystem;
+import com.hytalecolonies.systems.jobs.WoodsmanJobSystem;
 import com.hytalecolonies.systems.npc.PathFindingSystem;
 import com.hytalecolonies.systems.treescan.TreeBlockChangeEventSystem;
 import com.hytalecolonies.systems.treescan.TreeScannerSystem;
@@ -48,7 +48,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     private ComponentType<EntityStore, ColonistComponent> colonistComponentType;
     private ComponentType<EntityStore, JobComponent> colonistJobComponentType;
     private ComponentType<EntityStore, UnemployedComponent> unemployedComponentType;
-    private ComponentType<EntityStore, WoodcutterJobComponent> woodCutterJobComponentType;
+    private ComponentType<EntityStore, WoodsmanJobComponent> woodsmanJobComponentType;
     private ComponentType<ChunkStore, WorkStationComponent> workStationComponentType;
     private ComponentType<EntityStore, MoveToTargetComponent> moveToTargetComponentType;
     private ComponentType<ChunkStore, HarvestableTreeComponent> harvestableTreeComponentType;
@@ -107,7 +107,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         colonistComponentType = getEntityStoreRegistry().registerComponent(ColonistComponent.class, "Colonist", ColonistComponent.CODEC);
         colonistJobComponentType = getEntityStoreRegistry().registerComponent(JobComponent.class, "ColonistJob", JobComponent.CODEC);
         unemployedComponentType = getEntityStoreRegistry().registerComponent(UnemployedComponent.class, "Unemployed", UnemployedComponent.CODEC);
-        woodCutterJobComponentType = getEntityStoreRegistry().registerComponent(WoodcutterJobComponent.class, "WoodcutterJob", WoodcutterJobComponent.CODEC);
+        woodsmanJobComponentType = getEntityStoreRegistry().registerComponent(WoodsmanJobComponent.class, "WoodsmanJob", WoodsmanJobComponent.CODEC);
         workStationComponentType = getChunkStoreRegistry().registerComponent(WorkStationComponent.class, "WorkStation", WorkStationComponent.CODEC);
         moveToTargetComponentType = getEntityStoreRegistry().registerComponent(MoveToTargetComponent.class, MoveToTargetComponent::new);
         harvestableTreeComponentType = getChunkStoreRegistry().registerComponent(HarvestableTreeComponent.class, "HarvestableTree", HarvestableTreeComponent.CODEC);
@@ -128,8 +128,8 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     public ComponentType<EntityStore, JobComponent> getJobComponentType() {
         return colonistJobComponentType;
     }
-    public ComponentType<EntityStore, WoodcutterJobComponent> getWoodCutterJobComponentType() {
-        return woodCutterJobComponentType;
+    public ComponentType<EntityStore, WoodsmanJobComponent> getWoodsmanJobComponentType() {
+        return woodsmanJobComponentType;
     }
     public ComponentType<EntityStore, MoveToTargetComponent> getMoveToTargetComponentType() {
         return moveToTargetComponentType;
@@ -170,7 +170,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());
         getEntityStoreRegistry().registerSystem(new PathFindingSystem());
         getEntityStoreRegistry().registerSystem(new ColonistMovementSystem());
-        getEntityStoreRegistry().registerSystem(new WoodcutterJobSystem());
+        getEntityStoreRegistry().registerSystem(new WoodsmanJobSystem());
         getEntityStoreRegistry().registerSystem(new TreeBlockChangeEventSystem.OnBreak(treeScannerSystem));
         getEntityStoreRegistry().registerSystem(new TreeBlockChangeEventSystem.OnPlace(treeScannerSystem));
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered plugin systems");

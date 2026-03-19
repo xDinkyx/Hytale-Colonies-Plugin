@@ -30,8 +30,8 @@ public class DebugConfig {
             .append(new KeyedCodec<>("JobAssignmentLevel", Codec.STRING),
                     (c, v) -> c.jobAssignmentLevel = v, c -> c.jobAssignmentLevel)
             .add()
-            .append(new KeyedCodec<>("WoodcutterJobLevel", Codec.STRING),
-                    (c, v) -> c.woodcutterJobLevel = v, c -> c.woodcutterJobLevel)
+            .append(new KeyedCodec<>("WoodsmanJobLevel", Codec.STRING),
+                    (c, v) -> c.woodsmanJobLevel = v, c -> c.woodsmanJobLevel)
             .add()
             .append(new KeyedCodec<>("TreeScannerLevel", Codec.STRING),
                     (c, v) -> c.treeScannerLevel = v, c -> c.treeScannerLevel)
@@ -46,7 +46,7 @@ public class DebugConfig {
 
     private String movementLevel     = "INFO";
     private String jobAssignmentLevel = "INFO";
-    private String woodcutterJobLevel = "INFO";
+    private String woodsmanJobLevel = "INFO";
     private String treeScannerLevel   = "INFO";
     private boolean drawColonistPaths = false;
     private boolean drawTreeDetection = false;
@@ -57,7 +57,7 @@ public class DebugConfig {
     public void applyToCategories() {
         DebugCategory.MOVEMENT.setMinLevel(parseLevel(movementLevel));
         DebugCategory.JOB_ASSIGNMENT.setMinLevel(parseLevel(jobAssignmentLevel));
-        DebugCategory.WOODCUTTER_JOB.setMinLevel(parseLevel(woodcutterJobLevel));
+        DebugCategory.WOODSMAN_JOB.setMinLevel(parseLevel(woodsmanJobLevel));
         DebugCategory.TREE_SCANNER.setMinLevel(parseLevel(treeScannerLevel));
     }
 
@@ -70,7 +70,7 @@ public class DebugConfig {
         switch (category) {
             case MOVEMENT      -> movementLevel = name;
             case JOB_ASSIGNMENT -> jobAssignmentLevel = name;
-            case WOODCUTTER_JOB -> woodcutterJobLevel = name;
+            case WOODSMAN_JOB -> woodsmanJobLevel = name;
             case TREE_SCANNER  -> treeScannerLevel = name;
         }
         category.setMinLevel(level);
@@ -81,7 +81,7 @@ public class DebugConfig {
         return switch (category) {
             case MOVEMENT       -> movementLevel;
             case JOB_ASSIGNMENT -> jobAssignmentLevel;
-            case WOODCUTTER_JOB -> woodcutterJobLevel;
+            case WOODSMAN_JOB -> woodsmanJobLevel;
             case TREE_SCANNER   -> treeScannerLevel;
         };
     }

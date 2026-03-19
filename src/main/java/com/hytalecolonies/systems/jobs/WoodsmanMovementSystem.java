@@ -4,7 +4,7 @@ import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
-import com.hytalecolonies.components.jobs.WoodcutterJobComponent;
+import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hypixel.hytale.component.*;
@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.logging.Level;
 
 /**
- * Drives the movement state machine for woodcutter colonists.
+ * Drives the movement state machine for woodsman colonists.
  *
  * State transitions:
  * - null / Idle     → find nearest free tree → dispatch nav → TravelingToJob
@@ -33,7 +33,7 @@ import java.util.logging.Level;
  * - Working         → dispatch return nav    → TravelingHome
  * - TravelingHome   → (arrived at workstation) → Idle, unmark tree
  */
-public class WoodcutterMovementSystem extends DelayedEntitySystem<EntityStore> {
+public class WoodsmanMovementSystem extends DelayedEntitySystem<EntityStore> {
 
     /** XZ distance to consider a colonist "at" a tree (tree bases can be underground). */
     private static final float TREE_ARRIVAL_XZ = 4.0f;
@@ -44,10 +44,10 @@ public class WoodcutterMovementSystem extends DelayedEntitySystem<EntityStore> {
 
     private final Query<EntityStore> query = Query.and(
             JobComponent.getComponentType(),
-            WoodcutterJobComponent.getComponentType()
+            WoodsmanJobComponent.getComponentType()
     );
 
-    public WoodcutterMovementSystem() {
+    public WoodsmanMovementSystem() {
         super(2.0f); // Check state every 2 seconds.
     }
 
@@ -58,77 +58,77 @@ public class WoodcutterMovementSystem extends DelayedEntitySystem<EntityStore> {
                      @Nonnull CommandBuffer<EntityStore> commandBuffer) {
 
         JobComponent job = archetypeChunk.getComponent(index, JobComponent.getComponentType());
-        WoodcutterJobComponent woodcutter = archetypeChunk.getComponent(index, WoodcutterJobComponent.getComponentType());
-        assert job != null && woodcutter != null;
+        WoodsmanJobComponent woodsman = archetypeChunk.getComponent(index, WoodsmanJobComponent.getComponentType());
+        assert job != null && woodsman != null;
 
         Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
         TransformComponent transform = store.getComponent(colonistRef, TransformComponent.getComponentType());
         if (transform == null) {
-            DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.WARNING, "[Woodcutter] Colonist has no TransformComponent — skipping.");
+            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.WARNING, "[Woodsman] Colonist has no TransformComponent — skipping.");
             return;
         }
 
         Vector3d colonistPos = transform.getTransform().getPosition();
         JobState state = job.getCurrentTask();
 
-        DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.FINE,
-                "[Woodcutter] state=%s pos=(%.1f, %.1f, %.1f) target=%s workStation=%s",
+        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+                "[Woodsman] state=%s pos=(%.1f, %.1f, %.1f) target=%s workStation=%s",
                 state, colonistPos.x, colonistPos.y, colonistPos.z,
-                woodcutter.targetTreePosition, job.getWorkStationBlockPosition());
+                woodsman.targetTreePosition, job.getWorkStationBlockPosition());
 
         if (state == null || state == JobState.Idle) {
-            handleIdle(colonistRef, job, woodcutter, commandBuffer, store);
+            handleIdle(colonistRef, job, woodsman, commandBuffer, store);
         } else if (state == JobState.TravelingToJob) {
-            handleTravelingToJob(colonistRef, job, woodcutter, colonistPos, commandBuffer);
+            handleTravelingToJob(colonistRef, job, woodsman, colonistPos, commandBuffer);
         } else if (state == JobState.Working) {
-            handleWorking(colonistRef, job, woodcutter, commandBuffer);
+            handleWorking(colonistRef, job, woodsman, commandBuffer);
         } else if (state == JobState.TravelingHome) {
-            handleTravelingHome(colonistRef, job, woodcutter, colonistPos, commandBuffer, store);
+            handleTravelingHome(colonistRef, job, woodsman, colonistPos, commandBuffer, store);
         }
     }
 
     // ===== State handlers =====
 
-    private void handleIdle(Ref<EntityStore> ref, JobComponent job, WoodcutterJobComponent woodcutter,
+    private void handleIdle(Ref<EntityStore> ref, JobComponent job, WoodsmanJobComponent woodsman,
                              CommandBuffer<EntityStore> commandBuffer, Store<EntityStore> store) {
         Vector3i workStationPos = job.getWorkStationBlockPosition();
         if (workStationPos == null) return;
 
         World world = store.getExternalData().getWorld();
-        Vector3i nearestTree = findNearestAvailableTree(woodcutter, workStationPos, world);
+        Vector3i nearestTree = findNearestAvailableTree(woodsman, workStationPos, world);
         if (nearestTree == null) {
-            DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.FINE,
-                    "[Woodcutter] Idle — no available trees found within radius %.1f of workstation %s (allowedTypes=%s).",
-                    woodcutter.treeSearchRadius, workStationPos, woodcutter.allowedTreeTypes);
+            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+                    "[Woodsman] Idle — no available trees found within radius %.1f of workstation %s (allowedTypes=%s).",
+                    woodsman.treeSearchRadius, workStationPos, woodsman.allowedTreeTypes);
             return;
         }
 
         // Claim the tree to prevent other colonists from taking it.
         Ref<ChunkStore> treeBlockRef = BlockModule.getBlockEntity(world, nearestTree.x, nearestTree.y, nearestTree.z);
         if (treeBlockRef == null) {
-            DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.WARNING, "[Woodcutter] Found tree candidate at %s but BlockEntity is null.", nearestTree);
+            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.WARNING, "[Woodsman] Found tree candidate at %s but BlockEntity is null.", nearestTree);
             return;
         }
         HarvestableTreeComponent tree = treeBlockRef.getStore().getComponent(treeBlockRef, HarvestableTreeComponent.getComponentType());
         if (tree == null || tree.isMarkedForHarvest()) {
-            DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.FINE,
-                    "[Woodcutter] Tree at %s already claimed or component missing — skipping.", nearestTree);
+            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+                    "[Woodsman] Tree at %s already claimed or component missing — skipping.", nearestTree);
             return; // Race: another colonist got there first.
         }
         tree.markForHarvest();
 
-        woodcutter.targetTreePosition = nearestTree;
+        woodsman.targetTreePosition = nearestTree;
 
         Vector3d treeTarget = new Vector3d(nearestTree.x + 0.5, nearestTree.y, nearestTree.z + 0.5);
         commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(treeTarget));
 
         job.setCurrentTask(JobState.TravelingToJob);
-        DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.INFO, "Woodcutter heading to tree at %s", nearestTree);
+        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO, "Woodsman heading to tree at %s", nearestTree);
     }
 
-    private void handleTravelingToJob(Ref<EntityStore> ref, JobComponent job, WoodcutterJobComponent woodcutter,
+    private void handleTravelingToJob(Ref<EntityStore> ref, JobComponent job, WoodsmanJobComponent woodsman,
                                       Vector3d colonistPos, CommandBuffer<EntityStore> commandBuffer) {
-        Vector3i treePos = woodcutter.targetTreePosition;
+        Vector3i treePos = woodsman.targetTreePosition;
         if (treePos == null) {
             // Lost target after server restart — reset to Idle.
             job.setCurrentTask(JobState.Idle);
@@ -142,33 +142,33 @@ public class WoodcutterMovementSystem extends DelayedEntitySystem<EntityStore> {
 
         // Stuck detection: track whether position changed since last tick.
         Vector3i currentCell = new Vector3i((int) colonistPos.x, (int) colonistPos.y, (int) colonistPos.z);
-        if (currentCell.equals(woodcutter.lastKnownPosition)) {
-            woodcutter.stuckTicks++;
+        if (currentCell.equals(woodsman.lastKnownPosition)) {
+            woodsman.stuckTicks++;
         } else {
-            woodcutter.stuckTicks = 0;
-            woodcutter.lastKnownPosition = currentCell;
+            woodsman.stuckTicks = 0;
+            woodsman.lastKnownPosition = currentCell;
         }
 
         boolean arrivedXZ = xzDistSq <= TREE_ARRIVAL_XZ * TREE_ARRIVAL_XZ;
-        boolean stuck = woodcutter.stuckTicks >= STUCK_TICKS_LIMIT && xzDist <= woodcutter.treeSearchRadius;
+        boolean stuck = woodsman.stuckTicks >= STUCK_TICKS_LIMIT && xzDist <= woodsman.treeSearchRadius;
 
-        DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.FINE,
-                "[Woodcutter] TravelingToJob — xzDist=%.2f to tree %s (threshold %.1f) stuckTicks=%d.",
-                xzDist, treePos, TREE_ARRIVAL_XZ, woodcutter.stuckTicks);
+        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+                "[Woodsman] TravelingToJob — xzDist=%.2f to tree %s (threshold %.1f) stuckTicks=%d.",
+                xzDist, treePos, TREE_ARRIVAL_XZ, woodsman.stuckTicks);
 
         if (arrivedXZ || stuck) {
             if (stuck && !arrivedXZ) {
-                DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.INFO,
-                        "[Woodcutter] Stuck near tree at %s (xzDist=%.2f) — advancing to Working.", treePos, xzDist);
+                DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO,
+                        "[Woodsman] Stuck near tree at %s (xzDist=%.2f) — advancing to Working.", treePos, xzDist);
             }
-            woodcutter.stuckTicks = 0;
-            woodcutter.lastKnownPosition = null;
+            woodsman.stuckTicks = 0;
+            woodsman.lastKnownPosition = null;
             job.setCurrentTask(JobState.Working);
-            DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.INFO, "[Woodcutter] Arrived at tree at %s.", treePos);
+            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO, "[Woodsman] Arrived at tree at %s.", treePos);
         }
     }
 
-    private void handleWorking(Ref<EntityStore> ref, JobComponent job, WoodcutterJobComponent woodcutter,
+    private void handleWorking(Ref<EntityStore> ref, JobComponent job, WoodsmanJobComponent woodsman,
                                CommandBuffer<EntityStore> commandBuffer) {
         Vector3i workStationPos = job.getWorkStationBlockPosition();
         if (workStationPos == null) return;
@@ -178,10 +178,10 @@ public class WoodcutterMovementSystem extends DelayedEntitySystem<EntityStore> {
         commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(wsTarget));
 
         job.setCurrentTask(JobState.TravelingHome);
-        DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.INFO, "Woodcutter returning home from tree at %s", woodcutter.targetTreePosition);
+        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO, "Woodsman returning home from tree at %s", woodsman.targetTreePosition);
     }
 
-    private void handleTravelingHome(Ref<EntityStore> ref, JobComponent job, WoodcutterJobComponent woodcutter,
+    private void handleTravelingHome(Ref<EntityStore> ref, JobComponent job, WoodsmanJobComponent woodsman,
                                      Vector3d colonistPos, CommandBuffer<EntityStore> commandBuffer,
                                      Store<EntityStore> store) {
         Vector3i workStationPos = job.getWorkStationBlockPosition();
@@ -191,43 +191,43 @@ public class WoodcutterMovementSystem extends DelayedEntitySystem<EntityStore> {
         double dy = colonistPos.y - workStationPos.y;
         double dz = colonistPos.z - (workStationPos.z + 0.5);
         double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.FINE,
-                "[Woodcutter] TravelingHome — dist=%.2f to workstation %s (threshold %.1f).",
+        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+                "[Woodsman] TravelingHome — dist=%.2f to workstation %s (threshold %.1f).",
                 dist, workStationPos, WORKSTATION_ARRIVAL_3D);
 
         if (dist <= WORKSTATION_ARRIVAL_3D) {
-            unmarkClaimedTree(woodcutter, store);
-            woodcutter.targetTreePosition = null;
-            woodcutter.stuckTicks = 0;
-            woodcutter.lastKnownPosition = null;
+            unmarkClaimedTree(woodsman, store);
+            woodsman.targetTreePosition = null;
+            woodsman.stuckTicks = 0;
+            woodsman.lastKnownPosition = null;
             job.setCurrentTask(JobState.Idle);
-            DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.INFO, "[Woodcutter] Arrived home at workstation.");
+            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO, "[Woodsman] Arrived home at workstation.");
             return;
         }
 
         // Stuck detection — re-dispatch nav if the colonist hasn't moved (e.g. after server restart).
         Vector3i currentCell = new Vector3i((int) colonistPos.x, (int) colonistPos.y, (int) colonistPos.z);
-        if (currentCell.equals(woodcutter.lastKnownPosition)) {
-            woodcutter.stuckTicks++;
+        if (currentCell.equals(woodsman.lastKnownPosition)) {
+            woodsman.stuckTicks++;
         } else {
-            woodcutter.stuckTicks = 0;
-            woodcutter.lastKnownPosition = currentCell;
+            woodsman.stuckTicks = 0;
+            woodsman.lastKnownPosition = currentCell;
         }
 
-        if (woodcutter.stuckTicks >= STUCK_TICKS_LIMIT) {
-            woodcutter.stuckTicks = 0;
-            woodcutter.lastKnownPosition = null;
+        if (woodsman.stuckTicks >= STUCK_TICKS_LIMIT) {
+            woodsman.stuckTicks = 0;
+            woodsman.lastKnownPosition = null;
             Vector3d wsTarget = new Vector3d(workStationPos.x + 0.5, workStationPos.y, workStationPos.z + 0.5);
             commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(wsTarget));
-            DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.INFO, "[Woodcutter] TravelingHome — stuck, re-dispatching nav to workstation.");
+            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO, "[Woodsman] TravelingHome — stuck, re-dispatching nav to workstation.");
         }
     }
 
     // ===== Helpers =====
 
-    static void unmarkClaimedTree(WoodcutterJobComponent woodcutter, Store<EntityStore> store) {
-        if (woodcutter.targetTreePosition == null) return;
-        Vector3i treePos = woodcutter.targetTreePosition;
+    static void unmarkClaimedTree(WoodsmanJobComponent woodsman, Store<EntityStore> store) {
+        if (woodsman.targetTreePosition == null) return;
+        Vector3i treePos = woodsman.targetTreePosition;
         World world = store.getExternalData().getWorld();
         Ref<ChunkStore> treeBlockRef = BlockModule.getBlockEntity(world, treePos.x, treePos.y, treePos.z);
         if (treeBlockRef == null) return;
@@ -238,11 +238,11 @@ public class WoodcutterMovementSystem extends DelayedEntitySystem<EntityStore> {
     }
 
     /**
-     * Finds the nearest available (unmarked, allowed-type) tree within the woodcutter's
+     * Finds the nearest available (unmarked, allowed-type) tree within the woodsman's
      * search radius of the workstation.
      */
     @Nullable
-    private Vector3i findNearestAvailableTree(WoodcutterJobComponent woodcutter, Vector3i workStationPos, World world) {
+    private Vector3i findNearestAvailableTree(WoodsmanJobComponent woodsman, Vector3i workStationPos, World world) {
         List<Vector3i> candidates = new ArrayList<>();
         int[] totalTrees = {0}, markedTrees = {0}, wrongTypeTrees = {0};
         Query<ChunkStore> treeQuery = Query.and(HarvestableTreeComponent.getComponentType());
@@ -253,17 +253,17 @@ public class WoodcutterMovementSystem extends DelayedEntitySystem<EntityStore> {
                 if (tree == null) continue;
                 totalTrees[0]++;
                 if (tree.isMarkedForHarvest()) { markedTrees[0]++; continue; }
-                if (!woodcutter.allowedTreeTypes.contains(tree.getTreeTypeKey())) { wrongTypeTrees[0]++; continue; }
+                if (!woodsman.allowedTreeTypes.contains(tree.getTreeTypeKey())) { wrongTypeTrees[0]++; continue; }
                 candidates.add(tree.getBasePosition());
             }
         });
 
-        DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.FINE,
-                "[Woodcutter] Tree scan: total=%d, marked=%d, wrongType=%d, candidates=%d",
+        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+                "[Woodsman] Tree scan: total=%d, marked=%d, wrongType=%d, candidates=%d",
                 totalTrees[0], markedTrees[0], wrongTypeTrees[0], candidates.size());
 
         Vector3i nearest = null;
-        double nearestDistSq = woodcutter.treeSearchRadius * woodcutter.treeSearchRadius;
+        double nearestDistSq = woodsman.treeSearchRadius * woodsman.treeSearchRadius;
         double closestOutsideRadiusDist = Double.MAX_VALUE;
         Vector3i closestOutsideRadius = null;
 
@@ -282,9 +282,9 @@ public class WoodcutterMovementSystem extends DelayedEntitySystem<EntityStore> {
         }
 
         if (nearest == null && closestOutsideRadius != null) {
-            DebugLog.log(DebugCategory.WOODCUTTER_JOB, Level.FINE,
-                    "[Woodcutter] Closest tree outside radius: %s at dist=%.1f (radius=%.1f).",
-                    closestOutsideRadius, Math.sqrt(closestOutsideRadiusDist), woodcutter.treeSearchRadius);
+            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+                    "[Woodsman] Closest tree outside radius: %s at dist=%.1f (radius=%.1f).",
+                    closestOutsideRadius, Math.sqrt(closestOutsideRadiusDist), woodsman.treeSearchRadius);
         }
         return nearest;
     }

@@ -32,7 +32,7 @@ import java.util.logging.Level;
  * </ul>
  *
  * The {@link JobState#Idle} and {@link JobState#Working} transitions are
- * handled by job-specific systems (e.g. {@link WoodcutterJobSystem}).
+ * handled by job-specific systems (e.g. {@link WoodsmanJobSystem}).
  * Those systems add/clear {@link JobTargetComponent} and dispatch initial
  * navigation; this system takes over from there.
  */

@@ -15,7 +15,7 @@ public enum DebugCategory {
 
     MOVEMENT("Movement"),
     JOB_ASSIGNMENT("Job Assignment"),
-    WOODCUTTER_JOB("Woodcutter Job"),
+    WOODSMAN_JOB("Woodsman Job"),
     TREE_SCANNER("Tree Scanner");
 
     private final String displayName;

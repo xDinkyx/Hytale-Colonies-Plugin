@@ -8,7 +8,7 @@ import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
-import com.hytalecolonies.components.jobs.WoodcutterJobComponent;
+import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
@@ -130,9 +130,9 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                 workStation.removeAssignedColonist(zombie);
                 Ref<EntityStore> ref = entityStore.getRefFromUUID(zombie);
                 if (ref != null && ref.isValid()) {
-                    WoodcutterJobSystem.unmarkClaimedTree(ref, entityStore.getStore());
+                    WoodsmanJobSystem.unmarkClaimedTree(ref, entityStore.getStore());
                     entityStore.getStore().tryRemoveComponent(ref, JobTargetComponent.getComponentType());
-                    entityStore.getStore().tryRemoveComponent(ref, WoodcutterJobComponent.getComponentType());
+                    entityStore.getStore().tryRemoveComponent(ref, WoodsmanJobComponent.getComponentType());
                     if (entityStore.getStore().getComponent(ref, UnemployedComponent.getComponentType()) == null) {
                         entityStore.getStore().addComponent(ref, UnemployedComponent.getComponentType(), new UnemployedComponent());
                     }
@@ -154,7 +154,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
         // Add job-type-specific component.
         if (workStation.getJobType() == JobType.Woodsman) {
-            _commandBuffer.addComponent(colonistRef, WoodcutterJobComponent.getComponentType(), new WoodcutterJobComponent());
+            _commandBuffer.addComponent(colonistRef, WoodsmanJobComponent.getComponentType(), new WoodsmanJobComponent());
         }
 
         DebugLog.log(DebugCategory.JOB_ASSIGNMENT, Level.INFO, "Assigned Colonist %s to job at %s.", colonistEntityUuid.getUuid(), workStation.getJobType());
@@ -209,9 +209,9 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             for (UUID colonistUuid : workStation.getAssignedColonists()) {
                 var colonistRef = entityStore.getRefFromUUID(colonistUuid);
                 // Clean up job-type-specific state before removing the job.
-                WoodcutterJobSystem.unmarkClaimedTree(colonistRef, entityStore.getStore());
+                WoodsmanJobSystem.unmarkClaimedTree(colonistRef, entityStore.getStore());
                 entityStore.getStore().tryRemoveComponent(colonistRef, JobTargetComponent.getComponentType());
-                entityStore.getStore().tryRemoveComponent(colonistRef, WoodcutterJobComponent.getComponentType());
+                entityStore.getStore().tryRemoveComponent(colonistRef, WoodsmanJobComponent.getComponentType());
                 entityStore.getStore().tryRemoveComponent(colonistRef, JobComponent.getComponentType());
                 entityStore.getStore().addComponent(colonistRef, UnemployedComponent.getComponentType(), new UnemployedComponent()); // Mark colonist as unemployed again.
                 DebugLog.log(DebugCategory.JOB_ASSIGNMENT, Level.INFO, "Unassigned colonist with UUID %s from work station.", colonistUuid);
@@ -266,7 +266,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             assert uuidComponent != null;
 
             // Release any claimed tree before removing.
-            WoodcutterJobSystem.unmarkClaimedTree(ref, store);
+            WoodsmanJobSystem.unmarkClaimedTree(ref, store);
             commandBuffer.removeComponent(ref, JobTargetComponent.getComponentType());
 
             // Get work station from position.
@@ -348,10 +348,10 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
             // Collect positions of trees that are actively claimed by a colonist.
             Set<Vector3i> activelyClaimed = new HashSet<>();
-            Query<EntityStore> woodcutterJobTargetQuery = Query.and(
-                    WoodcutterJobComponent.getComponentType(),
+            Query<EntityStore> woodsmanJobTargetQuery = Query.and(
+                    WoodsmanJobComponent.getComponentType(),
                     JobTargetComponent.getComponentType());
-            entityStore.getStore().forEachChunk(woodcutterJobTargetQuery, (chunk, _cb) -> {
+            entityStore.getStore().forEachChunk(woodsmanJobTargetQuery, (chunk, _cb) -> {
                 for (int i = 0; i < chunk.size(); i++) {
                     JobTargetComponent jobTarget = chunk.getComponent(i, JobTargetComponent.getComponentType());
                     if (jobTarget != null && jobTarget.targetPosition != null) {
