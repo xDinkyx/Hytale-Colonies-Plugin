@@ -119,8 +119,8 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         Vector3i nearestTree = findNearestAvailableTree(woodsman, workStationPos, world);
         if (nearestTree == null) {
             DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO,
-                    "[WoodsmanJob] Idle — no available trees within radius %.1f of workstation %s (allowedTypes=%s).",
-                    woodsman.treeSearchRadius, workStationPos, woodsman.allowedTreeTypes);
+                    "[WoodsmanJob] Idle — no available trees within radius %.1f of workstation %s.",
+                    woodsman.treeSearchRadius, workStationPos);
             return;
         }
 
