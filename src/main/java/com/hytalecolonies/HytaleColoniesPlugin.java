@@ -76,6 +76,9 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     protected void setup() {
         LOGGER.at(Level.INFO).log("[HytaleColonies] Setting up...");
 
+        // Allow all levels through the underlying logger so DebugCategory gates control filtering.
+        LOGGER.setLevel(Level.ALL);
+
         debugConfig.save();
         debugConfig.get().applyToCategories();
 

@@ -2,7 +2,6 @@ package com.hytalecolonies.systems.npc;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.logging.Level;
 
 import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
@@ -54,13 +53,13 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
 
         NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
         if (npcEntity == null) {
-            DebugLog.log(DebugCategory.MOVEMENT, Level.WARNING, "PathFindingSystem: entity has no NPCEntity component, cannot navigate.");
+            DebugLog.warning(DebugCategory.MOVEMENT, "PathFindingSystem: entity has no NPCEntity component, cannot navigate.");
             return;
         }
 
         Role role = npcEntity.getRole();
         if (role == null) {
-            DebugLog.log(DebugCategory.MOVEMENT, Level.WARNING, "PathFindingSystem: NPC role is null, cannot navigate.");
+            DebugLog.warning(DebugCategory.MOVEMENT, "PathFindingSystem: NPC role is null, cannot navigate.");
             return;
         }
 

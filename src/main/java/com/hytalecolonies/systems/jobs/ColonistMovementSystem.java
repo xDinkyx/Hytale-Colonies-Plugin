@@ -16,7 +16,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.logging.Level;
 
 /**
  * Generic colonist movement system. Drives the travel legs of the job state
@@ -67,7 +66,7 @@ public class ColonistMovementSystem extends DelayedEntitySystem<EntityStore> {
         Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
         TransformComponent transform = store.getComponent(colonistRef, TransformComponent.getComponentType());
         if (transform == null) {
-            DebugLog.log(DebugCategory.MOVEMENT, Level.WARNING, "[ColonistMovement] Colonist has no TransformComponent — skipping.");
+            DebugLog.warning(DebugCategory.MOVEMENT, "[ColonistMovement] Colonist has no TransformComponent — skipping.");
             return;
         }
 
@@ -108,19 +107,19 @@ public class ColonistMovementSystem extends DelayedEntitySystem<EntityStore> {
         boolean arrivedXZ = xzDistSq <= JOB_ARRIVAL_XZ * JOB_ARRIVAL_XZ;
         boolean stuck = jobTarget.stuckTicks >= STUCK_TICKS_LIMIT;
 
-        DebugLog.log(DebugCategory.MOVEMENT,
+        DebugLog.fine(DebugCategory.MOVEMENT,
                 "[ColonistMovement] TravelingToJob — xzDist=%.2f to %s (threshold %.1f) stuckTicks=%d.",
                 xzDist, targetPos, JOB_ARRIVAL_XZ, jobTarget.stuckTicks);
 
         if (arrivedXZ || stuck) {
             if (stuck && !arrivedXZ) {
-                DebugLog.log(DebugCategory.MOVEMENT, Level.INFO,
+                DebugLog.info(DebugCategory.MOVEMENT,
                         "[ColonistMovement] Stuck near job target %s (xzDist=%.2f) — advancing to Working.", targetPos, xzDist);
             }
             jobTarget.stuckTicks = 0;
             jobTarget.lastKnownPosition = null;
             job.setCurrentTask(JobState.Working);
-            DebugLog.log(DebugCategory.MOVEMENT, Level.INFO, "[ColonistMovement] Arrived at job target %s.", targetPos);
+            DebugLog.info(DebugCategory.MOVEMENT, "[ColonistMovement] Arrived at job target %s.", targetPos);
         }
     }
 
@@ -134,7 +133,7 @@ public class ColonistMovementSystem extends DelayedEntitySystem<EntityStore> {
         double dz = colonistPos.z - (workStationPos.z + 0.5);
         double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-        DebugLog.log(DebugCategory.MOVEMENT,
+        DebugLog.fine(DebugCategory.MOVEMENT,
                 "[ColonistMovement] TravelingHome — dist=%.2f to workstation %s (threshold %.1f).",
                 dist, workStationPos, WORKSTATION_ARRIVAL_3D);
 
@@ -143,7 +142,7 @@ public class ColonistMovementSystem extends DelayedEntitySystem<EntityStore> {
             jobTarget.lastKnownPosition = null;
             commandBuffer.removeComponent(ref, JobTargetComponent.getComponentType());
             job.setCurrentTask(JobState.Idle);
-            DebugLog.log(DebugCategory.MOVEMENT, Level.INFO, "[ColonistMovement] Arrived home at workstation.");
+            DebugLog.info(DebugCategory.MOVEMENT, "[ColonistMovement] Arrived home at workstation.");
             return;
         }
 
@@ -161,7 +160,7 @@ public class ColonistMovementSystem extends DelayedEntitySystem<EntityStore> {
             jobTarget.lastKnownPosition = null;
             Vector3d wsTarget = new Vector3d(workStationPos.x + 0.5, workStationPos.y, workStationPos.z + 0.5);
             commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(wsTarget));
-            DebugLog.log(DebugCategory.MOVEMENT, Level.INFO, "[ColonistMovement] TravelingHome — stuck, re-dispatching nav to workstation.");
+            DebugLog.info(DebugCategory.MOVEMENT, "[ColonistMovement] TravelingHome — stuck, re-dispatching nav to workstation.");
         }
     }
 

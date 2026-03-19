@@ -34,7 +34,6 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.logging.Level;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -103,7 +102,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
 
         Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
 
-        DebugLog.log(DebugCategory.TREE_SCANNER, "[TreeScanner Periodic] Growth scan around workstation at %s.", workStationPos);
+        DebugLog.fine(DebugCategory.TREE_SCANNER, "[TreeScanner Periodic] Growth scan around workstation at %s.", workStationPos);
         scanForTreeWoodBlocks(workStationPos, chunkStore, commandBuffer);
     }
 
@@ -116,7 +115,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         List<Vector3i> segmentBottoms = collectSegmentBottoms(world, centerPos, treeWoodKeys);
         List<TreeDetectorBFS.TreeCandidate> confirmedTrees = detectTrees(segmentBottoms, world);
 
-        DebugLog.log(DebugCategory.TREE_SCANNER,
+        DebugLog.fine(DebugCategory.TREE_SCANNER,
                 "[TreeScanner] Found %d trees within %d chunk radius of workstation at %s.",
                 confirmedTrees.size(), SCAN_RADIUS_CHUNKS, centerPos);
 
@@ -204,7 +203,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             else failed++;
         }
 
-        DebugLog.log(DebugCategory.TREE_SCANNER,
+        DebugLog.fine(DebugCategory.TREE_SCANNER,
                 "[TreeScanner] HarvestableTree registration — created: %d, updated: %d, already registered: %d, failed: %d.",
                 created, updated, skipped, failed);
     }
@@ -233,14 +232,14 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         int blockId = world.getBlock(base);
         BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
         if (blockType == null) {
-            DebugLog.log(DebugCategory.TREE_SCANNER, Level.WARNING,
+            DebugLog.warning(DebugCategory.TREE_SCANNER,
                     "[TreeScanner] No block type found at tree base %s — skipping registration.", base);
             return -2;
         }
 
         WorldChunk baseChunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(base.x, base.z));
         if (baseChunk == null) {
-            DebugLog.log(DebugCategory.TREE_SCANNER,
+            DebugLog.fine(DebugCategory.TREE_SCANNER,
                     "[TreeScanner] Chunk not in memory for tree base %s — skipping registration.", base);
             return -2;
         }
@@ -249,7 +248,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         BlockComponentChunk blockComponentChunk = chunkStore.getComponent(
                 chunkRef, BlockComponentChunk.getComponentType());
         if (blockComponentChunk == null) {
-            DebugLog.log(DebugCategory.TREE_SCANNER, Level.WARNING,
+            DebugLog.warning(DebugCategory.TREE_SCANNER,
                     "[TreeScanner] No BlockComponentChunk at tree base %s — skipping registration.", base);
             return -2;
         }
@@ -259,7 +258,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
 
         if (existingRef != null && existingRef.isValid()) {
             if (chunkStore.getComponent(existingRef, HarvestableTreeComponent.getComponentType()) != null) {
-                DebugLog.log(DebugCategory.TREE_SCANNER,
+                DebugLog.fine(DebugCategory.TREE_SCANNER,
                         "[TreeScanner] Tree at %s already registered — skipping.", base);
                 return -1;
             }
@@ -270,7 +269,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             } else {
                 chunkStore.putComponent(existingRef, HarvestableTreeComponent.getComponentType(), newComp);
             }
-            DebugLog.log(DebugCategory.TREE_SCANNER, Level.INFO,
+            DebugLog.info(DebugCategory.TREE_SCANNER,
                     "[TreeScanner] Added HarvestableTreeComponent to existing block entity at %s (%s, %d wood blocks).",
                     base, blockType.getId(), tree.woodCount());
             return 0;
@@ -290,7 +289,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         } else {
             chunkStore.addEntity(holder, AddReason.SPAWN);
         }
-        DebugLog.log(DebugCategory.TREE_SCANNER, Level.INFO,
+        DebugLog.info(DebugCategory.TREE_SCANNER,
                 "[TreeScanner] Created block entity with HarvestableTreeComponent at %s (%s, %d wood blocks).",
                 base, blockType.getId(), tree.woodCount());
         return 1;
@@ -454,11 +453,11 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             HarvestableTreeComponent updated = existingComp.clone();
             updated.setWoodCount(result.woodCount());
             chunkStore.putComponent(blockRef, HarvestableTreeComponent.getComponentType(), updated);
-            DebugLog.log(DebugCategory.TREE_SCANNER, Level.INFO,
+            DebugLog.info(DebugCategory.TREE_SCANNER,
                     "[TreeScanner] Tree at %s updated — %d wood blocks remaining after break.", basePos, result.woodCount());
         } else {
             chunkStore.removeComponent(blockRef, HarvestableTreeComponent.getComponentType());
-            DebugLog.log(DebugCategory.TREE_SCANNER, Level.INFO,
+            DebugLog.info(DebugCategory.TREE_SCANNER,
                     "[TreeScanner] Tree at %s removed — no valid structure remains.", basePos);
         }
     }

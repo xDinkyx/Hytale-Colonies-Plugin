@@ -22,7 +22,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 
 /**
  * Drives the movement state machine for woodsman colonists.
@@ -64,14 +63,14 @@ public class WoodsmanMovementSystem extends DelayedEntitySystem<EntityStore> {
         Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
         TransformComponent transform = store.getComponent(colonistRef, TransformComponent.getComponentType());
         if (transform == null) {
-            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.WARNING, "[Woodsman] Colonist has no TransformComponent — skipping.");
+            DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[Woodsman] Colonist has no TransformComponent — skipping.");
             return;
         }
 
         Vector3d colonistPos = transform.getTransform().getPosition();
         JobState state = job.getCurrentTask();
 
-        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+        DebugLog.fine(DebugCategory.WOODSMAN_JOB,
                 "[Woodsman] state=%s pos=(%.1f, %.1f, %.1f) target=%s workStation=%s",
                 state, colonistPos.x, colonistPos.y, colonistPos.z,
                 woodsman.targetTreePosition, job.getWorkStationBlockPosition());
@@ -97,7 +96,7 @@ public class WoodsmanMovementSystem extends DelayedEntitySystem<EntityStore> {
         World world = store.getExternalData().getWorld();
         Vector3i nearestTree = findNearestAvailableTree(woodsman, workStationPos, world);
         if (nearestTree == null) {
-            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+            DebugLog.fine(DebugCategory.WOODSMAN_JOB,
                     "[Woodsman] Idle — no available trees found within radius %.1f of workstation %s (allowedTypes=%s).",
                     woodsman.treeSearchRadius, workStationPos, woodsman.allowedTreeTypes);
             return;
@@ -106,12 +105,12 @@ public class WoodsmanMovementSystem extends DelayedEntitySystem<EntityStore> {
         // Claim the tree to prevent other colonists from taking it.
         Ref<ChunkStore> treeBlockRef = BlockModule.getBlockEntity(world, nearestTree.x, nearestTree.y, nearestTree.z);
         if (treeBlockRef == null) {
-            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.WARNING, "[Woodsman] Found tree candidate at %s but BlockEntity is null.", nearestTree);
+            DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[Woodsman] Found tree candidate at %s but BlockEntity is null.", nearestTree);
             return;
         }
         HarvestableTreeComponent tree = treeBlockRef.getStore().getComponent(treeBlockRef, HarvestableTreeComponent.getComponentType());
         if (tree == null || tree.isMarkedForHarvest()) {
-            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+            DebugLog.fine(DebugCategory.WOODSMAN_JOB,
                     "[Woodsman] Tree at %s already claimed or component missing — skipping.", nearestTree);
             return; // Race: another colonist got there first.
         }
@@ -123,7 +122,7 @@ public class WoodsmanMovementSystem extends DelayedEntitySystem<EntityStore> {
         commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(treeTarget));
 
         job.setCurrentTask(JobState.TravelingToJob);
-        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO, "Woodsman heading to tree at %s", nearestTree);
+        DebugLog.info(DebugCategory.WOODSMAN_JOB, "Woodsman heading to tree at %s", nearestTree);
     }
 
     private void handleTravelingToJob(Ref<EntityStore> ref, JobComponent job, WoodsmanJobComponent woodsman,
@@ -152,19 +151,19 @@ public class WoodsmanMovementSystem extends DelayedEntitySystem<EntityStore> {
         boolean arrivedXZ = xzDistSq <= TREE_ARRIVAL_XZ * TREE_ARRIVAL_XZ;
         boolean stuck = woodsman.stuckTicks >= STUCK_TICKS_LIMIT && xzDist <= woodsman.treeSearchRadius;
 
-        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+        DebugLog.fine(DebugCategory.WOODSMAN_JOB,
                 "[Woodsman] TravelingToJob — xzDist=%.2f to tree %s (threshold %.1f) stuckTicks=%d.",
                 xzDist, treePos, TREE_ARRIVAL_XZ, woodsman.stuckTicks);
 
         if (arrivedXZ || stuck) {
             if (stuck && !arrivedXZ) {
-                DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO,
+                DebugLog.info(DebugCategory.WOODSMAN_JOB,
                         "[Woodsman] Stuck near tree at %s (xzDist=%.2f) — advancing to Working.", treePos, xzDist);
             }
             woodsman.stuckTicks = 0;
             woodsman.lastKnownPosition = null;
             job.setCurrentTask(JobState.Working);
-            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO, "[Woodsman] Arrived at tree at %s.", treePos);
+            DebugLog.info(DebugCategory.WOODSMAN_JOB, "[Woodsman] Arrived at tree at %s.", treePos);
         }
     }
 
@@ -178,7 +177,7 @@ public class WoodsmanMovementSystem extends DelayedEntitySystem<EntityStore> {
         commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(wsTarget));
 
         job.setCurrentTask(JobState.TravelingHome);
-        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO, "Woodsman returning home from tree at %s", woodsman.targetTreePosition);
+        DebugLog.info(DebugCategory.WOODSMAN_JOB, "Woodsman returning home from tree at %s", woodsman.targetTreePosition);
     }
 
     private void handleTravelingHome(Ref<EntityStore> ref, JobComponent job, WoodsmanJobComponent woodsman,
@@ -191,7 +190,7 @@ public class WoodsmanMovementSystem extends DelayedEntitySystem<EntityStore> {
         double dy = colonistPos.y - workStationPos.y;
         double dz = colonistPos.z - (workStationPos.z + 0.5);
         double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+        DebugLog.fine(DebugCategory.WOODSMAN_JOB,
                 "[Woodsman] TravelingHome — dist=%.2f to workstation %s (threshold %.1f).",
                 dist, workStationPos, WORKSTATION_ARRIVAL_3D);
 
@@ -201,7 +200,7 @@ public class WoodsmanMovementSystem extends DelayedEntitySystem<EntityStore> {
             woodsman.stuckTicks = 0;
             woodsman.lastKnownPosition = null;
             job.setCurrentTask(JobState.Idle);
-            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO, "[Woodsman] Arrived home at workstation.");
+            DebugLog.info(DebugCategory.WOODSMAN_JOB, "[Woodsman] Arrived home at workstation.");
             return;
         }
 
@@ -219,7 +218,7 @@ public class WoodsmanMovementSystem extends DelayedEntitySystem<EntityStore> {
             woodsman.lastKnownPosition = null;
             Vector3d wsTarget = new Vector3d(workStationPos.x + 0.5, workStationPos.y, workStationPos.z + 0.5);
             commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(wsTarget));
-            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO, "[Woodsman] TravelingHome — stuck, re-dispatching nav to workstation.");
+            DebugLog.info(DebugCategory.WOODSMAN_JOB, "[Woodsman] TravelingHome — stuck, re-dispatching nav to workstation.");
         }
     }
 
@@ -258,7 +257,7 @@ public class WoodsmanMovementSystem extends DelayedEntitySystem<EntityStore> {
             }
         });
 
-        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+        DebugLog.fine(DebugCategory.WOODSMAN_JOB,
                 "[Woodsman] Tree scan: total=%d, marked=%d, wrongType=%d, candidates=%d",
                 totalTrees[0], markedTrees[0], wrongTypeTrees[0], candidates.size());
 
@@ -282,7 +281,7 @@ public class WoodsmanMovementSystem extends DelayedEntitySystem<EntityStore> {
         }
 
         if (nearest == null && closestOutsideRadius != null) {
-            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.FINE,
+            DebugLog.fine(DebugCategory.WOODSMAN_JOB,
                     "[Woodsman] Closest tree outside radius: %s at dist=%.1f (radius=%.1f).",
                     closestOutsideRadius, Math.sqrt(closestOutsideRadiusDist), woodsman.treeSearchRadius);
         }

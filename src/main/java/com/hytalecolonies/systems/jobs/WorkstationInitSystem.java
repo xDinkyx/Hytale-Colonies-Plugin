@@ -18,7 +18,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.logging.Level;
 
 /**
  * Performs initial setup for any workstation the moment its {@link WorkStationComponent}
@@ -87,13 +86,13 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
         BlockModule.BlockStateInfo blockStateInfo = store.getComponent(
                 ref, BlockModule.BlockStateInfo.getComponentType());
         if (blockStateInfo == null) {
-            DebugLog.log(DebugCategory.TREE_SCANNER, Level.WARNING,
+            DebugLog.warning(DebugCategory.TREE_SCANNER,
                     "[WorkstationInit] WorkStationComponent added without BlockStateInfo — skipping initial scan.");
             return;
         }
 
         Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
-        DebugLog.log(DebugCategory.TREE_SCANNER, Level.INFO,
+        DebugLog.info(DebugCategory.TREE_SCANNER,
                 "[WorkstationInit] Initial tree scan triggered for Woodsman workstation at %s.", workStationPos);
         treeScannerSystem.scanForTreeWoodBlocks(workStationPos, store, commandBuffer);
     }
