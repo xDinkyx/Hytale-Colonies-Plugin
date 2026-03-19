@@ -77,16 +77,6 @@ public final class ColonistToolUtil {
     // -------------------------------------------------------------------------
 
     /**
-     * Returns the unarmed baseline power for {@code gatherType} from the
-     * {@code Server/Item/Unarmed/Gathering/} assets (e.g. 0.03 for {@code Woods}).
-     * Returns {@code 0} if no unarmed spec exists for the gather type.
-     */
-    public static float unarmedPowerFor(@Nonnull String gatherType) {
-        ItemToolSpec unarmedSpec = ItemToolSpec.getAssetMap().getAsset(gatherType);
-        return unarmedSpec != null ? unarmedSpec.getPower() : 0f;
-    }
-
-    /**
      * Returns the power value of {@code tool}'s spec for {@code gatherType}, or
      * {@code 0} if the tool has no spec for it.
      */
@@ -101,12 +91,10 @@ public final class ColonistToolUtil {
     /**
      * Returns {@code true} if {@code tool} can break a block with {@code gatherType}
      * at the given {@code requiredQuality} tier.  Mirrors the logic in
-     * {@code BlockHarvestUtils.getSpecPowerDamageBlock}:
-     * <ol>
-     *   <li>The spec's power must exceed the unarmed baseline (so the tool is an
-     *       improvement over bare hands).</li>
-     *   <li>The spec's quality must be &ge; {@code requiredQuality} (tier gate).</li>
-     * </ol>
+     * {@code BlockHarvestUtils.getSpecPowerDamageBlock}: the spec's
+     * {@code GatherType} must match and its {@code Quality} must be &ge;
+     * {@code requiredQuality}.  There is no unarmed-power floor — any power value
+     * is valid as long as the quality tier is met.
      *
      * @param requiredQuality the {@code Breaking.Quality} value from the block's JSON
      *                        (0 = no tier requirement).
@@ -117,8 +105,7 @@ public final class ColonistToolUtil {
         if (tool == null || tool.getSpecs() == null) return false;
         for (ItemToolSpec spec : tool.getSpecs()) {
             if (gatherType.equals(spec.getGatherType())) {
-                return spec.getPower() > unarmedPowerFor(gatherType)
-                        && spec.getQuality() >= requiredQuality;
+                return spec.getQuality() >= requiredQuality;
             }
         }
         return false;
@@ -150,22 +137,16 @@ public final class ColonistToolUtil {
      * the <em>best</em> tool for the block described by {@code breaking} and returns
      * a {@link ToolMatch}, or {@code null} if no suitable tool exists.
      *
-     * <p>"Suitable" means the spec passes both the power-threshold and quality-tier
-     * checks.  Among suitable tools the one with the highest power wins.
-     * Hotbar is preferred over storage when power is equal.
+     * <p>"Suitable" means the spec's {@code GatherType} matches and its {@code Quality}
+     * is &ge; the block's required quality.  Among suitable tools the one with the
+     * highest power wins.  Hotbar is preferred over storage when power is equal.
      */
     @Nullable
     public static ToolMatch findBestToolInInventory(@Nonnull Inventory inventory,
                                                     @Nonnull BlockBreakingDropType breaking) {
         String gatherType = breaking.getGatherType();
-        int requiredQuality = breaking.getQuality();
         if (gatherType == null) return null;
-
-        ToolMatch best = null;
-        best = betterMatch(best, inventory.getHotbar(),  gatherType, requiredQuality, true);
-        best = betterMatch(best, inventory.getStorage(), gatherType, requiredQuality, false);
-        best = betterMatch(best, inventory.getBackpack(),gatherType, requiredQuality, false);
-        return best;
+        return findBestToolForGatherType(inventory, gatherType, breaking.getQuality());
     }
 
     /**
@@ -210,16 +191,38 @@ public final class ColonistToolUtil {
         return true;
     }
 
+    /**
+     * Returns {@code true} if the colonist has any tool in their inventory capable of
+     * harvesting a block with {@code gatherType} at {@code requiredQuality} tier.
+     * Used for "wait at workstation" checks before a job begins.
+     */
+    public static boolean hasToolForGatherType(@Nonnull Inventory inventory,
+                                               @Nonnull String gatherType,
+                                               int requiredQuality) {
+        return findBestToolForGatherType(inventory, gatherType, requiredQuality) != null;
+    }
+
     // -------------------------------------------------------------------------
     // Internal helpers
     // -------------------------------------------------------------------------
+
+    /** Scans all inventory containers and returns the best matching tool, or {@code null}. */
+    @Nullable
+    private static ToolMatch findBestToolForGatherType(@Nonnull Inventory inventory,
+                                                       @Nonnull String gatherType,
+                                                       int requiredQuality) {
+        ToolMatch best = null;
+        best = betterMatch(best, inventory.getHotbar(),   gatherType, requiredQuality, true);
+        best = betterMatch(best, inventory.getStorage(),  gatherType, requiredQuality, false);
+        best = betterMatch(best, inventory.getBackpack(), gatherType, requiredQuality, false);
+        return best;
+    }
 
     /** Scans {@code container} and returns the better of {@code current} and the best slot found. */
     @Nullable
     private static ToolMatch betterMatch(@Nullable ToolMatch current, @Nullable ItemContainer container,
                                          @Nonnull String gatherType, int requiredQuality, boolean inHotbar) {
         if (container == null) return current;
-        float baseline = unarmedPowerFor(gatherType);
         short capacity = container.getCapacity();
         for (short slot = 0; slot < capacity; slot++) {
             ItemStack stack = container.getItemStack(slot);
@@ -228,8 +231,8 @@ public final class ColonistToolUtil {
             if (item == null || item.getTool() == null) continue;
             for (ItemToolSpec spec : item.getTool().getSpecs()) {
                 if (!gatherType.equals(spec.getGatherType())) continue;
-                // Mirror BlockHarvestUtils.getSpecPowerDamageBlock: power > unarmed AND quality >= required.
-                if (spec.getPower() > baseline && spec.getQuality() >= requiredQuality) {
+                // Mirrors BlockHarvestUtils.getSpecPowerDamageBlock: GatherType match + quality >= required.
+                if (spec.getQuality() >= requiredQuality) {
                     if (current == null || spec.getPower() > current.power()) {
                         current = new ToolMatch(container, slot, spec.getPower(), inHotbar);
                     }

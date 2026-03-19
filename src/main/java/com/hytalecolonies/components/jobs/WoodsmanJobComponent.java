@@ -29,6 +29,14 @@ public class WoodsmanJobComponent implements Component<EntityStore> {
                     (o, v) -> o.treeSearchRadius = v,
                     o -> o.treeSearchRadius)
             .add()
+            .append(new KeyedCodec<>("RequiredGatherType", Codec.STRING),
+                    (o, v) -> o.requiredGatherType = v,
+                    o -> o.requiredGatherType)
+            .add()
+            .append(new KeyedCodec<>("RequiredToolQuality", Codec.INTEGER),
+                    (o, v) -> o.requiredToolQuality = v,
+                    o -> o.requiredToolQuality)
+            .add()
             .build();
 
     // ===== Fields =====
@@ -36,11 +44,17 @@ public class WoodsmanJobComponent implements Component<EntityStore> {
 
     public Set<String> allowedTreeTypes = getTreeWoodKeys();
     public float treeSearchRadius = 64.0f;
+    /** GatherType that the colonist's tool must support before leaving the workstation. */
+    public String requiredGatherType = "Woods";
+    /** Minimum tool quality tier (0 = any quality). Mirrors {@code Breaking.Quality} on the block. */
+    public int requiredToolQuality = 0;
 
     // Transient runtime state — not persisted, reset on server restart.
     public @Nullable Vector3i targetTreePosition = null;
     public @Nullable Vector3i lastKnownPosition = null;
     public int stuckTicks = 0;
+    /** Epoch-ms timestamp set when the colonist enters {@link JobState#CollectingDrops}. */
+    public long collectingDropsSince = 0L;
 
     // ===== Constructors =====
     public WoodsmanJobComponent() {}
@@ -58,7 +72,10 @@ public class WoodsmanJobComponent implements Component<EntityStore> {
     // ===== Cloneable =====
     @Override
     public @Nullable Component<EntityStore> clone() {
-        return new WoodsmanJobComponent(this.allowedTreeTypes, this.treeSearchRadius);
+        WoodsmanJobComponent c = new WoodsmanJobComponent(this.allowedTreeTypes, this.treeSearchRadius);
+        c.requiredGatherType = this.requiredGatherType;
+        c.requiredToolQuality = this.requiredToolQuality;
+        return c;
     }
 
     // -------------------------------------------------------------------------
