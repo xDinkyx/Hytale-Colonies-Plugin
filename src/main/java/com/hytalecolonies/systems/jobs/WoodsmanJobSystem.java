@@ -11,9 +11,11 @@ import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
+import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hypixel.hytale.server.core.modules.interaction.BlockHarvestUtils;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -34,9 +36,12 @@ import java.util.logging.Level;
  *       adds a {@link JobTargetComponent} so {@link ColonistMovementSystem}
  *       can drive travel, dispatches initial navigation, and transitions to
  *       {@link JobState#TravelingToJob}.</li>
- *   <li>{@link JobState#Working} — performs the harvest (TODO), unmarks the
- *       claimed tree so other colonists may take it, dispatches the return
- *       navigation, and transitions to {@link JobState#TravelingHome}.</li>
+ *   <li>{@link JobState#Working} — calls {@code BlockHarvestUtils.performBlockDamage}
+ *       on the base trunk block each tick, accumulating block health damage just
+ *       as a player would. When the block breaks (returns {@code true}) Hytale's
+ *       physics cascade the rest of the tree. Only then does the system unmark
+ *       the claim, dispatch return navigation, and transition to
+ *       {@link JobState#TravelingHome}.</li>
  * </ul>
  *
  * The {@link JobState#TravelingToJob} and {@link JobState#TravelingHome} legs
@@ -115,27 +120,64 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO, "[WoodsmanJob] Heading to tree at %s.", nearestTree);
     }
 
+    /**
+     * Applies one swing of damage to the base trunk block using the game's standard block-health
+     * system — the same path a player follows via {@code BreakBlockInteraction}.
+     * <p>
+     * Wood trunk blocks have {@code GatherType: "Woods"} with an unarmed default power of 0.03,
+     * so it takes multiple ticks to break. When the block finally breaks:
+     * <ul>
+     *   <li>{@code performBlockDamage} returns {@code true}</li>
+     *   <li>The block fires a {@code BreakBlockEvent} and spawns its natural drops</li>
+     *   <li>Hytale's block-support physics cascade the rest of the trunk and leaves</li>
+     * </ul>
+     * The colonist stays in {@link JobState#Working} until that happens.
+     */
     private void handleWorking(Ref<EntityStore> ref, JobComponent job,
                                CommandBuffer<EntityStore> commandBuffer, Store<EntityStore> store) {
-        Vector3i workStationPos = job.getWorkStationBlockPosition();
-        if (workStationPos == null) return;
-
-        // Unmark the claimed tree so other colonists may claim it while this one heads home.
-        unmarkClaimedTree(ref, store);
-
-        // Clear targetPosition so StaleMarkCleanupSystem does not count this as an active claim.
         JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
-        if (jobTarget != null) {
-            jobTarget.setTargetPosition(null);
+        if (jobTarget == null || jobTarget.targetPosition == null) {
+            // Target lost (e.g. after server restart) — give up and go home.
+            unmarkClaimedTree(ref, store);
+            job.setCurrentTask(JobState.Idle);
+            return;
         }
 
-        // TODO: Implement actual tree harvesting (break blocks, drop items) before returning.
+        Vector3i treeBase = jobTarget.targetPosition;
+        World world = store.getExternalData().getWorld();
+        long chunkIndex = ChunkUtil.indexChunkFromBlock(treeBase.x, treeBase.z);
+        Ref<ChunkStore> chunkRef = world.getChunkStore().getChunkReference(chunkIndex);
+        if (chunkRef == null || !chunkRef.isValid()) {
+            DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.WARNING,
+                    "[WoodsmanJob] Chunk not loaded at tree base %s — skipping chop tick.", treeBase);
+            return;
+        }
 
-        Vector3d wsTarget = new Vector3d(workStationPos.x + 0.5, workStationPos.y, workStationPos.z + 0.5);
-        commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(wsTarget));
+        // One swing: damage the base trunk block through the same health system players use.
+        // null item + null tool → uses the default ItemToolSpec for the block's GatherType.
+        boolean broke = BlockHarvestUtils.performBlockDamage(
+                treeBase, null, null, 1.0f, 0,
+                chunkRef, commandBuffer, world.getChunkStore().getStore());
 
+        if (!broke) {
+            // Block is still alive — stay in Working and try again next tick.
+            DebugLog.log(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Chopping base trunk at %s — still standing.", treeBase);
+            return;
+        }
+
+        // Base block broke — physics will cascade the tree. Wrap up.
+        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO,
+                "[WoodsmanJob] Base trunk at %s broke — tree will collapse. Heading home.", treeBase);
+
+        unmarkClaimedTree(ref, store);
+        jobTarget.setTargetPosition(null);
+
+        Vector3i workStationPos = job.getWorkStationBlockPosition();
+        if (workStationPos != null) {
+            Vector3d wsTarget = new Vector3d(workStationPos.x + 0.5, workStationPos.y, workStationPos.z + 0.5);
+            commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(wsTarget));
+        }
         job.setCurrentTask(JobState.TravelingHome);
-        DebugLog.log(DebugCategory.WOODSMAN_JOB, Level.INFO, "[WoodsmanJob] Harvesting done, returning home to %s.", workStationPos);
     }
 
     // ===== Helpers =====
