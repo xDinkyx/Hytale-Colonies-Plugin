@@ -114,7 +114,11 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore> {
                             pickedQty, itemStack.getItemId());
                 }
             } else {
-                // Full pickup — defer the entity removal to end-of-tick via CommandBuffer.
+                // Full pickup — mark as claimed immediately (so any other colonist scanning
+                // in the same tick sees canPickUp()==false and skips it), then defer the
+                // entity removal to end-of-tick via CommandBuffer to avoid calling
+                // store.removeEntity during a tick.
+                itemComponent.setPickupDelay(Float.MAX_VALUE);
                 commandBuffer.removeEntity(itemRef, RemoveReason.REMOVE);
                 DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[ItemPickup] Picked up %dx %s.",
                         itemStack.getQuantity(), itemStack.getItemId());
