@@ -24,6 +24,7 @@ import com.hytalecolonies.systems.ColonySystem;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
 import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.systems.jobs.ColonistItemPickupSystem;
 import com.hytalecolonies.systems.jobs.ColonistMovementSystem;
 import com.hytalecolonies.systems.jobs.WoodsmanJobSystem;
 import com.hytalecolonies.systems.npc.PathFindingSystem;
@@ -173,6 +174,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());
         getEntityStoreRegistry().registerSystem(new PathFindingSystem());
         getEntityStoreRegistry().registerSystem(new ColonistMovementSystem());
+        getEntityStoreRegistry().registerSystem(new ColonistItemPickupSystem());
         getEntityStoreRegistry().registerSystem(new WoodsmanJobSystem());
         getEntityStoreRegistry().registerSystem(new TreeBlockChangeEventSystem.OnBreak(treeScannerSystem));
         getEntityStoreRegistry().registerSystem(new TreeBlockChangeEventSystem.OnPlace(treeScannerSystem));

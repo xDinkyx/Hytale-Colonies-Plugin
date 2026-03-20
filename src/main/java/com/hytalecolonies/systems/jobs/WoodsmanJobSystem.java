@@ -86,11 +86,40 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         } else if (state == JobState.Working) {
             handleWorking(colonistRef, job, commandBuffer, store);
         } else if (state == JobState.CollectingDrops) {
-            handleCollectingDrops(colonistRef, job, woodsman, commandBuffer);
+            handleCollectingDrops(colonistRef, job, commandBuffer);
         }
     }
 
     // ===== State handlers =====
+
+    /**
+     * How long (ms) the colonist lingers at the chop site before heading home.
+     * Actual item pickup is handled continuously by {@link ColonistItemPickupSystem};
+     * this is just time for physics-dropped items to settle and become eligible.
+     */
+    private static final long COLLECTING_DROPS_DURATION_MS = 5_000L;
+
+    /**
+     * Waits {@link #COLLECTING_DROPS_DURATION_MS} at the drop site then dispatches
+     * the colonist home. Pickup itself is handled by {@link ColonistItemPickupSystem}.
+     */
+    private void handleCollectingDrops(@Nonnull Ref<EntityStore> ref, @Nonnull JobComponent job,
+                                       @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        long elapsedMs = System.currentTimeMillis() - job.collectingDropsSince;
+        if (elapsedMs < COLLECTING_DROPS_DURATION_MS) {
+            DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Collecting drops — %.1f s remaining.",
+                    (COLLECTING_DROPS_DURATION_MS - elapsedMs) / 1000.0);
+            return;
+        }
+
+        DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Done collecting drops — heading home.");
+        Vector3i workStationPos = job.getWorkStationBlockPosition();
+        if (workStationPos != null) {
+            commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(),
+                    new MoveToTargetComponent(new Vector3d(workStationPos.x + 0.5, workStationPos.y, workStationPos.z + 0.5)));
+        }
+        job.setCurrentTask(JobState.TravelingHome);
+    }
 
     private void handleIdle(Ref<EntityStore> ref, JobComponent job, WoodsmanJobComponent woodsman,
                              CommandBuffer<EntityStore> commandBuffer, Store<EntityStore> store) {
@@ -138,32 +167,6 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
 
         job.setCurrentTask(JobState.TravelingToJob);
         DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Heading to tree at %s.", nearestTree);
-    }
-
-    /** How long (ms) the colonist waits in {@link JobState#CollectingDrops} before heading home. */
-    private static final long COLLECTING_DROPS_DURATION_MS = 5_000L;
-
-    /**
-     * Waits {@link #COLLECTING_DROPS_DURATION_MS} ms then dispatches the colonist home.
-     * This is a temporary placeholder until a proper item-pickup system is implemented.
-     */
-    private void handleCollectingDrops(@Nonnull Ref<EntityStore> ref, @Nonnull JobComponent job,
-                                       @Nonnull WoodsmanJobComponent woodsman,
-                                       @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-        long elapsedMs = System.currentTimeMillis() - woodsman.collectingDropsSince;
-        if (elapsedMs < COLLECTING_DROPS_DURATION_MS) {
-            DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Collecting drops — %.1f s remaining.",
-                    (COLLECTING_DROPS_DURATION_MS - elapsedMs) / 1000.0);
-            return;
-        }
-
-        DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Done collecting drops — heading home.");
-        Vector3i workStationPos = job.getWorkStationBlockPosition();
-        if (workStationPos != null) {
-            commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(),
-                    new MoveToTargetComponent(new Vector3d(workStationPos.x + 0.5, workStationPos.y, workStationPos.z + 0.5)));
-        }
-        job.setCurrentTask(JobState.TravelingHome);
     }
 
     /**
@@ -269,15 +272,11 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         }
 
         DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanJob] Base trunk at %s broke — collecting drops for %.1f s before heading home.",
-                treeBase, COLLECTING_DROPS_DURATION_MS / 1000.0);
+                "[WoodsmanJob] Base trunk at %s broke — collecting drops before heading home.", treeBase);
         unmarkClaimedTree(ref, store);
         jobTarget.setTargetPosition(null);
 
-        WoodsmanJobComponent woodsman = store.getComponent(ref, WoodsmanJobComponent.getComponentType());
-        if (woodsman != null) {
-            woodsman.collectingDropsSince = System.currentTimeMillis();
-        }
+        job.collectingDropsSince = System.currentTimeMillis();
         job.setCurrentTask(JobState.CollectingDrops);
     }
 

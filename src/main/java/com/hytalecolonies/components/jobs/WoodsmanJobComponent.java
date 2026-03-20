@@ -53,8 +53,6 @@ public class WoodsmanJobComponent implements Component<EntityStore> {
     public @Nullable Vector3i targetTreePosition = null;
     public @Nullable Vector3i lastKnownPosition = null;
     public int stuckTicks = 0;
-    /** Epoch-ms timestamp set when the colonist enters {@link JobState#CollectingDrops}. */
-    public long collectingDropsSince = 0L;
 
     // ===== Constructors =====
     public WoodsmanJobComponent() {}
