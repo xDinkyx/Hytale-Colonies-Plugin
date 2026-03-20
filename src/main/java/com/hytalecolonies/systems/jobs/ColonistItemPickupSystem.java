@@ -3,14 +3,17 @@ package com.hytalecolonies.systems.jobs;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.spatial.SpatialResource;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
+import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -74,7 +77,7 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore> {
 
         // Pass commandBuffer alongside store: reads go through store, the entity
         // removal is deferred via commandBuffer to avoid IllegalStateException.
-        pickUpNearbyItems(transform.getPosition(), colonist.getInventory().getCombinedStorageFirst(), store, commandBuffer);
+        pickUpNearbyItems(ref, transform.getPosition(), colonist.getInventory().getCombinedStorageFirst(), store, commandBuffer);
     }
 
     /**
@@ -85,14 +88,15 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore> {
      * {@code commandBuffer} to avoid {@link IllegalStateException} when calling
      * {@code store.removeEntity} during a tick.
      */
-    private static void pickUpNearbyItems(@Nonnull com.hypixel.hytale.math.vector.Vector3d position,
+    private static void pickUpNearbyItems(@Nonnull Ref<EntityStore> colonistRef,
+                                          @Nonnull Vector3d colonistPos,
                                           @Nonnull ItemContainer container,
                                           @Nonnull Store<EntityStore> store,
                                           @Nonnull CommandBuffer<EntityStore> commandBuffer) {
         SpatialResource<Ref<EntityStore>, EntityStore> spatialResource =
                 store.getResource(EntityModule.get().getItemSpatialResourceType());
         List<Ref<EntityStore>> nearbyItems = new ArrayList<>();
-        spatialResource.getSpatialStructure().ordered(position, PICKUP_RADIUS, nearbyItems);
+        spatialResource.getSpatialStructure().ordered(colonistPos, PICKUP_RADIUS, nearbyItems);
 
         for (Ref<EntityStore> itemRef : nearbyItems) {
             if (!itemRef.isValid()) continue;
@@ -102,6 +106,11 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore> {
             ItemStack itemStack = itemComponent.getItemStack();
             if (itemStack == null) continue;
 
+            // Capture item position before any mutation, needed for the fly-to animation.
+            TransformComponent itemTransform = store.getComponent(itemRef, TransformComponent.getComponentType());
+            Vector3d itemPos =
+                    itemTransform != null ? itemTransform.getPosition() : colonistPos;
+
             ItemStackTransaction transaction = container.addItemStack(itemStack);
             ItemStack remainder = transaction.getRemainder();
             if (remainder != null && !remainder.isEmpty()) {
@@ -110,15 +119,19 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore> {
                 itemComponent.setItemStack(remainder);
                 int pickedQty = itemStack.getQuantity() - remainder.getQuantity();
                 if (pickedQty > 0) {
+                    // Animate the partial amount flying to the colonist.
+                    Holder<EntityStore> animHolder = ItemComponent.generatePickedUpItem(itemRef, commandBuffer, colonistRef, colonistPos);
+                    if (animHolder != null) commandBuffer.addEntity(animHolder, AddReason.SPAWN);
                     DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[ItemPickup] Partially picked up %dx %s.",
                             pickedQty, itemStack.getItemId());
                 }
             } else {
-                // Full pickup — mark as claimed immediately (so any other colonist scanning
-                // in the same tick sees canPickUp()==false and skips it), then defer the
-                // entity removal to end-of-tick via CommandBuffer to avoid calling
-                // store.removeEntity during a tick.
+                // Full pickup — mark as claimed immediately so any other colonist scanning
+                // in the same tick sees canPickUp()==false and skips it, spawn the
+                // fly-to animation, then defer entity removal via CommandBuffer.
                 itemComponent.setPickupDelay(Float.MAX_VALUE);
+                Holder<EntityStore> animHolder = ItemComponent.generatePickedUpItem(itemRef, commandBuffer, colonistRef, colonistPos);
+                if (animHolder != null) commandBuffer.addEntity(animHolder, AddReason.SPAWN);
                 commandBuffer.removeEntity(itemRef, RemoveReason.REMOVE);
                 DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[ItemPickup] Picked up %dx %s.",
                         itemStack.getQuantity(), itemStack.getItemId());
