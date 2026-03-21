@@ -36,6 +36,9 @@ public class DebugConfig {
             .append(new KeyedCodec<>("TreeScannerLevel", Codec.STRING),
                     (c, v) -> c.treeScannerLevel = v, c -> c.treeScannerLevel)
             .add()
+            .append(new KeyedCodec<>("ColonistDeliveryLevel", Codec.STRING),
+                    (c, v) -> c.colonistDeliveryLevel = v, c -> c.colonistDeliveryLevel)
+            .add()
             .append(new KeyedCodec<>("DrawColonistPaths", Codec.BOOLEAN),
                     (c, v) -> c.drawColonistPaths = v, c -> c.drawColonistPaths)
             .add()
@@ -44,10 +47,11 @@ public class DebugConfig {
             .add()
             .build();
 
-    private String movementLevel     = "INFO";
-    private String jobAssignmentLevel = "INFO";
-    private String woodsmanJobLevel = "INFO";
-    private String treeScannerLevel   = "INFO";
+    private String movementLevel       = "INFO";
+    private String jobAssignmentLevel  = "INFO";
+    private String woodsmanJobLevel    = "INFO";
+    private String treeScannerLevel    = "INFO";
+    private String colonistDeliveryLevel = "INFO";
     private boolean drawColonistPaths = false;
     private boolean drawTreeDetection = false;
 
@@ -59,6 +63,7 @@ public class DebugConfig {
         DebugCategory.JOB_ASSIGNMENT.setMinLevel(parseLevel(jobAssignmentLevel));
         DebugCategory.WOODSMAN_JOB.setMinLevel(parseLevel(woodsmanJobLevel));
         DebugCategory.TREE_SCANNER.setMinLevel(parseLevel(treeScannerLevel));
+        DebugCategory.COLONIST_DELIVERY.setMinLevel(parseLevel(colonistDeliveryLevel));
     }
 
     /**
@@ -68,10 +73,11 @@ public class DebugConfig {
     public void setLevelForCategory(DebugCategory category, Level level) {
         String name = level.getName();
         switch (category) {
-            case MOVEMENT      -> movementLevel = name;
-            case JOB_ASSIGNMENT -> jobAssignmentLevel = name;
-            case WOODSMAN_JOB -> woodsmanJobLevel = name;
-            case TREE_SCANNER  -> treeScannerLevel = name;
+            case MOVEMENT           -> movementLevel = name;
+            case JOB_ASSIGNMENT     -> jobAssignmentLevel = name;
+            case WOODSMAN_JOB       -> woodsmanJobLevel = name;
+            case TREE_SCANNER       -> treeScannerLevel = name;
+            case COLONIST_DELIVERY  -> colonistDeliveryLevel = name;
         }
         category.setMinLevel(level);
     }
@@ -79,10 +85,11 @@ public class DebugConfig {
     /** Returns the stored level name string for the given category. */
     public String getLevelNameForCategory(DebugCategory category) {
         return switch (category) {
-            case MOVEMENT       -> movementLevel;
-            case JOB_ASSIGNMENT -> jobAssignmentLevel;
-            case WOODSMAN_JOB -> woodsmanJobLevel;
-            case TREE_SCANNER   -> treeScannerLevel;
+            case MOVEMENT           -> movementLevel;
+            case JOB_ASSIGNMENT     -> jobAssignmentLevel;
+            case WOODSMAN_JOB       -> woodsmanJobLevel;
+            case TREE_SCANNER       -> treeScannerLevel;
+            case COLONIST_DELIVERY  -> colonistDeliveryLevel;
         };
     }
 
