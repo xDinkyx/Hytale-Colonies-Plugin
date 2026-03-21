@@ -112,13 +112,9 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
             return;
         }
 
-        DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Done collecting drops — heading home.");
-        Vector3i workStationPos = job.getWorkStationBlockPosition();
-        if (workStationPos != null) {
-            commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(),
-                    new MoveToTargetComponent(new Vector3d(workStationPos.x + 0.5, workStationPos.y, workStationPos.z + 0.5)));
-        }
-        job.setCurrentTask(JobState.TravelingHome);
+        DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Done collecting drops — heading to deliver items.");
+        job.deliveryContainerPosition = null; // Clear any stale cache so ColonistDeliverySystem scans fresh.
+        job.setCurrentTask(JobState.DeliveringItems);
     }
 
     private void handleIdle(Ref<EntityStore> ref, JobComponent job, WoodsmanJobComponent woodsman,

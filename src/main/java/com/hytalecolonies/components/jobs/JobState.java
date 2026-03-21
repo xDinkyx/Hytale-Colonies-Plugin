@@ -6,6 +6,7 @@ public enum JobState {
     Idle,
     Working,
     CollectingDrops,
+    DeliveringItems,
     Recharging, // This is different depending on the creature's energy system. For example a human needs to eat, but a robot needs to recharge.
     TravelingToJob,
     TravelingHome,
