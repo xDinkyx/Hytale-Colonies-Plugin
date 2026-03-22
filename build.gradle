@@ -8,20 +8,36 @@ version = '1.0.0'
 
 repositories {
     mavenCentral()
-    // Official Hytale Maven repository
-    maven {
-        name = 'hytale-release'
-        url = 'https://maven.hytale.com/release'
-    }
+    // Official Hytale Maven repositories — pre-release is checked first so the
+    // version resolved from server/HytaleServer.jar (which tracks pre-release) is always found.
     maven {
         name = 'hytale-pre-release'
         url = 'https://maven.hytale.com/pre-release'
     }
+    maven {
+        name = 'hytale-release'
+        url = 'https://maven.hytale.com/release'
+    }
 }
 
+// Derive the Hytale server version directly from the local runtime JAR's manifest so
+// build.gradle and server/HytaleServer.jar are always guaranteed to match — no manual
+// version string to keep in sync.
+def hytaleServerVersion = { ->
+    def jarFile = file('server/HytaleServer.jar')
+    if (!jarFile.exists()) {
+        throw new GradleException("server/HytaleServer.jar not found. Run the update-server-lib script first.")
+    }
+    def jar = new java.util.jar.JarFile(jarFile)
+    def version = jar.manifest.mainAttributes.getValue('Implementation-Version')
+    jar.close()
+    if (!version) throw new GradleException("Implementation-Version not found in server/HytaleServer.jar manifest.")
+    return version
+}()
+
 dependencies {
-    // Hytale Server API from official Maven repository
-    compileOnly 'com.hypixel.hytale:Server:2026.02.19-1a311a592'
+    // Version is read from server/HytaleServer.jar's manifest — update that JAR to change versions.
+    compileOnly "com.hypixel.hytale:Server:${hytaleServerVersion}"
     // JSR305 annotations (@Nonnull, @Nullable)
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.google.code.gson:gson:2.10.1'

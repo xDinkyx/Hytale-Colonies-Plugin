@@ -13,7 +13,7 @@ echo   Hytale Server Full Update
 echo ============================================
 echo.
 
-echo ^>^>^> Step 1/2: Downloading server...
+echo ^>^>^> Step 1/3: Downloading server...
 echo.
 
 call "%SCRIPT_DIR%Download-Server.cmd"
@@ -24,27 +24,84 @@ if errorlevel 1 (
 )
 
 echo.
-echo ^>^>^> Step 2/2: Updating lib folder...
+echo ^>^>^> Step 2/3: Updating lib folder...
 echo.
 
 call "%SCRIPT_DIR%Update-Lib.cmd"
 if errorlevel 1 (
     echo.
-    echo ERROR: Update step failed
+    echo ERROR: Lib update step failed
     exit /b 1
 )
+
+echo.
+echo ^>^>^> Step 3/3: Syncing server/ runtime files with lib/...
+echo.
+
+REM Derive workspace root (4 levels up from script location)
+for %%I in ("%SCRIPT_DIR%\..\..\..\..\") do set "WORKSPACE_ROOT=%%~fI"
+set "LIB_JAR=%WORKSPACE_ROOT%lib\HytaleServer.jar"
+set "SERVER_JAR=%WORKSPACE_ROOT%server\HytaleServer.jar"
+set "SERVER_DIR=%WORKSPACE_ROOT%server"
+
+if not exist "%LIB_JAR%" (
+    echo ERROR: lib\HytaleServer.jar not found - lib update may have failed
+    exit /b 1
+)
+
+REM Copy HytaleServer.jar
+copy /y "%LIB_JAR%" "%SERVER_JAR%"
+if errorlevel 1 (
+    echo ERROR: Failed to copy lib\HytaleServer.jar to server\HytaleServer.jar
+    exit /b 1
+)
+echo Copied lib\HytaleServer.jar to server\HytaleServer.jar
+
+REM Locate and copy Assets.zip from the extracted download directory
+REM The HYTALE_DOWNLOADER_PATH env var (or default) points to the downloader folder
+if not defined HYTALE_DOWNLOADER_PATH set "HYTALE_DOWNLOADER_PATH=C:\hytale-downloader"
+set "EXTRACT_DIR=%HYTALE_DOWNLOADER_PATH%\extracted"
+set "DOWNLOAD_DIR=%HYTALE_DOWNLOADER_PATH%\downloads"
+
+REM Read the downloaded version (set by Download-Server.cmd)
+set "SERVER_VERSION="
+if exist "%DOWNLOAD_DIR%\LATEST_VERSION.txt" (
+    set /p SERVER_VERSION=<"%DOWNLOAD_DIR%\LATEST_VERSION.txt"
+)
+
+if not "%SERVER_VERSION%"=="" (
+    set "EXTRACTED_ASSETS_ZIP=%EXTRACT_DIR%\%SERVER_VERSION%\Assets.zip"
+    if exist "!EXTRACTED_ASSETS_ZIP!" (
+        echo Copying Assets.zip to server\...
+        copy /y "!EXTRACTED_ASSETS_ZIP!" "%SERVER_DIR%\Assets.zip"
+        if errorlevel 1 (
+            echo ERROR: Failed to copy Assets.zip to server\Assets.zip
+            exit /b 1
+        )
+        echo Copied Assets.zip to server\Assets.zip
+    ) else (
+        echo WARNING: Assets.zip not found at: !EXTRACTED_ASSETS_ZIP!
+        echo          server\Assets.zip was NOT updated - version mismatch may occur.
+    )
+) else (
+    echo WARNING: Could not determine server version - server\Assets.zip was NOT updated.
+)
+
+echo build.gradle will now automatically resolve this version.
+echo.
 
 echo.
 echo ============================================
 echo   Full Update Complete!
 echo ============================================
 echo.
-echo Your lib folder is now updated with:
+echo Your lib folder and server/ directory are now updated with:
 echo   - Latest HytaleServer.jar
 echo   - Decompiled source code (for reference)
 echo   - Server assets
 echo   - UI assets
 echo.
+echo server/ is now fully synced: HytaleServer.jar + Assets.zip match the same version.
 echo Run 'Build and Deploy Plugin' task to test your plugin!
 echo.
 

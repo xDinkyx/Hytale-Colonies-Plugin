@@ -228,7 +228,6 @@ if !DECOMPILE_RESULT! neq 0 (
 
 echo.
 echo Decompilation complete!
-
 echo.
 echo ============================================
 echo   Updating lib folder
@@ -318,10 +317,6 @@ echo     Server/                   (server assets)
 echo     UI/                       (UI assets)
 echo.
 echo Remember: Decompiled code may have errors - it's for reference only.
-echo.
-echo Next steps:
-echo   1. Review changes with: git diff lib/
-echo   2. Test your plugin with: Build and Deploy Plugin task
 echo.
 
 exit /b 0

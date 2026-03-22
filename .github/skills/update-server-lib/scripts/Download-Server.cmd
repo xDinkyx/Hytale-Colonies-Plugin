@@ -128,8 +128,6 @@ echo.
 echo Version:      %SERVER_VERSION%
 echo Extracted to: %SERVER_EXTRACT_PATH%
 echo.
-echo Next step: Run Update-Lib.cmd to decompile and update lib folder
-echo.
 
 REM Save version for Update-Lib.cmd
 echo %SERVER_VERSION%> "%DOWNLOAD_DIR%\LATEST_VERSION.txt"
