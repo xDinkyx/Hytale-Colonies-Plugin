@@ -31,8 +31,13 @@ import java.util.Set;
  */
 public class TreeDetectorBFS implements ITreeDetector {
 
-    /** Abort BFS if more than this many connected wood blocks are found — likely a player build. */
-    private static final int MAX_WOOD_VISITED = 50;
+    /**
+     * Abort BFS if more than this many connected wood blocks are found.
+     * Wide-base trees (2×2 or 3×3 trunks) with branches can easily exceed 50 blocks, so a
+     * generous cap is needed. Player-built structures are distinguished by the leaf check
+     * (MIN_LEAF_BLOCKS) rather than by wood count alone.
+     */
+    private static final int MAX_WOOD_VISITED = 300;
     private static final int MIN_WOOD_BLOCKS  = 4;
     private static final int MIN_LEAF_BLOCKS  = 8;
 
@@ -81,16 +86,21 @@ public class TreeDetectorBFS implements ITreeDetector {
             lowestTrunkBase = start;
         }
 
+        // BFS is restricted to the species of the starting block so that adjacent
+        // trees of different types (e.g. Beech touching Oak) are never merged into
+        // one component.
+        String startSpecies = startKey != null ? extractSpecies(startKey) : null;
+
         while (!queue.isEmpty() && visitedWood.size() <= MAX_WOOD_VISITED) {
             Vector3i current = queue.poll();
 
-            if (current.y < lowestBase.y) lowestBase = current;
+            if (isLower(current, lowestBase)) lowestBase = current;
 
             // Look up the current block's key so we know whether we are in a branch.
             String currentKey = TreeDetector.getBlockKey(world, current.x, current.y, current.z);
             boolean currentIsBranch = currentKey != null && isBranchBlock(currentKey);
 
-            if (!currentIsBranch && (lowestTrunkBase == null || current.y < lowestTrunkBase.y)) {
+            if (!currentIsBranch && (lowestTrunkBase == null || isLower(current, lowestTrunkBase))) {
                 lowestTrunkBase = current;
             }
 
@@ -104,6 +114,9 @@ public class TreeDetectorBFS implements ITreeDetector {
 
                 long packed = pack(nx, ny, nz);
                 if (woodKeys.contains(key)) {
+                    // Reject blocks of a different tree species (e.g. Beech root touching Oak root).
+                    if (startSpecies != null && !extractSpecies(key).equals(startSpecies)) continue;
+
                     // Block branch→trunk expansion: branches can only spread to other branches,
                     // never back into a trunk. This prevents BFS from crossing into a neighbouring
                     // tree's trunk via touching branch blocks.
@@ -137,6 +150,44 @@ public class TreeDetectorBFS implements ITreeDetector {
      */
     private static boolean isBranchBlock(String key) {
         return key.contains("_Branch_");
+    }
+
+    /**
+     * Extracts the species prefix from a TreeWood block key.
+     *
+     * <p>Block keys follow the pattern {@code Wood_{Species}_{Type}}, where known
+     * types are {@code Trunk}, {@code Trunk_Full}, {@code Roots},
+     * {@code Branch_Short}, {@code Branch_Long}, and {@code Branch_Corner}.
+     * For example, {@code Wood_Oak_Trunk} → {@code "Wood_Oak"} and
+     * {@code Wood_Wisteria_Wild_Branch_Short} → {@code "Wood_Wisteria_Wild"}.
+     *
+     * <p>Note: {@code _Trunk_Full} must be checked before {@code _Trunk} because
+     * the shorter suffix is a substring of the longer one.
+     *
+     * @param blockKey a non-null TreeWood block key
+     * @return the species prefix, or {@code blockKey} unchanged if no known suffix matched
+     */
+    private static String extractSpecies(String blockKey) {
+        // Order matters: more-specific suffixes before their substrings.
+        if (blockKey.endsWith("_Trunk_Full"))    return blockKey.substring(0, blockKey.length() - "_Trunk_Full".length());
+        if (blockKey.endsWith("_Trunk"))         return blockKey.substring(0, blockKey.length() - "_Trunk".length());
+        if (blockKey.endsWith("_Roots"))         return blockKey.substring(0, blockKey.length() - "_Roots".length());
+        if (blockKey.endsWith("_Branch_Short"))  return blockKey.substring(0, blockKey.length() - "_Branch_Short".length());
+        if (blockKey.endsWith("_Branch_Long"))   return blockKey.substring(0, blockKey.length() - "_Branch_Long".length());
+        if (blockKey.endsWith("_Branch_Corner")) return blockKey.substring(0, blockKey.length() - "_Branch_Corner".length());
+        return blockKey; // unknown suffix — treat the full key as the species
+    }
+
+    /**
+     * Canonical ordering for the lowest-base tiebreaker: Y ascending, then X ascending,
+     * then Z ascending. Using this consistently ensures that a flat multi-block base (all
+     * blocks at the same Y) always resolves to the same corner regardless of BFS start
+     * order, preventing duplicate block entities across scan invocations.
+     */
+    private static boolean isLower(Vector3i candidate, Vector3i current) {
+        if (candidate.y != current.y) return candidate.y < current.y;
+        if (candidate.x != current.x) return candidate.x < current.x;
+        return candidate.z < current.z;
     }
 
     // -------------------------------------------------------------------------
