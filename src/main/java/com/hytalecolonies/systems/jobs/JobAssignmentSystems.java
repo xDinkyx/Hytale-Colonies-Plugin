@@ -2,6 +2,7 @@ package com.hytalecolonies.systems.jobs;
 
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.debug.DebugTiming;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
@@ -33,12 +34,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-
 public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
     // Query for Job Sources (Workstations/Blocks)
     private final Query<ChunkStore> workStationQuery = Archetype.of(WorkStationComponent.getComponentType());
-    private final Query<EntityStore> unemployedQuery = Query.and(UnemployedComponent.getComponentType(), ColonistComponent.getComponentType());
+    private final Query<EntityStore> unemployedQuery = Query.and(UnemployedComponent.getComponentType(),
+            ColonistComponent.getComponentType());
 
     public JobAssignmentSystems() {
         super(5.0f); // Run once every 5 seconds.
@@ -46,60 +47,71 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
     @Override
     public void tick(float dt, int index,
-                     @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk,
-                     @Nonnull Store<ChunkStore> chunkStore,
-                     @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
+            @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk,
+            @Nonnull Store<ChunkStore> chunkStore,
+            @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
         WorkStationComponent workStation = archetypeChunk.getComponent(index, WorkStationComponent.getComponentType());
         assert workStation != null;
 
         World world = chunkStore.getExternalData().getWorld();
         EntityStore entityStore = world.getEntityStore();
 
-        // Remove ghost workers — colonists recorded in the workstation that no longer exist.
+        // Remove ghost workers — colonists recorded in the workstation that no longer
+        // exist.
         removeGhostWorkers(workStation, entityStore);
 
         LogWorkStationInfo(workStation);
 
         // If no job slots are available, do nothing.
-        if (workStation.getAvailableJobSlots() <= 0) return;
+        if (workStation.getAvailableJobSlots() <= 0)
+            return;
 
-        BlockModule.BlockStateInfo blockStateInfo = archetypeChunk.getComponent(index, BlockModule.BlockStateInfo.getComponentType());
+        BlockModule.BlockStateInfo blockStateInfo = archetypeChunk.getComponent(index,
+                BlockModule.BlockStateInfo.getComponentType());
         if (blockStateInfo == null) {
-            DebugLog.warning(DebugCategory.JOB_ASSIGNMENT, "[JobAssignment] WorkStation has no BlockStateInfo — skipping.");
+            DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
+                    "[JobAssignment] WorkStation has no BlockStateInfo — skipping.");
             return;
         }
 
         // Get the world position of the work station block entity
         Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
 
-        // Iterate through unemployed colonists and assign them to this work station until we run out of job slots or unemployed colonists.
+        // Iterate through unemployed colonists and assign them to this work station
+        // until we run out of job slots or unemployed colonists.
 
         int unemployedCount = entityStore.getStore().getEntityCountFor(unemployedQuery);
         DebugLog.fine(DebugCategory.JOB_ASSIGNMENT,
                 "[JobAssignment] WorkStation %s (%s) | slots: %d | unemployed colonists: %d",
                 workStation.getJobType(), workStationPos, workStation.getAvailableJobSlots(), unemployedCount);
 
-        if (unemployedCount == 0) return;
+        if (unemployedCount == 0)
+            return;
 
-        entityStore.getStore().forEachChunk(unemployedQuery, (_archetypeChunk, _commandBuffer) ->
-        {
-            // Move on to the next work station after assigning one colonist.
-            // We only assign one colonist per tick.
-            // ToDo: Implement more complex job assignment logic that considers distance, stats, preferences, etc.
-            int colonistId = 0;
-            Ref<EntityStore> colonistRef = _archetypeChunk.getReferenceTo(colonistId);
+        try (var t = DebugTiming.measure("JobAssignment.assignColonists@" + workStationPos, 100)) {
+            entityStore.getStore().forEachChunk(unemployedQuery, (_archetypeChunk, _commandBuffer) -> {
+                // Move on to the next work station after assigning one colonist.
+                // We only assign one colonist per tick.
+                // ToDo: Implement more complex job assignment logic that considers distance,
+                // stats, preferences, etc.
+                int colonistId = 0;
+                Ref<EntityStore> colonistRef = _archetypeChunk.getReferenceTo(colonistId);
 
-            ColonistComponent colonist = _archetypeChunk.getComponent(colonistId, ColonistComponent.getComponentType());
-            assert colonist != null;
-            UUIDComponent colonistEntityUuid = _archetypeChunk.getComponent(colonistId, UUIDComponent.getComponentType());
-            assert colonistEntityUuid != null;
+                ColonistComponent colonist = _archetypeChunk.getComponent(colonistId,
+                        ColonistComponent.getComponentType());
+                assert colonist != null;
+                UUIDComponent colonistEntityUuid = _archetypeChunk.getComponent(colonistId,
+                        UUIDComponent.getComponentType());
+                assert colonistEntityUuid != null;
 
-            DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
-                    "[JobAssignment] Assigning colonist '%s' (%s) to WorkStation %s at %s.",
-                    colonist.getColonistName(), colonistEntityUuid.getUuid(), workStation.getJobType(), workStationPos);
+                DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
+                        "[JobAssignment] Assigning colonist '%s' (%s) to WorkStation %s at %s.",
+                        colonist.getColonistName(), colonistEntityUuid.getUuid(), workStation.getJobType(),
+                        workStationPos);
 
-            EmployInWorkStation(_commandBuffer, workStation, colonistEntityUuid, colonistRef, workStationPos);
-        });
+                EmployInWorkStation(_commandBuffer, workStation, colonistEntityUuid, colonistRef, workStationPos);
+            });
+        }
     }
 
     private static void removeGhostWorkers(WorkStationComponent workStation, EntityStore entityStore) {
@@ -108,11 +120,14 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         for (UUID colonistUuid : workStation.getAssignedColonists()) {
             Ref<EntityStore> ref = entityStore.getRefFromUUID(colonistUuid);
             if (ref == null || !ref.isValid()) {
-                if (ghosts == null) ghosts = new ArrayList<>();
+                if (ghosts == null)
+                    ghosts = new ArrayList<>();
                 ghosts.add(colonistUuid);
             } else if (entityStore.getStore().getComponent(ref, JobComponent.getComponentType()) == null) {
-                // Entity exists but lost its JobComponent (e.g. loaded from old save without codec).
-                if (zombies == null) zombies = new ArrayList<>();
+                // Entity exists but lost its JobComponent (e.g. loaded from old save without
+                // codec).
+                if (zombies == null)
+                    zombies = new ArrayList<>();
                 zombies.add(colonistUuid);
             }
         }
@@ -133,7 +148,8 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                     entityStore.getStore().tryRemoveComponent(ref, JobTargetComponent.getComponentType());
                     entityStore.getStore().tryRemoveComponent(ref, WoodsmanJobComponent.getComponentType());
                     if (entityStore.getStore().getComponent(ref, UnemployedComponent.getComponentType()) == null) {
-                        entityStore.getStore().addComponent(ref, UnemployedComponent.getComponentType(), new UnemployedComponent());
+                        entityStore.getStore().addComponent(ref, UnemployedComponent.getComponentType(),
+                                new UnemployedComponent());
                     }
                 }
                 DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
@@ -143,24 +159,32 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         }
     }
 
-    private static void EmployInWorkStation(CommandBuffer<EntityStore> _commandBuffer, WorkStationComponent workStation, UUIDComponent colonistEntityUuid, Ref<EntityStore> colonistRef, Vector3i workStationPos) {
+    private static void EmployInWorkStation(CommandBuffer<EntityStore> _commandBuffer, WorkStationComponent workStation,
+            UUIDComponent colonistEntityUuid, Ref<EntityStore> colonistRef, Vector3i workStationPos) {
         // Assign the colonist to the work station.
         workStation.assignColonist(colonistEntityUuid.getUuid());
 
         // Add job component to colonist.
-        _commandBuffer.removeComponent(colonistRef, UnemployedComponent.getComponentType()); // Remove unemployed component since colonist is now employed.
+        _commandBuffer.removeComponent(colonistRef, UnemployedComponent.getComponentType()); // Remove unemployed
+                                                                                             // component since colonist
+                                                                                             // is now employed.
         _commandBuffer.addComponent(colonistRef, JobComponent.getComponentType(), new JobComponent(workStationPos));
 
         // Add job-type-specific component.
         if (workStation.getJobType() == JobType.Woodsman) {
-            _commandBuffer.addComponent(colonistRef, WoodsmanJobComponent.getComponentType(), new WoodsmanJobComponent());
+            _commandBuffer.addComponent(colonistRef, WoodsmanJobComponent.getComponentType(),
+                    new WoodsmanJobComponent());
         }
 
-        DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "Assigned Colonist %s to job at %s.", colonistEntityUuid.getUuid(), workStation.getJobType());
+        DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "Assigned Colonist %s to job at %s.", colonistEntityUuid.getUuid(),
+                workStation.getJobType());
     }
 
     private static void LogWorkStationInfo(WorkStationComponent workStation) {
-        StringBuilder workStationInfo = new StringBuilder(String.format("Work Station Job Type: %s | Available Job Slots: %d | Assigned Colonists: %d", workStation.getJobType(), workStation.getAvailableJobSlots(), workStation.getAssignedColonists().size()));
+        StringBuilder workStationInfo = new StringBuilder(
+                String.format("Work Station Job Type: %s | Available Job Slots: %d | Assigned Colonists: %d",
+                        workStation.getJobType(), workStation.getAvailableJobSlots(),
+                        workStation.getAssignedColonists().size()));
         int i = 0;
         for (UUID colonistUuid : workStation.getAssignedColonists()) {
             workStationInfo.append(String.format("\n- Colonist %d UUID %s.", i, colonistUuid));
@@ -180,18 +204,19 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
     public static class WorkStationEntitySystem extends RefSystem<ChunkStore> {
         @Override
         public void onEntityAdded(@Nonnull Ref<ChunkStore> ref,
-                                  @Nonnull AddReason reason,
-                                  @Nonnull Store<ChunkStore> store,
-                                  @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
+                @Nonnull AddReason reason,
+                @Nonnull Store<ChunkStore> store,
+                @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
 
         }
 
         @Override
         public void onEntityRemove(@Nonnull Ref<ChunkStore> ref,
-                                   @Nonnull RemoveReason reason,
-                                   @Nonnull Store<ChunkStore> store,
-                                   @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
-            if (reason == RemoveReason.UNLOAD) return; // Ignore unloads.
+                @Nonnull RemoveReason reason,
+                @Nonnull Store<ChunkStore> store,
+                @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
+            if (reason == RemoveReason.UNLOAD)
+                return; // Ignore unloads.
 
             WorkStationComponent workStation = commandBuffer.getComponent(ref, WorkStationComponent.getComponentType());
             assert workStation != null;
@@ -212,8 +237,10 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                 entityStore.getStore().tryRemoveComponent(colonistRef, JobTargetComponent.getComponentType());
                 entityStore.getStore().tryRemoveComponent(colonistRef, WoodsmanJobComponent.getComponentType());
                 entityStore.getStore().tryRemoveComponent(colonistRef, JobComponent.getComponentType());
-                entityStore.getStore().addComponent(colonistRef, UnemployedComponent.getComponentType(), new UnemployedComponent()); // Mark colonist as unemployed again.
-                DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "Unassigned colonist with UUID %s from work station.", colonistUuid);
+                entityStore.getStore().addComponent(colonistRef, UnemployedComponent.getComponentType(),
+                        new UnemployedComponent()); // Mark colonist as unemployed again.
+                DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "Unassigned colonist with UUID %s from work station.",
+                        colonistUuid);
             }
         }
 
@@ -229,22 +256,25 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
     public static class ColonistEntitySystem extends RefSystem<EntityStore> {
         @Override
         public void onEntityAdded(@Nonnull Ref<EntityStore> ref,
-                                  @Nonnull AddReason reason,
-                                  @Nonnull Store<EntityStore> store,
-                                  @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-            if (reason != AddReason.LOAD) return;
+                @Nonnull AddReason reason,
+                @Nonnull Store<EntityStore> store,
+                @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+            if (reason != AddReason.LOAD)
+                return;
 
             // On server load, transient fields (targetTreePosition etc.) are gone.
             // Reset any in-progress travel state back to Idle so the movement system
             // cleanly picks up the colonist and finds a new tree.
             JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
-            if (job == null) return;
+            if (job == null)
+                return;
             JobState state = job.getCurrentTask();
             if (state == JobState.TravelingToJob || state == JobState.TravelingHome || state == JobState.Working) {
                 DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
                         "[JobAssignment] Resetting colonist job state from %s to Idle on load.", state);
                 job.setCurrentTask(JobState.Idle);
-                // Remove the job target so ColonistMovementSystem does not process stale travel.
+                // Remove the job target so ColonistMovementSystem does not process stale
+                // travel.
                 // StaleMarkCleanupSystem will clear any orphaned tree marks.
                 commandBuffer.removeComponent(ref, JobTargetComponent.getComponentType());
             }
@@ -252,10 +282,11 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
         @Override
         public void onEntityRemove(@Nonnull Ref<EntityStore> ref,
-                                   @Nonnull RemoveReason reason,
-                                   @Nonnull Store<EntityStore> store,
-                                   @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-            if (reason == RemoveReason.UNLOAD) return; // Ignore unloads.
+                @Nonnull RemoveReason reason,
+                @Nonnull Store<EntityStore> store,
+                @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+            if (reason == RemoveReason.UNLOAD)
+                return; // Ignore unloads.
 
             ColonistComponent colonist = commandBuffer.getComponent(ref, ColonistComponent.getComponentType());
             assert colonist != null;
@@ -272,8 +303,10 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             Vector3i workStationPos = jobComponent.getWorkStationBlockPosition();
 
             World world = commandBuffer.getExternalData().getWorld();
-            Ref<ChunkStore> blockEntity = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
-            var workStationComponent = blockEntity.getStore().getComponent(blockEntity, WorkStationComponent.getComponentType());
+            Ref<ChunkStore> blockEntity = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y,
+                    workStationPos.z);
+            var workStationComponent = blockEntity.getStore().getComponent(blockEntity,
+                    WorkStationComponent.getComponentType());
             assert workStationComponent != null;
 
             // Free up colonist job slot at work station.
@@ -283,7 +316,6 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                     colonist.getColonistName(), uuidComponent.getUuid(), workStationPos);
         }
 
-
         @Override
         public @Nullable Query<EntityStore> getQuery() {
             return Query.and(ColonistComponent.getComponentType(), JobComponent.getComponentType());
@@ -291,7 +323,8 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
     }
 
     /**
-     * Only here to log when colonists get assigned a job but are still accidentally marked as unemployed.
+     * Only here to log when colonists get assigned a job but are still accidentally
+     * marked as unemployed.
      */
     public static class JobAssignedSystem extends RefChangeSystem<EntityStore, JobComponent> {
 
@@ -302,9 +335,9 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
         @Override
         public void onComponentAdded(@Nonnull Ref<EntityStore> ref,
-                                     @Nonnull JobComponent component,
-                                     @Nonnull Store<EntityStore> store,
-                                     @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+                @Nonnull JobComponent component,
+                @Nonnull Store<EntityStore> store,
+                @Nonnull CommandBuffer<EntityStore> commandBuffer) {
             UUIDComponent uuidComponent = commandBuffer.getComponent(ref, UUIDComponent.getComponentType());
             UnemployedComponent unemployedComponent = store.getComponent(ref, UnemployedComponent.getComponentType());
             if (unemployedComponent != null) {
@@ -315,11 +348,14 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         }
 
         @Override
-        public void onComponentSet(@Nonnull Ref<EntityStore> ref, @Nullable JobComponent oldComponent, @Nonnull JobComponent newComponent, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        public void onComponentSet(@Nonnull Ref<EntityStore> ref, @Nullable JobComponent oldComponent,
+                @Nonnull JobComponent newComponent, @Nonnull Store<EntityStore> store,
+                @Nonnull CommandBuffer<EntityStore> commandBuffer) {
         }
 
         @Override
-        public void onComponentRemoved(@Nonnull Ref<EntityStore> var1, @Nonnull JobComponent var2, @Nonnull Store<EntityStore> var3, @Nonnull CommandBuffer<EntityStore> var4) {
+        public void onComponentRemoved(@Nonnull Ref<EntityStore> var1, @Nonnull JobComponent var2,
+                @Nonnull Store<EntityStore> var3, @Nonnull CommandBuffer<EntityStore> var4) {
         }
 
         @Override
@@ -331,7 +367,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
     /**
      * Periodically scans every {@link HarvestableTreeComponent} and clears the
      * {@code markedForHarvest} flag on any tree that has no active colonist
-     * claiming it.  This covers orphaned marks left behind by crashes, hard
+     * claiming it. This covers orphaned marks left behind by crashes, hard
      * removal of colonists, or server restarts.
      */
     public static class StaleMarkCleanupSystem extends DelayedSystem<ChunkStore> {
@@ -360,12 +396,13 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             });
 
             // Clear marks on any tree not in the active-claim set.
-            int[] cleared = {0};
+            int[] cleared = { 0 };
             Query<ChunkStore> treeQuery = Query.and(HarvestableTreeComponent.getComponentType());
             store.forEachChunk(treeQuery, (chunk, _cb) -> {
                 for (int i = 0; i < chunk.size(); i++) {
                     HarvestableTreeComponent tree = chunk.getComponent(i, HarvestableTreeComponent.getComponentType());
-                    if (tree != null && tree.isMarkedForHarvest() && !activelyClaimed.contains(tree.getBasePosition())) {
+                    if (tree != null && tree.isMarkedForHarvest()
+                            && !activelyClaimed.contains(tree.getBasePosition())) {
                         tree.setMarkedForHarvest(false);
                         cleared[0]++;
                     }
@@ -373,13 +410,15 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             });
 
             if (cleared[0] > 0) {
-                DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "[StaleMarks] Cleared %d orphaned tree mark(s).", cleared[0]);
+                DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "[StaleMarks] Cleared %d orphaned tree mark(s).",
+                        cleared[0]);
             }
         }
     }
 
     /**
-     * Only here to log when colonists get marked as unemployed but still have a job assigned.
+     * Only here to log when colonists get marked as unemployed but still have a job
+     * assigned.
      */
     public static class UnemployedAssignedSystem extends RefChangeSystem<EntityStore, UnemployedComponent> {
 
@@ -390,9 +429,9 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
         @Override
         public void onComponentAdded(@Nonnull Ref<EntityStore> ref,
-                                     @Nonnull UnemployedComponent component,
-                                     @Nonnull Store<EntityStore> store,
-                                     @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+                @Nonnull UnemployedComponent component,
+                @Nonnull Store<EntityStore> store,
+                @Nonnull CommandBuffer<EntityStore> commandBuffer) {
             UUIDComponent uuidComponent = commandBuffer.getComponent(ref, UUIDComponent.getComponentType());
             JobComponent jobComponent = store.getComponent(ref, JobComponent.getComponentType());
             if (jobComponent != null) {
@@ -403,11 +442,14 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         }
 
         @Override
-        public void onComponentSet(@Nonnull Ref<EntityStore> ref, @Nullable UnemployedComponent oldComponent, @Nonnull UnemployedComponent newComponent, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        public void onComponentSet(@Nonnull Ref<EntityStore> ref, @Nullable UnemployedComponent oldComponent,
+                @Nonnull UnemployedComponent newComponent, @Nonnull Store<EntityStore> store,
+                @Nonnull CommandBuffer<EntityStore> commandBuffer) {
         }
 
         @Override
-        public void onComponentRemoved(@Nonnull Ref<EntityStore> var1, @Nonnull UnemployedComponent var2, @Nonnull Store<EntityStore> var3, @Nonnull CommandBuffer<EntityStore> var4) {
+        public void onComponentRemoved(@Nonnull Ref<EntityStore> var1, @Nonnull UnemployedComponent var2,
+                @Nonnull Store<EntityStore> var3, @Nonnull CommandBuffer<EntityStore> var4) {
         }
 
         @Override
@@ -416,4 +458,3 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         }
     }
 }
-

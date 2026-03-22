@@ -2,6 +2,7 @@ package com.hytalecolonies.systems.jobs;
 
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.debug.DebugTiming;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
@@ -134,7 +135,10 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
             return;
         }
 
-        Vector3i nearestTree = findNearestAvailableTree(woodsman, workStationPos, world);
+        Vector3i nearestTree;
+        try (var t = DebugTiming.measure("WoodsmanJob.findNearestAvailableTree@" + workStationPos, 50)) {
+            nearestTree = findNearestAvailableTree(woodsman, workStationPos, world);
+        }
         if (nearestTree == null) {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
                     "[WoodsmanJob] Idle — no available trees within radius %.1f of workstation %s.",

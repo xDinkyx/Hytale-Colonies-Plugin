@@ -45,6 +45,9 @@ public class DebugConfig {
             .append(new KeyedCodec<>("DrawTreeDetection", Codec.BOOLEAN),
                     (c, v) -> c.drawTreeDetection = v, c -> c.drawTreeDetection)
             .add()
+            .append(new KeyedCodec<>("PerformanceLevel", Codec.STRING),
+                    (c, v) -> c.performanceLevel = v, c -> c.performanceLevel)
+            .add()
             .build();
 
     private String movementLevel       = "INFO";
@@ -52,6 +55,7 @@ public class DebugConfig {
     private String woodsmanJobLevel    = "INFO";
     private String treeScannerLevel    = "INFO";
     private String colonistDeliveryLevel = "INFO";
+    private String performanceLevel      = "WARNING";
     private boolean drawColonistPaths = false;
     private boolean drawTreeDetection = false;
 
@@ -64,6 +68,7 @@ public class DebugConfig {
         DebugCategory.WOODSMAN_JOB.setMinLevel(parseLevel(woodsmanJobLevel));
         DebugCategory.TREE_SCANNER.setMinLevel(parseLevel(treeScannerLevel));
         DebugCategory.COLONIST_DELIVERY.setMinLevel(parseLevel(colonistDeliveryLevel));
+        DebugCategory.PERFORMANCE.setMinLevel(parseLevel(performanceLevel));
     }
 
     /**
@@ -78,6 +83,7 @@ public class DebugConfig {
             case WOODSMAN_JOB       -> woodsmanJobLevel = name;
             case TREE_SCANNER       -> treeScannerLevel = name;
             case COLONIST_DELIVERY  -> colonistDeliveryLevel = name;
+            case PERFORMANCE        -> performanceLevel = name;
         }
         category.setMinLevel(level);
     }
@@ -90,6 +96,7 @@ public class DebugConfig {
             case WOODSMAN_JOB       -> woodsmanJobLevel;
             case TREE_SCANNER       -> treeScannerLevel;
             case COLONIST_DELIVERY  -> colonistDeliveryLevel;
+            case PERFORMANCE        -> performanceLevel;
         };
     }
 

@@ -3,6 +3,7 @@ package com.hytalecolonies.systems.treescan;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.debug.DebugTiming;
 import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
 import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
@@ -103,7 +104,9 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
 
         DebugLog.fine(DebugCategory.TREE_SCANNER, "[TreeScanner Periodic] Growth scan around workstation at %s.", workStationPos);
-        scanForTreeWoodBlocks(workStationPos, chunkStore, commandBuffer);
+        try (var t = DebugTiming.measure("TreeScanner.tick@" + workStationPos, 500)) {
+            scanForTreeWoodBlocks(workStationPos, chunkStore, commandBuffer);
+        }
     }
 
     /** Orchestrates a full scan cycle: collect candidates → detect trees → register → debug draw. */
@@ -112,8 +115,15 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         World world = chunkStore.getExternalData().getWorld();
         Set<String> treeWoodKeys = getTreeWoodBlockKeys();
 
-        List<Vector3i> segmentBottoms = collectSegmentBottoms(world, centerPos, treeWoodKeys);
-        List<TreeDetectorBFS.TreeCandidate> confirmedTrees = detectTrees(segmentBottoms, world);
+        List<Vector3i> segmentBottoms;
+        try (var t = DebugTiming.measure("TreeScanner.collectSegmentBottoms", 100)) {
+            segmentBottoms = collectSegmentBottoms(world, centerPos, treeWoodKeys);
+        }
+
+        List<TreeDetectorBFS.TreeCandidate> confirmedTrees;
+        try (var t = DebugTiming.measure("TreeScanner.detectTrees(" + segmentBottoms.size() + " candidates)", 200)) {
+            confirmedTrees = detectTrees(segmentBottoms, world);
+        }
 
         DebugLog.fine(DebugCategory.TREE_SCANNER,
                 "[TreeScanner] Found %d trees within %d chunk radius of workstation at %s.",

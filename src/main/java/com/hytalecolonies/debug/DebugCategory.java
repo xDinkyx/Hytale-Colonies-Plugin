@@ -17,7 +17,8 @@ public enum DebugCategory {
     JOB_ASSIGNMENT("Job Assignment"),
     WOODSMAN_JOB("Woodsman Job"),
     TREE_SCANNER("Tree Scanner"),
-    COLONIST_DELIVERY("Colonist Delivery");
+    COLONIST_DELIVERY("Colonist Delivery"),
+    PERFORMANCE("Performance");
 
     private final String displayName;
     private volatile Level minLevel = Level.INFO;

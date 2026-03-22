@@ -4,6 +4,7 @@ import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.debug.DebugTiming;
 import com.hytalecolonies.systems.treescan.TreeScannerSystem;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -21,10 +22,10 @@ import javax.annotation.Nullable;
 
 /**
  * Performs initial setup for any workstation the moment its {@link WorkStationComponent}
- * is loaded or created. Dispatches to per-{@link JobType} initialization logic so each
- * job type can seed whatever state it needs.
- *
- * <p>Woodsman: triggers an immediate tree scan via {@link TreeScannerSystem}.
+ * is loaded or created. Dispatches to per-{@link JobType} initialization logic
+ * so each job type can seed whatever state it needs.
+ * <p>
+ * Woodsman: triggers an immediate tree scan via {@link TreeScannerSystem}.
  * Other job types: no-op for now; add cases as needed.
  */
 public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStationComponent> {
@@ -53,7 +54,8 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
             @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
         switch (workStation.getJobType()) {
             case Woodsman -> initWoodsman(ref, workStation, store, commandBuffer);
-            case Miner, Farmer, Builder -> { /* no-op: initialization not yet implemented */ }
+            case Miner, Farmer, Builder -> {
+                /* no-op: initialization not yet implemented */ }
         }
     }
 
@@ -94,6 +96,8 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
         Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
         DebugLog.info(DebugCategory.TREE_SCANNER,
                 "[WorkstationInit] Initial tree scan triggered for Woodsman workstation at %s.", workStationPos);
-        treeScannerSystem.scanForTreeWoodBlocks(workStationPos, store, commandBuffer);
+        try (var t = DebugTiming.measure("WorkstationInit.initialTreeScan@" + workStationPos, 1000)) {
+            treeScannerSystem.scanForTreeWoodBlocks(workStationPos, store, commandBuffer);
+        }
     }
 }
