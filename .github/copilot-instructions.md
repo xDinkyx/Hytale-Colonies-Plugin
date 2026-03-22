@@ -6,7 +6,8 @@ This is a Hytale plugin project. Hytale plugins are used to extend the functiona
 - Before implementing new features, review the ECS patterns and existing components in the Hytale server code.
 - The source code for the Hytale server can be found in the `lib/hytale-server/src/main/java/com/hypixel` directory.
 - The games JSON that makes up all items, blocks, and other in-game assets can be found in the `lib/Server` directory. you can use this to look up item IDs, block IDs, and other in-game assets. Do not modify these files directly, they are for reference.
-- To update lib/ with the latest Hytale server, use the `update-server-lib` skill (`.github/skills/update-server-lib/`). This downloads the pre-release server, decompiles the JAR, and syncs assets.
+- To update lib/ with the latest Hytale server, use the `update-server-lib` skill (`.github/skills/update-server-lib/`). Run `Full-Update.cmd` — it downloads the latest pre-release server, decompiles the JAR, syncs assets, and copies the JAR to `server/HytaleServer.jar` automatically.
+- **Version discipline:** `lib/HytaleServer.jar`, `server/HytaleServer.jar`, `server/Assets.zip`, and the Maven compile artifact must always match. `build.gradle` auto-reads the version from `server/HytaleServer.jar`'s manifest — never edit the version string manually. `Full-Update.cmd` keeps all four in sync (JAR + Assets.zip). When in doubt, use `javap -cp server/HytaleServer.jar <ClassName>` to verify the actual runtime API.
 - To update hytale-* skills after a server update or when docs change, use the `update-hytale-skills` skill (`.github/skills/update-hytale-skills/`). This checks the HytaleModding/site GitHub repo for content changes and reconciles skill content.
 - Avoid enums, this is data driven from JSON files via resources. Reference `lib/Server` directory for structure and json examples.
 - `lib/UI` contains the Hytale client UI code. Use this to look up how to build custom UIs using .ui files.
@@ -15,7 +16,7 @@ This is a Hytale plugin project. Hytale plugins are used to extend the functiona
 - DO NOT hard code values; always use data-driven approaches and JSON configuration.
 - Prefer single-file JSON definitions for features that extend Hytale (e.g., buffs/debuffs, effects, interactions). Avoid multi-file JSON solutions unless there is a clear, logical design need.
 - There is a build and deploy task that will build the plugin and copy it to the local Hytale server plugins directory for testing. Use this to speed up your development workflow.
-- There should be no warnings or errors when compiling the plugin. (ignoring pom.xml warnings)
+- There should be no errors when compiling the plugin. Deprecation warnings are acceptable (do not suppress them with `@SuppressWarnings` unless there is a strong reason — prefer leaving them visible so they serve as a reminder to migrate when the stable API is updated). (ignoring pom.xml warnings)
 - Any user-facing text must be localized via translation keys (e.g., `Message.translation(...)`) and added to language resources under `src/main/resources/Server/Languages/<locale>/*.lang` (filename becomes the key prefix). `src/main/resources/Server/Languages/fallback.lang` is only for locale fallback mappings (e.g., `en-GB = en-US`).
 
 ## .github/skills

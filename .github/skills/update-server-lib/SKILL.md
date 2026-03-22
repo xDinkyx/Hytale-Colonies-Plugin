@@ -47,7 +47,12 @@ Run the CMD scripts from anywhere (they use absolute paths):
 .\.github\skills\update-server-lib\scripts\Full-Update.cmd
 ```
 
-This runs both steps in sequence.
+This runs all three steps in sequence:
+1. Downloads the latest pre-release server
+2. Decompiles it and updates `lib/`
+3. Copies `lib/HytaleServer.jar` → `server/HytaleServer.jar` **and** copies `Assets.zip` → `server/Assets.zip`
+
+`build.gradle` automatically resolves the Hytale dependency version from `server/HytaleServer.jar`'s manifest, so no manual version bump is needed after running this.
 
 ### Step 1: Download and Extract Latest Pre-Release
 
@@ -115,11 +120,22 @@ If extraction fails, delete the partially extracted folder and run again.
 
 ## Version Tracking
 
-After a successful update, the script creates `.github/skills/update-server-lib/LAST_VERSION.txt` with the downloaded version for reference.
+After a successful update:
+- `.github/skills/update-server-lib/LAST_VERSION.txt` contains the downloaded version
+- `lib/HytaleServer.jar`, `server/HytaleServer.jar`, and `server/Assets.zip` are all updated to the new version
+- `build.gradle` reads its compile version from `server/HytaleServer.jar`'s manifest automatically
+
+To check current versions at any time:
+```powershell
+# lib/ version
+Add-Type -AssemblyName System.IO.Compression.FileSystem; $z = [System.IO.Compression.ZipFile]::OpenRead("lib\HytaleServer.jar"); $e = $z.GetEntry("META-INF/MANIFEST.MF"); $r = New-Object System.IO.StreamReader($e.Open()); Write-Host $r.ReadToEnd(); $r.Dispose(); $z.Dispose()
+# server/ version (same command with server\HytaleServer.jar)
+```
+Look for `Implementation-Version` and `Implementation-Patchline` in the output.
 
 ## Notes
 
-- The decompiled code may have compilation errors - this is expected. It's for reference/exploration only.
-- Server assets in `lib/Server` are read-only references; don't modify them directly.
+- The decompiled code may have compilation errors - this is expected. It’s for reference/exploration only.
+- Server assets in `lib/Server` are read-only references; don’t modify them directly.
 - UI assets in `lib/UI` are for reference when building custom UIs.
-- Always test your plugin after updating to ensure compatibility with the new server version.
+- After updating, test the dev server — new versions may tighten validation of NPC configs, drop lists, or other assets. Fix any asset errors before continuing feature work.

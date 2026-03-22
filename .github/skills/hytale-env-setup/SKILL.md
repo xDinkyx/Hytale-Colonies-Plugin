@@ -238,12 +238,11 @@ repositories {
     maven {
         name = "hytale"
         url = uri("https://maven.hytale.com/release")
-        // Or "https://maven.hytale.com/pre-release" for pre-release
     }
 }
 
 dependencies {
-    implementation("com.hypixel.hytale:Server:+") // latest version
+    implementation("com.hypixel.hytale:Server:+") // latest stable version
 }
 ```
 
