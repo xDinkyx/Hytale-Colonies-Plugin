@@ -105,6 +105,6 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
     private void showDebugPath(@Nonnull World world, @Nonnull Vector3d from, @Nonnull Vector3d to) {
         DebugUtils.addSphere(world, from, DebugUtils.COLOR_BLUE, 0.5, 20.0f);
         DebugUtils.addSphere(world, to, DebugUtils.COLOR_RED, 0.5, 20.0f);
-        DebugUtils.addLine(world, from, to, DebugUtils.COLOR_GREEN, 0.1, 20.0f, true);
+        DebugUtils.addLine(world, from, to, DebugUtils.COLOR_GREEN, 0.1, 20.0f, 0);
     }
 }

@@ -13,7 +13,9 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -167,7 +169,9 @@ public final class ColonistToolUtil {
      *         {@code false} if no suitable tool exists in the inventory.
      */
     public static boolean equipBestToolForBlock(@Nonnull Inventory inventory,
-                                                @Nonnull BlockBreakingDropType breaking) {
+                                                @Nonnull BlockBreakingDropType breaking,
+                                                @Nonnull Ref<EntityStore> ref,
+                                                @Nonnull ComponentAccessor<EntityStore> accessor) {
         ToolMatch match = findBestToolInInventory(inventory, breaking);
         if (match == null) return false;
 
@@ -180,13 +184,13 @@ public final class ColonistToolUtil {
         if (heldPower >= match.power()) return true;
 
         if (match.inHotbar()) {
-            inventory.setActiveHotbarSlot((byte) match.slot());
+            inventory.setActiveHotbarSlot(ref, (byte) match.slot(), accessor);
         } else {
             ItemContainer hotbar = inventory.getHotbar();
             if (hotbar == null) return false;
             byte activeSlot = inventory.getActiveHotbarSlot();
             match.container().moveItemStackFromSlotToSlot(match.slot(), 1, hotbar, (short) activeSlot);
-            inventory.setActiveHotbarSlot(activeSlot);
+            inventory.setActiveHotbarSlot(ref, activeSlot, accessor);
         }
         return true;
     }

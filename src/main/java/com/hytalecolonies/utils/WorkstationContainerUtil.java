@@ -4,10 +4,9 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.spatial.SpatialResource;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hypixel.hytale.server.core.modules.block.components.ItemContainerBlock;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.meta.BlockStateModule;
-import com.hypixel.hytale.server.core.universe.world.meta.state.ItemContainerBlockState;
-import com.hypixel.hytale.server.core.universe.world.meta.state.ItemContainerState;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 import javax.annotation.Nullable;
@@ -18,9 +17,9 @@ import java.util.List;
  * Generic utility for locating block-based item containers (chests, crates, etc.)
  * that are close to a workstation — within a configurable block radius.
  *
- * <p>Uses the engine's {@link ItemContainerBlockState} spatial index for efficient
+ * <p>Uses the engine's {@link ItemContainerBlock} spatial index for efficient
  * lookup rather than scanning all chunks. This is the same spatial index the server
- * uses internally to track all open containers.
+ * uses internally to track all open containers (see {@code CraftingManager.getContainersAroundBench}).
  *
  * <p>Job-specific delivery systems call {@link #findNearbyContainer} to retrieve the
  * deposit target at runtime. The result is not persisted; the scan is cheap because
@@ -31,20 +30,17 @@ public final class WorkstationContainerUtil {
     private WorkstationContainerUtil() {}
 
     /**
-     * Returns the world position of the nearest {@link ItemContainerBlockState} block
+     * Returns the world position of the nearest {@link ItemContainerBlock} block
      * within {@code radiusBlocks} of {@code workStationPos}, or {@code null} if none.
      *
      * @param world          the world to search
      * @param workStationPos block position of the workstation
      * @param radiusBlocks   inclusive search radius in blocks (3D Euclidean)
      */
-    @SuppressWarnings("removal") // BlockStateModule is deprecated in favour of BlockModule, which does not expose
-    // the item-container spatial resource until server ≥ 2026.02.26.
     @Nullable
     public static Vector3i findNearbyContainer(World world, Vector3i workStationPos, int radiusBlocks) {
-        BlockStateModule blockStateModule = BlockStateModule.get();
         SpatialResource<Ref<ChunkStore>, ChunkStore> spatialResource =
-                world.getChunkStore().getStore().getResource(blockStateModule.getItemContainerSpatialResourceType());
+                world.getChunkStore().getStore().getResource(BlockModule.get().getItemContainerSpatialResourceType());
 
         Vector3d searchCenter = new Vector3d(workStationPos.x + 0.5, workStationPos.y + 0.5, workStationPos.z + 0.5);
         List<Ref<ChunkStore>> nearby = new ArrayList<>();
@@ -55,11 +51,10 @@ public final class WorkstationContainerUtil {
         if (nearby.isEmpty()) return null;
 
         // The spatial index is pre-sorted by distance, so the first valid ref is the nearest.
-        var componentType = blockStateModule.getComponentType(ItemContainerState.class);
         for (Ref<ChunkStore> ref : nearby) {
             if (!ref.isValid()) continue;
-            ItemContainerBlockState state = ref.getStore().getComponent(ref, componentType);
-            if (state == null) continue;
+            ItemContainerBlock container = ref.getStore().getComponent(ref, BlockModule.get().getItemContainerBlockComponentType());
+            if (container == null) continue;
 
             // Retrieve block world position from BlockStateInfo.
             var blockStateInfo = ref.getStore().getComponent(ref, com.hypixel.hytale.server.core.modules.block.BlockModule.BlockStateInfo.getComponentType());

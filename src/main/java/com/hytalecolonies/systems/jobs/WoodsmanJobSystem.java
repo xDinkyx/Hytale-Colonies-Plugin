@@ -189,7 +189,7 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         }
 
         LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ref, store);
-        if (!ensureToolEquipped(colonist, world, chunkRef, treeBase, ref, job, jobTarget, commandBuffer)) return;
+        if (!ensureToolEquipped(colonist, world, chunkRef, treeBase, ref, job, jobTarget, commandBuffer, store)) return;
 
         chopTreeBlock(colonist, ref, job, jobTarget, treeBase, chunkRef, world, commandBuffer, store);
     }
@@ -218,7 +218,8 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
                                        @Nonnull Vector3i treeBase,
                                        @Nonnull Ref<EntityStore> ref, @Nonnull JobComponent job,
                                        @Nonnull JobTargetComponent jobTarget,
-                                       @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+                                       @Nonnull CommandBuffer<EntityStore> commandBuffer,
+                                       @Nonnull Store<EntityStore> store) {
         if (colonist == null) return false;
 
         BlockBreakingDropType breaking = ColonistToolUtil.getBreakingConfig(world, chunkRef, treeBase);
@@ -232,7 +233,7 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
             return false;
         }
 
-        boolean equipped = ColonistToolUtil.equipBestToolForBlock(colonist.getInventory(), breaking);
+        boolean equipped = ColonistToolUtil.equipBestToolForBlock(colonist.getInventory(), breaking, ref, store);
         DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Tool check for '%s' (quality>=%d): equipped=%s heldItem=%s.",
                 breaking.getGatherType(), breaking.getQuality(), equipped,
                 colonist.getInventory().getItemInHand() != null

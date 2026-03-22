@@ -21,11 +21,9 @@ import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.inventory.transaction.ItemStackTransaction;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hypixel.hytale.server.core.modules.block.components.ItemContainerBlock;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.meta.BlockStateModule;
-import com.hypixel.hytale.server.core.universe.world.meta.state.ItemContainerBlockState;
-import com.hypixel.hytale.server.core.universe.world.meta.state.ItemContainerState;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
@@ -146,10 +144,9 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
             return;
         }
 
-        @SuppressWarnings("removal") // BlockStateModule is deprecated in favour of BlockModule (available ≥ 2026.02.26).
-        ItemContainerBlockState containerState = blockRef.getStore().getComponent(
-                blockRef, BlockStateModule.get().getComponentType(ItemContainerState.class));
-        if (containerState == null) {
+        ItemContainerBlock containerBlock = blockRef.getStore().getComponent(
+                blockRef, BlockModule.get().getItemContainerBlockComponentType());
+        if (containerBlock == null) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
                     "[ColonistDelivery] Block at %s is no longer a container — skipping deposit.", cp);
             job.deliveryContainerPosition = null;
@@ -158,7 +155,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
             return;
         }
 
-        depositItems(ref, store, containerState.getItemContainer(), cp);
+        depositItems(ref, store, containerBlock.getItemContainer(), cp);
         job.deliveryContainerPosition = null;
         navigateToWorkstation(ref, commandBuffer, workStationPos);
         job.setCurrentTask(JobState.TravelingHome);
