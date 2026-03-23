@@ -17,3 +17,5 @@ pom.xml.versionsBackup
 # Hytale
 server/*
 lib/*
+
+.github/skills/update-server-lib/LAST_VERSION.txt
