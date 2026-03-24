@@ -66,6 +66,31 @@ tasks.named('build') {
     dependsOn shadowJar
 }
 
+// Sync plugin resources as an unpacked directory-based asset pack for the Hytale Asset Editor.
+//
+// Why this is needed:
+// The AssetEditorPlugin (a builtin server plugin) scans AssetModule.getAssetPacks() during its
+// setup() phase to build its DataSource list. Plugin JAR asset packs (IncludesAssetPack: true)
+// are only registered via JavaPlugin.setup0(), which runs AFTER AssetEditorPlugin.setup() in the
+// topological load order (builtin plugins set up before user mods). The AssetPackRegisterEvent
+// that would normally notify the editor about new packs is also never dispatched during the setup
+// phase (hasLoaded == false), so the JAR pack is permanently invisible to the in-game editor.
+//
+// AssetModule.setup() does scan mods/ for non-JAR entries (directories and .zip files) and
+// registers them BEFORE any plugin setup, so a directory pack IS visible to the asset editor.
+// The JAR's own pack registration is quietly skipped (ignoreIfExists: true) since the directory
+// pack already registered the same Group:Name identifier.
+//
+// This only affects the local dev server — production deploys use the JAR alone as normal.
+tasks.register('syncAssetsDir', Sync) {
+    from 'src/main/resources'
+    into 'server/mods/HytaleColonies-Assets'
+    outputs.upToDateWhen { false }
+    doLast {
+        println "Synced assets to server/mods/HytaleColonies-Assets/ (asset editor visibility)"
+    }
+}
+
 // Deploy plugin JAR to server mods folder
 tasks.register('deployToServer', Copy) {
     // Using 'from shadowJar' automatically adds task dependency and proper input tracking
@@ -73,6 +98,8 @@ tasks.register('deployToServer', Copy) {
     into 'server/mods'
     // Always re-deploy — the server may delete/replace the JAR between builds
     outputs.upToDateWhen { false }
+    // Also sync the unpacked assets directory so the Asset Editor can find the pack.
+    dependsOn 'syncAssetsDir'
     doLast {
         println "Deployed to server/mods/"
     }
