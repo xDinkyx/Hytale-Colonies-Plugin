@@ -206,6 +206,42 @@ public final class ColonistToolUtil {
         return findBestToolForGatherType(inventory, gatherType, requiredQuality) != null;
     }
 
+    /**
+     * Equips the best tool in the colonist's inventory for {@code gatherType} at the
+     * given quality tier. Companion to {@link #equipBestToolForBlock} for callers that
+     * know the gather type directly (e.g. NPC actions) rather than from a block position.
+     *
+     * @return {@code true} if a suitable tool was equipped (or was already in hand),
+     *         {@code false} if no suitable tool exists in the inventory.
+     */
+    public static boolean equipBestToolForGatherType(@Nonnull Inventory inventory,
+                                                     @Nonnull String gatherType,
+                                                     int minQuality,
+                                                     @Nonnull Ref<EntityStore> ref,
+                                                     @Nonnull ComponentAccessor<EntityStore> accessor) {
+        ToolMatch match = findBestToolForGatherType(inventory, gatherType, minQuality);
+        if (match == null) return false;
+
+        ItemTool heldTool = null;
+        ItemStack heldItem = inventory.getItemInHand();
+        if (heldItem != null && heldItem.getItem() != null) heldTool = heldItem.getItem().getTool();
+        float heldPower = powerForGatherType(heldTool, gatherType);
+
+        // Already holding the best (or equally good) tool — nothing to do.
+        if (heldPower >= match.power()) return true;
+
+        if (match.inHotbar()) {
+            inventory.setActiveHotbarSlot(ref, (byte) match.slot(), accessor);
+        } else {
+            ItemContainer hotbar = inventory.getHotbar();
+            if (hotbar == null) return false;
+            byte activeSlot = inventory.getActiveHotbarSlot();
+            match.container().moveItemStackFromSlotToSlot(match.slot(), 1, hotbar, (short) activeSlot);
+            inventory.setActiveHotbarSlot(ref, activeSlot, accessor);
+        }
+        return true;
+    }
+
     // -------------------------------------------------------------------------
     // Internal helpers
     // -------------------------------------------------------------------------

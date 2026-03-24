@@ -17,12 +17,9 @@ import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockBreakingDropType;
-import com.hypixel.hytale.server.core.asset.type.item.config.ItemTool;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
-import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
-import com.hypixel.hytale.server.core.modules.interaction.BlockHarvestUtils;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -170,14 +167,21 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
     }
 
     /**
-     * Entry point for the {@link JobState#Working} state. Validates preconditions,
-     * ensures the right tool is equipped, then delegates to the actual chop logic.
+     * Monitors the {@link JobState#Working} state.
+     *
+     * <p>Actual block damage is applied per-tick by the NPC role instruction
+     * ({@code SensorJobTarget + HarvestBlock}). This method runs on the 2-second
+     * system cadence to:
+     * <ol>
+     *   <li>Ensure the correct tool is equipped before each chop burst.
+     *   <li>Detect when the target block has been broken and transition to
+     *       {@link JobState#CollectingDrops}.
+     * </ol>
      */
     private void handleWorking(Ref<EntityStore> ref, JobComponent job,
                                CommandBuffer<EntityStore> commandBuffer, Store<EntityStore> store) {
         JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.targetPosition == null) {
-            // Target lost (e.g. after server restart) — give up and go home.
             unmarkClaimedTree(ref, store);
             job.setCurrentTask(JobState.Idle);
             return;
@@ -185,17 +189,27 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
 
         Vector3i treeBase = jobTarget.targetPosition;
         World world = store.getExternalData().getWorld();
-        Ref<ChunkStore> chunkRef = resolveChunkRef(world, treeBase);
-        if (chunkRef == null) {
-            DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Chunk not loaded at tree base %s — skipping chop tick.", treeBase);
+
+        // Check if the target block has been broken by the NPC role's HarvestBlock action.
+        if (world.getBlock(treeBase) == 0) {
+            DebugLog.info(DebugCategory.WOODSMAN_JOB,
+                    "[WoodsmanJob] Target block at %s broken — collecting drops.", treeBase);
+            unmarkClaimedTree(ref, store);
+            jobTarget.setTargetPosition(null);
+            job.collectingDropsSince = System.currentTimeMillis();
+            job.setCurrentTask(JobState.CollectingDrops);
             return;
         }
 
+        // Ensure the right tool is equipped so HarvestBlock can use it.
+        Ref<ChunkStore> chunkRef = resolveChunkRef(world, treeBase);
+        if (chunkRef == null) {
+            DebugLog.warning(DebugCategory.WOODSMAN_JOB,
+                    "[WoodsmanJob] Chunk not loaded at %s — skipping tool-equip tick.", treeBase);
+            return;
+        }
         LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ref, store);
-        if (!ensureToolEquipped(colonist, world, chunkRef, treeBase, ref, job, jobTarget, commandBuffer, store)) return;
-
-        chopTreeBlock(colonist, ref, job, jobTarget, treeBase, chunkRef, world, commandBuffer, store);
+        ensureToolEquipped(colonist, world, chunkRef, treeBase, ref, job, jobTarget, commandBuffer, store);
     }
 
     /**
@@ -213,9 +227,9 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
      * Verifies that the colonist has a tool suited to the block's gather type and,
      * if not already in hand, equips it (from hotbar or storage).
      *
-     * @return {@code true} if the colonist is now holding a suitable tool and may proceed;
-     *         {@code false} if no tool exists — the colonist has been sent back to the
-     *         workstation and the caller must stop processing this tick.
+     * @return {@code true} if the colonist is holding a suitable tool;
+     *         {@code false} if no tool is available — the colonist is sent back to the
+     *         workstation.
      */
     private boolean ensureToolEquipped(@Nullable LivingEntity colonist,
                                        @Nonnull World world, @Nonnull Ref<ChunkStore> chunkRef,
@@ -238,47 +252,9 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         }
 
         boolean equipped = ColonistToolUtil.equipBestToolForBlock(colonist.getInventory(), breaking, ref, store);
-        DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Tool check for '%s' (quality>=%d): equipped=%s heldItem=%s.",
-                breaking.getGatherType(), breaking.getQuality(), equipped,
-                colonist.getInventory().getItemInHand() != null
-                        ? colonist.getInventory().getItemInHand().getItemId() : "none");
+        DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Tool check for '%s' (quality>=%d): equipped=%s.",
+                breaking.getGatherType(), breaking.getQuality(), equipped);
         return equipped;
-    }
-
-    /**
-     * Applies one swing of block damage to the tree base trunk, using the colonist's
-     * currently held tool. Transitions state when the block finally breaks.
-     */
-    private void chopTreeBlock(@Nonnull LivingEntity colonist, @Nonnull Ref<EntityStore> ref,
-                               @Nonnull JobComponent job, @Nonnull JobTargetComponent jobTarget,
-                               @Nonnull Vector3i treeBase, @Nonnull Ref<ChunkStore> chunkRef,
-                               @Nonnull World world, @Nonnull CommandBuffer<EntityStore> commandBuffer,
-                               @Nonnull Store<EntityStore> store) {
-        ItemStack heldItem = colonist.getInventory().getItemInHand();
-        ItemTool tool = (heldItem != null && heldItem.getItem() != null) ? heldItem.getItem().getTool() : null;
-
-        // Pass commandBuffer as the entityStore so that drop-entity spawning inside
-        // naturallyRemoveBlock is deferred to end-of-tick rather than calling
-        // Store.addEntities() directly, which would throw IllegalStateException.
-        boolean broke = BlockHarvestUtils.performBlockDamage(
-                colonist, ref,
-                treeBase,
-                heldItem, tool, null, false,
-                1.0f, 0,
-                chunkRef, commandBuffer, world.getChunkStore().getStore());
-
-        if (!broke) {
-            DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Chopping base trunk at %s — still standing.", treeBase);
-            return;
-        }
-
-        DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanJob] Base trunk at %s broke — collecting drops before heading home.", treeBase);
-        unmarkClaimedTree(ref, store);
-        jobTarget.setTargetPosition(null);
-
-        job.collectingDropsSince = System.currentTimeMillis();
-        job.setCurrentTask(JobState.CollectingDrops);
     }
 
     /**

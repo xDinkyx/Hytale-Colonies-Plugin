@@ -19,6 +19,7 @@ import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
 import com.hytalecolonies.systems.ColonySystem;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
@@ -27,6 +28,10 @@ import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.systems.jobs.ColonistDeliverySystem;
 import com.hytalecolonies.systems.jobs.ColonistItemPickupSystem;
 import com.hytalecolonies.systems.jobs.ColonistMovementSystem;
+import com.hytalecolonies.npc.actions.BuilderActionEquipBestTool;
+import com.hytalecolonies.npc.actions.BuilderActionHarvestBlock;
+import com.hytalecolonies.npc.sensors.BuilderSensorHarvestableTree;
+import com.hytalecolonies.npc.sensors.BuilderSensorJobTarget;
 import com.hytalecolonies.systems.jobs.WoodsmanJobSystem;
 import com.hytalecolonies.systems.npc.PathFindingSystem;
 import com.hytalecolonies.systems.treescan.TreeBlockChangeEventSystem;
@@ -88,6 +93,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         registerListeners();
         registerComponents();
         registerInteractions();
+        registerNpcComponentTypes();
         registerSystems();
 
         LOGGER.at(Level.INFO).log("[HytaleColonies] Setup complete!");
@@ -156,6 +162,19 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             SpawnColonistInteraction.CODEC
         );
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered plugin interactions");
+    }
+
+    /**
+     * Register custom NPC component types (sensors, actions, filters) into the NPC system.
+     * These become available as JSON types in NPC role templates.
+     */
+    private void registerNpcComponentTypes() {
+        NPCPlugin.get()
+            .registerCoreComponentType("EquipBestTool",      BuilderActionEquipBestTool::new)
+            .registerCoreComponentType("HarvestableTree",    BuilderSensorHarvestableTree::new)
+            .registerCoreComponentType("HarvestBlock",       BuilderActionHarvestBlock::new)
+            .registerCoreComponentType("JobTarget",          BuilderSensorJobTarget::new);
+        LOGGER.at(Level.INFO).log("[HytaleColonies] Registered NPC component types");
     }
 
     /**

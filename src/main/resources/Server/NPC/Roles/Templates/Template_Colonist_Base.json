@@ -28,6 +28,7 @@
   ],
   "Instructions": [
     {
+      "Continue": true,
       "Instructions": [
         {
           "Sensor": {
@@ -42,6 +43,19 @@
             "SlowDownDistance": 3.0,
             "RelativeSpeed": 1.0
           }
+        }
+      ]
+    },
+    {
+      "Instructions": [
+        {
+          "Sensor": {
+            "Type": "JobTarget",
+            "Range": 3.0
+          },
+          "Actions": [
+            { "Type": "HarvestBlock", "DamageScale": 1.0 }
+          ]
         }
       ]
     }
