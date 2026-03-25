@@ -15,7 +15,6 @@ import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.component.system.DelayedSystem;
 import com.hypixel.hytale.component.system.RefChangeSystem;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
@@ -41,8 +40,20 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
     private final Query<EntityStore> unemployedQuery = Query.and(UnemployedComponent.getComponentType(),
             ColonistComponent.getComponentType());
 
+    // Tracks colonists already assigned this cycle so the same colonist isn't assigned to two
+    // workstations. CommandBuffer removals are deferred, so they still appear in unemployedQuery
+    // until the next flush.
+    private final Set<UUID> colonistsAlreadyAssignedThisCycle = new HashSet<>();
+
     public JobAssignmentSystems() {
         super(5.0f); // Run once every 5 seconds.
+    }
+
+    @Override
+    public void tick(float dt, int systemIndex, @Nonnull Store<ChunkStore> store) {
+        // Called once per cadence cycle before any workstation entity is processed.
+        colonistsAlreadyAssignedThisCycle.clear();
+        super.tick(dt, systemIndex, store);
     }
 
     @Override
@@ -90,8 +101,9 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
         try (var t = DebugTiming.measure("JobAssignment.assignColonists@" + workStationPos, 100)) {
             entityStore.getStore().forEachChunk(unemployedQuery, (_archetypeChunk, _commandBuffer) -> {
-                // Move on to the next work station after assigning one colonist.
-                // We only assign one colonist per tick.
+                // Stop once slots are full.
+                if (workStation.getAvailableJobSlots() <= 0) return;
+
                 // ToDo: Implement more complex job assignment logic that considers distance,
                 // stats, preferences, etc.
                 int colonistId = 0;
@@ -104,12 +116,16 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                         UUIDComponent.getComponentType());
                 assert colonistEntityUuid != null;
 
+                // Skip colonists assigned by another workstation earlier this cycle.
+                if (colonistsAlreadyAssignedThisCycle.contains(colonistEntityUuid.getUuid())) return;
+
                 DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
                         "[JobAssignment] Assigning colonist '%s' (%s) to WorkStation %s at %s.",
                         colonist.getColonistName(), colonistEntityUuid.getUuid(), workStation.getJobType(),
                         workStationPos);
 
                 EmployInWorkStation(_commandBuffer, workStation, colonistEntityUuid, colonistRef, workStationPos);
+                colonistsAlreadyAssignedThisCycle.add(colonistEntityUuid.getUuid());
             });
         }
     }
