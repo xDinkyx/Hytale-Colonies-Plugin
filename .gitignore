@@ -18,6 +18,9 @@ pom.xml.versionsBackup
 server/*
 lib/*
 
+# Generated files
 .github/skills/update-server-lib/LAST_VERSION.txt
-
 temp_manifest/META-INF/MANIFEST.MF
+
+# Build
+bin/
