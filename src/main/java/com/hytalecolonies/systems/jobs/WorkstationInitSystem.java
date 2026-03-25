@@ -21,7 +21,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Performs initial setup for any workstation the moment its {@link WorkStationComponent}
+ * Performs initial setup for any workstation the moment its
+ * {@link WorkStationComponent}
  * is loaded or created. Dispatches to per-{@link JobType} initialization logic
  * so each job type can seed whatever state it needs.
  * <p>
@@ -54,7 +55,9 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
             @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
         switch (workStation.getJobType()) {
             case Woodsman -> initWoodsman(ref, workStation, store, commandBuffer);
-            case Miner, Farmer, Builder -> {
+            case Miner -> DebugLog.info(DebugCategory.MINER_JOB,
+                    "[WorkstationInit] Miner workstation placed — no initial scan needed for phase 1.");
+            case Farmer, Builder -> {
                 /* no-op: initialization not yet implemented */ }
         }
     }
@@ -85,6 +88,7 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
             WorkStationComponent workStation,
             Store<ChunkStore> store,
             CommandBuffer<ChunkStore> commandBuffer) {
+
         BlockModule.BlockStateInfo blockStateInfo = store.getComponent(
                 ref, BlockModule.BlockStateInfo.getComponentType());
         if (blockStateInfo == null) {

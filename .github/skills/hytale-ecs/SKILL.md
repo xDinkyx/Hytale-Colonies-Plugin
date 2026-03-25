@@ -310,6 +310,20 @@ public class HealthRegenSystem extends DelayedEntitySystem<EntityStore> {
 }
 ```
 
+#### Batch-start hook
+
+`DelayedEntitySystem` has a second `tick` overload — `tick(float dt, int systemIndex, Store store)` — that fires **once per cadence cycle**, before any entity is processed. Override it to run one-time setup per cycle (e.g. clearing a set that must be shared across all entities in the batch), then call `super.tick()` to continue normal entity processing:
+
+```java
+@Override
+public void tick(float dt, int systemIndex, @Nonnull Store<ChunkStore> store) {
+    perCycleState.clear(); // reset once before any entity tick runs
+    super.tick(dt, systemIndex, store);
+}
+```
+
+This is useful when `tick()` is called multiple times per cycle (once per matching entity/archetype chunk) and you need state that is shared across all those calls but reset between cycles.
+
 ### RefChangeSystem (RefSystem)
 
 Reacts to component add/set/remove events. Use for caching, side effects, and initialization logic.

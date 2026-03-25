@@ -6,17 +6,27 @@ import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
+import com.hypixel.hytale.codec.codecs.set.SetCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.asset.type.buildertool.config.BlockTypeListAsset;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import javax.annotation.Nullable;
 
 import java.util.*;
 
 /**
- * Component for blocks that provide jobs for colonists.
+ * Block entity component on workstation blocks. Defines the job type, worker
+ * capacity, and all job-specific configuration for the assigned job.
+ *
+ * <p>Job-specific configuration lives here so workstation placement (or JSON)
+ * drives behaviour — individual job components carry only per-worker transient
+ * runtime state.
  */
 public class WorkStationComponent implements Component<ChunkStore> {
+
+    private static final String DEFAULT_TREE_TYPE_LIST = "TreeWood";
 
     // ===== Codec =====
     public static final BuilderCodec<WorkStationComponent> CODEC = BuilderCodec.builder(WorkStationComponent.class, WorkStationComponent::new)
@@ -34,12 +44,60 @@ public class WorkStationComponent implements Component<ChunkStore> {
                         Collections.addAll(o.assignedColonists, v);
                     }, o -> o.assignedColonists.toArray(UUID[]::new))
             .add()
+            // ===== Woodsman config =====
+            .append(new KeyedCodec<>("TreeSearchRadius", Codec.FLOAT),
+                    (o, v) -> o.treeSearchRadius = v,
+                    o -> o.treeSearchRadius)
+            .add()
+            .append(new KeyedCodec<>("AllowedTreeTypes", new SetCodec<>(Codec.STRING, HashSet::new, false)),
+                    (o, v) -> o.allowedTreeTypes = v,
+                    o -> o.allowedTreeTypes)
+            .add()
+            // ===== Miner config =====
+            .append(new KeyedCodec<>("MineOrigin", Vector3i.CODEC),
+                    (o, v) -> o.mineOrigin = v,
+                    o -> o.mineOrigin)
+            .add()
+            .append(new KeyedCodec<>("MineSize", Codec.INTEGER),
+                    (o, v) -> o.mineSize = v,
+                    o -> o.mineSize)
+            .add()
+            .append(new KeyedCodec<>("MineOffsetZ", Codec.INTEGER),
+                    (o, v) -> o.mineOffsetZ = v,
+                    o -> o.mineOffsetZ)
+            .add()
+            .append(new KeyedCodec<>("BlocksPerRun", Codec.INTEGER),
+                    (o, v) -> o.blocksPerRun = v,
+                    o -> o.blocksPerRun)
+            .add()
             .build();
 
-    // ===== Fields =====
+    // ===== Shared fields =====
     protected JobType jobType;
     protected int maxWorkers = 1;
     protected Set<UUID> assignedColonists = new HashSet<>();
+
+    // ===== Woodsman config =====
+    /** Search radius for harvestable trees (Woodsman). */
+    public float treeSearchRadius = 64.0f;
+    /**
+     * Block type keys the woodsman is allowed to harvest. Null until first accessed;
+     * defaults to the {@value DEFAULT_TREE_TYPE_LIST} BlockTypeList asset.
+     */
+    public @Nullable Set<String> allowedTreeTypes = null;
+
+    // ===== Miner config =====
+    /**
+     * World position of the top-north-west corner of the mine shaft.
+     * Null until the first miner begins working; set once and persisted from then on.
+     */
+    public @Nullable Vector3i mineOrigin = null;
+    /** Side length of the mine shaft in blocks (Miner). */
+    public int mineSize = 4;
+    /** Distance in +Z blocks from the workstation where the mine shaft begins (Miner). */
+    public int mineOffsetZ = 5;
+    /** How many blocks each miner digs per run before collecting drops (Miner). */
+    public int blocksPerRun = 16;
 
     // ===== Constructors =====
     public WorkStationComponent() {
@@ -58,9 +116,29 @@ public class WorkStationComponent implements Component<ChunkStore> {
     // ===== Component Clone =====
     @Override
     public @Nullable Component<ChunkStore> clone() {
-        var copy = new WorkStationComponent(this.jobType, this.maxWorkers);
+        WorkStationComponent copy = new WorkStationComponent(this.jobType, this.maxWorkers);
         copy.assignedColonists = new HashSet<>(this.assignedColonists);
+        copy.treeSearchRadius = this.treeSearchRadius;
+        copy.allowedTreeTypes = this.allowedTreeTypes != null ? new HashSet<>(this.allowedTreeTypes) : null;
+        copy.mineOrigin = this.mineOrigin;
+        copy.mineSize = this.mineSize;
+        copy.mineOffsetZ = this.mineOffsetZ;
+        copy.blocksPerRun = this.blocksPerRun;
         return copy;
+    }
+
+    // ===== Woodsman helpers =====
+
+    /**
+     * Returns the set of allowed tree type keys for this woodsman workstation.
+     * Lazily loads the default tree wood block type list if not explicitly set.
+     */
+    public Set<String> getAllowedTreeTypes() {
+        if (allowedTreeTypes == null) {
+            BlockTypeListAsset asset = BlockTypeListAsset.getAssetMap().getAsset(DEFAULT_TREE_TYPE_LIST);
+            allowedTreeTypes = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
+        }
+        return allowedTreeTypes;
     }
 
     // ===== Public Methods =====
