@@ -5,6 +5,7 @@
   "Description": "A colonies plugin for Hytale!",
   "Authors": [{"Name": "xDinkyx"}],
   "Main": "com.hytalecolonies.HytaleColoniesPlugin",
+  "ServerVersion": "${hytaleServerVersion}",
   "LoadOrder": "POSTWORLD",
   "IncludesAssetPack": true,
   "Dependencies": {

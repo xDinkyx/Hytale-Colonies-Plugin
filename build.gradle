@@ -49,6 +49,15 @@ java {
     }
 }
 
+// Inject the server version into manifest.json at build time so ServerVersion always
+// matches server/HytaleServer.jar — no manual edits needed when updating the server.
+processResources {
+    inputs.property("hytaleServerVersion", hytaleServerVersion)
+    filesMatching("manifest.json") {
+        expand(hytaleServerVersion: hytaleServerVersion)
+    }
+}
+
 shadowJar {
     archiveClassifier.set('')
     // Exclude server classes from the final JAR
@@ -83,7 +92,9 @@ tasks.named('build') {
 //
 // This only affects the local dev server — production deploys use the JAR alone as normal.
 tasks.register('syncAssetsDir', Sync) {
-    from 'src/main/resources'
+    // Sync from the processResources output so manifest.json already has ServerVersion expanded.
+    dependsOn 'processResources'
+    from layout.buildDirectory.dir('resources/main')
     into 'server/mods/HytaleColonies-Assets'
     outputs.upToDateWhen { false }
     doLast {
