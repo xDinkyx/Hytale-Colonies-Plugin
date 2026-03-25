@@ -55,7 +55,7 @@
           },
           "Actions": [
             { "Type": "EquipBestTool" },
-            { "Type": "HarvestBlock", "DamageScale": 1.0 }
+            { "Type": "HarvestBlock", "DamageScale": 0.01 }
           ]
         }
       ]
