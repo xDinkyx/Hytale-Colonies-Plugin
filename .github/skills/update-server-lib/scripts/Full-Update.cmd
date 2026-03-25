@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 REM ============================================
 REM Hytale Server Full Update
@@ -71,6 +71,8 @@ if exist "%DOWNLOAD_DIR%\LATEST_VERSION.txt" (
 
 if not "%SERVER_VERSION%"=="" (
     set "EXTRACTED_ASSETS_ZIP=%EXTRACT_DIR%\%SERVER_VERSION%\Assets.zip"
+    set "EXTRACTED_AOT=%EXTRACT_DIR%\%SERVER_VERSION%\Server\HytaleServer.aot"
+
     if exist "!EXTRACTED_ASSETS_ZIP!" (
         echo Copying Assets.zip to server\...
         copy /y "!EXTRACTED_ASSETS_ZIP!" "%SERVER_DIR%\Assets.zip"
@@ -83,8 +85,21 @@ if not "%SERVER_VERSION%"=="" (
         echo WARNING: Assets.zip not found at: !EXTRACTED_ASSETS_ZIP!
         echo          server\Assets.zip was NOT updated - version mismatch may occur.
     )
+
+    if exist "!EXTRACTED_AOT!" (
+        echo Copying HytaleServer.aot to server\...
+        copy /y "!EXTRACTED_AOT!" "%SERVER_DIR%\HytaleServer.aot"
+        if errorlevel 1 (
+            echo ERROR: Failed to copy HytaleServer.aot to server\HytaleServer.aot
+            exit /b 1
+        )
+        echo Copied HytaleServer.aot to server\HytaleServer.aot
+    ) else (
+        echo WARNING: HytaleServer.aot not found at: !EXTRACTED_AOT!
+        echo          server\HytaleServer.aot was NOT updated.
+    )
 ) else (
-    echo WARNING: Could not determine server version - server\Assets.zip was NOT updated.
+    echo WARNING: Could not determine server version - server\Assets.zip and server\HytaleServer.aot were NOT updated.
 )
 
 echo build.gradle will now automatically resolve this version.
@@ -101,7 +116,7 @@ echo   - Decompiled source code (for reference)
 echo   - Server assets
 echo   - UI assets
 echo.
-echo server/ is now fully synced: HytaleServer.jar + Assets.zip match the same version.
+echo server/ is now fully synced: HytaleServer.jar + Assets.zip + HytaleServer.aot match the same version.
 echo Run 'Build and Deploy Plugin' task to test your plugin!
 echo.
 
