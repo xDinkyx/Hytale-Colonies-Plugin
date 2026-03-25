@@ -22,6 +22,7 @@ Load these skills as needed based on the task at hand. Always check relevant ski
 - `hytale-spawning-entities` — Spawning entities with models (Holder, ModelAsset, Store)
 - `hytale-spawning-npcs` — NPC spawning via NPCPlugin, NPC inventory and armor
 - `hytale-npc-templates` — JSON-based NPC behavior templates (states, sensors, actions, combat)
+- `hytale-npc-custom-components` — Custom NPC sensors & actions via `registerCoreComponentType` (Builder+Runtime pair pattern, Holder types, registration)
 - `hytale-entity-effects` — Status effects, buffs, debuffs, DoTs (EffectControllerComponent)
 
 ### Items & Inventory
