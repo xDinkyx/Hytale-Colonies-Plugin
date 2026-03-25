@@ -51,7 +51,7 @@
         {
           "Sensor": {
             "Type": "JobTarget",
-            "Range": 3.0
+            "Range": 5.0
           },
           "Actions": [
             { "Type": "EquipBestTool" },

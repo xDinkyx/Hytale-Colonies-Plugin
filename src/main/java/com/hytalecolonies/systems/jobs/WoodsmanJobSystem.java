@@ -22,10 +22,15 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
+import com.hytalecolonies.systems.treescan.TreeDetector;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Woodsman-specific job system. Handles the {@link JobState#Idle} and
@@ -170,12 +175,15 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
      * <p>Actual block damage and tool equipping are handled per-tick by the NPC role
      * instructions ({@code SensorJobTarget + EquipBestTool + HarvestBlock}). This method
      * runs on the 2-second cadence only to detect when the target block has been broken
-     * and transition to {@link JobState#CollectingDrops}.
+     * and transition to the next base block (wide multi-block bases) or
+     * {@link JobState#CollectingDrops} when all base-level trunk blocks are gone.
      */
     private void handleWorking(Ref<EntityStore> ref, JobComponent job,
                                CommandBuffer<EntityStore> commandBuffer, Store<EntityStore> store) {
         JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.targetPosition == null) {
+            DebugLog.warning(DebugCategory.WOODSMAN_JOB,
+                    "[WoodsmanJob] Working — no JobTargetComponent or target is null, resetting to Idle.");
             unmarkClaimedTree(ref, store);
             job.setCurrentTask(JobState.Idle);
             return;
@@ -183,16 +191,102 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
 
         Vector3i treeBase = jobTarget.targetPosition;
         World world = store.getExternalData().getWorld();
+        int blockId = world.getBlock(treeBase);
 
-        // Check if the target block has been broken by the NPC role's HarvestBlock action.
-        if (world.getBlock(treeBase) == 0) {
-            DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Target block at %s broken — collecting drops.", treeBase);
-            unmarkClaimedTree(ref, store);
-            jobTarget.setTargetPosition(null);
-            job.collectingDropsSince = System.currentTimeMillis();
-            job.setCurrentTask(JobState.CollectingDrops);
+        DebugLog.fine(DebugCategory.WOODSMAN_JOB,
+                "[WoodsmanJob] Working — target=%s blockId=%d (0=broken).", treeBase, blockId);
+
+        // Block still standing — the NPC role's SensorJobTarget + HarvestBlock actions handle damage per-tick.
+        if (blockId != 0) return;
+
+        // blockId == 0: block was broken by the NPC role's HarvestBlock action.
+        WoodsmanJobComponent woodsman = store.getComponent(ref, WoodsmanJobComponent.getComponentType());
+        DebugLog.info(DebugCategory.WOODSMAN_JOB,
+                "[WoodsmanJob] Block at %s is broken — scanning for adjacent base blocks.", treeBase);
+        Vector3i nextBase = (woodsman != null)
+                ? findNextBaseBlock(treeBase, woodsman.allowedTreeTypes, world)
+                : null;
+
+        if (nextBase != null) {
+                // Wide multi-block base — travel to the next connected base block.
+                DebugLog.info(DebugCategory.WOODSMAN_JOB,
+                        "[WoodsmanJob] Found adjacent base block at %s — traveling there (TravelingToJob).",
+                        nextBase);
+                jobTarget.setTargetPosition(nextBase);
+                // Keep WoodsmanMovementSystem's travel detection in sync.
+                if (woodsman != null) woodsman.targetTreePosition = nextBase;
+                boolean hadMove = store.getComponent(ref, MoveToTargetComponent.getComponentType()) != null;
+                MoveToTargetComponent newMove = new MoveToTargetComponent(
+                        new Vector3d(nextBase.x + 0.5, nextBase.y, nextBase.z + 0.5));
+                if (hadMove) {
+                    commandBuffer.replaceComponent(ref, MoveToTargetComponent.getComponentType(), newMove);
+                } else {
+                    commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), newMove);
+                }
+                DebugLog.fine(DebugCategory.WOODSMAN_JOB,
+                        "[WoodsmanJob] MoveToTarget %s (hadComponent=%b).", nextBase, hadMove);
+                // Transition to TravelingToJob so both movement systems drive the colonist
+                // to the next block; on arrival they will transition back to Working.
+                job.setCurrentTask(JobState.TravelingToJob);
+        } else {
+                // All base-level trunk blocks gone — collect drops.
+                DebugLog.info(DebugCategory.WOODSMAN_JOB,
+                        "[WoodsmanJob] No further base blocks found — transitioning to CollectingDrops.");
+                unmarkClaimedTree(ref, store);
+                jobTarget.setTargetPosition(null);
+                job.collectingDropsSince = System.currentTimeMillis();
+                job.setCurrentTask(JobState.CollectingDrops);
         }
+    }
+
+    /**
+     * Performs a horizontal (XZ-plane) flood-fill starting adjacent to {@code brokenPos}
+     * at the same Y level, looking for any still-standing tree-wood blocks that were part
+     * of a wide multi-block tree base.
+     *
+     * <p>Only 4-connected horizontal neighbours are visited (±X, ±Z). This keeps the
+     * search focused on the base layer and avoids wandering up the trunk.
+     *
+     * @return the nearest still-standing base block, or {@code null} if none remain
+     */
+    @Nullable
+    private static Vector3i findNextBaseBlock(
+            @Nonnull Vector3i brokenPos,
+            @Nonnull Set<String> woodKeys,
+            @Nonnull World world) {
+        int baseY = brokenPos.y;
+        Set<Long> visited = new HashSet<>();
+        Deque<Vector3i> queue = new ArrayDeque<>();
+        visited.add(pack3i(brokenPos));
+        // Seed with horizontal neighbours of the broken position.
+        int[][] dirs = {{1,0},{-1,0},{0,1},{0,-1}};
+        for (int[] d : dirs) {
+            Vector3i neighbour = new Vector3i(brokenPos.x + d[0], baseY, brokenPos.z + d[1]);
+            if (visited.add(pack3i(neighbour))) queue.add(neighbour);
+        }
+        DebugLog.fine(DebugCategory.WOODSMAN_JOB,
+                "[WoodsmanJob] findNextBaseBlock starting from %s (Y=%d), queued %d neighbours, woodKeys=%d.",
+                brokenPos, baseY, queue.size(), woodKeys.size());
+
+        while (!queue.isEmpty()) {
+            Vector3i cur = queue.poll();
+            String key = TreeDetector.getBlockKey(world, cur.x, cur.y, cur.z);
+            DebugLog.fine(DebugCategory.WOODSMAN_JOB,
+                    "[WoodsmanJob] findNextBaseBlock checking %s — blockKey=%s isWood=%b.",
+                    cur, key, key != null && woodKeys.contains(key));
+            if (key == null || !woodKeys.contains(key)) continue; // air or non-wood
+            // Found a standing base block.
+            DebugLog.info(DebugCategory.WOODSMAN_JOB,
+                    "[WoodsmanJob] findNextBaseBlock found standing base block at %s (key=%s).", cur, key);
+            return cur;
+        }
+        DebugLog.info(DebugCategory.WOODSMAN_JOB,
+                "[WoodsmanJob] findNextBaseBlock — no more standing base blocks adjacent to %s.", brokenPos);
+        return null;
+    }
+
+    private static long pack3i(Vector3i v) {
+        return ((long)(v.x & 0x1FFFFFL) << 42) | ((long)(v.z & 0x1FFFFFL) << 21) | (v.y & 0x1FFFFFL);
     }
 
     // ===== Helpers =====
