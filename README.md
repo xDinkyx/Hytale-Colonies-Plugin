@@ -73,3 +73,17 @@ Dragons, goblins, orcs, enemy colonies, etc.
 
 ### Religion system
 ### Magic system
+
+
+## ToDo
+
+- Woodsman:
+    - Replant trees
+    - Refill tree trunk blocks in the ground after cutting tree
+- Jobs
+    - Harvest modifier (currently harvest is same speed as player)
+    - Check that npc tools are losing durability
+    - Worker animations
+- Colonist Skills
+- Same prefix for all resources (for instance 'HC_')
+- Make all component field private with getters/setters. (Seems to be Hytale standard/requirement)
