@@ -33,6 +33,9 @@ public class DebugConfig {
             .append(new KeyedCodec<>("WoodsmanJobLevel", Codec.STRING),
                     (c, v) -> c.woodsmanJobLevel = v, c -> c.woodsmanJobLevel)
             .add()
+            .append(new KeyedCodec<>("MinerJobLevel", Codec.STRING),
+                    (c, v) -> c.minerJobLevel = v, c -> c.minerJobLevel)
+            .add()
             .append(new KeyedCodec<>("TreeScannerLevel", Codec.STRING),
                     (c, v) -> c.treeScannerLevel = v, c -> c.treeScannerLevel)
             .add()
@@ -53,6 +56,7 @@ public class DebugConfig {
     private String movementLevel       = "INFO";
     private String jobAssignmentLevel  = "INFO";
     private String woodsmanJobLevel    = "INFO";
+    private String minerJobLevel       = "INFO";
     private String treeScannerLevel    = "INFO";
     private String colonistDeliveryLevel = "INFO";
     private String performanceLevel      = "WARNING";
@@ -66,6 +70,7 @@ public class DebugConfig {
         DebugCategory.MOVEMENT.setMinLevel(parseLevel(movementLevel));
         DebugCategory.JOB_ASSIGNMENT.setMinLevel(parseLevel(jobAssignmentLevel));
         DebugCategory.WOODSMAN_JOB.setMinLevel(parseLevel(woodsmanJobLevel));
+        DebugCategory.MINER_JOB.setMinLevel(parseLevel(minerJobLevel));
         DebugCategory.TREE_SCANNER.setMinLevel(parseLevel(treeScannerLevel));
         DebugCategory.COLONIST_DELIVERY.setMinLevel(parseLevel(colonistDeliveryLevel));
         DebugCategory.PERFORMANCE.setMinLevel(parseLevel(performanceLevel));
@@ -81,6 +86,7 @@ public class DebugConfig {
             case MOVEMENT           -> movementLevel = name;
             case JOB_ASSIGNMENT     -> jobAssignmentLevel = name;
             case WOODSMAN_JOB       -> woodsmanJobLevel = name;
+            case MINER_JOB          -> minerJobLevel = name;
             case TREE_SCANNER       -> treeScannerLevel = name;
             case COLONIST_DELIVERY  -> colonistDeliveryLevel = name;
             case PERFORMANCE        -> performanceLevel = name;
@@ -94,6 +100,7 @@ public class DebugConfig {
             case MOVEMENT           -> movementLevel;
             case JOB_ASSIGNMENT     -> jobAssignmentLevel;
             case WOODSMAN_JOB       -> woodsmanJobLevel;
+            case MINER_JOB          -> minerJobLevel;
             case TREE_SCANNER       -> treeScannerLevel;
             case COLONIST_DELIVERY  -> colonistDeliveryLevel;
             case PERFORMANCE        -> performanceLevel;

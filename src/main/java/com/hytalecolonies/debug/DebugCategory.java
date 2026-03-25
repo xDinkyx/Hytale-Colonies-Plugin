@@ -16,6 +16,7 @@ public enum DebugCategory {
     MOVEMENT("Movement"),
     JOB_ASSIGNMENT("Job Assignment"),
     WOODSMAN_JOB("Woodsman Job"),
+    MINER_JOB("Miner Job"),
     TREE_SCANNER("Tree Scanner"),
     COLONIST_DELIVERY("Colonist Delivery"),
     PERFORMANCE("Performance");

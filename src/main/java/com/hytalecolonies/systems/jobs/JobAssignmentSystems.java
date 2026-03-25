@@ -1,20 +1,24 @@
 package com.hytalecolonies.systems.jobs;
 
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.debug.DebugTiming;
-import com.hytalecolonies.components.jobs.JobComponent;
-import com.hytalecolonies.components.jobs.JobState;
-import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.JobType;
-import com.hytalecolonies.components.jobs.UnemployedComponent;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
-import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
-import com.hytalecolonies.components.npc.ColonistComponent;
-import com.hytalecolonies.components.world.HarvestableTreeComponent;
-import com.hytalecolonies.utils.BlockStateInfoUtil;
-import com.hypixel.hytale.component.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.hypixel.hytale.component.AddReason;
+import com.hypixel.hytale.component.Archetype;
+import com.hypixel.hytale.component.ArchetypeChunk;
+import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.RemoveReason;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.component.system.DelayedSystem;
 import com.hypixel.hytale.component.system.RefChangeSystem;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
@@ -24,14 +28,20 @@ import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobState;
+import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.components.jobs.JobType;
+import com.hytalecolonies.components.jobs.UnemployedComponent;
+import com.hytalecolonies.components.jobs.MinerJobComponent;
+import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
+import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.npc.ColonistComponent;
+import com.hytalecolonies.components.world.HarvestableTreeComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.debug.DebugTiming;
+import com.hytalecolonies.utils.BlockStateInfoUtil;
 
 public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
@@ -187,9 +197,12 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         _commandBuffer.addComponent(colonistRef, JobComponent.getComponentType(), new JobComponent(workStationPos));
 
         // Add job-type-specific component.
-        if (workStation.getJobType() == JobType.Woodsman) {
-            _commandBuffer.addComponent(colonistRef, WoodsmanJobComponent.getComponentType(),
+        switch (workStation.getJobType()) {
+            case Woodsman -> _commandBuffer.addComponent(colonistRef, WoodsmanJobComponent.getComponentType(),
                     new WoodsmanJobComponent());
+            case Miner -> _commandBuffer.addComponent(colonistRef, MinerJobComponent.getComponentType(),
+                    new MinerJobComponent());
+            case Farmer, Builder -> { /* TODO: implement job-specific component */ }
         }
 
         DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "Assigned Colonist %s to job at %s.", colonistEntityUuid.getUuid(),
