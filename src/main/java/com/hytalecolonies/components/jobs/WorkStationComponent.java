@@ -34,12 +34,29 @@ public class WorkStationComponent implements Component<ChunkStore> {
                         Collections.addAll(o.assignedColonists, v);
                     }, o -> o.assignedColonists.toArray(UUID[]::new))
             .add()
+            // ===== Woodsman config =====
+            .append(new KeyedCodec<>("TreeSearchRadius", Codec.FLOAT),
+                    (o, v) -> o.treeSearchRadius = v,
+                    o -> o.treeSearchRadius)
+            .add()
+            .append(new KeyedCodec<>("AllowedTreeTypes", new SetCodec<>(Codec.STRING, HashSet::new, false)),
+                    (o, v) -> o.allowedTreeTypes = v,
+                    o -> o.allowedTreeTypes)
+            .add()
             .build();
 
     // ===== Fields =====
     protected JobType jobType;
     protected int maxWorkers = 1;
     protected Set<UUID> assignedColonists = new HashSet<>();
+    /** Search radius for harvestable trees (Woodsman). */
+    public float treeSearchRadius = 64.0f;
+    /**
+     * Block type keys the woodsman is allowed to harvest. Null until first accessed;
+     * defaults to the {@value DEFAULT_TREE_TYPE_LIST} BlockTypeList asset.
+     */
+    public @Nullable Set<String> allowedTreeTypes = null;
+
 
     // ===== Constructors =====
     public WorkStationComponent() {
@@ -58,9 +75,25 @@ public class WorkStationComponent implements Component<ChunkStore> {
     // ===== Component Clone =====
     @Override
     public @Nullable Component<ChunkStore> clone() {
-        var copy = new WorkStationComponent(this.jobType, this.maxWorkers);
+        WorkStationComponent copy = new WorkStationComponent(this.jobType, this.maxWorkers);
         copy.assignedColonists = new HashSet<>(this.assignedColonists);
+        copy.treeSearchRadius = this.treeSearchRadius;
+        copy.allowedTreeTypes = this.allowedTreeTypes != null ? new HashSet<>(this.allowedTreeTypes) : null;
         return copy;
+    }
+
+    // ===== Woodsman helpers =====
+
+    /**
+     * Returns the set of allowed tree type keys for this woodsman workstation.
+     * Lazily loads the default tree wood block type list if not explicitly set.
+     */
+    public Set<String> getAllowedTreeTypes() {
+        if (allowedTreeTypes == null) {
+            BlockTypeListAsset asset = BlockTypeListAsset.getAssetMap().getAsset(DEFAULT_TREE_TYPE_LIST);
+            allowedTreeTypes = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
+        }
+        return allowedTreeTypes;
     }
 
     // ===== Public Methods =====

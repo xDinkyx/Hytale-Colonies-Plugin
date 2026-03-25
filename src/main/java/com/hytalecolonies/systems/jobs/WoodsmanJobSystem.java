@@ -7,6 +7,7 @@ import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
+import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.utils.ColonistToolUtil;
@@ -52,6 +53,12 @@ import java.util.List;
  */
 public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
 
+    /**
+     * GatherType the woodsman must have a tool for before leaving the workstation.
+     * Any quality tier (≥0) is accepted.
+     */
+    private static final String REQUIRED_GATHER_TYPE = "Woods";
+
     private final Query<EntityStore> query = Query.and(
             JobComponent.getComponentType(),
             WoodsmanJobComponent.getComponentType()
@@ -68,8 +75,7 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
                      @Nonnull CommandBuffer<EntityStore> commandBuffer) {
 
         JobComponent job = archetypeChunk.getComponent(index, JobComponent.getComponentType());
-        WoodsmanJobComponent woodsman = archetypeChunk.getComponent(index, WoodsmanJobComponent.getComponentType());
-        assert job != null && woodsman != null;
+        assert job != null;
 
         Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
         JobState state = job.getCurrentTask();
@@ -78,7 +84,7 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
                 state, job.getWorkStationBlockPosition());
 
         if (state == null || state == JobState.Idle) {
-            handleIdle(colonistRef, job, woodsman, commandBuffer, store);
+            handleIdle(colonistRef, job, commandBuffer, store);
         } else if (state == JobState.Working) {
             handleWorking(colonistRef, job, commandBuffer, store);
         } else if (state == JobState.CollectingDrops) {
@@ -113,31 +119,41 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         job.setCurrentTask(JobState.DeliveringItems);
     }
 
-    private void handleIdle(Ref<EntityStore> ref, JobComponent job, WoodsmanJobComponent woodsman,
+    private void handleIdle(Ref<EntityStore> ref, JobComponent job,
                              CommandBuffer<EntityStore> commandBuffer, Store<EntityStore> store) {
         Vector3i workStationPos = job.getWorkStationBlockPosition();
         if (workStationPos == null) return;
 
         World world = store.getExternalData().getWorld();
 
+        // Look up the workstation block entity to read job configuration.
+        Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
+        WorkStationComponent workStation = wsRef != null
+                ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
+                : null;
+        if (workStation == null) {
+            DebugLog.warning(DebugCategory.WOODSMAN_JOB,
+                    "[WoodsmanJob] Idle — workstation block entity not found at %s.", workStationPos);
+            return;
+        }
+
         // Wait at the workstation until the colonist has a suitable tool for the job.
         LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ref, store);
         if (colonist == null) return;
-        if (!ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), woodsman.requiredGatherType, woodsman.requiredToolQuality)) {
+        if (!ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), REQUIRED_GATHER_TYPE, 0)) {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idle — no '%s' tool (quality>=%d) in inventory. Waiting at workstation.",
-                    woodsman.requiredGatherType, woodsman.requiredToolQuality);
+                    "[WoodsmanJob] Idle — no '%s' tool in inventory. Waiting at workstation.", REQUIRED_GATHER_TYPE);
             return;
         }
 
         Vector3i nearestTree;
         try (var t = DebugTiming.measure("WoodsmanJob.findNearestAvailableTree@" + workStationPos, 50)) {
-            nearestTree = findNearestAvailableTree(woodsman, workStationPos, world);
+            nearestTree = findNearestAvailableTree(workStation, workStationPos, world);
         }
         if (nearestTree == null) {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
                     "[WoodsmanJob] Idle — no available trees within radius %.1f of workstation %s.",
-                    woodsman.treeSearchRadius, workStationPos);
+                    workStation.treeSearchRadius, workStationPos);
             return;
         }
 
@@ -223,7 +239,7 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
      * woodsman's search radius of the workstation, or {@code null} if none.
      */
     @Nullable
-    private static Vector3i findNearestAvailableTree(WoodsmanJobComponent woodsman,
+    private static Vector3i findNearestAvailableTree(WorkStationComponent workStation,
                                                       Vector3i workStationPos, World world) {
         List<Vector3i> candidates = new ArrayList<>();
         int[] totalTrees = {0}, markedTrees = {0}, wrongTypeTrees = {0};
@@ -235,7 +251,7 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
                 if (tree == null) continue;
                 totalTrees[0]++;
                 if (tree.isMarkedForHarvest()) { markedTrees[0]++; continue; }
-                if (!woodsman.allowedTreeTypes.contains(tree.getTreeTypeKey())) { wrongTypeTrees[0]++; continue; }
+                if (!workStation.getAllowedTreeTypes().contains(tree.getTreeTypeKey())) { wrongTypeTrees[0]++; continue; }
                 candidates.add(tree.getBasePosition());
             }
         });
@@ -245,7 +261,7 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
                 totalTrees[0], markedTrees[0], wrongTypeTrees[0], candidates.size());
 
         Vector3i nearest = null;
-        double nearestDistSq = woodsman.treeSearchRadius * woodsman.treeSearchRadius;
+        double nearestDistSq = workStation.treeSearchRadius * workStation.treeSearchRadius;
         double closestOutsideRadiusDist = Double.MAX_VALUE;
         Vector3i closestOutsideRadius = null;
 
@@ -266,7 +282,7 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         if (nearest == null && closestOutsideRadius != null) {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
                     "[WoodsmanJob] Closest tree outside radius: %s at dist=%.1f (radius=%.1f).",
-                    closestOutsideRadius, Math.sqrt(closestOutsideRadiusDist), woodsman.treeSearchRadius);
+                    closestOutsideRadius, Math.sqrt(closestOutsideRadiusDist), workStation.treeSearchRadius);
         }
         return nearest;
     }
