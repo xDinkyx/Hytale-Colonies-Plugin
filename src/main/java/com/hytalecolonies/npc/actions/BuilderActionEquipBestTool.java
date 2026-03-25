@@ -1,16 +1,17 @@
 package com.hytalecolonies.npc.actions;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderDescriptorState;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.asset.builder.holder.IntHolder;
-import com.hypixel.hytale.server.npc.asset.builder.holder.StringHolder;
 import com.hypixel.hytale.server.npc.asset.builder.validators.IntSingleValidator;
 import com.hypixel.hytale.server.npc.util.expression.ExecutionContext;
 import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
 import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * Builder for the custom {@code "EquipBestTool"} NPC action.
@@ -25,7 +26,9 @@ import javax.annotation.Nonnull;
  */
 public class BuilderActionEquipBestTool extends BuilderActionBase {
 
-    private final StringHolder gatherType = new StringHolder();
+    /** Configured gather type, or {@code null} to auto-detect from the sensor block position. */
+    @Nullable
+    private String gatherType = null;
     private final IntHolder minQuality = new IntHolder();
 
     @Nonnull
@@ -38,8 +41,9 @@ public class BuilderActionEquipBestTool extends BuilderActionBase {
     @Override
     public String getLongDescription() {
         return "Searches the entity's full inventory (hotbar first, then storage) for the best tool matching "
-             + "the given GatherType at the given MinQuality tier and equips it. No-ops if the current held item "
-             + "is already the optimal choice.";
+             + "the target block's gather type requirements and equips it. When GatherType is omitted the "
+             + "required type is resolved automatically from the block at the sensor's provided position. "
+             + "No-ops if the current held item is already the optimal choice.";
     }
 
     @Nonnull
@@ -51,11 +55,12 @@ public class BuilderActionEquipBestTool extends BuilderActionBase {
     @Nonnull
     @Override
     public Builder<Action> readConfig(@Nonnull JsonElement data) {
-        this.requireString(
-            data, "GatherType", this.gatherType, null,
-            BuilderDescriptorState.Experimental,
-            "The gather type to find a tool for (e.g. Woodcutting, Mining)", null
-        );
+        if (data.isJsonObject()) {
+            JsonObject obj = data.getAsJsonObject();
+            if (obj.has("GatherType")) {
+                this.gatherType = obj.get("GatherType").getAsString();
+            }
+        }
         this.getInt(
             data, "MinQuality", this.minQuality, 0, IntSingleValidator.greaterEqual0(),
             BuilderDescriptorState.Experimental,
@@ -70,10 +75,9 @@ public class BuilderActionEquipBestTool extends BuilderActionBase {
         return new ActionEquipBestTool(this, support);
     }
 
-    @Nonnull
-    public String getGatherType(@Nonnull BuilderSupport support) {
-        ExecutionContext ctx = support.getExecutionContext();
-        return this.gatherType.get(ctx);
+    @Nullable
+    public String getGatherType() {
+        return this.gatherType;
     }
 
     public int getMinQuality(@Nonnull BuilderSupport support) {

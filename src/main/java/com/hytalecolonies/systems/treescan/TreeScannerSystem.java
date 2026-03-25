@@ -295,7 +295,22 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
                 new HarvestableTreeComponent(blockType.getId(), tree.woodCount(), base));
 
         if (commandBuffer != null) {
-            commandBuffer.addEntity(holder, AddReason.SPAWN);
+            // Defer entity creation to the world thread to prevent duplicate-add crashes.
+            //
+            // When multiple workstations have overlapping scan radii and are processed in
+            // the same tick, each calls ensureHarvestableBlockEntity for shared trees.
+            // blockComponentChunk.getEntityReference() returns null for all of them (the
+            // commandBuffer hasn't been consumed yet), so each one would queue
+            // commandBuffer.addEntity for the same block slot → crash.
+            //
+            // Using world.execute() serialises creation onto the world thread. Each callback
+            // re-checks whether the entity was already added by a preceding callback and
+            // no-ops if it was, making the whole registration idempotent within a tick.
+            world.execute(() -> {
+                Ref<ChunkStore> existingCheck = blockComponentChunk.getEntityReference(blockIndex);
+                if (existingCheck != null && existingCheck.isValid()) return;
+                chunkStore.addEntity(holder, AddReason.SPAWN);
+            });
         } else {
             chunkStore.addEntity(holder, AddReason.SPAWN);
         }

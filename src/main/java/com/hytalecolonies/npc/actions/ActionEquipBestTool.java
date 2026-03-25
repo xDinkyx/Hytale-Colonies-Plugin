@@ -2,32 +2,46 @@ package com.hytalecolonies.npc.actions;
 
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.math.util.MathUtil;
+import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockBreakingDropType;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
 import com.hypixel.hytale.server.core.inventory.Inventory;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
 import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.npc.sensorinfo.IPositionProvider;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import com.hytalecolonies.utils.ColonistToolUtil;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Runtime action that equips the best available tool from the NPC's inventory for
- * a given gather type, delegating all inventory logic to {@link ColonistToolUtil}.
+ * Runtime action that equips the best available tool from the NPC's inventory.
+ *
+ * <p>When {@code GatherType} is configured in the builder, that type is used directly.
+ * When omitted, the required tool is auto-detected from the block at the position
+ * provided by the active sensor — matching the same behaviour as
+ * {@link ActionHarvestBlock}.
  *
  * <p>Constructed by {@link BuilderActionEquipBestTool} when an NPC role is built.
  */
 public class ActionEquipBestTool extends ActionBase {
 
+    @Nullable
     private final String gatherType;
     private final int minQuality;
+    private final Vector3d targetVec = new Vector3d();
 
     public ActionEquipBestTool(@Nonnull BuilderActionEquipBestTool builder, @Nonnull BuilderSupport support) {
         super(builder);
-        this.gatherType = builder.getGatherType(support);
+        this.gatherType = builder.getGatherType();
         this.minQuality = builder.getMinQuality(support);
     }
 
@@ -46,6 +60,29 @@ public class ActionEquipBestTool extends ActionBase {
         Inventory inventory = entity.getInventory();
         if (inventory == null) return false;
 
-        return ColonistToolUtil.equipBestToolForGatherType(inventory, gatherType, minQuality, ref, store);
+        if (gatherType != null) {
+            // Explicit mode — use the configured gather type.
+            return ColonistToolUtil.equipBestToolForGatherType(inventory, gatherType, minQuality, ref, store);
+        }
+
+        // Auto-detect mode — resolve block gather type from the sensor position.
+        if (sensorInfo == null || !sensorInfo.hasPosition()) return false;
+        IPositionProvider pos = sensorInfo.getPositionProvider();
+        if (pos == null || !pos.providePosition(targetVec)) return false;
+
+        Vector3i blockPos = new Vector3i(
+                MathUtil.floor(targetVec.x),
+                MathUtil.floor(targetVec.y),
+                MathUtil.floor(targetVec.z));
+
+        World world = store.getExternalData().getWorld();
+        long chunkIdx = ChunkUtil.indexChunkFromBlock(blockPos.x, blockPos.z);
+        Ref<ChunkStore> chunkRef = world.getChunkStore().getChunkReference(chunkIdx);
+        if (chunkRef == null || !chunkRef.isValid()) return false;
+
+        BlockBreakingDropType breaking = ColonistToolUtil.getBreakingConfig(world, chunkRef, blockPos);
+        if (breaking == null) return true; // Block requires no special tool.
+
+        return ColonistToolUtil.equipBestToolForBlock(inventory, breaking, ref, store);
     }
 }

@@ -54,6 +54,7 @@
             "Range": 3.0
           },
           "Actions": [
+            { "Type": "EquipBestTool" },
             { "Type": "HarvestBlock", "DamageScale": 1.0 }
           ]
         }
