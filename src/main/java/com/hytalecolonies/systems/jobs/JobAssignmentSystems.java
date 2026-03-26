@@ -258,19 +258,28 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             World world = commandBuffer.getExternalData().getWorld();
             EntityStore entityStore = world.getEntityStore();
 
-            // Make colonists assigned to this work station unemployed.
-            for (UUID colonistUuid : workStation.getAssignedColonists()) {
-                var colonistRef = entityStore.getRefFromUUID(colonistUuid);
-                // Clean up job-type-specific state before removing the job.
-                WoodsmanJobSystem.unmarkClaimedTree(colonistRef, entityStore.getStore());
-                entityStore.getStore().tryRemoveComponent(colonistRef, JobTargetComponent.getComponentType());
-                entityStore.getStore().tryRemoveComponent(colonistRef, WoodsmanJobComponent.getComponentType());
-                entityStore.getStore().tryRemoveComponent(colonistRef, JobComponent.getComponentType());
-                entityStore.getStore().addComponent(colonistRef, UnemployedComponent.getComponentType(),
-                        new UnemployedComponent()); // Mark colonist as unemployed again.
-                DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "Unassigned colonist with UUID %s from work station.",
-                        colonistUuid);
-            }
+            // Snapshot colonist UUIDs now — the workStation will be cleared/removed
+            // before world.execute() runs, so we cannot iterate it lazily.
+            List<UUID> colonists = new ArrayList<>(workStation.getAssignedColonists());
+
+            // Defer all EntityStore mutations: this callback fires inside a ChunkStore
+            // entity-removal path while the EntityStore tick may still be active.
+            // world.execute() queues the work safely between ticks.
+            world.execute(() -> {
+                for (UUID colonistUuid : colonists) {
+                    Ref<EntityStore> colonistRef = entityStore.getRefFromUUID(colonistUuid);
+                    if (colonistRef == null) continue; // Colonist may have been removed already.
+                    // Clean up job-type-specific state before removing the job.
+                    WoodsmanJobSystem.unmarkClaimedTree(colonistRef, entityStore.getStore());
+                    entityStore.getStore().tryRemoveComponent(colonistRef, JobTargetComponent.getComponentType());
+                    entityStore.getStore().tryRemoveComponent(colonistRef, WoodsmanJobComponent.getComponentType());
+                    entityStore.getStore().tryRemoveComponent(colonistRef, JobComponent.getComponentType());
+                    entityStore.getStore().addComponent(colonistRef, UnemployedComponent.getComponentType(),
+                            new UnemployedComponent()); // Mark colonist as unemployed again.
+                    DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "Unassigned colonist with UUID %s from work station.",
+                            colonistUuid);
+                }
+            });
         }
 
         @Override
