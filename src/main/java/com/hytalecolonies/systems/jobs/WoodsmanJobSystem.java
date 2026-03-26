@@ -216,11 +216,22 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         if (blockId != 0) return;
 
         // blockId == 0: block was broken by the NPC role's HarvestBlock action.
-        WoodsmanJobComponent woodsman = store.getComponent(ref, WoodsmanJobComponent.getComponentType());
         DebugLog.info(DebugCategory.WOODSMAN_JOB,
                 "[WoodsmanJob] Block at %s is broken — scanning for adjacent base blocks.", treeBase);
-        Vector3i nextBase = (woodsman != null)
-                ? findNextBaseBlock(treeBase, woodsman.allowedTreeTypes, world)
+
+        // allowedTreeTypes lives on WorkStationComponent — fetch it so we can filter adjacent blocks.
+        Set<String> allowedTreeTypes = null;
+        Vector3i workStationPos = job.getWorkStationBlockPosition();
+        if (workStationPos != null) {
+            Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
+            WorkStationComponent workStation = wsRef != null
+                    ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
+                    : null;
+            if (workStation != null) allowedTreeTypes = workStation.getAllowedTreeTypes();
+        }
+        final Set<String> treeTypes = allowedTreeTypes;
+        Vector3i nextBase = (treeTypes != null)
+                ? findNextBaseBlock(treeBase, treeTypes, world)
                 : null;
 
         if (nextBase != null) {
@@ -229,8 +240,6 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
                         "[WoodsmanJob] Found adjacent base block at %s — traveling there (TravelingToJob).",
                         nextBase);
                 jobTarget.setTargetPosition(nextBase);
-                // Keep WoodsmanMovementSystem's travel detection in sync.
-                if (woodsman != null) woodsman.targetTreePosition = nextBase;
                 boolean hadMove = store.getComponent(ref, MoveToTargetComponent.getComponentType()) != null;
                 MoveToTargetComponent newMove = new MoveToTargetComponent(
                         new Vector3d(nextBase.x + 0.5, nextBase.y, nextBase.z + 0.5));
