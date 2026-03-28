@@ -95,6 +95,13 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             return;
         }
 
+        // Guard against concurrent chunk unloads invalidating the chunk ref.
+        if (!blockStateInfo.getChunkRef().isValid()) {
+            DebugLog.fine(DebugCategory.JOB_ASSIGNMENT,
+                    "[JobAssignment] WorkStation chunk ref is invalid (chunk unloading) — skipping.");
+            return;
+        }
+
         // Get the world position of the work station block entity
         Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
 
@@ -170,13 +177,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                 workStation.removeAssignedColonist(zombie);
                 Ref<EntityStore> ref = entityStore.getRefFromUUID(zombie);
                 if (ref != null && ref.isValid()) {
-                    WoodsmanJobSystem.unmarkClaimedTree(ref, entityStore.getStore());
-                    entityStore.getStore().tryRemoveComponent(ref, JobTargetComponent.getComponentType());
-                    entityStore.getStore().tryRemoveComponent(ref, WoodsmanJobComponent.getComponentType());
-                    if (entityStore.getStore().getComponent(ref, UnemployedComponent.getComponentType()) == null) {
-                        entityStore.getStore().addComponent(ref, UnemployedComponent.getComponentType(),
-                                new UnemployedComponent());
-                    }
+                    fireColonist(ref, entityStore.getStore());
                 }
                 DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
                         "[JobAssignment] Restored zombie worker %s from workstation %s as unemployed.",
@@ -222,6 +223,37 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         DebugLog.fine(DebugCategory.JOB_ASSIGNMENT, workStationInfo.toString());
     }
 
+    /**
+     * Removes a colonist's job assignment and marks them as unemployed.
+     * Safe to call from ChunkStore tick contexts (e.g. workstation removal,
+     * ghost-worker cleanup) where the EntityStore is not currently processing.
+     * For EntityStore tick contexts, use the CommandBuffer overload instead.
+     */
+    static void fireColonist(Ref<EntityStore> ref, Store<EntityStore> store) {
+        WoodsmanJobSystem.unmarkClaimedTree(ref, store);
+        store.tryRemoveComponent(ref, JobTargetComponent.getComponentType());
+        store.tryRemoveComponent(ref, WoodsmanJobComponent.getComponentType());
+        store.tryRemoveComponent(ref, MinerJobComponent.getComponentType());
+        store.tryRemoveComponent(ref, JobComponent.getComponentType());
+        if (store.getComponent(ref, UnemployedComponent.getComponentType()) == null) {
+            store.addComponent(ref, UnemployedComponent.getComponentType(), new UnemployedComponent());
+        }
+    }
+
+    /**
+     * CommandBuffer-safe overload for use within system ticks.
+     * All EntityStore mutations go through the CommandBuffer.
+     */
+    static void fireColonist(Ref<EntityStore> ref, Store<EntityStore> store,
+            CommandBuffer<EntityStore> commandBuffer) {
+        WoodsmanJobSystem.unmarkClaimedTree(ref, store);
+        commandBuffer.tryRemoveComponent(ref, JobTargetComponent.getComponentType());
+        commandBuffer.tryRemoveComponent(ref, WoodsmanJobComponent.getComponentType());
+        commandBuffer.tryRemoveComponent(ref, MinerJobComponent.getComponentType());
+        commandBuffer.tryRemoveComponent(ref, JobComponent.getComponentType());
+        commandBuffer.addComponent(ref, UnemployedComponent.getComponentType(), new UnemployedComponent());
+    }
+
     @Override
     public @Nullable Query<ChunkStore> getQuery() {
         return workStationQuery;
@@ -258,24 +290,16 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             World world = commandBuffer.getExternalData().getWorld();
             EntityStore entityStore = world.getEntityStore();
 
-            // Snapshot colonist UUIDs now — the workStation will be cleared/removed
-            // before world.execute() runs, so we cannot iterate it lazily.
+            // Snapshot UUIDs now — workStation is cleared before world.execute() runs.
+            // world.execute() defers EntityStore mutations: this can be called while the
+            // EntityStore is ticking (e.g. a block broken during interaction processing
+            // fires onEntityRemove on the ChunkStore workstation entity).
             List<UUID> colonists = new ArrayList<>(workStation.getAssignedColonists());
-
-            // Defer all EntityStore mutations: this callback fires inside a ChunkStore
-            // entity-removal path while the EntityStore tick may still be active.
-            // world.execute() queues the work safely between ticks.
             world.execute(() -> {
                 for (UUID colonistUuid : colonists) {
                     Ref<EntityStore> colonistRef = entityStore.getRefFromUUID(colonistUuid);
-                    if (colonistRef == null) continue; // Colonist may have been removed already.
-                    // Clean up job-type-specific state before removing the job.
-                    WoodsmanJobSystem.unmarkClaimedTree(colonistRef, entityStore.getStore());
-                    entityStore.getStore().tryRemoveComponent(colonistRef, JobTargetComponent.getComponentType());
-                    entityStore.getStore().tryRemoveComponent(colonistRef, WoodsmanJobComponent.getComponentType());
-                    entityStore.getStore().tryRemoveComponent(colonistRef, JobComponent.getComponentType());
-                    entityStore.getStore().addComponent(colonistRef, UnemployedComponent.getComponentType(),
-                            new UnemployedComponent()); // Mark colonist as unemployed again.
+                    if (colonistRef == null) continue;
+                    fireColonist(colonistRef, entityStore.getStore());
                     DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "Unassigned colonist with UUID %s from work station.",
                             colonistUuid);
                 }
@@ -450,6 +474,37 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             if (cleared[0] > 0) {
                 DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "[StaleMarks] Cleared %d orphaned tree mark(s).",
                         cleared[0]);
+            }
+
+            // Safety net: fire any colonist whose workstation block entity no longer exists.
+            // This catches cases where WorkStationEntitySystem.onEntityRemove was missed
+            // (e.g. a crash or edge-case timing). Primary firing happens in WorkStationEntitySystem.
+            Query<EntityStore> jobQuery = Query.and(JobComponent.getComponentType());
+            List<Ref<EntityStore>> orphans = new ArrayList<>();
+            entityStore.getStore().forEachChunk(jobQuery, (chunk, _cb) -> {
+                for (int i = 0; i < chunk.size(); i++) {
+                    JobComponent job = chunk.getComponent(i, JobComponent.getComponentType());
+                    if (job == null) continue;
+                    Vector3i wsPos = job.getWorkStationBlockPosition();
+                    if (wsPos == null) continue;
+                    Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, wsPos.x, wsPos.y, wsPos.z);
+                    WorkStationComponent workStation = wsRef != null
+                            ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
+                            : null;
+                    if (workStation != null) continue;
+                    orphans.add(chunk.getReferenceTo(i));
+                }
+            });
+            if (!orphans.isEmpty()) {
+                world.execute(() -> {
+                    for (Ref<EntityStore> ref : orphans) {
+                        if (ref.isValid()) {
+                            fireColonist(ref, entityStore.getStore());
+                            DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
+                                    "[StaleMarks] Fired colonist with missing workstation (safety net).");
+                        }
+                    }
+                });
             }
         }
     }

@@ -132,13 +132,14 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         World world = store.getExternalData().getWorld();
 
         // Look up the workstation block entity to read job configuration.
+        // If absent, the StaleMarkCleanupSystem safety net will fire the colonist.
         Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
         WorkStationComponent workStation = wsRef != null
                 ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
                 : null;
         if (workStation == null) {
-            DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idle — workstation block entity not found at %s.", workStationPos);
+            DebugLog.fine(DebugCategory.WOODSMAN_JOB,
+                    "[WoodsmanJob] Idle — workstation not found at %s; cleanup system will reset colonist job.", workStationPos);
             return;
         }
 
@@ -219,7 +220,6 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         DebugLog.info(DebugCategory.WOODSMAN_JOB,
                 "[WoodsmanJob] Block at %s is broken — scanning for adjacent base blocks.", treeBase);
 
-        // allowedTreeTypes lives on WorkStationComponent — fetch it so we can filter adjacent blocks.
         Set<String> allowedTreeTypes = null;
         Vector3i workStationPos = job.getWorkStationBlockPosition();
         if (workStationPos != null) {
@@ -229,9 +229,8 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
                     : null;
             if (workStation != null) allowedTreeTypes = workStation.getAllowedTreeTypes();
         }
-        final Set<String> treeTypes = allowedTreeTypes;
-        Vector3i nextBase = (treeTypes != null)
-                ? findNextBaseBlock(treeBase, treeTypes, world)
+        Vector3i nextBase = allowedTreeTypes != null
+                ? findNextBaseBlock(treeBase, allowedTreeTypes, world)
                 : null;
 
         if (nextBase != null) {
