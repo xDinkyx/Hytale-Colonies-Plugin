@@ -4,6 +4,9 @@ setlocal enabledelayedexpansion
 REM ============================================
 REM Hytale Server Lib Updater
 REM Decompiles and updates lib folder
+REM Usage: Update-Lib.cmd [version] [release|pre-release]
+REM   version   - explicit version string (optional; auto-detected from downloads)
+REM   patchline - used to prefer the matching LATEST_VERSION_<patchline>.txt file
 REM ============================================
 
 REM Use HYTALE_DOWNLOADER_PATH env var if set, otherwise default
@@ -27,9 +30,18 @@ echo.
 
 REM Get server version - either from argument or latest
 set "SERVER_VERSION=%~1"
+set "PATCHLINE=%~2"
 if "%SERVER_VERSION%"=="" (
-    if exist "%DOWNLOAD_DIR%\LATEST_VERSION.txt" (
-        set /p SERVER_VERSION=<"%DOWNLOAD_DIR%\LATEST_VERSION.txt"
+    REM Prefer per-patchline version file when a patchline is specified
+    if not "%PATCHLINE%"=="" (
+        if exist "%DOWNLOAD_DIR%\LATEST_VERSION_%PATCHLINE%.txt" (
+            set /p SERVER_VERSION=<"%DOWNLOAD_DIR%\LATEST_VERSION_%PATCHLINE%.txt"
+        )
+    )
+    if "%SERVER_VERSION%"=="" (
+        if exist "%DOWNLOAD_DIR%\LATEST_VERSION.txt" (
+            set /p SERVER_VERSION=<"%DOWNLOAD_DIR%\LATEST_VERSION.txt"
+        )
     )
 )
 

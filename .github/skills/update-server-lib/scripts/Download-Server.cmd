@@ -3,7 +3,9 @@ setlocal enabledelayedexpansion
 
 REM ============================================
 REM Hytale Server Downloader
-REM Downloads and extracts the latest pre-release server
+REM Downloads and extracts the latest server
+REM Usage: Download-Server.cmd [release|pre-release]
+REM Default patchline: release
 REM ============================================
 
 REM Use HYTALE_DOWNLOADER_PATH env var if set, otherwise default
@@ -11,7 +13,12 @@ if not defined HYTALE_DOWNLOADER_PATH set "HYTALE_DOWNLOADER_PATH=C:\hytale-down
 set "DOWNLOADER_PATH=%HYTALE_DOWNLOADER_PATH%"
 set "DOWNLOAD_DIR=%DOWNLOADER_PATH%\downloads"
 set "EXTRACT_DIR=%DOWNLOADER_PATH%\extracted"
-set "PATCHLINE=pre-release"
+REM Accept patchline as first argument (default: release), validate input
+if not "%~1"=="" (set "PATCHLINE=%~1") else (set "PATCHLINE=release")
+if not "%PATCHLINE%"=="release" if not "%PATCHLINE%"=="pre-release" (
+    echo ERROR: Invalid patchline "%PATCHLINE%". Must be "release" or "pre-release".
+    exit /b 1
+)
 
 REM Create directories
 if not exist "%DOWNLOAD_DIR%" mkdir "%DOWNLOAD_DIR%"
@@ -129,7 +136,9 @@ echo Version:      %SERVER_VERSION%
 echo Extracted to: %SERVER_EXTRACT_PATH%
 echo.
 
-REM Save version for Update-Lib.cmd
+REM Save version for Update-Lib.cmd — one file per patchline so alternating runs don't overwrite each other
+echo %SERVER_VERSION%> "%DOWNLOAD_DIR%\LATEST_VERSION_%PATCHLINE%.txt"
+REM Also write the generic file as a convenience (reflects the most recent download of any patchline)
 echo %SERVER_VERSION%> "%DOWNLOAD_DIR%\LATEST_VERSION.txt"
 
 exit /b 0

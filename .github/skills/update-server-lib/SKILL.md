@@ -1,11 +1,11 @@
 ---
 name: update-server-lib
-description: Updates the Hytale server reference files in lib/ by downloading the latest pre-release server, decompiling the JAR using Vineflower, and updating server assets. Use when needing to update to a new Hytale server version, refreshing decompiled source code, or syncing with the latest pre-release. Triggers - update server, download server, decompile jar, vineflower, update lib, new server version, sync server, refresh server.
+description: Updates the Hytale server reference files in lib/ by downloading the latest release server (or pre-release via Full-Update-Prerelease.cmd), decompiling the JAR using Vineflower, and updating server assets. Use when needing to update to a new Hytale server version, refreshing decompiled source code, or syncing with the latest server. Triggers - update server, download server, decompile jar, vineflower, update lib, new server version, sync server, refresh server.
 ---
 
 # Update Server Lib Skill
 
-Updates the `lib/` folder with the latest Hytale pre-release server files including decompiled source code and server assets.
+Updates the `lib/` folder with the latest Hytale server files (release by default, pre-release optional) including decompiled source code and server assets.
 
 ## Prerequisites
 
@@ -41,27 +41,37 @@ Before running these scripts, ensure the following are installed and on PATH:
 
 Run the CMD scripts from anywhere (they use absolute paths):
 
-### Full Update (Recommended)
+### Full Update — Release (Recommended)
 
 ```cmd
 .\.github\skills\update-server-lib\scripts\Full-Update.cmd
 ```
 
-This runs all three steps in sequence:
-1. Downloads the latest pre-release server
+Downloads the **release** patchline by default. This runs all three steps in sequence:
+1. Downloads the latest release server
 2. Decompiles it and updates `lib/`
 3. Copies `lib/HytaleServer.jar` → `server/HytaleServer.jar` **and** copies `Assets.zip` → `server/Assets.zip`
 
 `build.gradle` automatically resolves the Hytale dependency version from `server/HytaleServer.jar`'s manifest, so no manual version bump is needed after running this.
 
-### Step 1: Download and Extract Latest Pre-Release
+### Full Update — Pre-Release
+
+```cmd
+.\.github\skills\update-server-lib\scripts\Full-Update-Prerelease.cmd
+```
+
+Same as above but targets the **pre-release** patchline. Useful when a feature requires API changes only available in the latest pre-release. Equivalent to `Full-Update.cmd pre-release`.
+
+### Step 1: Download and Extract Latest Server
 
 ```cmd
 .\.github\skills\update-server-lib\scripts\Download-Server.cmd
+REM Or explicitly for pre-release:
+.\.github\skills\update-server-lib\scripts\Download-Server.cmd pre-release
 ```
 
 This script:
-- Downloads the latest pre-release server using the Hytale downloader
+- Downloads the latest server (default: `release`; pass `pre-release` as first argument to override)
 - Extracts the server zip file
 - Extracts the Assets.zip within it
 - Saves the version for the next step
@@ -102,7 +112,7 @@ set HYTALE_DOWNLOADER_PATH=D:\my-hytale-tools
 | `DOWNLOAD_DIR` | `<HYTALE_DOWNLOADER_PATH>\downloads` | Where to save downloaded zips |
 | `EXTRACT_DIR` | `<HYTALE_DOWNLOADER_PATH>\extracted` | Where to extract server files |
 | `PATCHER_DIR` | `<HYTALE_DOWNLOADER_PATH>\patcher` | Where to clone/use patcher tool |
-| `PATCHLINE` | `pre-release` | Patchline to download from |
+| `PATCHLINE` | `release` | Patchline to download from (`release` or `pre-release`) |
 
 ## Troubleshooting
 

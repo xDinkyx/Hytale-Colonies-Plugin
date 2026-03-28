@@ -8,15 +8,15 @@ version = '1.0.0'
 
 repositories {
     mavenCentral()
-    // Official Hytale Maven repositories — pre-release is checked first so the
-    // version resolved from server/HytaleServer.jar (which tracks pre-release) is always found.
-    maven {
-        name = 'hytale-pre-release'
-        url = 'https://maven.hytale.com/pre-release'
-    }
+    // Official Hytale Maven repositories — release is checked first (default patchline).
+    // Pre-release is included as a fallback for builds based on a pre-release server JAR.
     maven {
         name = 'hytale-release'
         url = 'https://maven.hytale.com/release'
+    }
+    maven {
+        name = 'hytale-pre-release'
+        url = 'https://maven.hytale.com/pre-release'
     }
 }
 

@@ -8,30 +8,39 @@ REM ============================================
 
 set "SCRIPT_DIR=%~dp0"
 
+REM Accept patchline as first argument (default: release, use pre-release for Full-Update-Prerelease.cmd)
+set "PATCHLINE=%~1"
+if "%PATCHLINE%"=="" set "PATCHLINE=release"
+set "UPDATE_FAILED="
+
 echo ============================================
 echo   Hytale Server Full Update
 echo ============================================
+echo.
+echo Patchline: %PATCHLINE%
 echo.
 
 echo ^>^>^> Step 1/3: Downloading server...
 echo.
 
-call "%SCRIPT_DIR%Download-Server.cmd"
+call "%SCRIPT_DIR%Download-Server.cmd" %PATCHLINE%
 if errorlevel 1 (
     echo.
     echo ERROR: Download step failed
-    exit /b 1
+    set "UPDATE_FAILED=Download"
+    goto :finish
 )
 
 echo.
 echo ^>^>^> Step 2/3: Updating lib folder...
 echo.
 
-call "%SCRIPT_DIR%Update-Lib.cmd"
+call "%SCRIPT_DIR%Update-Lib.cmd" "" %PATCHLINE%
 if errorlevel 1 (
     echo.
     echo ERROR: Lib update step failed
-    exit /b 1
+    set "UPDATE_FAILED=Update-Lib"
+    goto :finish
 )
 
 echo.
@@ -46,14 +55,16 @@ set "SERVER_DIR=%WORKSPACE_ROOT%server"
 
 if not exist "%LIB_JAR%" (
     echo ERROR: lib\HytaleServer.jar not found - lib update may have failed
-    exit /b 1
+    set "UPDATE_FAILED=Sync (JAR missing)"
+    goto :finish
 )
 
 REM Copy HytaleServer.jar
 copy /y "%LIB_JAR%" "%SERVER_JAR%"
 if errorlevel 1 (
     echo ERROR: Failed to copy lib\HytaleServer.jar to server\HytaleServer.jar
-    exit /b 1
+    set "UPDATE_FAILED=Sync (JAR copy)"
+    goto :finish
 )
 echo Copied lib\HytaleServer.jar to server\HytaleServer.jar
 
@@ -63,10 +74,15 @@ if not defined HYTALE_DOWNLOADER_PATH set "HYTALE_DOWNLOADER_PATH=C:\hytale-down
 set "EXTRACT_DIR=%HYTALE_DOWNLOADER_PATH%\extracted"
 set "DOWNLOAD_DIR=%HYTALE_DOWNLOADER_PATH%\downloads"
 
-REM Read the downloaded version (set by Download-Server.cmd)
+REM Read the downloaded version — prefer the patchline-specific file to avoid cross-patchline stomping
 set "SERVER_VERSION="
-if exist "%DOWNLOAD_DIR%\LATEST_VERSION.txt" (
-    set /p SERVER_VERSION=<"%DOWNLOAD_DIR%\LATEST_VERSION.txt"
+if exist "%DOWNLOAD_DIR%\LATEST_VERSION_%PATCHLINE%.txt" (
+    set /p SERVER_VERSION=<"%DOWNLOAD_DIR%\LATEST_VERSION_%PATCHLINE%.txt"
+)
+if "!SERVER_VERSION!"=="" (
+    if exist "%DOWNLOAD_DIR%\LATEST_VERSION.txt" (
+        set /p SERVER_VERSION=<"%DOWNLOAD_DIR%\LATEST_VERSION.txt"
+    )
 )
 
 if not "%SERVER_VERSION%"=="" (
@@ -78,7 +94,8 @@ if not "%SERVER_VERSION%"=="" (
         copy /y "!EXTRACTED_ASSETS_ZIP!" "%SERVER_DIR%\Assets.zip"
         if errorlevel 1 (
             echo ERROR: Failed to copy Assets.zip to server\Assets.zip
-            exit /b 1
+            set "UPDATE_FAILED=Sync (Assets.zip)"
+            goto :finish
         )
         echo Copied Assets.zip to server\Assets.zip
     ) else (
@@ -91,7 +108,8 @@ if not "%SERVER_VERSION%"=="" (
         copy /y "!EXTRACTED_AOT!" "%SERVER_DIR%\HytaleServer.aot"
         if errorlevel 1 (
             echo ERROR: Failed to copy HytaleServer.aot to server\HytaleServer.aot
-            exit /b 1
+            set "UPDATE_FAILED=Sync (aot copy)"
+            goto :finish
         )
         echo Copied HytaleServer.aot to server\HytaleServer.aot
     ) else (
@@ -120,4 +138,12 @@ echo server/ is now fully synced: HytaleServer.jar + Assets.zip + HytaleServer.a
 echo Run 'Build and Deploy Plugin' task to test your plugin!
 echo.
 
+:finish
+if defined UPDATE_FAILED (
+    call "%SCRIPT_DIR%Notify.cmd" "Hytale Update Failed" "Step '%UPDATE_FAILED%' failed - check the console for details"
+    endlocal
+    exit /b 1
+)
+call "%SCRIPT_DIR%Notify.cmd" "Hytale Update Complete" "%PATCHLINE% server synced: !SERVER_VERSION!"
 endlocal
+exit /b 0
