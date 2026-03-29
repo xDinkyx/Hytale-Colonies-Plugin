@@ -66,6 +66,16 @@ src/main/resources/
 
 ---
 
+## Block Entities vs. Plain Blocks
+
+Not every block has a "block entity" (a `ChunkStore` ECS entity with components). **Plain blocks are just block IDs in the chunk data.** A block entity only exists when one has been explicitly created for that position \u2014 either by the engine (for blocks with engine-managed state) or by a plugin.
+
+- **`BlockModule.getBlockEntity(world, x, y, z)`** \u2014 lookup only. Returns `null` for plain blocks. **Never auto-creates**.
+- To attach custom data to a plain block you must create the entity manually. See the `hytale-ecs` skill \u2014 "Block Entity Lookup and Creation".
+- To react to a block component's lifecycle (add/remove), use `RefChangeSystem<ChunkStore, YourComponent>`.
+
+---
+
 ## Translations
 
 Create `Server/Languages/en-US/items.lang`:

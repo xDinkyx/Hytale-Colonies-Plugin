@@ -21,6 +21,7 @@ Use this skill when working with instanced worlds in Hytale plugins. The `Instan
 | Teleport to loading instance | `InstancesPlugin.teleportPlayerToLoadingInstance(playerRef, store, worldFuture, overrideReturn)` |
 | Exit an instance | `InstancesPlugin.exitInstance(playerRef, store)` |
 | Remove an instance | `InstancesPlugin.safeRemoveInstance(instanceWorld)` |
+| Override portal spawn point | Set `SpawnProviderOverride` in `PortalType` asset |
 
 ---
 
@@ -326,6 +327,24 @@ public class ExampleRemoveInstanceCommand extends CommandBase {
 1. **Always use `world.execute()`** — Instance operations must run within the world's execution context for thread safety.
 2. **Prefer `teleportPlayerToLoadingInstance`** — When spawning and immediately entering, use the loading variant to avoid blocking on `.join()` before teleporting.
 3. **Use spawn provider for return points** — Get the world's `ISpawnProvider` to calculate proper return positions rather than hardcoding coordinates.
+
+---
+
+## PortalType SpawnProviderOverride
+
+The `PortalType` asset supports a `SpawnProviderOverride` field in the `Spawn` settings. This lets plugin developers specify exactly where the **return portal** is placed when a player exits an instance.
+
+Configure in your PortalType asset JSON:
+
+```json
+{
+  "Spawn": {
+    "SpawnProviderOverride": "MyCustomSpawnProvider"
+  }
+}
+```
+
+This is useful when you want return portals to appear at a specific lobby position or entrance location rather than the world default.
 4. **Clean up instances** — Call `safeRemoveInstance` when an instance is no longer needed to free resources.
 5. **Null return point override** — Pass `null` for the override parameter when you want to use the return point set during `spawnInstance`.
 6. **Instance templates** — Place templates under `Server/Instances/[Name]` with an `instance.bson` configuration file.

@@ -1,6 +1,6 @@
 ---
 name: hytale-hotbar-actions
-description: Customizes hotbar key actions in Hytale plugins using packet filtering. Use when creating custom keybinds, ability triggers, blocking slot switches, or handling hotbar input. Triggers - hotbar, keybind, ability slot, SyncInteractionChains, PlayerPacketFilter, slot switch, custom action, SetActiveSlot, ability trigger.
+description: Customizes hotbar key actions in Hytale plugins using packet filtering. Use when creating custom keybinds, ability triggers, blocking slot switches, handling hotbar input, or adding cooldowns to input actions. Triggers - hotbar, keybind, ability slot, SyncInteractionChains, PlayerPacketFilter, slot switch, custom action, SetActiveSlot, ability trigger, triggered cooldown, input cooldown, action cooldown.
 ---
 
 # Hytale Hotbar Actions Skill
@@ -291,6 +291,8 @@ public class MultiAbilityHandler implements PlayerPacketFilter {
 ---
 
 ## Part 8: Cooldowns
+
+> **Note:** Hytale supports native **triggered cooldowns on input actions**, allowing cooldowns to be configured data-side rather than managed manually in Java. Check the decompiled server source under `com.hypixel.server.input` for the cooldown API. The manual pattern below remains a valid fallback.
 
 ```java
 private final Map<UUID, Long> cooldowns = new ConcurrentHashMap<>();

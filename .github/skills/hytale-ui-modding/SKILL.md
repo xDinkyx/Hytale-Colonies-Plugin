@@ -55,3 +55,12 @@ Important: use native UI only. Do not use HyUI.
 - Common.ui is the preferred source for cohesive styling. Import it and reference styles instead of duplicating them.
 
 - **TabNavigation Known Issue**: The default styles for `TabNavigation` in `Common.ui` are broken. See `references/tab-navigation.md` for details and workarounds.
+
+## Item HUD UI Support
+
+`CustomUIHud` can now be attached to **any item**, not just players. This enables per-item HUDs that display when a specific item is held or active. Use the normal `CustomUIHud` API and associate the HUD with the item's lifecycle events.
+
+Key use cases:
+- Charge bar / cooldown indicator shown while holding a specific weapon
+- Ammo counter rendered when a bow or gun is in hand
+- Item-specific ability status overlays

@@ -27,6 +27,7 @@ Comprehensive reference for creating custom items, querying the item registry, d
 | Create charging ability | Use the `Charging` interaction. |
 | Damage an entity | Use the `DamageEntity` interaction. |
 | Apply a status effect | Use the `ApplyEffect` interaction. |
+| Run a server command | Use the `CommandInteraction` interaction (Update 4). |
 
 ---
 
@@ -217,7 +218,29 @@ This reference covers:
 *   **Block Interactions**: `PlaceBlock`, `BreakBlock`, `ChangeState`.
 *   **Item Interactions**: `ModifyInventory`, `EquipItem`.
 *   **Entity Interactions**: `DamageEntity`, `Projectile`, `ApplyEffect`.
+*   **Command Interactions**: `CommandInteraction` — run a server command from an interaction.
 *   **And many more.**
+
+### CommandInteraction
+
+`CommandInteraction` is a built-in interaction type that executes a server command when triggered. This allows data-driven item behavior to run commands directly without custom Java code:
+
+```json
+{
+  "Interactions": {
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "CommandInteraction",
+          "Command": "/give {player} Hyforged:MySpecialItem"
+        }
+      ]
+    }
+  }
+}
+```
+
+> **Security note:** Ensure command strings are not player-controlled. Only use static, server-authored commands in `CommandInteraction`.
 
 ### Linking Interactions to Items
 

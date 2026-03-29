@@ -26,6 +26,11 @@ Comprehensive reference for Hytale's ECS architecture. This is the foundation of
 | Register system | `getEntityStoreRegistry().registerSystem(system)` in `start()` |
 | Register block component | `getChunkStoreRegistry().registerComponent(Class, name, CODEC)` in `setup()` |
 | Register block system | `getChunkStoreRegistry().registerSystem(system)` in `start()` |
+| Look up block entity | `BlockModule.getBlockEntity(world, x, y, z)` → `Ref<ChunkStore>` or `null` (never creates) |
+| Get entity ref from chunk | `blockComponentChunk.getEntityReference(blockIndex)` → `Ref<ChunkStore>` or `null` |
+| Create block entity on-demand | `ChunkStore.REGISTRY.newHolder()` + add `BlockStateInfo` + call `chunkStore.addEntity(holder, AddReason.SPAWN)` |
+| Inspect entity component count | `store.getArchetype(ref).length()` — total number of component types on the entity |
+| Atomic world-thread operation | `world.execute(() -> { ... })` — use when you need read-check-then-write across stores |
 
 ---
 
@@ -328,6 +333,8 @@ This is useful when `tick()` is called multiple times per cycle (once per matchi
 
 Reacts to component add/set/remove events. Use for caching, side effects, and initialization logic.
 
+Works with **both** `EntityStore` (entities) and `ChunkStore` (block components) — just swap the generic type parameter.
+
 ```java
 public class MyRefSystem extends RefChangeSystem<EntityStore, MyComponent> {
     @Nonnull
@@ -368,6 +375,54 @@ public class MyRefSystem extends RefChangeSystem<EntityStore, MyComponent> {
     }
 }
 ```
+
+#### RefChangeSystem on Block Components (ChunkStore)
+
+To react to a block component's lifecycle, swap the generic to `ChunkStore` and register with `getChunkStoreRegistry()`:
+
+```java
+public class MyBlockComponentCleanupSystem extends RefChangeSystem<ChunkStore, MyBlockComponent> {
+
+    @Override
+    public ComponentType<ChunkStore, MyBlockComponent> componentType() {
+        return MyBlockComponent.getComponentType();
+    }
+
+    @Override
+    public Query<ChunkStore> getQuery() {
+        return MyBlockComponent.getComponentType();
+    }
+
+    @Override
+    public void onComponentAdded(@Nonnull Ref<ChunkStore> ref, @Nonnull MyBlockComponent component,
+                                  @Nonnull Store<ChunkStore> store, @Nonnull CommandBuffer<ChunkStore> commandBuffer) {}
+
+    @Override
+    public void onComponentSet(@Nonnull Ref<ChunkStore> ref, @Nonnull MyBlockComponent old,
+                                @Nonnull MyBlockComponent updated, @Nonnull Store<ChunkStore> store,
+                                @Nonnull CommandBuffer<ChunkStore> commandBuffer) {}
+
+    @Override
+    public void onComponentRemoved(@Nonnull Ref<ChunkStore> ref, @Nonnull MyBlockComponent removed,
+                                    @Nonnull Store<ChunkStore> store, @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
+        // CRITICAL: When a block is broken, the engine calls removeEntity on the block entity,
+        // which cascades onComponentRemoved for ALL components — including yours.
+        // At that point, ref is already invalid. Always guard before any store/commandBuffer ops:
+        if (!ref.isValid()) return;
+
+        // Safe to inspect the entity further here.
+        // E.g. check how many components remain — useful to decide whether to destroy the entity:
+        Archetype<ChunkStore> archetype = store.getArchetype(ref);
+        if (archetype.length() <= 1) {  // only BookkeepingStateInfo (BlockStateInfo) left
+            commandBuffer.removeEntity(ref, RemoveReason.REMOVE);
+        }
+    }
+}
+```
+
+> **Block-break cascade**: Breaking a block triggers `removeEntity` on the block entity, which fires `onComponentRemoved` for every component. The `ref.isValid()` guard is **mandatory** in `onComponentRemoved` for block components to prevent a double-remove.
+
+> **`Archetype.length()`**: Returns the total number of component types attached to the entity at the time of the call. Useful for detecting "empty" placeholder entities that only hold a `BlockStateInfo`.
 
 ---
 
@@ -461,6 +516,49 @@ Wrong order = death animations before entity dies, or armor applied after health
 ## Block Components (ChunkStore)
 
 Block components use `ChunkStore` instead of `EntityStore`. They require a different registration path and additional setup for ticking.
+
+### Block Entity Lookup and Creation
+
+**Block entities do NOT exist automatically for plain blocks.** `BlockModule.getBlockEntity()` is a **lookup only** — it returns `null` if no entity has been explicitly created for that block. It never auto-creates one.
+
+```java
+// Lookup — returns null for plain blocks that have never had a component attached:
+Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, x, y, z);
+```
+
+Alternatively, get the entity reference directly from a `BlockComponentChunk` (useful inside systems):
+
+```java
+// Access the chunk's block-component index:
+BlockComponentChunk blockComponentChunk = ...;
+int blockIndex = ChunkUtil.indexBlockInColumn(localX, localY, localZ);
+Ref<ChunkStore> blockRef = blockComponentChunk.getEntityReference(blockIndex); // null if no entity
+```
+
+When you need to attach a component to a plain block that has no entity, **create one on demand**:
+
+```java
+// 1. Find the chunk's BlockComponentChunk to get the chunk ref:
+BlockComponentChunk bcc = ...; // from block ticking system context
+Ref<ChunkStore> chunkRef = bcc.getChunkRef(); // or from BlockStateInfo.getChunkRef()
+int blockIndex = ChunkUtil.indexBlockInColumn(localX, localY, localZ);
+
+// 2. Check whether an entity already exists:
+Ref<ChunkStore> existing = bcc.getEntityReference(blockIndex);
+if (existing != null && existing.isValid()) {
+    // Entity exists — just add your component to it:
+    chunkStore.putComponent(existing, MyBlockComponent.getComponentType(), new MyBlockComponent());
+} else {
+    // No entity — create a minimal one:
+    Holder<ChunkStore> holder = ChunkStore.REGISTRY.newHolder();
+    holder.putComponent(BlockModule.BlockStateInfo.getComponentType(),
+            new BlockModule.BlockStateInfo(blockIndex, chunkRef));
+    holder.putComponent(MyBlockComponent.getComponentType(), new MyBlockComponent());
+    chunkStore.addEntity(holder, AddReason.SPAWN);
+}
+```
+
+> **Important:** Any entity you create for a plain block is your responsibility to destroy. Consider using a `RefChangeSystem<ChunkStore, MyBlockComponent>.onComponentRemoved` to clean it up reactively (see the RefChangeSystem section above).
 
 ### Block RefSystem (Initializer)
 
@@ -646,8 +744,11 @@ Without these, you'll get `NullPointerException: Cannot invoke "Query.validateRe
 6. **Use SystemGroups/Dependencies** to control execution order
 7. **Use `dt` (delta time)** for time-based logic — don't count ticks
 8. **Register components in `setup()`** and systems in `start()`
-9. **Use `world.execute(() -> ...)`** when calling world/store functions from block systems
+9. **Use `world.execute(() -> ...)`** when calling world/store functions from block systems, AND when you need atomic check-then-mutate operations spanning multiple stores (entity + chunk) — e.g. claim-then-assign
 10. **Reference `FarmingSystems.Ticking`** in Hytale source for block ticking patterns
+11. **Block entities are not auto-created** — `BlockModule.getBlockEntity()` is lookup-only; create manually with `ChunkStore.REGISTRY.newHolder()` when needed
+12. **Guard `ref.isValid()` in `onComponentRemoved`** — block break fires `removeEntity` which cascades `onComponentRemoved` on all components; the ref is dead before your callback runs
+13. **Use `store.getArchetype(ref).length()`** to inspect how many component types an entity currently has — useful for detecting placeholder entities with no meaningful data
 
 ## External References
 

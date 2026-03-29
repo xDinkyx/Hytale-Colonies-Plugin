@@ -11,6 +11,10 @@ Use this skill when reading or modifying player/entity stats (health, stamina, m
 
 ---
 
+> **Note:** `StatModifiersManager` has been relocated and is now part of the `EntityStatMap` component directly. Access stat modifiers through the `EntityStatMap` instead of a separate manager.
+
+---
+
 ## Quick Reference
 
 | Task | Code |

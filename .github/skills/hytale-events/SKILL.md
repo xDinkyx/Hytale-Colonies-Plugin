@@ -1,6 +1,6 @@
 ---
 name: hytale-events
-description: Documents Hytale's event system for handling game events in plugins. Covers IEvent (global events), IAsyncEvent (async events), and EcsEvent (ECS entity/block events). Use when listening to player join/disconnect, chat, crafting, damage, block break/place, entity death, or any server event. Triggers - event, IEvent, IAsyncEvent, EcsEvent, CancellableEcsEvent, EntityEventSystem, EventRegistry, registerGlobal, registerAsync, PlayerReadyEvent, PlayerDisconnectEvent, PlayerChatEvent, BreakBlockEvent, PlaceBlockEvent, Damage, CraftRecipeEvent, DropItemEvent, DeathSystems, OnDeathSystem, event handler, event listener.
+description: Documents Hytale's event system for handling game events in plugins. Covers IEvent (global events), IAsyncEvent (async events), and EcsEvent (ECS entity/block events). Use when listening to player join/disconnect, chat, crafting, damage, block break/place, entity death, player leaving world, or any server event. Triggers - event, IEvent, IAsyncEvent, EcsEvent, CancellableEcsEvent, EntityEventSystem, EventRegistry, registerGlobal, registerAsync, PlayerReadyEvent, PlayerDisconnectEvent, PlayerChatEvent, BreakBlockEvent, PlaceBlockEvent, Damage, CraftRecipeEvent, DropItemEvent, DeathSystems, OnDeathSystem, PlayerRemovedFromWorldEvent, player leave world, event handler, event listener.
 ---
 
 # Hytale Events Skill
@@ -17,6 +17,7 @@ Use this skill when working with events in Hytale plugins. This covers the three
 |------|----------|
 | Listen to player join | `registerGlobal(PlayerReadyEvent.class, handler)` in `setup()` |
 | Listen to player disconnect | `registerGlobal(PlayerDisconnectEvent.class, handler)` in `setup()` |
+| Listen to player leaving world | `registerGlobal(PlayerRemovedFromWorldEvent.class, handler)` in `setup()` |
 | Listen to chat messages | `registerAsync(PlayerChatEvent.class, handler)` in `setup()` |
 | Cancel block break | Extend `EntityEventSystem<EntityStore, BreakBlockEvent>`, call `setCancelled(true)` |
 | Cancel crafting | Extend `EntityEventSystem<EntityStore, CraftRecipeEvent.Pre>` |
@@ -106,6 +107,7 @@ import com.hypixel.hytale.server.event.ShutdownEvent;
 | `StartWorldEvent` | A world is starting |
 | `AddPlayerToWorldEvent` | Player added to a world |
 | `DrainPlayerFromWorldEvent` | Player removed from a world |
+| `PlayerRemovedFromWorldEvent` | Player left a world — customizable broadcast message |
 | `AllWorldsLoadedEvent` | All worlds finished loading |
 
 #### Lifecycle Events

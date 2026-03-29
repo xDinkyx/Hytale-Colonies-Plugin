@@ -284,6 +284,36 @@ public class Sounds {
 
 ---
 
+## Audio System Notes
+
+### Sound Layer Limit
+
+The maximum number of sound event layers is **8**. This allows complex layered audio on entities and environments.
+
+### Noesis UI Sound Support
+
+Sounds can be **triggered directly from a Noesis UI** file, allowing menu interactions and button clicks to play audio without server-side Java code.
+
+In your `.ui` file, bind a sound event to a UI input:
+```
+// In your .ui file, use the sound trigger syntax
+onMouseButton: PlaySound("SFX_UI_Click")
+```
+
+### Block Sound Clustering
+
+Looping ambient sounds can be applied to **large bodies of blocks** (e.g., raindrops on water) via block sound clustering. Configure this in your block sound set definitions rather than per-block.
+
+### Conditional Ambient Sounds
+
+Ambient sounds can be applied to blocks **conditionally** (e.g., raindrops on windows only during rain). Defined in the block sound set asset; no Java code required.
+
+### Audio Emitter Precision
+
+Audio emitters support more precise control over **where sounds originate** from. Specify the emitter origin granularly in the sound config.
+
+---
+
 ## playSoundEvent3dToPlayer Parameters
 
 | Parameter | Type | Description |

@@ -61,6 +61,17 @@ Use when creating NPC behavior, defining NPC templates, adding NPC states, confi
 - NavTarget
 - navigate NPC
 - plugin pathfinding
+- DeathParticles
+- DropDeathItemsInstantly
+- DeathAnimationTime
+- VisPath
+- npc descriptors
+- NPC debug
+- conditional effect filter
+- Buffed
+- Debuffed
+- Enabled flag
+- separation mode
 
 
 ### Variant with No Overrides
@@ -312,6 +323,15 @@ Sensors are conditions that gate instruction execution.
 | `And` | Combines multiple sensors | `Sensors` (array) |
 | `Reference` | Uses a reusable sensor component | Component name |
 
+### Target Filters (including Update 4 additions)
+
+| Filter Type | Description |
+|-------------|-------------|
+| `LineOfSight` | Requires unobstructed line of sight |
+| `NPCGroup` | Filters by NPC group membership |
+| `Buffed` | Target currently has an active buff (Update 4) |
+| `Debuffed` | Target currently has an active debuff (Update 4) |
+
 ### Sensor with Filters
 
 ```json
@@ -357,12 +377,35 @@ Actions are operations executed when sensor conditions are met.
 | `PlayAnimation` | Play an animation | `Slot`, `Animation` |
 | `Attack` | Execute an attack interaction | `Attack`, `AttackPauseRange` |
 | `Inventory` | Manipulate NPC inventory | `Operation`, `Item`, `Slot`, `UseTarget` |
-| `Beacon` | Send message to nearby NPCs | `Message`, `TargetGroups`, `SendTargetSlot` |
+| `Beacon` | Send message to nearby NPCs | `Message`, `TargetGroups`, `SendTargetSlot`, `Range` (supports template variables) |
 | `TriggerSpawnBeacon` | Trigger a manual spawn beacon | `BeaconSpawn`, `Range` |
 | `SetStat` | Set an entity stat | `Stat`, `Value` |
 | `Remove` | Remove the target entity | — |
 | `Despawn` | Despawn this NPC | — |
 | `Sequence` | Execute multiple actions in same tick | `Actions` (array) |
+
+Action elements can be **selectively disabled** using the `Enabled` flag. Useful for disabling actions conditionally without removing them from the template:
+>
+> ```json
+> {
+>   "Type": "Attack",
+>   "Attack": { "Compute": "SpecialAttack" },
+>   "Enabled": false
+> }
+> ```
+
+### Beacon Range from Template Variables
+
+The `Beacon` action's `Range` field can be computed from template variables:
+
+```json
+{
+  "Type": "Beacon",
+  "Message": "Alert_Allies",
+  "TargetGroups": { "Compute": "WarnGroups" },
+  "Range": { "Compute": "AlertBeaconRange" }
+}
+```
 
 ### Random Action (Weighted State Selection)
 
@@ -1243,6 +1286,18 @@ Add to the top of a template to display the current state:
 "Debug": "DisplayState",
 ```
 
+Enable NPC pathfinding visualization with the `VisPath` debug flag (Update 4):
+
+```json
+"Debug": "VisPath",
+```
+
+Generate an NPC descriptors file for debugging NPC configurations (Update 4):
+
+```
+/npc descriptors
+```
+
 Use `$Comment` fields for documentation:
 
 ```json
@@ -1274,9 +1329,22 @@ Use `$Comment` fields for documentation:
   "Appearance": { "Compute": "Appearance" },
   "DropList": { "Compute": "DropList" },
   "MaxHealth": { "Compute": "MaxHealth" },
-  "NameTranslationKey": { "Compute": "NameTranslationKey" }
+  "NameTranslationKey": { "Compute": "NameTranslationKey" },
+  "DeathParticles": { "Compute": "DeathParticles" },
+  "DropDeathItemsInstantly": false,
+  "DeathAnimationTime": 2.0
 }
 ```
+
+### Death-Related Template Parameters
+
+These NPC template parameters are configurable:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `DeathParticles` | string | Particle system to spawn on NPC death |
+| `DropDeathItemsInstantly` | boolean | If `true`, drops loot immediately instead of waiting for body despawn |
+| `DeathAnimationTime` | float | Duration (seconds) before the NPC body despawns |
 
 ---
 

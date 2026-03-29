@@ -1,6 +1,6 @@
 ---
 name: hytale-entity-effects
-description: Documents Hytale's Entity Effect system for applying status effects, buffs, debuffs, DoTs, and visual effects to entities. Use when creating effects for NPCs, applying effects via affixes, working with EffectControllerComponent, or defining effect JSON. Triggers - effect, entity effect, status effect, debuff, buff, DoT, burn, stun, slow, poison, freeze, root, ApplicationEffects, EffectControllerComponent, effect JSON.
+description: Documents Hytale's Entity Effect system for applying status effects, buffs, debuffs, DoTs, and visual effects to entities. Use when creating effects for NPCs, applying effects via affixes, working with EffectControllerComponent, defining effect JSON, or building conditional effects that apply/remove based on entity state. Triggers - effect, entity effect, status effect, debuff, buff, DoT, burn, stun, slow, poison, freeze, root, ApplicationEffects, EffectControllerComponent, effect JSON, conditional effect, conditionally applied, conditionally removed.
 ---
 
 # Hytale Entity Effects System
@@ -943,3 +943,41 @@ If Hytale's built-in effects don't match your needs, create custom effects:
 4. **Test duration carefully** - Balance duration against DamageCalculatorCooldown for DoTs
 5. **Consider immunity frames** - Use `Invulnerable: true` for short dodge effects to prevent chain-stunning
 6. **Namespace custom effects** - Use `hyforged:` prefix for Hyforged-specific effects
+
+---
+
+## Conditional Entity Effect Systems
+
+Entity effects support **conditional application and removal**. This enables effects to be toggled on/off based on entity state rather than only expiring by duration.
+
+### What This Enables
+
+- Effects that apply only when the entity is buffed or debuffed
+- Effects that auto-remove when a condition is no longer met
+- NPC attacks and sensors that react specifically to buff/debuff status
+
+### NPC Sensor: Buff/Debuff Conditions
+
+NPC sensors and actions can now filter based on whether a target is currently buffed or debuffed. Use this in NPC templates to allow NPCs to exploit status-effect opportunities:
+
+```json
+{
+  "Sensor": {
+    "Type": "Target",
+    "Range": { "Compute": "AttackDistance" },
+    "Filters": [
+      { "Type": "Debuffed" }
+    ]
+  },
+  "Actions": [
+    {
+      "Type": "Attack",
+      "Attack": { "Compute": "ExecuteAttack" }
+    }
+  ]
+}
+```
+
+Similarly, `{ "Type": "Buffed" }` matches targets currently under a buff effect.
+
+> **Related skills:** For NPC template sensor/action patterns, see `hytale-npc-templates`.
