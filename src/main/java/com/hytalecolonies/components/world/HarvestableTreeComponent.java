@@ -11,6 +11,10 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 /**
  * Component representing a harvestable tree structure, identified by the
  * TreeScannerSystem and its ITreeDetector implementations.
+ *
+ * <p>Whether a tree is currently reserved by a colonist is tracked by the
+ * presence of a {@link ClaimedBlockComponent} on the same block entity —
+ * not by any field on this component.
  */
 public class HarvestableTreeComponent implements Component<ChunkStore> {
 
@@ -20,10 +24,6 @@ public class HarvestableTreeComponent implements Component<ChunkStore> {
             .append(new KeyedCodec<>("TreeTypeKey", Codec.STRING),
                     (o, v) -> o.treeTypeKey = v,
                     o -> o.treeTypeKey)
-            .add()
-            .append(new KeyedCodec<>("MarkedForHarvest", Codec.BOOLEAN),
-                    (o, v) -> o.markedForHarvest = v,
-                    o -> o.markedForHarvest)
             .add()
             .append(new KeyedCodec<>("WoodCount", Codec.INTEGER),
                     (o, v) -> o.woodCount = v,
@@ -37,7 +37,6 @@ public class HarvestableTreeComponent implements Component<ChunkStore> {
 
     // ===== Fields =====
     String treeTypeKey; // The tree wood block type.
-    boolean markedForHarvest = false; // Set to true when an NPC claims this tree for harvesting.
     int woodCount; // Number of wood (trunk) blocks in this tree.
     Vector3i basePosition; // World position of the lowest wood block (the "base" of the tree).
 
@@ -61,7 +60,6 @@ public class HarvestableTreeComponent implements Component<ChunkStore> {
     public HarvestableTreeComponent clone() {
         HarvestableTreeComponent clone = new HarvestableTreeComponent();
         clone.treeTypeKey = this.treeTypeKey;
-        clone.markedForHarvest = this.markedForHarvest;
         clone.woodCount = this.woodCount;
         clone.basePosition = this.basePosition;
         return clone;
@@ -72,24 +70,12 @@ public class HarvestableTreeComponent implements Component<ChunkStore> {
         return treeTypeKey;
     }
 
-    public boolean isMarkedForHarvest() {
-        return markedForHarvest;
-    }
-
     public int getWoodCount() {
         return woodCount;
     }
 
     public Vector3i getBasePosition() {
         return basePosition;
-    }
-
-    public void markForHarvest() {
-        this.markedForHarvest = true;
-    }
-
-    public void setMarkedForHarvest(boolean markedForHarvest) {
-        this.markedForHarvest = markedForHarvest;
     }
 
     public void setWoodCount(int woodCount) {

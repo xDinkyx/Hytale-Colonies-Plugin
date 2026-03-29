@@ -14,6 +14,7 @@ import com.hytalecolonies.debug.DebugConfig;
 import com.hytalecolonies.listeners.PlayerListener;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
+import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
@@ -24,6 +25,9 @@ import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
 import com.hytalecolonies.systems.ColonySystem;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
+import com.hytalecolonies.systems.jobs.ClaimedBlockCleanupSystem;
+import com.hytalecolonies.systems.jobs.ColonistCleanupSystem;
+import com.hytalecolonies.systems.jobs.JobRegistry;
 import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.systems.jobs.ColonistDeliverySystem;
@@ -63,6 +67,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     private ComponentType<EntityStore, MoveToTargetComponent> moveToTargetComponentType;
     private ComponentType<ChunkStore, HarvestableTreeComponent> harvestableTreeComponentType;
     private ComponentType<EntityStore, JobTargetComponent> jobTargetComponentType;
+    private ComponentType<ChunkStore, ClaimedBlockComponent> claimedBlockComponentType;
 
     public HytaleColoniesPlugin(@Nonnull JavaPluginInit init) {
         super(init);
@@ -95,6 +100,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         registerCommands();
         registerListeners();
         registerComponents();
+        registerJobRegistries();
         registerInteractions();
         registerNpcComponentTypes();
         registerSystems();
@@ -127,7 +133,19 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         moveToTargetComponentType = getEntityStoreRegistry().registerComponent(MoveToTargetComponent.class, MoveToTargetComponent::new);
         harvestableTreeComponentType = getChunkStoreRegistry().registerComponent(HarvestableTreeComponent.class, "HarvestableTree", HarvestableTreeComponent.CODEC);
         jobTargetComponentType = getEntityStoreRegistry().registerComponent(JobTargetComponent.class, "JobTarget", JobTargetComponent.CODEC);
+        claimedBlockComponentType = getChunkStoreRegistry().registerComponent(ClaimedBlockComponent.class, "ClaimedBlock", ClaimedBlockComponent.CODEC);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ECS components");
+    }
+
+    /**
+     * Registers job component types and claimable block types with their
+     * respective registries. Must run after {@link #registerComponents()} so
+     * that all {@link ComponentType} instances are initialised.
+     */
+    private void registerJobRegistries() {
+        JobRegistry.register(WoodsmanJobComponent.getComponentType());
+        JobRegistry.register(MinerJobComponent.getComponentType());
+        LOGGER.at(Level.INFO).log("[HytaleColonies] Registered job and claim registries");
     }
 
     // Accessors for ECS component types
@@ -157,6 +175,9 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     }
     public ComponentType<EntityStore, JobTargetComponent> getJobTargetComponentType() {
         return jobTargetComponentType;
+    }
+    public ComponentType<ChunkStore, ClaimedBlockComponent> getClaimedBlockComponentType() {
+        return claimedBlockComponentType;
     }
 
     /**
@@ -193,7 +214,8 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new ColonySystem(colonistComponentType));
         getChunkStoreRegistry().registerSystem(new JobAssignmentSystems());
         getChunkStoreRegistry().registerSystem(new JobAssignmentSystems.WorkStationEntitySystem());
-        getChunkStoreRegistry().registerSystem(new JobAssignmentSystems.StaleMarkCleanupSystem());
+        getChunkStoreRegistry().registerSystem(new ClaimedBlockCleanupSystem());
+        getChunkStoreRegistry().registerSystem(new ColonistCleanupSystem());
         getChunkStoreRegistry().registerSystem(treeScannerSystem);
         getChunkStoreRegistry().registerSystem(new WorkstationInitSystem(treeScannerSystem));
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.ColonistEntitySystem());

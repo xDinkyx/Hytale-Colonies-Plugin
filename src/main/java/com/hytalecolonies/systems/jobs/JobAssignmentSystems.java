@@ -18,7 +18,6 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.component.system.DelayedSystem;
 import com.hypixel.hytale.component.system.RefChangeSystem;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
@@ -31,17 +30,16 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
-import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.debug.DebugTiming;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
+import com.hytalecolonies.utils.ClaimBlockUtil;
 
 public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
@@ -230,10 +228,11 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
      * For EntityStore tick contexts, use the CommandBuffer overload instead.
      */
     static void fireColonist(Ref<EntityStore> ref, Store<EntityStore> store) {
-        WoodsmanJobSystem.unmarkClaimedTree(ref, store);
+        ClaimBlockUtil.unclaimByColonist(ref, store);
         store.tryRemoveComponent(ref, JobTargetComponent.getComponentType());
-        store.tryRemoveComponent(ref, WoodsmanJobComponent.getComponentType());
-        store.tryRemoveComponent(ref, MinerJobComponent.getComponentType());
+        for (ComponentType<EntityStore, ?> type : JobRegistry.getJobComponentTypes()) {
+            store.tryRemoveComponent(ref, type);
+        }
         store.tryRemoveComponent(ref, JobComponent.getComponentType());
         if (store.getComponent(ref, UnemployedComponent.getComponentType()) == null) {
             store.addComponent(ref, UnemployedComponent.getComponentType(), new UnemployedComponent());
@@ -243,13 +242,22 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
     /**
      * CommandBuffer-safe overload for use within system ticks.
      * All EntityStore mutations go through the CommandBuffer.
+     * The block claim is released via {@code world.execute()} since ChunkStore
+     * cannot be mutated directly inside an EntityStore tick.
      */
     static void fireColonist(Ref<EntityStore> ref, Store<EntityStore> store,
             CommandBuffer<EntityStore> commandBuffer) {
-        WoodsmanJobSystem.unmarkClaimedTree(ref, store);
+        // Schedule the ChunkStore unclaim on the world thread.
+        World world = store.getExternalData().getWorld();
+        JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
+        if (jobTarget != null && jobTarget.targetPosition != null) {
+            final Vector3i claimedPos = jobTarget.targetPosition;
+            world.execute(() -> ClaimBlockUtil.unclaimBlock(world, claimedPos));
+        }
         commandBuffer.tryRemoveComponent(ref, JobTargetComponent.getComponentType());
-        commandBuffer.tryRemoveComponent(ref, WoodsmanJobComponent.getComponentType());
-        commandBuffer.tryRemoveComponent(ref, MinerJobComponent.getComponentType());
+        for (ComponentType<EntityStore, ?> type : JobRegistry.getJobComponentTypes()) {
+            commandBuffer.tryRemoveComponent(ref, type);
+        }
         commandBuffer.tryRemoveComponent(ref, JobComponent.getComponentType());
         commandBuffer.addComponent(ref, UnemployedComponent.getComponentType(), new UnemployedComponent());
     }
@@ -357,14 +365,19 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             UUIDComponent uuidComponent = commandBuffer.getComponent(ref, UUIDComponent.getComponentType());
             assert uuidComponent != null;
 
-            // Release any claimed tree before removing.
-            WoodsmanJobSystem.unmarkClaimedTree(ref, store);
+            // Schedule release of any claimed block on the world thread
+            // (ChunkStore mutation cannot happen directly in RefSystem<EntityStore> callbacks).
+            World world = commandBuffer.getExternalData().getWorld();
+            JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
+            if (jobTarget != null && jobTarget.targetPosition != null) {
+                final Vector3i claimedPos = jobTarget.targetPosition;
+                world.execute(() -> ClaimBlockUtil.unclaimBlock(world, claimedPos));
+            }
             commandBuffer.removeComponent(ref, JobTargetComponent.getComponentType());
 
             // Get work station from position.
             Vector3i workStationPos = jobComponent.getWorkStationBlockPosition();
 
-            World world = commandBuffer.getExternalData().getWorld();
             Ref<ChunkStore> blockEntity = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y,
                     workStationPos.z);
             var workStationComponent = blockEntity.getStore().getComponent(blockEntity,
@@ -423,89 +436,6 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         @Override
         public Query<EntityStore> getQuery() {
             return Query.and(ColonistComponent.getComponentType(), JobComponent.getComponentType());
-        }
-    }
-
-    /**
-     * Periodically scans every {@link HarvestableTreeComponent} and clears the
-     * {@code markedForHarvest} flag on any tree that has no active colonist
-     * claiming it. This covers orphaned marks left behind by crashes, hard
-     * removal of colonists, or server restarts.
-     */
-    public static class StaleMarkCleanupSystem extends DelayedSystem<ChunkStore> {
-
-        public StaleMarkCleanupSystem() {
-            super(30.0f); // Audit every 30 seconds.
-        }
-
-        @Override
-        public void delayedTick(float dt, int systemIndex, @Nonnull Store<ChunkStore> store) {
-            World world = store.getExternalData().getWorld();
-            EntityStore entityStore = world.getEntityStore();
-
-            // Collect positions of trees that are actively claimed by a colonist.
-            Set<Vector3i> activelyClaimed = new HashSet<>();
-            Query<EntityStore> woodsmanJobTargetQuery = Query.and(
-                    WoodsmanJobComponent.getComponentType(),
-                    JobTargetComponent.getComponentType());
-            entityStore.getStore().forEachChunk(woodsmanJobTargetQuery, (chunk, _cb) -> {
-                for (int i = 0; i < chunk.size(); i++) {
-                    JobTargetComponent jobTarget = chunk.getComponent(i, JobTargetComponent.getComponentType());
-                    if (jobTarget != null && jobTarget.targetPosition != null) {
-                        activelyClaimed.add(jobTarget.targetPosition);
-                    }
-                }
-            });
-
-            // Clear marks on any tree not in the active-claim set.
-            int[] cleared = { 0 };
-            Query<ChunkStore> treeQuery = Query.and(HarvestableTreeComponent.getComponentType());
-            store.forEachChunk(treeQuery, (chunk, _cb) -> {
-                for (int i = 0; i < chunk.size(); i++) {
-                    HarvestableTreeComponent tree = chunk.getComponent(i, HarvestableTreeComponent.getComponentType());
-                    if (tree != null && tree.isMarkedForHarvest()
-                            && !activelyClaimed.contains(tree.getBasePosition())) {
-                        tree.setMarkedForHarvest(false);
-                        cleared[0]++;
-                    }
-                }
-            });
-
-            if (cleared[0] > 0) {
-                DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "[StaleMarks] Cleared %d orphaned tree mark(s).",
-                        cleared[0]);
-            }
-
-            // Safety net: fire any colonist whose workstation block entity no longer exists.
-            // This catches cases where WorkStationEntitySystem.onEntityRemove was missed
-            // (e.g. a crash or edge-case timing). Primary firing happens in WorkStationEntitySystem.
-            Query<EntityStore> jobQuery = Query.and(JobComponent.getComponentType());
-            List<Ref<EntityStore>> orphans = new ArrayList<>();
-            entityStore.getStore().forEachChunk(jobQuery, (chunk, _cb) -> {
-                for (int i = 0; i < chunk.size(); i++) {
-                    JobComponent job = chunk.getComponent(i, JobComponent.getComponentType());
-                    if (job == null) continue;
-                    Vector3i wsPos = job.getWorkStationBlockPosition();
-                    if (wsPos == null) continue;
-                    Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, wsPos.x, wsPos.y, wsPos.z);
-                    WorkStationComponent workStation = wsRef != null
-                            ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
-                            : null;
-                    if (workStation != null) continue;
-                    orphans.add(chunk.getReferenceTo(i));
-                }
-            });
-            if (!orphans.isEmpty()) {
-                world.execute(() -> {
-                    for (Ref<EntityStore> ref : orphans) {
-                        if (ref.isValid()) {
-                            fireColonist(ref, entityStore.getStore());
-                            DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
-                                    "[StaleMarks] Fired colonist with missing workstation (safety net).");
-                        }
-                    }
-                });
-            }
         }
     }
 

@@ -42,6 +42,9 @@ public class DebugConfig {
             .append(new KeyedCodec<>("ColonistDeliveryLevel", Codec.STRING),
                     (c, v) -> c.colonistDeliveryLevel = v, c -> c.colonistDeliveryLevel)
             .add()
+            .append(new KeyedCodec<>("ClaimSystemLevel", Codec.STRING),
+                    (c, v) -> c.claimSystemLevel = v, c -> c.claimSystemLevel)
+            .add()
             .append(new KeyedCodec<>("DrawColonistPaths", Codec.BOOLEAN),
                     (c, v) -> c.drawColonistPaths = v, c -> c.drawColonistPaths)
             .add()
@@ -59,6 +62,7 @@ public class DebugConfig {
     private String minerJobLevel       = "INFO";
     private String treeScannerLevel    = "INFO";
     private String colonistDeliveryLevel = "INFO";
+    private String claimSystemLevel      = "INFO";
     private String performanceLevel      = "WARNING";
     private boolean drawColonistPaths = false;
     private boolean drawTreeDetection = false;
@@ -73,6 +77,7 @@ public class DebugConfig {
         DebugCategory.MINER_JOB.setMinLevel(parseLevel(minerJobLevel));
         DebugCategory.TREE_SCANNER.setMinLevel(parseLevel(treeScannerLevel));
         DebugCategory.COLONIST_DELIVERY.setMinLevel(parseLevel(colonistDeliveryLevel));
+        DebugCategory.CLAIM_SYSTEM.setMinLevel(parseLevel(claimSystemLevel));
         DebugCategory.PERFORMANCE.setMinLevel(parseLevel(performanceLevel));
     }
 
@@ -89,6 +94,7 @@ public class DebugConfig {
             case MINER_JOB          -> minerJobLevel = name;
             case TREE_SCANNER       -> treeScannerLevel = name;
             case COLONIST_DELIVERY  -> colonistDeliveryLevel = name;
+            case CLAIM_SYSTEM       -> claimSystemLevel = name;
             case PERFORMANCE        -> performanceLevel = name;
         }
         category.setMinLevel(level);
@@ -103,6 +109,7 @@ public class DebugConfig {
             case MINER_JOB          -> minerJobLevel;
             case TREE_SCANNER       -> treeScannerLevel;
             case COLONIST_DELIVERY  -> colonistDeliveryLevel;
+            case CLAIM_SYSTEM       -> claimSystemLevel;
             case PERFORMANCE        -> performanceLevel;
         };
     }

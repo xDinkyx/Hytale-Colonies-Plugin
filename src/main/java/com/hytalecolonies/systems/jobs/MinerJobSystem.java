@@ -8,6 +8,8 @@ import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
+import com.hytalecolonies.components.world.ClaimedBlockComponent;
+import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hytalecolonies.utils.ColonistToolUtil;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
@@ -16,6 +18,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -23,6 +26,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.UUID;
 
 /**
  * Miner-specific job system. Handles the {@link JobState#Idle},
@@ -153,15 +157,41 @@ public class MinerJobSystem extends DelayedEntitySystem<EntityStore> {
         Vector3i nextBlock = findNextMineBlock(workStation, world);
         if (nextBlock == null) {
             DebugLog.fine(DebugCategory.MINER_JOB,
-                    "[MinerJob] Idle — no solid blocks remain in mine shaft at %s. Waiting.", workStation.mineOrigin);
+                    "[MinerJob] Idle — no solid/unclaimed blocks remain in mine shaft at %s. Waiting.",
+                    workStation.mineOrigin);
             return;
         }
 
-        commandBuffer.addComponent(ref, JobTargetComponent.getComponentType(), new JobTargetComponent(nextBlock));
-        commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(),
-                new MoveToTargetComponent(blockCenter(nextBlock)));
-        job.setCurrentTask(JobState.TravelingToJob);
-        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob] Heading to first mine block at %s.", nextBlock);
+        // Atomically claim the block and assign targets on the world thread.
+        // world.execute() runs sequentially between ticks so two miners finding the
+        // same block in the same tick will serialize: the first claims it, the second
+        // sees claimBlock() return false and stays Idle.
+        EntityStore entityStore = world.getEntityStore();
+        world.execute(() -> {
+            // Re-validate colonist is still Idle.
+            JobComponent liveJob = entityStore.getStore().getComponent(ref, JobComponent.getComponentType());
+            if (liveJob == null || liveJob.getCurrentTask() != JobState.Idle) return;
+
+            UUIDComponent uuidComp = entityStore.getStore().getComponent(ref, UUIDComponent.getComponentType());
+            if (uuidComp == null) return;
+
+            if (!ClaimBlockUtil.claimBlock(world, nextBlock, uuidComp.getUuid(), "Mine")) {
+                DebugLog.fine(DebugCategory.MINER_JOB,
+                        "[MinerJob] Could not claim mine block %s (already taken) — staying Idle.", nextBlock);
+                return;
+            }
+
+            entityStore.getStore().addComponent(ref, JobTargetComponent.getComponentType(), new JobTargetComponent(nextBlock));
+            MoveToTargetComponent existingMove = entityStore.getStore().getComponent(ref, MoveToTargetComponent.getComponentType());
+            if (existingMove != null) {
+                existingMove.target = blockCenter(nextBlock);
+            } else {
+                entityStore.getStore().addComponent(ref, MoveToTargetComponent.getComponentType(),
+                        new MoveToTargetComponent(blockCenter(nextBlock)));
+            }
+            liveJob.setCurrentTask(JobState.TravelingToJob);
+            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob] Claimed mine block at %s — heading there.", nextBlock);
+        });
     }
 
     private void handleWorking(Ref<EntityStore> ref, JobComponent job, MinerJobComponent miner,
@@ -191,37 +221,55 @@ public class MinerJobSystem extends DelayedEntitySystem<EntityStore> {
         DebugLog.info(DebugCategory.MINER_JOB,
                 "[MinerJob] Block at %s mined (%d/%d this run).", targetPos, miner.blocksMinedThisRun, workStation.blocksPerRun);
 
-        if (miner.blocksMinedThisRun >= workStation.blocksPerRun) {
-            // Quota reached — collect drops and deliver.
-            jobTarget.setTargetPosition(null);
-            job.collectingDropsSince = System.currentTimeMillis();
-            job.setCurrentTask(JobState.CollectingDrops);
-            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob] Run quota reached — collecting drops.");
-            return;
-        }
+        boolean quotaReached = miner.blocksMinedThisRun >= workStation.blocksPerRun;
+        // Find the next block optimistically in the tick thread (claimed-block filter prevents
+        // double-assignments, and world.execute() atomicity handles same-tick races).
+        final Vector3i nextBlock = quotaReached ? null : findNextMineBlock(workStation, world);
+        final boolean goCollect = quotaReached || nextBlock == null;
+        final Vector3i finalTargetPos = targetPos;
+        EntityStore entityStore = world.getEntityStore();
 
-        // Find the next block and continue mining within the same run.
-        Vector3i nextBlock = findNextMineBlock(workStation, world);
-        if (nextBlock == null) {
-            // Mine exhausted — collect whatever was gathered this run.
-            jobTarget.setTargetPosition(null);
-            job.collectingDropsSince = System.currentTimeMillis();
-            job.setCurrentTask(JobState.CollectingDrops);
-            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob] Mine exhausted mid-run — collecting drops.");
-            return;
-        }
+        world.execute(() -> {
+            // Release the claim on the block we just broke.
+            ClaimBlockUtil.unclaimBlock(world, finalTargetPos);
 
-        // Move to the next block in the shaft.
-        jobTarget.setTargetPosition(nextBlock);
-        MoveToTargetComponent moveTarget = store.getComponent(ref, MoveToTargetComponent.getComponentType());
-        if (moveTarget != null) {
-            moveTarget.target = blockCenter(nextBlock);
-        } else {
-            commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(),
-                    new MoveToTargetComponent(blockCenter(nextBlock)));
-        }
-        job.setCurrentTask(JobState.TravelingToJob);
-        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob] Moving to next mine block at %s.", nextBlock);
+            JobComponent liveJob = entityStore.getStore().getComponent(ref, JobComponent.getComponentType());
+            if (liveJob == null) return;
+
+            if (goCollect) {
+                JobTargetComponent jt = entityStore.getStore().getComponent(ref, JobTargetComponent.getComponentType());
+                if (jt != null) jt.setTargetPosition(null);
+                liveJob.collectingDropsSince = System.currentTimeMillis();
+                liveJob.setCurrentTask(JobState.CollectingDrops);
+                DebugLog.info(DebugCategory.MINER_JOB, quotaReached
+                        ? "[MinerJob] Run quota reached — collecting drops."
+                        : "[MinerJob] Mine exhausted mid-run — collecting drops.");
+            } else {
+                UUIDComponent uuidComp = entityStore.getStore().getComponent(ref, UUIDComponent.getComponentType());
+                if (uuidComp == null || !ClaimBlockUtil.claimBlock(world, nextBlock, uuidComp.getUuid(), "Mine")) {
+                    DebugLog.fine(DebugCategory.MINER_JOB,
+                            "[MinerJob] Could not claim next mine block %s — going Idle.", nextBlock);
+                    liveJob.setCurrentTask(JobState.Idle);
+                    return;
+                }
+                JobTargetComponent jt = entityStore.getStore().getComponent(ref, JobTargetComponent.getComponentType());
+                if (jt != null) {
+                    jt.setTargetPosition(nextBlock);
+                } else {
+                    entityStore.getStore().addComponent(ref, JobTargetComponent.getComponentType(),
+                            new JobTargetComponent(nextBlock));
+                }
+                MoveToTargetComponent mt = entityStore.getStore().getComponent(ref, MoveToTargetComponent.getComponentType());
+                if (mt != null) {
+                    mt.target = blockCenter(nextBlock);
+                } else {
+                    entityStore.getStore().addComponent(ref, MoveToTargetComponent.getComponentType(),
+                            new MoveToTargetComponent(blockCenter(nextBlock)));
+                }
+                liveJob.setCurrentTask(JobState.TravelingToJob);
+                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob] Claimed next mine block at %s — heading there.", nextBlock);
+            }
+        });
     }
 
     private void handleCollectingDrops(Ref<EntityStore> ref, JobComponent job,
@@ -241,12 +289,12 @@ public class MinerJobSystem extends DelayedEntitySystem<EntityStore> {
     // ===== Helpers =====
 
     /**
-     * Scans the mine shaft top-down and returns the first solid (non-air) block found,
-     * or {@code null} if the entire shaft is already excavated.
+     * Scans the mine shaft top-down and returns the first solid, unclaimed block found,
+     * or {@code null} if the entire shaft is already excavated or all remaining blocks
+     * are claimed by other miners.
      *
      * <p>Scan order: layer by layer from top (workstation Y) downward, completing each
-     * 4×4 layer fully before descending to the next. This guarantees the mine is dug
-     * one level at a time from the surface down.
+     * layer fully before descending to the next.
      *
      * <p>TODO (phase 2): smarter scan order; skip blocks the colonist's tool cannot break.
      */
@@ -255,15 +303,18 @@ public class MinerJobSystem extends DelayedEntitySystem<EntityStore> {
         Vector3i origin = workStation.mineOrigin;
         if (origin == null) return null;
         int size = workStation.mineSize;
+        Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
         for (int dy = 0; dy < size; dy++) {       // dy=0 = top layer (workstation Y)
             for (int dx = 0; dx < size; dx++) {
                 for (int dz = 0; dz < size; dz++) {
                     int x = origin.x + dx;
                     int y = origin.y - dy;         // descend into the shaft
                     int z = origin.z + dz;
-                    if (world.getBlock(x, y, z) != 0) {
-                        return new Vector3i(x, y, z);
-                    }
+                    if (world.getBlock(x, y, z) == 0) continue;
+                    // Skip blocks already claimed by another miner.
+                    Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, x, y, z);
+                    if (blockRef != null && chunkStore.getComponent(blockRef, ClaimedBlockComponent.getComponentType()) != null) continue;
+                    return new Vector3i(x, y, z);
                 }
             }
         }

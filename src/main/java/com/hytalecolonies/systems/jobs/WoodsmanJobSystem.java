@@ -9,7 +9,9 @@ import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
+import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
+import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hytalecolonies.utils.ColonistToolUtil;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
@@ -18,6 +20,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -32,6 +35,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Woodsman-specific job system. Handles the {@link JobState#Idle} and
@@ -163,27 +167,32 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
             return;
         }
 
-        // Claim the tree to prevent other colonists from taking it.
-        Ref<ChunkStore> treeBlockRef = BlockModule.getBlockEntity(world, nearestTree.x, nearestTree.y, nearestTree.z);
-        if (treeBlockRef == null) {
-            DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Found tree candidate at %s but BlockEntity is null.", nearestTree);
-            return;
-        }
-        HarvestableTreeComponent tree = treeBlockRef.getStore().getComponent(treeBlockRef, HarvestableTreeComponent.getComponentType());
-        if (tree == null || tree.isMarkedForHarvest()) {
-            DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Tree at %s already claimed or missing — skipping.", nearestTree);
-            return; // Race: another colonist got there first.
-        }
-        tree.markForHarvest();
+        // Schedule tree claim and travel start on the world thread.
+        // world.execute() runs sequentially between ticks, providing atomic claim semantics:
+        // if two woodsmen find the same tree in the same tick, the first callback claims it
+        // and the second sees ClaimedBlockComponent already present and backs off (stays Idle).
+        EntityStore entityStore = world.getEntityStore();
+        world.execute(() -> {
+            // Re-validate colonist is still Idle (another callback may have set them up already).
+            JobComponent liveJob = entityStore.getStore().getComponent(ref, JobComponent.getComponentType());
+            if (liveJob == null || liveJob.getCurrentTask() != JobState.Idle) return;
 
-        // Add a JobTargetComponent so ColonistMovementSystem can drive travel to the tree.
-        commandBuffer.addComponent(ref, JobTargetComponent.getComponentType(), new JobTargetComponent(nearestTree));
+            // Get the colonist's UUID for the claim record.
+            UUIDComponent uuidComp = entityStore.getStore().getComponent(ref, UUIDComponent.getComponentType());
+            if (uuidComp == null) return;
 
-        Vector3d treeTarget = new Vector3d(nearestTree.x + 0.5, nearestTree.y, nearestTree.z + 0.5);
-        commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(treeTarget));
+            // Atomically claim the tree at the HarvestableTreeComponent block entity position.
+            // Returns false if the tree no longer exists or another colonist won the race.
+            if (!ClaimBlockUtil.claimBlock(world, nearestTree, uuidComp.getUuid(), "Harvest")) return;
 
-        job.setCurrentTask(JobState.TravelingToJob);
-        DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Heading to tree at %s.", nearestTree);
+            // Start traveling to the tree.
+            entityStore.getStore().addComponent(ref, JobTargetComponent.getComponentType(), new JobTargetComponent(nearestTree));
+            Vector3d treeTarget = new Vector3d(nearestTree.x + 0.5, nearestTree.y, nearestTree.z + 0.5);
+            entityStore.getStore().tryRemoveComponent(ref, MoveToTargetComponent.getComponentType());
+            entityStore.getStore().addComponent(ref, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(treeTarget));
+            liveJob.setCurrentTask(JobState.TravelingToJob);
+            DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Claimed tree at %s — heading there.", nearestTree);
+        });
     }
 
     /**
@@ -201,7 +210,6 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         if (jobTarget == null || jobTarget.targetPosition == null) {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,
                     "[WoodsmanJob] Working — no JobTargetComponent or target is null, resetting to Idle.");
-            unmarkClaimedTree(ref, store);
             job.setCurrentTask(JobState.Idle);
             return;
         }
@@ -233,6 +241,14 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
                 ? findNextBaseBlock(treeBase, allowedTreeTypes, world)
                 : null;
 
+        // Always release the claim on the broken block entity immediately.
+        // For single-block trees this is the original HarvestableTreeComponent position.
+        // For wide multi-block trees, adjacent blocks have no claim (they have no block entity),
+        // so subsequent calls here will be no-ops handled gracefully by unclaimBlock.
+        final Vector3i finalTreePos = treeBase;
+        final World finalWorld = world;
+        world.execute(() -> ClaimBlockUtil.unclaimBlock(finalWorld, finalTreePos));
+
         if (nextBase != null) {
                 // Wide multi-block base — travel to the next connected base block.
                 DebugLog.info(DebugCategory.WOODSMAN_JOB,
@@ -256,7 +272,6 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
                 // All base-level trunk blocks gone — collect drops.
                 DebugLog.info(DebugCategory.WOODSMAN_JOB,
                         "[WoodsmanJob] No further base blocks found — transitioning to CollectingDrops.");
-                unmarkClaimedTree(ref, store);
                 jobTarget.setTargetPosition(null);
                 job.collectingDropsSince = System.currentTimeMillis();
                 job.setCurrentTask(JobState.CollectingDrops);
@@ -316,27 +331,6 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
     // ===== Helpers =====
 
     /**
-     * Unmarks the tree claimed by the given colonist, if any.
-     * Reads the target position from the colonist's {@link JobTargetComponent}.
-     */
-    static void unmarkClaimedTree(Ref<EntityStore> ref, Store<EntityStore> store) {
-        JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
-        unmarkClaimedTree(ref, jobTarget);
-    }
-
-    private static void unmarkClaimedTree(Ref<EntityStore> ref, @Nullable JobTargetComponent jobTarget) {
-        if (jobTarget == null || jobTarget.targetPosition == null) return;
-        Vector3i treePos = jobTarget.targetPosition;
-        World world = ref.getStore().getExternalData().getWorld();
-        Ref<ChunkStore> treeBlockRef = BlockModule.getBlockEntity(world, treePos.x, treePos.y, treePos.z);
-        if (treeBlockRef == null) return;
-        HarvestableTreeComponent tree = treeBlockRef.getStore().getComponent(treeBlockRef, HarvestableTreeComponent.getComponentType());
-        if (tree != null) {
-            tree.setMarkedForHarvest(false);
-        }
-    }
-
-    /**
      * Returns the nearest available (unmarked, allowed-type) tree within the
      * woodsman's search radius of the workstation, or {@code null} if none.
      */
@@ -352,7 +346,8 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
                 HarvestableTreeComponent tree = treeChunk.getComponent(i, HarvestableTreeComponent.getComponentType());
                 if (tree == null) continue;
                 totalTrees[0]++;
-                if (tree.isMarkedForHarvest()) { markedTrees[0]++; continue; }
+                // Skip trees that are already claimed (have ClaimedBlockComponent on the same entity).
+                if (treeChunk.getComponent(i, ClaimedBlockComponent.getComponentType()) != null) { markedTrees[0]++; continue; }
                 if (!workStation.getAllowedTreeTypes().contains(tree.getTreeTypeKey())) { wrongTypeTrees[0]++; continue; }
                 candidates.add(tree.getBasePosition());
             }

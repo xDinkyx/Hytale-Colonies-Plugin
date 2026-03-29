@@ -19,6 +19,7 @@ public enum DebugCategory {
     MINER_JOB("Miner Job"),
     TREE_SCANNER("Tree Scanner"),
     COLONIST_DELIVERY("Colonist Delivery"),
+    CLAIM_SYSTEM("Claim System"),
     PERFORMANCE("Performance");
 
     private final String displayName;

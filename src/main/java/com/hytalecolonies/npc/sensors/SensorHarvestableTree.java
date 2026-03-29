@@ -1,11 +1,14 @@
 package com.hytalecolonies.npc.sensors;
 
+import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
+import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -18,21 +21,17 @@ import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import com.hypixel.hytale.server.npc.sensorinfo.PositionProvider;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.UUID;
 
 /**
  * Runtime sensor that detects the nearest unclaimed harvestable tree within
  * a configured range and provides its base position for {@code Seek} body motion.
  *
- * <p>Claim semantics:
- * <ul>
- *   <li>When the sensor first fires it marks the found tree's
- *       {@link HarvestableTreeComponent} with {@code markedForHarvest = true}.
- *   <li>On subsequent ticks the cached position is validated: if the block
- *       entity is still present and still claimed the sensor keeps returning
- *       {@code true} without scanning.
- *   <li>When the block is broken (HarvestableTreeComponent removed or block
- *       gone) the sensor returns {@code false} and releases internal state.
- * </ul>
+ * <p>Claim semantics: when the sensor first fires it schedules adding a
+ * {@link ClaimedBlockComponent} (with this NPC's UUID) on the tree's block
+ * entity via {@code world.execute()}. On subsequent ticks the claim is
+ * validated against the component — if another colonist won the race the sensor
+ * releases local state and searches for a different tree.
  *
  * <p>Constructed by {@link BuilderSensorHarvestableTree}.
  */
@@ -44,9 +43,13 @@ public class SensorHarvestableTree extends SensorBase {
     private final double range;
     private final PositionProvider positionProvider = new PositionProvider();
 
-    /** Position of the tree this sensor has claimed, or {@code null} if none. */
+    /** Position of the tree this sensor has optimistically claimed, or {@code null} if none. */
     @Nullable
     private Vector3i claimedTreePos = null;
+
+    /** Cached UUID of this NPC entity (lazy-initialised on first tick). */
+    @Nullable
+    private UUID myUuid = null;
 
     public SensorHarvestableTree(@Nonnull BuilderSensorHarvestableTree builder,
                                  @Nonnull BuilderSupport support) {
@@ -65,6 +68,12 @@ public class SensorHarvestableTree extends SensorBase {
             return false;
         }
 
+        // Lazy-initialise the NPC's UUID for claim ownership checks.
+        if (myUuid == null) {
+            UUIDComponent uuidComp = store.getComponent(ref, UUIDComponent.getComponentType());
+            if (uuidComp != null) myUuid = uuidComp.getUuid();
+        }
+
         World world = store.getExternalData().getWorld();
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform == null) {
@@ -74,17 +83,20 @@ public class SensorHarvestableTree extends SensorBase {
         Vector3d entityPos = transform.getPosition();
 
         // ------------------------------------------------------------------
-        // Validate existing claim
+        // Validate existing optimistic claim
         // ------------------------------------------------------------------
         if (claimedTreePos != null) {
-            HarvestableTreeComponent tree = getTree(world, claimedTreePos);
-            if (tree != null && tree.isMarkedForHarvest()) {
-                // Still valid — keep providing the same position.
-                positionProvider.setTarget(
-                        claimedTreePos.x + 0.5, claimedTreePos.y, claimedTreePos.z + 0.5);
-                return true;
+            Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, claimedTreePos.x, claimedTreePos.y, claimedTreePos.z);
+            if (blockRef != null && blockRef.isValid()) {
+                ClaimedBlockComponent claim = blockRef.getStore().getComponent(blockRef, ClaimedBlockComponent.getComponentType());
+                if (claim != null && myUuid != null && myUuid.equals(claim.getClaimedByUuid())) {
+                    // Our claim is confirmed — keep providing the same position.
+                    positionProvider.setTarget(
+                            claimedTreePos.x + 0.5, claimedTreePos.y, claimedTreePos.z + 0.5);
+                    return true;
+                }
             }
-            // Tree was broken or claim was externally released.
+            // Block is gone, or another colonist won the race and holds the claim.
             claimedTreePos = null;
         }
 
@@ -97,14 +109,16 @@ public class SensorHarvestableTree extends SensorBase {
             return false;
         }
 
-        // Claim the tree.
-        HarvestableTreeComponent tree = getTree(world, nearest);
-        if (tree == null) {
-            positionProvider.clear();
-            return false;
-        }
-        tree.markForHarvest();
+        // Optimistically record the claim locally; schedule the actual block entity
+        // component addition on the world thread via ClaimBlockUtil.claimBlock(),
+        // which handles the race-condition check atomically. The UUID validation
+        // above handles the case where another NPC wins the race before our callback runs.
         claimedTreePos = nearest;
+        if (myUuid != null) {
+            final UUID claimUuid = myUuid;
+            final Vector3i claimPos = nearest;
+            world.execute(() -> ClaimBlockUtil.claimBlock(world, claimPos, claimUuid, "Harvest"));
+        }
 
         positionProvider.setTarget(nearest.x + 0.5, nearest.y, nearest.z + 0.5);
         return true;
@@ -136,7 +150,9 @@ public class SensorHarvestableTree extends SensorBase {
             for (int i = 0; i < chunk.size(); i++) {
                 HarvestableTreeComponent tree =
                         chunk.getComponent(i, HarvestableTreeComponent.getComponentType());
-                if (tree == null || tree.isMarkedForHarvest()) continue;
+                if (tree == null) continue;
+                // Skip trees that already have a ClaimedBlockComponent on the same entity.
+                if (chunk.getComponent(i, ClaimedBlockComponent.getComponentType()) != null) continue;
 
                 Vector3i base = tree.getBasePosition();
                 if (base == null) continue;
@@ -156,28 +172,13 @@ public class SensorHarvestableTree extends SensorBase {
     }
 
     /**
-     * Returns the {@link HarvestableTreeComponent} for the block entity at
-     * {@code pos}, or {@code null} if no such block entity exists.
-     */
-    @Nullable
-    private static HarvestableTreeComponent getTree(
-            @Nonnull World world, @Nonnull Vector3i pos) {
-        Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, pos.x, pos.y, pos.z);
-        if (blockRef == null || !blockRef.isValid()) return null;
-        return blockRef.getStore().getComponent(blockRef, HarvestableTreeComponent.getComponentType());
-    }
-
-    /**
-     * Releases the current claim (sets {@code markedForHarvest = false}) if
-     * we hold one, given the entity store (to reach the world).
+     * Releases the current claim via {@code world.execute()} and clears local state.
      */
     private void releaseClaim(@Nonnull Store<EntityStore> store) {
         if (claimedTreePos == null) return;
         World world = store.getExternalData().getWorld();
-        HarvestableTreeComponent tree = getTree(world, claimedTreePos);
-        if (tree != null) {
-            tree.setMarkedForHarvest(false);
-        }
+        final Vector3i pos = claimedTreePos;
         claimedTreePos = null;
+        world.execute(() -> ClaimBlockUtil.unclaimBlock(world, pos));
     }
 }
