@@ -1,5 +1,5 @@
 Group {
-    Anchor: (Width: 420, Height: 536);
+    Anchor: (Width: 420, Height: 612);
     Background: #141c26;
     LayoutMode: Top;
     Padding: (Full: 20);
@@ -49,6 +49,18 @@ Group {
         Anchor: (Height: 32);
         Label { Text: "Woodsman Job"; Anchor: (Width: 200, Height: 32); Style: (FontSize: 13, TextColor: #c8d0dc, VerticalAlignment: Center); }
         TextButton #WoodsmanJobButton {
+            Text: "INFO";
+            Anchor: (Width: 160, Height: 32);
+            Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 13, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 13, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+        }
+    }
+    Group { Anchor: (Height: 6); }
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 32);
+        Label { Text: "Miner Job"; Anchor: (Width: 200, Height: 32); Style: (FontSize: 13, TextColor: #c8d0dc, VerticalAlignment: Center); }
+        TextButton #MinerJobButton {
             Text: "INFO";
             Anchor: (Width: 160, Height: 32);
             Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 13, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 13, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
