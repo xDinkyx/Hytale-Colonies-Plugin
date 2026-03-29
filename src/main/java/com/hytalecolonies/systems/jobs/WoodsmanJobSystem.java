@@ -92,7 +92,14 @@ public class WoodsmanJobSystem extends DelayedEntitySystem<EntityStore> {
         DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] state=%s workStation=%s",
                 state, job.getWorkStationBlockPosition());
 
-        if (state == null || state == JobState.Idle) {
+        if(state == null) {
+            DebugLog.warning(DebugCategory.WOODSMAN_JOB,
+                    "[WoodsmanJob] Colonist %s has null JobState — resetting to Idle.", colonistRef);
+            job.setCurrentTask(JobState.Idle);
+            return;
+        }
+
+        if (state == JobState.Idle) {
             handleIdle(colonistRef, job, commandBuffer, store);
         } else if (state == JobState.Working) {
             handleWorking(colonistRef, job, commandBuffer, store);

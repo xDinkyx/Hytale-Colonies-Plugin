@@ -40,6 +40,7 @@ public class JobComponent implements Component<EntityStore> {
 
     public JobComponent(@Nullable Vector3i workStationBlockPos) {
         this.workStationBlockPosition = workStationBlockPos;
+        this.jobState = JobState.Idle; // Start immediately in Idle so the work loop begins on the next system tick.
     }
 
     // ===== Component Type =====
