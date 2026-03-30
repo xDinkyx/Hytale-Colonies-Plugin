@@ -14,6 +14,7 @@ import java.util.logging.Level;
 public enum DebugCategory {
 
     MOVEMENT("Movement"),
+    JOB_SYSTEM("Job System"),
     JOB_ASSIGNMENT("Job Assignment"),
     WOODSMAN_JOB("Woodsman Job"),
     MINER_JOB("Miner Job"),

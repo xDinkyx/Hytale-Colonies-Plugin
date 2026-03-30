@@ -27,6 +27,9 @@ public class DebugConfig {
             .append(new KeyedCodec<>("MovementLevel", Codec.STRING),
                     (c, v) -> c.movementLevel = v, c -> c.movementLevel)
             .add()
+            .append(new KeyedCodec<>("JobSystemLevel", Codec.STRING),
+                    (c, v) -> c.jobSystemLevel = v, c -> c.jobSystemLevel)
+            .add()
             .append(new KeyedCodec<>("JobAssignmentLevel", Codec.STRING),
                     (c, v) -> c.jobAssignmentLevel = v, c -> c.jobAssignmentLevel)
             .add()
@@ -57,6 +60,7 @@ public class DebugConfig {
             .build();
 
     private String movementLevel       = "INFO";
+    private String jobSystemLevel      = "INFO";
     private String jobAssignmentLevel  = "INFO";
     private String woodsmanJobLevel    = "INFO";
     private String minerJobLevel       = "INFO";
@@ -72,6 +76,7 @@ public class DebugConfig {
     /** Parses all stored level strings and applies them to the live {@link DebugCategory} values. */
     public void applyToCategories() {
         DebugCategory.MOVEMENT.setMinLevel(parseLevel(movementLevel));
+        DebugCategory.JOB_SYSTEM.setMinLevel(parseLevel(jobSystemLevel));
         DebugCategory.JOB_ASSIGNMENT.setMinLevel(parseLevel(jobAssignmentLevel));
         DebugCategory.WOODSMAN_JOB.setMinLevel(parseLevel(woodsmanJobLevel));
         DebugCategory.MINER_JOB.setMinLevel(parseLevel(minerJobLevel));
@@ -89,6 +94,7 @@ public class DebugConfig {
         String name = level.getName();
         switch (category) {
             case MOVEMENT           -> movementLevel = name;
+            case JOB_SYSTEM         -> jobSystemLevel = name;
             case JOB_ASSIGNMENT     -> jobAssignmentLevel = name;
             case WOODSMAN_JOB       -> woodsmanJobLevel = name;
             case MINER_JOB          -> minerJobLevel = name;
@@ -104,6 +110,7 @@ public class DebugConfig {
     public String getLevelNameForCategory(DebugCategory category) {
         return switch (category) {
             case MOVEMENT           -> movementLevel;
+            case JOB_SYSTEM         -> jobSystemLevel;
             case JOB_ASSIGNMENT     -> jobAssignmentLevel;
             case WOODSMAN_JOB       -> woodsmanJobLevel;
             case MINER_JOB          -> minerJobLevel;

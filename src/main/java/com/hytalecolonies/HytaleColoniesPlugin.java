@@ -17,6 +17,7 @@ import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
@@ -32,13 +33,16 @@ import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.systems.jobs.ColonistDeliverySystem;
 import com.hytalecolonies.systems.jobs.ColonistItemPickupSystem;
-import com.hytalecolonies.systems.jobs.ColonistMovementSystem;
+import com.hytalecolonies.systems.jobs.ColonistJobSystem;
+import com.hytalecolonies.systems.jobs.JobBehaviorRegistry;
+import com.hytalecolonies.systems.jobs.handlers.MinerHandlers;
+import com.hytalecolonies.systems.jobs.handlers.SharedHandlers;
+import com.hytalecolonies.systems.jobs.handlers.WoodsmanHandlers;
 import com.hytalecolonies.npc.actions.BuilderActionEquipBestTool;
 import com.hytalecolonies.npc.actions.BuilderActionHarvestBlock;
 import com.hytalecolonies.npc.sensors.BuilderSensorHarvestableTree;
 import com.hytalecolonies.npc.sensors.BuilderSensorJobTarget;
-import com.hytalecolonies.systems.jobs.MinerJobSystem;
-import com.hytalecolonies.systems.jobs.WoodsmanJobSystem;
+
 import com.hytalecolonies.systems.npc.PathFindingSystem;
 import com.hytalecolonies.systems.treescan.TreeBlockChangeEventSystem;
 import com.hytalecolonies.systems.treescan.TreeScannerSystem;
@@ -101,6 +105,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         registerListeners();
         registerComponents();
         registerJobRegistries();
+        registerJobHandlers();
         registerInteractions();
         registerNpcComponentTypes();
         registerSystems();
@@ -138,14 +143,35 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     }
 
     /**
-     * Registers job component types and claimable block types with their
-     * respective registries. Must run after {@link #registerComponents()} so
-     * that all {@link ComponentType} instances are initialised.
+     * Registers job component types with {@link JobRegistry} so the dispatcher
+     * can resolve which job type a colonist has at runtime.
+     * Must run after {@link #registerComponents()}.
      */
     private void registerJobRegistries() {
         JobRegistry.register(WoodsmanJobComponent.getComponentType());
         JobRegistry.register(MinerJobComponent.getComponentType());
-        LOGGER.at(Level.INFO).log("[HytaleColonies] Registered job and claim registries");
+        LOGGER.at(Level.INFO).log("[HytaleColonies] Registered job registries");
+    }
+
+    private void registerJobHandlers() {
+        // Woodsman
+        JobBehaviorRegistry.registerDefault(WoodsmanJobComponent.getComponentType(),
+                JobState.Idle,    WoodsmanHandlers.IDLE);
+        JobBehaviorRegistry.registerDefault(WoodsmanJobComponent.getComponentType(),
+                JobState.Working, WoodsmanHandlers.WORKING);
+
+        // Miner
+        JobBehaviorRegistry.registerDefault(MinerJobComponent.getComponentType(),
+                JobState.Idle,    MinerHandlers.IDLE);
+        JobBehaviorRegistry.registerDefault(MinerJobComponent.getComponentType(),
+                JobState.Working, MinerHandlers.WORKING);
+
+        // Shared — apply to all job types as fallback
+        JobBehaviorRegistry.registerShared(JobState.CollectingDrops, SharedHandlers.COLLECTING_DROPS);
+        JobBehaviorRegistry.registerShared(JobState.TravelingToJob,  SharedHandlers.TRAVELING_TO_JOB);
+        JobBehaviorRegistry.registerShared(JobState.TravelingHome,   SharedHandlers.TRAVELING_HOME);
+
+        LOGGER.at(Level.INFO).log("[HytaleColonies] Registered job handlers");
     }
 
     // Accessors for ECS component types
@@ -222,11 +248,9 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.JobAssignedSystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());
         getEntityStoreRegistry().registerSystem(new PathFindingSystem());
-        getEntityStoreRegistry().registerSystem(new ColonistMovementSystem());
+        getEntityStoreRegistry().registerSystem(new ColonistJobSystem());
         getEntityStoreRegistry().registerSystem(new ColonistItemPickupSystem());
         getEntityStoreRegistry().registerSystem(new ColonistDeliverySystem());
-        getEntityStoreRegistry().registerSystem(new WoodsmanJobSystem());
-        getEntityStoreRegistry().registerSystem(new MinerJobSystem());
         getEntityStoreRegistry().registerSystem(new TreeBlockChangeEventSystem.OnBreak(treeScannerSystem));
         getEntityStoreRegistry().registerSystem(new TreeBlockChangeEventSystem.OnPlace(treeScannerSystem));
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered plugin systems");
