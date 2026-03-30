@@ -29,7 +29,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Generic delivery system for colonists. Handles the {@link JobState#DeliveringItems}
@@ -162,8 +163,17 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
     }
 
     /**
-     * Moves all items from the colonist's storage (non-hotbar) into the chest.
-     * Any items that don't fit are returned to the colonist's storage.
+     * Returns {@code true} for item stacks that should be kept on the colonist and never deposited.
+     * Currently filters out any item that is a tool.
+     */
+    private static boolean shouldKeep(@Nonnull ItemStack stack) {
+        return stack.getItem() != null && stack.getItem().getTool() != null;
+    }
+
+    /**
+     * Deposits all non-filtered items from the colonist's storage into the chest.
+     * Items matching {@link #shouldKeep} are left in their slots untouched.
+     * Non-tool items that don't fit in the chest are left in place.
      */
     private void depositItems(@Nonnull Ref<EntityStore> ref,
                               @Nonnull Store<EntityStore> store,
@@ -173,28 +183,38 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
         if (colonist == null) return;
 
         ItemContainer colonistStorage = colonist.getInventory().getStorage();
+        short capacity = colonistStorage.getCapacity();
+        Map<String, Integer> deposited = new LinkedHashMap<>();
 
-        // Remove all items from storage — we'll put back anything that doesn't fit.
-        List<ItemStack> toDeposit = colonistStorage.dropAllItemStacks();
-        int depositedStacks = 0;
-
-        for (ItemStack stack : toDeposit) {
+        for (short slot = 0; slot < capacity; slot++) {
+            ItemStack stack = colonistStorage.getItemStack(slot);
             if (ItemStack.isEmpty(stack)) continue;
+            if (shouldKeep(stack)) continue;
+            // Remove from colonist first, then attempt deposit.
+            colonistStorage.removeItemStackFromSlot(slot);
             ItemStackTransaction tx = chestContainer.addItemStack(stack);
             ItemStack remainder = tx.getRemainder();
+            int depositedQty = stack.getQuantity() - (remainder != null ? remainder.getQuantity() : 0);
+            if (depositedQty > 0) deposited.merge(stack.getItemId(), depositedQty, Integer::sum);
             if (remainder != null && !remainder.isEmpty()) {
-                // Chest is full (or partially full) — return what didn't fit.
-                colonistStorage.addItemStack(remainder);
-                DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
-                        "[ColonistDelivery] Chest at %s full — %dx %s returned to colonist.",
-                        chestPos, remainder.getQuantity(), remainder.getItemId());
-            } else {
-                depositedStacks++;
+                // Chest full — put the remainder back into the same slot.
+                colonistStorage.setItemStackForSlot(slot, remainder);
             }
         }
 
         DebugLog.info(DebugCategory.COLONIST_DELIVERY,
-                "[ColonistDelivery] Deposited %d stack(s) into chest at %s.", depositedStacks, chestPos);
+                "[ColonistDelivery] -> %s", summarise(deposited));
+    }
+
+    /** Formats {@code {id: qty, ...}} as {@code "id*qty, id*qty"}, or {@code "-"} if empty. */
+    private static String summarise(@Nonnull Map<String, Integer> counts) {
+        if (counts.isEmpty()) return "-";
+        StringBuilder sb = new StringBuilder();
+        counts.forEach((id, qty) -> {
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append(id).append('*').append(qty);
+        });
+        return sb.toString();
     }
 
     private static void navigateToWorkstation(@Nonnull Ref<EntityStore> ref,
