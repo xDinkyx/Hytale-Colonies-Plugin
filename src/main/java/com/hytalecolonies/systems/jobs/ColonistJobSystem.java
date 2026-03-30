@@ -4,24 +4,42 @@ import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
-import com.hypixel.hytale.component.*;
+import com.hypixel.hytale.component.ArchetypeChunk;
+import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
- * Dispatches per-tick job logic for all colonists via {@link JobBehaviorRegistry}.
- * Resolves which job type the colonist has, then delegates to the registered {@link JobStateHandler}.
+ * Dispatches the shared ECS job states ({@link JobState#CollectingDrops} and
+ * {@link JobState#TravelingHome}) for all colonists.
+ *
+ * <p>Job-specific states (Idle, Working) are now driven entirely by the NPC
+ * role JSON instruction engine ({@code Colonist_Woodsman.json},
+ * {@code Colonist_Miner.json}). This system handles only the ECS-side phases
+ * that require timer or distance checks unavailable in JSON.
  */
 public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
+
+    private static final Map<JobState, JobStateHandler> sharedHandlers =
+            new EnumMap<>(JobState.class);
 
     private final Query<EntityStore> query = Query.and(JobComponent.getComponentType());
 
     public ColonistJobSystem() {
         super(2.0f);
+    }
+
+    /** Called from {@code HytaleColoniesPlugin.registerSharedJobHandlers()}. */
+    public static void registerShared(@Nonnull JobState state, @Nonnull JobStateHandler handler) {
+        sharedHandlers.put(state, handler);
     }
 
     @Override
@@ -33,9 +51,7 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
         JobComponent job = archetypeChunk.getComponent(index, JobComponent.getComponentType());
         assert job != null;
 
-        Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
         JobState state = job.getCurrentTask();
-
         if (state == null) {
             DebugLog.warning(DebugCategory.JOB_SYSTEM,
                     "[ColonistJob] Colonist has null JobState — resetting to Idle.");
@@ -43,27 +59,11 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
             return;
         }
 
-        JobContext ctx = new JobContext(colonistRef, job, store, commandBuffer);
-        ComponentType<EntityStore, ?> jobType = resolveJobType(colonistRef, store);
-        JobStateHandler handler = JobBehaviorRegistry.resolve(jobType, state);
-
+        JobStateHandler handler = sharedHandlers.get(state);
         if (handler != null) {
-            handler.handle(ctx);
-        } else {
-            DebugLog.fine(DebugCategory.JOB_SYSTEM,
-                    "[ColonistJob] No handler for jobType=%s state=%s — skipping.",
-                    jobType != null ? jobType : "<none>", state);
+            Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
+            handler.handle(new JobContext(colonistRef, job, store, commandBuffer));
         }
-    }
-
-    /** Returns the job-type component this colonist has, or {@code null} if none is registered. */
-    @Nullable
-    private static ComponentType<EntityStore, ?> resolveJobType(
-            Ref<EntityStore> colonistRef, Store<EntityStore> store) {
-        for (ComponentType<EntityStore, ?> type : JobRegistry.getJobComponentTypes()) {
-            if (store.getComponent(colonistRef, type) != null) return type;
-        }
-        return null;
     }
 
     @Override

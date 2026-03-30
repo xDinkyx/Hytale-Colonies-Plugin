@@ -1,0 +1,174 @@
+{
+  "$Comment": "Woodsman colonist role — handles finding, navigating to, and harvesting trees.",
+  "Type": "Generic",
+  "Appearance": "Mannequin",
+  "MaxHealth": 20,
+  "StartState": "Idle",
+  "MotionControllerList": [
+    {
+      "Type": "Walk",
+      "MaxWalkSpeed": 4
+    }
+  ],
+  "InventorySize": 12,
+  "StateTransitions": [
+    {
+      "$Comment": "Reset mined count is not needed for woodsman; this block intentionally left empty.",
+      "States": []
+    }
+  ],
+  "Instructions": [
+    {
+      "$Comment": "Global navigation — always running. Drives body toward the NavTarget slot when a position is set.",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": {
+            "Type": "ReadPosition",
+            "Slot": "NavTarget",
+            "Range": 200.0,
+            "MinRange": 1.5
+          },
+          "BodyMotion": {
+            "Type": "Seek",
+            "StopDistance": 1.5,
+            "SlowDownDistance": 3.0,
+            "RelativeSpeed": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "$Comment": "Global harvesting — fires in any state when within range of the job target.",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": {
+            "Type": "JobTarget",
+            "Range": 5.0
+          },
+          "Actions": [
+            { "Type": "EquipBestTool" },
+            { "Type": "HarvestBlock", "DamageScale": 0.01 }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "=== IDLE STATE ===",
+      "Instructions": [
+        {
+          "Sensor": { "Type": "State", "State": "Idle" },
+          "Instructions": [
+            {
+              "$Comment": "Only work when the ECS delivery pipeline is idle.",
+              "Sensor": { "Type": "EcsJobState", "State": "Idle" },
+              "Instructions": [
+                {
+                  "$Comment": "No woodcutting tool — show confused particle and wait.",
+                  "Sensor": {
+                    "Type": "Not",
+                    "Sensor": { "Type": "HasTool", "GatherType": "Woods" }
+                  },
+                  "Actions": [
+                    { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
+                    { "Type": "Timeout", "Delay": 3.0 }
+                  ]
+                },
+                {
+                  "$Comment": "Has tool, no target — find and claim nearest tree.",
+                  "Sensor": {
+                    "Type": "And",
+                    "Sensors": [
+                      { "Type": "HasTool", "GatherType": "Woods" },
+                      { "Type": "Not", "Sensor": { "Type": "JobTargetExists" } }
+                    ]
+                  },
+                  "Actions": [
+                    { "Type": "SeekNearestTree" }
+                  ]
+                },
+                {
+                  "$Comment": "Job target claimed and colonist is within harvesting range — switch to Working.",
+                  "Sensor": { "Type": "JobTarget", "Range": 5.0 },
+                  "Actions": [
+                    { "Type": "State", "State": "Working" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "=== WORKING STATE ===",
+      "Instructions": [
+        {
+          "Sensor": { "Type": "State", "State": "Working" },
+          "Instructions": [
+            {
+              "$Comment": "Current target block was broken — find next adjacent trunk or clear target.",
+              "Sensor": { "Type": "JobTargetBroken" },
+              "Actions": [
+                { "Type": "FindNextTrunkBlock" }
+              ]
+            },
+            {
+              "$Comment": "No job target remaining (tree fully cut) — transition to Collecting.",
+              "Sensor": {
+                "Type": "Not",
+                "Sensor": { "Type": "JobTargetExists" }
+              },
+              "Actions": [
+                { "Type": "State", "State": "Collecting" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "=== COLLECTING STATE === Picks up drops while ECS delivery pipeline runs, then returns to Idle.",
+      "Instructions": [
+        {
+          "Sensor": { "Type": "State", "State": "Collecting" },
+          "Instructions": [
+            {
+              "$Comment": "On first entry, signal the ECS delivery pipeline to start.",
+              "Sensor": { "Type": "Any", "Once": true },
+              "Actions": [
+                { "Type": "SetEcsJobState", "State": "CollectingDrops" }
+              ]
+            },
+            {
+              "$Comment": "Wander the area while waiting for delivery so the colonist does not stand still.",
+              "Continue": true,
+              "Sensor": { "Type": "Any" },
+              "BodyMotion": {
+                "Type": "WanderInCircle",
+                "Radius": 5,
+                "MaxHeadingChange": 60,
+                "RelativeSpeed": 0.5
+              }
+            },
+            {
+              "$Comment": "Pick up nearby dropped items while waiting for delivery to complete.",
+              "Sensor": { "Type": "DroppedItem", "Range": 5.0 },
+              "Actions": [
+                { "Type": "PickUpItem", "Hoover": true }
+              ]
+            },
+            {
+              "$Comment": "ECS delivery pipeline finished (home, set Idle) — return to Idle role state.",
+              "Sensor": { "Type": "EcsJobState", "State": "Idle" },
+              "Actions": [
+                { "Type": "State", "State": "Idle" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

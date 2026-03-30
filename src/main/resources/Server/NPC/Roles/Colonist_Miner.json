@@ -1,0 +1,212 @@
+{
+  "$Comment": "Miner colonist role — handles shafting out a mine block-by-block up to a per-run quota.",
+  "Type": "Generic",
+  "Appearance": "Mannequin",
+  "MaxHealth": 20,
+  "StartState": "Idle",
+  "MotionControllerList": [
+    {
+      "Type": "Walk",
+      "MaxWalkSpeed": 4
+    }
+  ],
+  "InventorySize": 12,
+  "StateTransitions": [
+    {
+      "$Comment": "When transitioning from Collecting back to Idle, reset the per-run counter.",
+      "States": [
+        {
+          "From": ["Collecting"],
+          "To": ["Idle"]
+        }
+      ],
+      "Actions": [
+        { "Type": "ResetBlocksMined" }
+      ]
+    }
+  ],
+  "Instructions": [
+    {
+      "$Comment": "Global navigation — always running. Drives body toward the NavTarget slot when a position is set.",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": {
+            "Type": "ReadPosition",
+            "Slot": "NavTarget",
+            "Range": 200.0,
+            "MinRange": 1.5
+          },
+          "BodyMotion": {
+            "Type": "Seek",
+            "StopDistance": 1.5,
+            "SlowDownDistance": 3.0,
+            "RelativeSpeed": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "$Comment": "Global harvesting — fires in any state when within range of the job target.",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": {
+            "Type": "JobTarget",
+            "Range": 5.0
+          },
+          "Actions": [
+            { "Type": "EquipBestTool" },
+            { "Type": "HarvestBlock", "DamageScale": 0.01 }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "=== IDLE STATE ===",
+      "Instructions": [
+        {
+          "Sensor": { "Type": "State", "State": "Idle" },
+          "Instructions": [
+            {
+              "$Comment": "Only work when the ECS delivery pipeline is idle.",
+              "Sensor": { "Type": "EcsJobState", "State": "Idle" },
+              "Instructions": [
+                {
+                  "$Comment": "No pickaxe — show confused particle and wait.",
+                  "Sensor": {
+                    "Type": "Not",
+                    "Sensor": { "Type": "HasTool", "GatherType": "Rocks" }
+                  },
+                  "Actions": [
+                    { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
+                    { "Type": "Timeout", "Delay": 3.0 }
+                  ]
+                },
+                {
+                  "$Comment": "No shovel — show confused particle and wait.",
+                  "Sensor": {
+                    "Type": "Not",
+                    "Sensor": { "Type": "HasTool", "GatherType": "Soils" }
+                  },
+                  "Actions": [
+                    { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
+                    { "Type": "Timeout", "Delay": 3.0 }
+                  ]
+                },
+                {
+                  "$Comment": "Has tools and no current target — claim the next mine block.",
+                  "Sensor": {
+                    "Type": "And",
+                    "Sensors": [
+                      { "Type": "HasTool", "GatherType": "Rocks" },
+                      { "Type": "HasTool", "GatherType": "Soils" },
+                      { "Type": "Not", "Sensor": { "Type": "JobTargetExists" } }
+                    ]
+                  },
+                  "Actions": [
+                    { "Type": "SeekNextMineBlock" }
+                  ]
+                },
+                {
+                  "$Comment": "Job target claimed and colonist is within harvesting range — switch to Working.",
+                  "Sensor": { "Type": "JobTarget", "Range": 5.0 },
+                  "Actions": [
+                    { "Type": "State", "State": "Working" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "=== WORKING STATE ===",
+      "Instructions": [
+        {
+          "Sensor": { "Type": "State", "State": "Working" },
+          "Instructions": [
+            {
+              "$Comment": "Current mine block was broken — increment counter and release claim.",
+              "Sensor": { "Type": "JobTargetBroken" },
+              "Actions": [
+                { "Type": "IncrementBlocksMined" },
+                { "Type": "ReleaseJobTarget" }
+              ]
+            },
+            {
+              "$Comment": "Quota reached — transition to Collecting.",
+              "Sensor": { "Type": "MineQuotaReached" },
+              "Actions": [
+                { "Type": "State", "State": "Collecting" }
+              ]
+            },
+            {
+              "$Comment": "Quota not reached and no current target — claim next mine block.",
+              "Sensor": {
+                "Type": "And",
+                "Sensors": [
+                  { "Type": "Not", "Sensor": { "Type": "MineQuotaReached" } },
+                  { "Type": "Not", "Sensor": { "Type": "JobTargetExists" } }
+                ]
+              },
+              "Actions": [
+                { "Type": "SeekNextMineBlock" }
+              ]
+            },
+            {
+              "$Comment": "Has next target and close enough — switch back to Working to start harvesting.",
+              "Sensor": { "Type": "JobTarget", "Range": 5.0 },
+              "Actions": [
+                { "Type": "State", "State": "Working" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "=== COLLECTING STATE === Picks up drops while ECS delivery pipeline runs, then returns to Idle.",
+      "Instructions": [
+        {
+          "Sensor": { "Type": "State", "State": "Collecting" },
+          "Instructions": [
+            {
+              "$Comment": "On first entry, signal the ECS delivery pipeline to start.",
+              "Sensor": { "Type": "Any", "Once": true },
+              "Actions": [
+                { "Type": "SetEcsJobState", "State": "CollectingDrops" }
+              ]
+            },
+            {
+              "$Comment": "Wander the area while waiting for delivery so the colonist does not stand still.",
+              "Continue": true,
+              "Sensor": { "Type": "Any" },
+              "BodyMotion": {
+                "Type": "WanderInCircle",
+                "Radius": 5,
+                "MaxHeadingChange": 60,
+                "RelativeSpeed": 0.5
+              }
+            },
+            {
+              "$Comment": "Pick up nearby dropped items while waiting for delivery to complete.",
+              "Sensor": { "Type": "DroppedItem", "Range": 5.0 },
+              "Actions": [
+                { "Type": "PickUpItem", "Hoover": true }
+              ]
+            },
+            {
+              "$Comment": "ECS delivery pipeline finished (home, set Idle) — return to Idle role state.",
+              "Sensor": { "Type": "EcsJobState", "State": "Idle" },
+              "Actions": [
+                { "Type": "State", "State": "Idle" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 {
   "Type": "Abstract",
+  "StartState": "Idle",
   "Parameters": {
     "Appearance": {
       "Value": "Mannequin",
