@@ -29,34 +29,39 @@
   ],
   "Instructions": [
     {
-      "Continue": true,
+      "Sensor": { "Type": "State", "State": "Idle" },
       "Instructions": [
         {
-          "Sensor": {
-            "Type": "ReadPosition",
-            "Slot": "NavTarget",
-            "Range": 200.0,
-            "MinRange": 1.5
-          },
-          "BodyMotion": {
-            "Type": "Seek",
-            "StopDistance": 1.5,
-            "SlowDownDistance": 3.0,
-            "RelativeSpeed": 1.0
-          }
-        }
-      ]
-    },
-    {
-      "Instructions": [
+          "Continue": true,
+          "Instructions": [
+            {
+              "Sensor": {
+                "Type": "ReadPosition",
+                "Slot": "NavTarget",
+                "Range": 200,
+                "MinRange": 1.5
+              },
+              "BodyMotion": {
+                "Type": "Seek",
+                "StopDistance": 1.5,
+                "SlowDownDistance": 3,
+                "RelativeSpeed": 1.0
+              }
+            }
+          ]
+        },
         {
-          "Sensor": {
-            "Type": "JobTarget",
-            "Range": 5.0
-          },
-          "Actions": [
-            { "Type": "EquipBestTool" },
-            { "Type": "HarvestBlock", "DamageScale": 0.01 }
+          "Instructions": [
+            {
+              "Sensor": {
+                "Type": "JobTarget",
+                "Range": 5.0
+              },
+              "Actions": [
+                { "Type": "EquipBestTool" },
+                { "Type": "HarvestBlock", "DamageScale": 0.01 }
+              ]
+            }
           ]
         }
       ]

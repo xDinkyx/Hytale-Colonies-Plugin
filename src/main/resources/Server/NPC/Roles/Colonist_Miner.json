@@ -4,6 +4,7 @@
   "Appearance": "Mannequin",
   "MaxHealth": 20,
   "StartState": "Idle",
+  "NameTranslationKey": "server.npcRoles.Colonist_Miner.name",
   "MotionControllerList": [
     {
       "Type": "Walk",
@@ -40,7 +41,7 @@
           "BodyMotion": {
             "Type": "Seek",
             "StopDistance": 1.5,
-            "SlowDownDistance": 3.0,
+            "SlowDownDistance": 3,
             "RelativeSpeed": 1.0
           }
         }
@@ -80,7 +81,7 @@
                   },
                   "Actions": [
                     { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
-                    { "Type": "Timeout", "Delay": 3.0 }
+                    { "Type": "Timeout", "Delay": [3, 3] }
                   ]
                 },
                 {
@@ -91,7 +92,7 @@
                   },
                   "Actions": [
                     { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
-                    { "Type": "Timeout", "Delay": 3.0 }
+                    { "Type": "Timeout", "Delay": [3, 3] }
                   ]
                 },
                 {

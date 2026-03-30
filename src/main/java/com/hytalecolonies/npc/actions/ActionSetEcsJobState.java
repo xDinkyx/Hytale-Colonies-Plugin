@@ -30,10 +30,10 @@ public class ActionSetEcsJobState extends ActionBase {
         super(builder);
         JobState parsed;
         try {
-            parsed = JobState.valueOf(builder.getStateName());
+            parsed = JobState.valueOf(builder.getStateName(support));
         } catch (IllegalArgumentException e) {
             DebugLog.warning(DebugCategory.JOB_SYSTEM,
-                    "[SetEcsJobState] Unknown state name '%s' in role JSON — defaulting to Idle.", builder.getStateName());
+                    "[SetEcsJobState] Unknown state name '%s' in role JSON — defaulting to Idle.", builder.getStateName(support));
             parsed = JobState.Idle;
         }
         this.targetState = parsed;

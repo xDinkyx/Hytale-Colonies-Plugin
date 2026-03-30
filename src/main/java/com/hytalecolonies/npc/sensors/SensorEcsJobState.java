@@ -30,7 +30,7 @@ public class SensorEcsJobState extends SensorBase {
         super(builder);
         JobState parsed;
         try {
-            parsed = JobState.valueOf(builder.getStateName());
+            parsed = JobState.valueOf(builder.getStateName(support));
         } catch (IllegalArgumentException e) {
             parsed = JobState.Idle;
         }

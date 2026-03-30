@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderDescriptorState;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
+import com.hypixel.hytale.server.npc.asset.builder.holder.StringHolder;
 import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
 import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
@@ -21,7 +22,7 @@ import javax.annotation.Nonnull;
  */
 public class BuilderActionSetEcsJobState extends BuilderActionBase {
 
-    private String stateName = "Idle";
+    private final StringHolder stateName = new StringHolder();
 
     @Nonnull @Override public String getShortDescription() { return "Sets the colonist's ECS job state to the configured value."; }
     @Nonnull @Override public String getLongDescription() { return getShortDescription(); }
@@ -30,9 +31,10 @@ public class BuilderActionSetEcsJobState extends BuilderActionBase {
     @Nonnull
     @Override
     public Builder<Action> readConfig(@Nonnull JsonElement data) {
-        if (data.isJsonObject() && data.getAsJsonObject().has("State")) {
-            this.stateName = data.getAsJsonObject().get("State").getAsString();
-        }
+        this.getString(data, "State", this.stateName, "Idle",
+                null,
+                BuilderDescriptorState.Experimental,
+                "The ECS job state to set (e.g. CollectingDrops, Idle)", null);
         return this;
     }
 
@@ -43,7 +45,7 @@ public class BuilderActionSetEcsJobState extends BuilderActionBase {
     }
 
     @Nonnull
-    public String getStateName() {
-        return stateName;
+    public String getStateName(@Nonnull BuilderSupport support) {
+        return this.stateName.get(support.getExecutionContext());
     }
 }
