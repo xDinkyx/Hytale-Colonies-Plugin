@@ -2,7 +2,7 @@
   "TranslationProperties": {
     "Name": "server.items.Bench_Colony_Miner.name"
   },
-  "Icon": "Icons/ItemsGenerated/Bench_Colony_Woodsman.png",
+  "Icon": "Icons/ItemsGenerated/Bench_Lumbermill.png",
   "Categories": [
     "Furniture.Furniture"
   ],
@@ -39,10 +39,10 @@
     "Material": "Solid",
     "DrawType": "Model",
     "Opacity": "Transparent",
-    "CustomModel": "Blocks/Benches/Lumbermill.blockymodel",
+    "CustomModel": "Items/Vehicles/Minecart.blockymodel",
     "CustomModelTexture": [
       {
-        "Texture": "Blocks/Benches/Lumbermill_Texture.png",
+        "Texture": "Items/Vehicles/Minecart_Texture.png",
         "Weight": 1
       }
     ],
