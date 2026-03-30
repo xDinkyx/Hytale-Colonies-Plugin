@@ -81,9 +81,13 @@ Dragons, goblins, orcs, enemy colonies, etc.
     - Replant trees
     - Refill tree trunk blocks in the ground after cutting tree
 - Jobs
+    - Show confused '?!' when worker doesnt know what to do.
     - Harvest modifier (currently harvest is same speed as player)
     - Check that npc tools are losing durability
     - Worker animations
+    - Worker pick up tools from container
 - Colonist Skills
+- Fix block attack spam
+- Reset workers + teleport to workstation action
 - Same prefix for all resources (for instance 'HC_')
 - Make all component field private with getters/setters. (Seems to be Hytale standard/requirement)
