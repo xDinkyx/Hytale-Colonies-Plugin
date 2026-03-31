@@ -1,6 +1,7 @@
 package com.hytalecolonies.npc.actions;
 
 import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.components.jobs.WorkerComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.ClaimBlockUtil;
@@ -34,9 +35,13 @@ public class ActionReleaseJobTarget extends ActionBase {
                            @Nonnull Store<EntityStore> store) {
         super.execute(ref, role, sensorInfo, dt, store);
 
+        String npcId = DebugLog.npcId(ref, store);
+
+        DebugLog.fine(DebugCategory.JOB_SYSTEM, "[ReleaseJobTarget] [%s] Action started.", npcId);
+
         JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
         if (jobTarget == null) {
-            DebugLog.fine(DebugCategory.JOB_SYSTEM, "[ReleaseJobTarget] No JobTargetComponent present — nothing to do.");
+            DebugLog.fine(DebugCategory.JOB_SYSTEM, "[ReleaseJobTarget] [%s] No JobTargetComponent present — nothing to do.", npcId);
             return true;
         }
 
@@ -47,10 +52,16 @@ public class ActionReleaseJobTarget extends ActionBase {
             world.execute(() -> ClaimBlockUtil.unclaimBlock(world, capturedPosition));
             jobTarget.setTargetPosition(null);
             DebugLog.info(DebugCategory.JOB_SYSTEM,
-                    "[ReleaseJobTarget] Released claim on %s.", position);
+                    "[ReleaseJobTarget] [%s] Released claim on %s.", npcId, position);
         } else {
             DebugLog.fine(DebugCategory.JOB_SYSTEM,
-                    "[ReleaseJobTarget] No target to release.");
+                    "[ReleaseJobTarget] [%s] No target to release.", npcId);
+        }
+
+        // Clear noWorkAvailable so the next seek cycle can try again fresh.
+        WorkerComponent worker = store.getComponent(ref, WorkerComponent.getComponentType());
+        if (worker != null) {
+            worker.noWorkAvailable = false;
         }
 
         return true;

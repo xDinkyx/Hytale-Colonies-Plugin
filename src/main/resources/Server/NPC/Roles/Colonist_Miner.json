@@ -48,7 +48,7 @@
       ]
     },
     {
-      "$Comment": "Global harvesting — fires in any state when within range of the job target.",
+      "$Comment": "Global harvesting — fires in any state when within range of the job target. ActionsBlocking advances equip→swing→delay in sequence, limiting hits to one per Timeout interval.",
       "Continue": true,
       "Instructions": [
         {
@@ -56,9 +56,88 @@
             "Type": "JobTarget",
             "Range": 5.0
           },
+          "ActionsBlocking": true,
           "Actions": [
             { "Type": "EquipBestTool" },
-            { "Type": "HarvestBlock", "DamageScale": 0.01 }
+            { "Type": "HarvestBlock", "DamageScale": 0.1 },
+            { "Type": "Timeout", "Delay": [0.5, 0.5] }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "Global break detection — when Working and the job target block is now air, increment the blocks-mined counter and release the claim. Runs every tick via Continue:true so the break is caught in the same tick it happens.",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": { "Type": "State", "State": "Working" },
+          "Instructions": [
+            {
+              "Sensor": { "Type": "JobTargetBroken" },
+              "Actions": [
+                { "Type": "IncrementBlocksMined" },
+                { "Type": "ReleaseJobTarget" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "Global seek-next — when Working, quota not yet reached, and no current target after a release, claim the next mine block.",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": { "Type": "State", "State": "Working" },
+          "Instructions": [
+            {
+              "Sensor": {
+                "Type": "And",
+                "Sensors": [
+                  { "Type": "Not", "Sensor": { "Type": "MineQuotaReached" } },
+                  { "Type": "Not", "Sensor": { "Type": "JobTargetExists" } }
+                ]
+              },
+              "Actions": [
+                { "Type": "SeekNextMineBlock" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "Global quota check — when Working and the quota has been reached, start the ECS delivery pipeline and transition to Collecting.",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": { "Type": "State", "State": "Working" },
+          "Instructions": [
+            {
+              "Sensor": { "Type": "MineQuotaReached" },
+              "Actions": [
+                { "Type": "SetEcsJobState", "State": "CollectingDrops" },
+                { "Type": "State", "State": "Collecting" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "Global no-work fallback — when Working and no blocks remain in the shaft (shaft exhausted), start the ECS delivery pipeline and transition to Collecting.",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": { "Type": "State", "State": "Working" },
+          "Instructions": [
+            {
+              "Sensor": { "Type": "NoWorkAvailable" },
+              "Actions": [
+                { "Type": "SetEcsJobState", "State": "CollectingDrops" },
+                { "Type": "State", "State": "Collecting" }
+              ]
+            }
           ]
         }
       ]
@@ -74,46 +153,64 @@
               "Sensor": { "Type": "EcsJobState", "State": "Idle" },
               "Instructions": [
                 {
-                  "$Comment": "No pickaxe — show confused particle and wait.",
+                  "$Comment": "No pickaxe — show confused particle and wait. ActionsBlocking ensures the particle fires once, then waits, rather than every tick.",
                   "Sensor": {
                     "Type": "Not",
                     "Sensor": { "Type": "HasTool", "GatherType": "Rocks" }
                   },
+                  "ActionsBlocking": true,
                   "Actions": [
                     { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
                     { "Type": "Timeout", "Delay": [3, 3] }
                   ]
                 },
                 {
-                  "$Comment": "No shovel — show confused particle and wait.",
+                  "$Comment": "No shovel — show confused particle and wait. ActionsBlocking ensures the particle fires once, then waits, rather than every tick.",
                   "Sensor": {
                     "Type": "Not",
                     "Sensor": { "Type": "HasTool", "GatherType": "Soils" }
                   },
+                  "ActionsBlocking": true,
                   "Actions": [
                     { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
                     { "Type": "Timeout", "Delay": [3, 3] }
                   ]
                 },
                 {
-                  "$Comment": "Has tools and no current target — claim the next mine block.",
+                  "$Comment": "Persisted job target points to a broken block (e.g. after restart) — release it immediately so we don't navigate to an empty position.",
+                  "Sensor": { "Type": "JobTargetBroken" },
+                  "Actions": [
+                    { "Type": "ReleaseJobTarget" }
+                  ]
+                },
+                {
+                  "$Comment": "Job target exists and colonist is within harvesting range — switch to Working.",
+                  "Sensor": { "Type": "JobTarget", "Range": 5.0 },
+                  "Actions": [
+                    { "Type": "State", "State": "Working" }
+                  ]
+                },
+                {
+                  "$Comment": "Shaft exhausted — wander gently near the workstation (where ECS delivery already walked the miner to). noWorkAvailable stays set so SeekNextMineBlock is never triggered again, and there is no ActionsBlocking wait that would freeze the colonist in place.",
+                  "Sensor": { "Type": "NoWorkAvailable" },
+                  "BodyMotion": {
+                    "Type": "WanderInCircle",
+                    "Radius": 3,
+                    "MaxHeadingChange": 45,
+                    "RelativeSpeed": 0.3
+                  }
+                },
+                {
+                  "$Comment": "Has tools — claim the next mine block or restore navigation to an existing target if lost (e.g. after restart).",
                   "Sensor": {
                     "Type": "And",
                     "Sensors": [
                       { "Type": "HasTool", "GatherType": "Rocks" },
-                      { "Type": "HasTool", "GatherType": "Soils" },
-                      { "Type": "Not", "Sensor": { "Type": "JobTargetExists" } }
+                      { "Type": "HasTool", "GatherType": "Soils" }
                     ]
                   },
                   "Actions": [
                     { "Type": "SeekNextMineBlock" }
-                  ]
-                },
-                {
-                  "$Comment": "Job target claimed and colonist is within harvesting range — switch to Working.",
-                  "Sensor": { "Type": "JobTarget", "Range": 5.0 },
-                  "Actions": [
-                    { "Type": "State", "State": "Working" }
                   ]
                 }
               ]
@@ -123,41 +220,13 @@
       ]
     },
     {
-      "$Comment": "=== WORKING STATE ===",
+      "$Comment": "=== WORKING STATE === The miner is actively mining a claimed block. Break detection, quota, and seek-next are handled by the global instructions above.",
       "Instructions": [
         {
           "Sensor": { "Type": "State", "State": "Working" },
           "Instructions": [
             {
-              "$Comment": "Current mine block was broken — increment counter and release claim.",
-              "Sensor": { "Type": "JobTargetBroken" },
-              "Actions": [
-                { "Type": "IncrementBlocksMined" },
-                { "Type": "ReleaseJobTarget" }
-              ]
-            },
-            {
-              "$Comment": "Quota reached — transition to Collecting.",
-              "Sensor": { "Type": "MineQuotaReached" },
-              "Actions": [
-                { "Type": "State", "State": "Collecting" }
-              ]
-            },
-            {
-              "$Comment": "Quota not reached and no current target — claim next mine block.",
-              "Sensor": {
-                "Type": "And",
-                "Sensors": [
-                  { "Type": "Not", "Sensor": { "Type": "MineQuotaReached" } },
-                  { "Type": "Not", "Sensor": { "Type": "JobTargetExists" } }
-                ]
-              },
-              "Actions": [
-                { "Type": "SeekNextMineBlock" }
-              ]
-            },
-            {
-              "$Comment": "Has next target and close enough — switch back to Working to start harvesting.",
+              "$Comment": "Self-transition keeps the Working state machinery cycling so the global instructions fire on every tick.",
               "Sensor": { "Type": "JobTarget", "Range": 5.0 },
               "Actions": [
                 { "Type": "State", "State": "Working" }

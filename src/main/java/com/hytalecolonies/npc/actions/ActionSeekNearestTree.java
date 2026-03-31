@@ -54,57 +54,59 @@ public class ActionSeekNearestTree extends ActionBase {
                            @Nonnull Store<EntityStore> store) {
         super.execute(ref, role, sensorInfo, dt, store);
 
-        DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] Action fired.");
+        UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
+        String npcId = DebugLog.npcId(ref, store);
+
+        DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] Action started.", npcId);
 
         WorkStationComponent workStation = WorkStationUtil.resolve(store, ref);
         if (workStation == null) {
-            DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] Workstation not found — skipping.");
+            DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] Workstation not found — skipping.", npcId);
             return true;
         }
 
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null) {
-            DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] No JobComponent — cannot resolve workstation position.");
+            DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] No JobComponent — cannot resolve workstation position.", npcId);
             return true;
         }
         Vector3i workStationPosition = job.getWorkStationBlockPosition();
 
-        UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
         if (uuidComponent == null) {
-            DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] No UUIDComponent — cannot claim block.");
+            DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] No UUIDComponent — cannot claim block.", npcId);
             return true;
         }
         UUID colonistUuid = uuidComponent.getUuid();
 
         World world = store.getExternalData().getWorld();
-        Vector3i nearestTree = findNearestAvailableTree(workStation, workStationPosition, world);
+        Vector3i nearestTree = findNearestAvailableTree(workStation, workStationPosition, world, npcId);
 
         if (nearestTree == null) {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[SeekNearestTree] No available trees within radius %.1f of workstation %s.",
-                    workStation.treeSearchRadius, workStationPosition);
+                    "[SeekNearestTree] [%s] No available trees within radius %.1f of workstation %s.",
+                    npcId, workStation.treeSearchRadius, workStationPosition);
             return true;
         }
 
         DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                "[SeekNearestTree] Attempting to claim tree at %s.", nearestTree);
+                "[SeekNearestTree] [%s] Attempting to claim tree at %s.", npcId, nearestTree);
 
         final Vector3i treePosition = nearestTree;
         world.execute(() -> {
             JobTargetComponent existingTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
             if (existingTarget != null && existingTarget.targetPosition != null) {
                 DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                        "[SeekNearestTree] Already has a job target — skipping claim.");
+                        "[SeekNearestTree] [%s] Already has a job target — skipping claim.", npcId);
                 return;
             }
 
             boolean claimed = JobNavigationUtil.claimAndNavigateTo(world, store, ref, colonistUuid, treePosition, "Harvest");
             if (claimed) {
                 DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                        "[SeekNearestTree] Claimed tree at %s — navigating.", treePosition);
+                        "[SeekNearestTree] [%s] Claimed tree at %s — navigating.", npcId, treePosition);
             } else {
                 DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                        "[SeekNearestTree] Tree at %s was already taken — will retry next cycle.", treePosition);
+                        "[SeekNearestTree] [%s] Tree at %s was already taken — will retry next cycle.", npcId, treePosition);
             }
         });
 
@@ -114,7 +116,8 @@ public class ActionSeekNearestTree extends ActionBase {
     @Nullable
     private static Vector3i findNearestAvailableTree(@Nonnull WorkStationComponent workStation,
                                                       @Nullable Vector3i workStationPosition,
-                                                      @Nonnull World world) {
+                                                      @Nonnull World world,
+                                                      @Nonnull String npcId) {
         List<Vector3i> candidates = new ArrayList<>();
         Query<ChunkStore> treeQuery = Query.and(HarvestableTreeComponent.getComponentType());
 
@@ -135,8 +138,8 @@ public class ActionSeekNearestTree extends ActionBase {
         });
 
         DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                "[SeekNearestTree] Scan found %d candidate trees (radius=%.1f, workstation=%s).",
-                candidates.size(), workStation.treeSearchRadius, workStationPosition);
+                "[SeekNearestTree] [%s] Scan found %d candidate trees (radius=%.1f, workstation=%s).",
+                npcId, candidates.size(), workStation.treeSearchRadius, workStationPosition);
 
         if (workStationPosition == null) {
             return candidates.isEmpty() ? null : candidates.get(0);

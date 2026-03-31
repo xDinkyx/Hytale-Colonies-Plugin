@@ -51,10 +51,15 @@ public class ActionFindNextTrunkBlock extends ActionBase {
                            @Nonnull Store<EntityStore> store) {
         super.execute(ref, role, sensorInfo, dt, store);
 
+        UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
+        String npcId = DebugLog.npcId(ref, store);
+
+        DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[FindNextTrunkBlock] [%s] Action started.", npcId);
+
         JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.targetPosition == null) {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[FindNextTrunkBlock] No job target -- nothing to do.");
+                    "[FindNextTrunkBlock] [%s] No job target -- nothing to do.", npcId);
             return true;
         }
         Vector3i brokenPosition = new Vector3i(
@@ -63,44 +68,43 @@ public class ActionFindNextTrunkBlock extends ActionBase {
                 jobTarget.targetPosition.z);
 
         DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                "[FindNextTrunkBlock] Block at %s broken -- flood-filling for adjacent trunk.", brokenPosition);
+                "[FindNextTrunkBlock] [%s] Block at %s broken -- flood-filling for adjacent trunk.", npcId, brokenPosition);
 
         WorkStationComponent workStation = WorkStationUtil.resolve(store, ref);
         Set<String> allowedWoodTypes = workStation != null ? workStation.getAllowedTreeTypes() : null;
         if (allowedWoodTypes == null) {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[FindNextTrunkBlock] Workstation not found — cannot filter by wood type. Target will be cleared.");
+                    "[FindNextTrunkBlock] [%s] Workstation not found — cannot filter by wood type. Target will be cleared.", npcId);
         }
 
-        UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
         if (uuidComponent == null) {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[FindNextTrunkBlock] No UUIDComponent — cannot claim next trunk.");
+                    "[FindNextTrunkBlock] [%s] No UUIDComponent — cannot claim next trunk.", npcId);
             return true;
         }
         UUID colonistUuid = uuidComponent.getUuid();
 
         World world = store.getExternalData().getWorld();
         Vector3i nextTrunk = allowedWoodTypes != null
-                ? findAdjacentStandingTrunk(brokenPosition, allowedWoodTypes, world)
+                ? findAdjacentStandingTrunk(brokenPosition, allowedWoodTypes, world, npcId)
                 : null;
 
         world.execute(() -> {
             ClaimBlockUtil.unclaimBlock(world, brokenPosition);
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[FindNextTrunkBlock] Unclaimed broken block at %s.", brokenPosition);
+                    "[FindNextTrunkBlock] [%s] Unclaimed broken block at %s.", npcId, brokenPosition);
 
             JobTargetComponent liveTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
             if (liveTarget == null) {
                 DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                        "[FindNextTrunkBlock] JobTargetComponent disappeared during world.execute — skipping.");
+                        "[FindNextTrunkBlock] [%s] JobTargetComponent disappeared during world.execute — skipping.", npcId);
                 return;
             }
 
             if (nextTrunk != null) {
-                claimAndMoveToNextTrunk(world, store, ref, colonistUuid, liveTarget, nextTrunk);
+                claimAndMoveToNextTrunk(world, store, ref, colonistUuid, liveTarget, nextTrunk, npcId);
             } else {
-                clearTarget(liveTarget);
+                clearTarget(liveTarget, npcId);
             }
         });
 
@@ -109,22 +113,23 @@ public class ActionFindNextTrunkBlock extends ActionBase {
 
     private static void claimAndMoveToNextTrunk(@Nonnull World world, @Nonnull Store<EntityStore> store,
                                                  @Nonnull Ref<EntityStore> ref, @Nonnull UUID colonistUuid,
-                                                 @Nonnull JobTargetComponent liveTarget, @Nonnull Vector3i nextTrunk) {
+                                                 @Nonnull JobTargetComponent liveTarget, @Nonnull Vector3i nextTrunk,
+                                                 @Nonnull String npcId) {
         boolean claimed = JobNavigationUtil.claimAndNavigateTo(world, store, ref, colonistUuid, nextTrunk, "Harvest");
         if (claimed) {
             DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                    "[FindNextTrunkBlock] Claimed adjacent trunk at %s -- navigating.", nextTrunk);
+                    "[FindNextTrunkBlock] [%s] Claimed adjacent trunk at %s -- navigating.", npcId, nextTrunk);
         } else {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[FindNextTrunkBlock] Adjacent trunk at %s already taken -- clearing target.", nextTrunk);
+                    "[FindNextTrunkBlock] [%s] Adjacent trunk at %s already taken -- clearing target.", npcId, nextTrunk);
             liveTarget.setTargetPosition(null);
         }
     }
 
-    private static void clearTarget(@Nonnull JobTargetComponent liveTarget) {
+    private static void clearTarget(@Nonnull JobTargetComponent liveTarget, @Nonnull String npcId) {
         liveTarget.setTargetPosition(null);
         DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                "[FindNextTrunkBlock] No adjacent trunks remain -- tree fully harvested.");
+                "[FindNextTrunkBlock] [%s] No adjacent trunks remain -- tree fully harvested.", npcId);
     }
 
     /**
@@ -134,7 +139,8 @@ public class ActionFindNextTrunkBlock extends ActionBase {
     @Nullable
     private static Vector3i findAdjacentStandingTrunk(@Nonnull Vector3i brokenPosition,
                                                        @Nonnull Set<String> allowedWoodTypes,
-                                                       @Nonnull World world) {
+                                                       @Nonnull World world,
+                                                       @Nonnull String npcId) {
         int baseY = brokenPosition.y;
         Set<Long> visited = new HashSet<>();
         Deque<Vector3i> queue = new ArrayDeque<>();
@@ -153,13 +159,13 @@ public class ActionFindNextTrunkBlock extends ActionBase {
             String blockKey = TreeDetector.getBlockKey(world, current.x, current.y, current.z);
             if (blockKey != null && allowedWoodTypes.contains(blockKey)) {
                 DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                        "[FindNextTrunkBlock] Found adjacent trunk at %s (key=%s).", current, blockKey);
+                        "[FindNextTrunkBlock] [%s] Found adjacent trunk at %s (key=%s).", npcId, current, blockKey);
                 return current;
             }
         }
 
         DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                "[FindNextTrunkBlock] No adjacent standing trunks found from %s.", brokenPosition);
+                "[FindNextTrunkBlock] [%s] No adjacent standing trunks found from %s.", npcId, brokenPosition);
         return null;
     }
 

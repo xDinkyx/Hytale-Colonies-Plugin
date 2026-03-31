@@ -51,6 +51,10 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
         JobComponent job = archetypeChunk.getComponent(index, JobComponent.getComponentType());
         assert job != null;
 
+        DebugLog.fine(DebugCategory.JOB_SYSTEM,
+                "[ColonistJob] Tick colonist %d with job state %s.",
+                index, job.getCurrentTask());
+
         JobState state = job.getCurrentTask();
         if (state == null) {
             DebugLog.warning(DebugCategory.JOB_SYSTEM,
@@ -63,7 +67,15 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
         if (handler != null) {
             Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
             handler.handle(new JobContext(colonistRef, job, store, commandBuffer));
+        } else if (state == JobState.TravelingToJob) {
+            // TravelingToJob was managed by old ECS handler code that no longer exists.
+            // The JSON role engine now handles navigation directly, so reset to Idle
+            // so the NPC instruction engine can take over cleanly.
+            DebugLog.warning(DebugCategory.JOB_SYSTEM,
+                    "[ColonistJob] Stale ECS state '%s' (no handler) — resetting to Idle.", state);
+            job.setCurrentTask(JobState.Idle);
         }
+        // Idle and Working are driven entirely by the NPC role JSON engine — no action needed here.
     }
 
     @Override

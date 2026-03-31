@@ -45,10 +45,14 @@ public class ActionSetEcsJobState extends ActionBase {
                            @Nonnull Store<EntityStore> store) {
         super.execute(ref, role, sensorInfo, dt, store);
 
+        String npcId = DebugLog.npcId(ref, store);
+
+        DebugLog.fine(DebugCategory.JOB_SYSTEM, "[SetEcsJobState] [%s] Action started (target=%s).", npcId, targetState);
+
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null) {
             DebugLog.warning(DebugCategory.JOB_SYSTEM,
-                    "[SetEcsJobState] No JobComponent — cannot set state to %s.", targetState);
+                    "[SetEcsJobState] [%s] No JobComponent — cannot set state to %s.", npcId, targetState);
             return true;
         }
 
@@ -58,7 +62,7 @@ public class ActionSetEcsJobState extends ActionBase {
         job.setCurrentTask(targetState);
 
         DebugLog.info(DebugCategory.JOB_SYSTEM,
-                "[SetEcsJobState] ECS job state set to %s.", targetState);
+                "[SetEcsJobState] [%s] ECS job state set to %s.", npcId, targetState);
 
         return true;
     }

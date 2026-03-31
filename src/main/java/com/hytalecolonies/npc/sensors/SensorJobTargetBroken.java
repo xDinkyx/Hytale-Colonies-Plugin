@@ -40,7 +40,7 @@ public class SensorJobTargetBroken extends SensorBase {
         Vector3i position = jobTarget.targetPosition;
         World world = store.getExternalData().getWorld();
         boolean broken = world.getBlock(position.x, position.y, position.z) == 0;
-        DebugLog.fine(DebugCategory.JOB_SYSTEM,
+        DebugLog.fine(DebugCategory.MINER_JOB,
                 "[SensorJobTargetBroken] position=%s broken=%b.", position, broken);
         return broken;
     }

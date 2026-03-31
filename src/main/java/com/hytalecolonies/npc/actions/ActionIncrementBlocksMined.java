@@ -27,14 +27,18 @@ public class ActionIncrementBlocksMined extends ActionBase {
                            @Nonnull Store<EntityStore> store) {
         super.execute(ref, role, sensorInfo, dt, store);
 
+        String npcId = DebugLog.npcId(ref, store);
+
+        DebugLog.fine(DebugCategory.MINER_JOB, "[IncrementBlocksMined] [%s] Action started.", npcId);
+
         MinerJobComponent minerJob = store.getComponent(ref, MinerJobComponent.getComponentType());
         if (minerJob != null) {
             minerJob.blocksMinedThisRun++;
             DebugLog.info(DebugCategory.MINER_JOB,
-                    "[IncrementBlocksMined] Blocks mined this run: %d.", minerJob.blocksMinedThisRun);
+                    "[IncrementBlocksMined] [%s] Blocks mined this run: %d.", npcId, minerJob.blocksMinedThisRun);
         } else {
             DebugLog.warning(DebugCategory.MINER_JOB,
-                    "[IncrementBlocksMined] No MinerJobComponent found — cannot increment.");
+                    "[IncrementBlocksMined] [%s] No MinerJobComponent found — cannot increment.", npcId);
         }
 
         return true;

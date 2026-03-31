@@ -27,13 +27,17 @@ public class ActionResetBlocksMined extends ActionBase {
                            @Nonnull Store<EntityStore> store) {
         super.execute(ref, role, sensorInfo, dt, store);
 
+        String npcId = DebugLog.npcId(ref, store);
+
+        DebugLog.fine(DebugCategory.MINER_JOB, "[ResetBlocksMined] [%s] Action started.", npcId);
+
         MinerJobComponent minerJob = store.getComponent(ref, MinerJobComponent.getComponentType());
         if (minerJob != null) {
             minerJob.blocksMinedThisRun = 0;
-            DebugLog.info(DebugCategory.MINER_JOB, "[ResetBlocksMined] Per-run counter reset to 0.");
+            DebugLog.info(DebugCategory.MINER_JOB, "[ResetBlocksMined] [%s] Per-run counter reset to 0.", npcId);
         } else {
             DebugLog.warning(DebugCategory.MINER_JOB,
-                    "[ResetBlocksMined] No MinerJobComponent found — nothing to reset.");
+                    "[ResetBlocksMined] [%s] No MinerJobComponent found — nothing to reset.", npcId);
         }
 
         return true;

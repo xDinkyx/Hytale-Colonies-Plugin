@@ -61,14 +61,15 @@
               "Sensor": { "Type": "EcsJobState", "State": "Idle" },
               "Instructions": [
                 {
-                  "$Comment": "No woodcutting tool — show confused particle and wait.",
+                  "$Comment": "No woodcutting tool — show confused particle and wait. ActionsBlocking ensures the particle fires once, then waits, rather than every tick.",
                   "Sensor": {
                     "Type": "Not",
                     "Sensor": { "Type": "HasTool", "GatherType": "Woods" }
                   },
+                  "ActionsBlocking": true,
                   "Actions": [
                     { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
-                    { "Type": "Timeout", "Delay": 3.0 }
+                    { "Type": "Timeout", "Delay": [3, 3] }
                   ]
                 },
                 {
