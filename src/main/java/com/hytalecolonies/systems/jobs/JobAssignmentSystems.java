@@ -33,7 +33,6 @@ import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
-import com.hytalecolonies.components.jobs.WorkerComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
@@ -208,8 +207,6 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             case Farmer, Builder -> { /* TODO: implement job-specific component */ }
         }
 
-        // Add the generic WorkerComponent — used by NoWorkAvailable sensor across all task-based jobs.
-        _commandBuffer.addComponent(colonistRef, WorkerComponent.getComponentType(), new WorkerComponent());
 
         DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "Assigned Colonist %s to job at %s.", colonistEntityUuid.getUuid(),
                 workStation.getJobType());

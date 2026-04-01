@@ -7,10 +7,9 @@ public enum JobState {
     Working,
     CollectingDrops,
     DeliveringItems,
-    Recharging, // This is different depending on the creature's energy system. For example a human needs to eat, but a robot needs to recharge.
+    Recharging, // Reserved: creature energy system (humans eat, robots recharge). Not yet implemented.
     TravelingToJob,
-    TravelingHome,
-    Sleeping;
+    TravelingHome;
 
     public static final EnumCodec<JobState> CODEC = new EnumCodec<>(JobState.class);
 }

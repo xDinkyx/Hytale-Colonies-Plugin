@@ -11,7 +11,7 @@ import javax.annotation.Nonnull;
 /**
  * Builder for the {@code "NoWorkAvailable"} sensor.
  *
- * <p>Fires when the colonist's {@code WorkerComponent.noWorkAvailable} flag is
+ * <p>Fires when the colonist's {@code JobComponent.noWorkAvailable} flag is
  * {@code true}. Any seek action (SeekNextMineBlock, SeekNextTree, etc.) sets
  * this flag when it scans for task targets and finds none. No JSON configuration
  * is required.

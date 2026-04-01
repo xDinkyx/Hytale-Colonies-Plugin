@@ -2,7 +2,6 @@ package com.hytalecolonies.npc.actions;
 
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.WorkerComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.debug.DebugCategory;
@@ -121,22 +120,10 @@ public class ActionSeekNextMineBlock extends ActionBase {
             DebugLog.fine(DebugCategory.MINER_JOB,
                     "[SeekNextMineBlock] [%s] Shaft at origin %s has no solid unclaimed blocks — marking no work available.",
                     npcId, workStation.mineOrigin);
-            WorkerComponent worker = store.getComponent(ref, WorkerComponent.getComponentType());
-            if (worker == null) {
-                DebugLog.warning(DebugCategory.MINER_JOB,
-                        "[SeekNextMineBlock] [%s] WorkerComponent missing (pre-migration entity) — adding lazily via putComponent.",
-                        npcId);
-                store.putComponent(ref, WorkerComponent.getComponentType(), new WorkerComponent());
-                worker = store.getComponent(ref, WorkerComponent.getComponentType());
-            }
-            if (worker != null) {
-                worker.noWorkAvailable = true;
+            if (job != null) {
+                job.workAvailable = false;
                 DebugLog.fine(DebugCategory.MINER_JOB,
-                        "[SeekNextMineBlock] [%s] noWorkAvailable = true.", npcId);
-            } else {
-                DebugLog.warning(DebugCategory.MINER_JOB,
-                        "[SeekNextMineBlock] [%s] WorkerComponent still unavailable after lazy-add — will retry next tick.",
-                        npcId);
+                        "[SeekNextMineBlock] [%s] workAvailable = false.", npcId);
             }
             return true;
         }
@@ -174,9 +161,9 @@ public class ActionSeekNextMineBlock extends ActionBase {
             capturedRole.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT)
                     .assign(blockToMine.x + 0.5, (double) blockToMine.y, blockToMine.z + 0.5);
             // Clear the flag now that work has been found.
-            WorkerComponent worker = store.getComponent(ref, WorkerComponent.getComponentType());
-            if (worker != null) {
-                worker.noWorkAvailable = false;
+            JobComponent jobForClear = store.getComponent(ref, JobComponent.getComponentType());
+            if (jobForClear != null) {
+                jobForClear.workAvailable = true;
             }
             DebugLog.info(DebugCategory.MINER_JOB,
                     "[SeekNextMineBlock] [%s] Claimed block at %s — navigating.", npcId, blockToMine);

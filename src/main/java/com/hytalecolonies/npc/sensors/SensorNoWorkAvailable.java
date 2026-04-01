@@ -1,6 +1,6 @@
 package com.hytalecolonies.npc.sensors;
 
-import com.hytalecolonies.components.jobs.WorkerComponent;
+import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hypixel.hytale.component.Ref;
@@ -13,7 +13,7 @@ import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import javax.annotation.Nonnull;
 
 /**
- * Generic sensor that fires when the colonist's {@link WorkerComponent#noWorkAvailable}
+ * Generic sensor that fires when the colonist's {@link JobComponent#noWorkAvailable}
  * flag is {@code true}.
  *
  * <p>Any seek action (SeekNextMineBlock, SeekNextTree, etc.) sets this flag when
@@ -35,12 +35,12 @@ public class SensorNoWorkAvailable extends SensorBase {
             return false;
         }
 
-        WorkerComponent worker = store.getComponent(ref, WorkerComponent.getComponentType());
-        boolean result = worker != null && worker.noWorkAvailable;
+        JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
+        boolean result = job != null && !job.workAvailable;
         DebugLog.fine(DebugCategory.JOB_SYSTEM,
-                "[SensorNoWorkAvailable] worker=%s noWorkAvailable=%s result=%s.",
-                worker != null ? "present" : "null",
-                worker != null ? worker.noWorkAvailable : "N/A",
+                "[SensorNoWorkAvailable] worker=%s workAvailable=%s result=%s.",
+                job != null ? "present" : "null",
+                job != null ? job.workAvailable : "N/A",
                 result);
         return result;
     }

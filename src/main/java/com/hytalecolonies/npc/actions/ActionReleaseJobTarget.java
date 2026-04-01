@@ -1,7 +1,7 @@
 package com.hytalecolonies.npc.actions;
 
+import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.WorkerComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.ClaimBlockUtil;
@@ -58,10 +58,10 @@ public class ActionReleaseJobTarget extends ActionBase {
                     "[ReleaseJobTarget] [%s] No target to release.", npcId);
         }
 
-        // Clear noWorkAvailable so the next seek cycle can try again fresh.
-        WorkerComponent worker = store.getComponent(ref, WorkerComponent.getComponentType());
-        if (worker != null) {
-            worker.noWorkAvailable = false;
+        // Reset workAvailable so the next seek cycle can try again fresh.
+        JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
+        if (job != null) {
+            job.workAvailable = true;
         }
 
         return true;

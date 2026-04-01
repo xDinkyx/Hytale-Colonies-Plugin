@@ -19,7 +19,6 @@ import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
-import com.hytalecolonies.components.jobs.WorkerComponent;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
@@ -85,7 +84,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     private ComponentType<ChunkStore, HarvestableTreeComponent> harvestableTreeComponentType;
     private ComponentType<EntityStore, JobTargetComponent> jobTargetComponentType;
     private ComponentType<ChunkStore, ClaimedBlockComponent> claimedBlockComponentType;
-    private ComponentType<EntityStore, WorkerComponent> workerComponentType;
 
     public HytaleColoniesPlugin(@Nonnull JavaPluginInit init) {
         super(init);
@@ -152,7 +150,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         harvestableTreeComponentType = getChunkStoreRegistry().registerComponent(HarvestableTreeComponent.class, "HarvestableTree", HarvestableTreeComponent.CODEC);
         jobTargetComponentType = getEntityStoreRegistry().registerComponent(JobTargetComponent.class, "JobTarget", JobTargetComponent.CODEC);
         claimedBlockComponentType = getChunkStoreRegistry().registerComponent(ClaimedBlockComponent.class, "ClaimedBlock", ClaimedBlockComponent.CODEC);
-        workerComponentType = getEntityStoreRegistry().registerComponent(WorkerComponent.class, "Worker", WorkerComponent.CODEC);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ECS components");
     }
 
@@ -200,9 +197,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     }
     public ComponentType<ChunkStore, ClaimedBlockComponent> getClaimedBlockComponentType() {
         return claimedBlockComponentType;
-    }
-    public ComponentType<EntityStore, WorkerComponent> getWorkerComponentType() {
-        return workerComponentType;
     }
 
     /**
