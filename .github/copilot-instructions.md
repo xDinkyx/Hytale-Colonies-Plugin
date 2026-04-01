@@ -28,6 +28,10 @@ This is a Hytale plugin project. Hytale plugins are used to extend the functiona
 	- This includes learning new APIs, libraries, frameworks, or best practices related to that skill.
 	- An example would be learning specific Hytale modding APIs or ECS patterns. Skills are meant to document knowledge about specific use cases and APIs.
 
+## HytaleColonies Plugin
+- This plugin implements a colony-management system with colonist NPCs that perform jobs (mining, woodcutting, etc.).
+- For any work involving colonist NPCs, job systems, or role JSON files, load the `hytalecolonies-npc-design` skill — it defines the canonical ECS/JSON architecture for this plugin and overrides general Hytale NPC patterns where they conflict.
+
 ## Hytale ECS notes (follow these patterns)
 - ECS is composition over inheritance. Entities are identifiers only, Components are pure data, Systems contain logic.
 - Use `Store<EntityStore>` to access component data. Do not keep direct references to entity objects; use `Ref<EntityStore>` handles and validate as needed.
