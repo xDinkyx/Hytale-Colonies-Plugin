@@ -288,10 +288,24 @@ if defined ASSETS_PATH (
         xcopy /s /e /i /q "%ASSETS_PATH%\Server" "%LIB_DIR%\Server" >nul
         echo   Server assets copied to: %LIB_DIR%\Server
     )
+
+    REM Copy Common assets (block textures, item models, NPC visuals, sounds, particles, VFX, UI, etc.)
+    if exist "%ASSETS_PATH%\Common" (
+        echo.
+        echo Copying Common assets...
+        
+        if exist "%LIB_DIR%\Common" (
+            echo   Removing existing Common assets...
+            rmdir /s /q "%LIB_DIR%\Common"
+        )
+        
+        xcopy /s /e /i /q "%ASSETS_PATH%\Common" "%LIB_DIR%\Common" >nul
+        echo   Common assets copied to: %LIB_DIR%\Common
+    )
 )
 
-REM Copy UI assets from Hytale launcher installation (has the actual .ui files)
-REM Uses the 'latest' symlink which points to current build
+REM Copy UI assets - prefer Hytale launcher installation (full client .ui files),
+REM fall back to Assets\Common\UI from the extracted package.
 set "UI_SOURCE=%APPDATA%\Hytale\install\pre-release\package\game\latest\Client\Data\Game\Interface"
 
 if exist "%UI_SOURCE%" (
@@ -306,6 +320,20 @@ if exist "%UI_SOURCE%" (
     
     xcopy /s /e /i /q "%UI_SOURCE%" "%LIB_DIR%\UI" >nul
     echo   UI assets copied to: %LIB_DIR%\UI
+) else if defined ASSETS_PATH (
+    if exist "%ASSETS_PATH%\Common\UI" (
+        echo.
+        echo Warning: Hytale launcher path not found. Falling back to extracted Assets\Common\UI...
+        echo   Source: %ASSETS_PATH%\Common\UI
+        
+        if exist "%LIB_DIR%\UI" (
+            echo   Removing existing UI assets...
+            rmdir /s /q "%LIB_DIR%\UI"
+        )
+        
+        xcopy /s /e /i /q "%ASSETS_PATH%\Common\UI" "%LIB_DIR%\UI" >nul
+        echo   UI assets copied to: %LIB_DIR%\UI
+    )
 ) else (
     echo Warning: UI folder not found at: %UI_SOURCE%
     echo   Make sure Hytale is installed via the launcher.
@@ -326,6 +354,7 @@ echo   lib/
 echo     HytaleServer.jar          (original JAR)
 echo     hytale-server/src/main/   (decompiled source)
 echo     Server/                   (server assets)
+echo     Common/                   (common assets - textures, models, sounds, VFX, UI)
 echo     UI/                       (UI assets)
 echo.
 echo Remember: Decompiled code may have errors - it's for reference only.
