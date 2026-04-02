@@ -1,0 +1,172 @@
+﻿{
+  "$Comment": "Miner colonist role — ECS-as-master architecture. JSON owns movement, animation, and in-state behavior only. ECS owns all state-transition decisions.",
+  "Type": "Generic",
+  "Appearance": "Mannequin",
+  "MaxHealth": 20,  "NameTranslationKey": "server.npcRoles.Colonist_Miner.name",
+  "MotionControllerList": [
+    {
+      "Type": "Walk",
+      "MaxWalkSpeed": 4
+    }
+  ],
+  "InventorySize": 12,
+  "StateTransitions": [],
+  "Instructions": [
+    {
+      "$Comment": "Global navigation — always running (Continue: true). ECS writes the NavTarget slot; JSON drives the body toward it.",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": {
+            "Type": "ReadPosition",
+            "Slot": "NavTarget",
+            "Range": 200.0,
+            "MinRange": 1.5
+          },
+          "BodyMotion": {
+            "Type": "Seek",
+            "StopDistance": 1.5,
+            "SlowDownDistance": 3,
+            "RelativeSpeed": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "$Comment": "Working — mine the target block while in range. ActionsBlocking sequences equip→swing→cooldown each cycle.",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": { "Type": "EcsJobState", "JobState": "Working" },
+          "Instructions": [
+            {
+              "Sensor": { "Type": "JobTarget", "Range": 5.0 },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "EquipBestTool" },
+                { "Type": "HarvestBlock", "DamageScale": 0.1 },
+                { "Type": "Timeout", "Delay": [0.5, 0.5] }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "Working — when job-target block is air, notify ECS. ECS decides the next state (quota check, next block, or collect).",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": { "Type": "EcsJobState", "JobState": "Working" },
+          "Instructions": [
+            {
+              "Sensor": { "Type": "JobTargetBroken" },
+              "Actions": [
+                { "Type": "NotifyBlockBroken" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "CollectingDrops — wander near the drop site and pick up items while ECS delivery pipeline runs.",
+      "Instructions": [
+        {
+          "Sensor": { "Type": "EcsJobState", "JobState": "CollectingDrops" },
+          "Instructions": [
+            {
+              "$Comment": "Wander so the colonist is not stationary while waiting for drops to settle.",
+              "Continue": true,
+              "Sensor": { "Type": "Any" },
+              "BodyMotion": {
+                "Type": "WanderInCircle",
+                "Radius": 5,
+                "MaxHeadingChange": 60,
+                "RelativeSpeed": 0.5
+              }
+            },
+            {
+              "Sensor": { "Type": "DroppedItem", "Range": 5.0 },
+              "Actions": [
+                { "Type": "PickUpItem", "Hoover": true }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "Idle — wander near workstation and show a confused particle if a required tool is missing. ECS handles mine-target claiming and the Idle→TravelingToJob transition.",
+
+      "Instructions": [
+        {
+          "Sensor": { "Type": "EcsJobState", "JobState": "Idle" },
+          "Instructions": [
+            {
+              "$Comment": "No pickaxe — confused particle + wait.",
+              "Sensor": {
+                "Type": "Not",
+                "Sensor": { "Type": "HasTool", "GatherType": "Rocks" }
+              },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
+                { "Type": "Timeout", "Delay": [3, 3] }
+              ]
+            },
+            {
+              "$Comment": "No shovel — confused particle + wait.",
+              "Sensor": {
+                "Type": "Not",
+                "Sensor": { "Type": "HasTool", "GatherType": "Soils" }
+              },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
+                { "Type": "Timeout", "Delay": [3, 3] }
+              ]
+            },
+            {
+              "$Comment": "Has both tools — wander gently near workstation while ECS scans for the next mine block.",
+              "Continue": true,
+              "Sensor": {
+                "Type": "And",
+                "Sensors": [
+                  { "Type": "HasTool", "GatherType": "Rocks" },
+                  { "Type": "HasTool", "GatherType": "Soils" }
+                ]
+              },
+              "BodyMotion": {
+                "Type": "WanderInCircle",
+                "Radius": 3,
+                "MaxHeadingChange": 45,
+                "RelativeSpeed": 0.3
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "NoWork — no mine blocks available. Rest gently until ECS assigns new work.",
+      "Instructions": [
+        {
+          "Sensor": { "Type": "EcsJobState", "JobState": "NoWork" },
+          "Instructions": [
+            {
+              "Continue": true,
+              "Sensor": { "Type": "Any" },
+              "BodyMotion": {
+                "Type": "WanderInCircle",
+                "Radius": 3,
+                "MaxHeadingChange": 45,
+                "RelativeSpeed": 0.2
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

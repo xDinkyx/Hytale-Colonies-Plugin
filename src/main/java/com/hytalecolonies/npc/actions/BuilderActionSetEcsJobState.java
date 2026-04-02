@@ -14,7 +14,7 @@ import javax.annotation.Nonnull;
  * to the configured {@link com.hytalecolonies.components.jobs.JobState} value.
  *
  * <p>JSON usage:
- * <pre>{@code { "Type": "SetEcsJobState", "State": "CollectingDrops" }}</pre>
+ * <pre>{@code { "Type": "SetEcsJobState", "JobState": "CollectingDrops" }}</pre>
  *
  * <p>When setting {@code CollectingDrops}, also initialises
  * {@code JobComponent.collectingDropsSince} to the current time so that
@@ -31,7 +31,7 @@ public class BuilderActionSetEcsJobState extends BuilderActionBase {
     @Nonnull
     @Override
     public Builder<Action> readConfig(@Nonnull JsonElement data) {
-        this.getString(data, "State", this.stateName, "Idle",
+        this.getString(data, "JobState", this.stateName, "Idle",
                 null,
                 BuilderDescriptorState.Experimental,
                 "The ECS job state to set (e.g. CollectingDrops, Idle)", null);

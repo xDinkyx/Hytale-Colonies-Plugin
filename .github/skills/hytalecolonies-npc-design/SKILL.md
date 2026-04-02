@@ -168,3 +168,4 @@ Single source of truth for all job configuration. Never hard-code these values.
 | `ActionsBlocking` containing bridge actions | Blocking pipeline freezes NPC when ECS state changes | Only use `ActionsBlocking` for pure behavior sequences |
 | Storing runtime flags in per-job component instead of `JobComponent` | Extra component, harder to access from sensors | Keep all transient job flags on `JobComponent` |
 | Using the 2s job system for reactive working-state detection | 2-second lag before events are processed | Use `EntityTickingSystem` filtered to `Working` state |
+| Comparing server log timestamps to local file timestamps | Hytale server logs are in **UTC**. Local system time may differ by hours. Always convert before comparing. | Use `(Get-Date).ToUniversalTime()` or compare log UTC timestamps to UTC build times |

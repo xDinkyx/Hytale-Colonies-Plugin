@@ -35,13 +35,12 @@ public class JobComponent implements Component<EntityStore> {
     /** World position of the linked delivery container. Transient — re-discovered each delivery run. */
     public @Nullable Vector3i deliveryContainerPosition = null;
     /**
-     * {@code false} when a seek action scanned for work and found none
-     * (e.g. shaft exhausted, no trees left). Reset to {@code true} when work is
-     * found or the job target is released.
-     * Checked by {@link com.hytalecolonies.npc.sensors.SensorNoWorkAvailable}.
-     * Transient — not persisted.
+     * {@code false} when no work targets were found. Cleared when work is found or target released.
+     * Read by {@link com.hytalecolonies.npc.sensors.SensorNoWorkAvailable}. Transient.
      */
     public boolean workAvailable = true;
+    /** Set by {@code ActionNotifyBlockBroken}; read and cleared by {@link com.hytalecolonies.systems.jobs.MinerWorkingSystem}. Transient. */
+    public boolean blockBrokenNotification = false;
 
     // ===== Constructors =====
     public JobComponent() {}

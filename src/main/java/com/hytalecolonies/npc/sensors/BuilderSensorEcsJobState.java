@@ -13,7 +13,7 @@ import javax.annotation.Nonnull;
  * Builder for the {@code "EcsJobState"} sensor.
  *
  * <p>JSON usage:
- * <pre>{@code { "Type": "EcsJobState", "State": "Idle" }}</pre>
+ * <pre>{@code { "Type": "EcsJobState", "JobState": "Idle" }}</pre>
  *
  * <p>Fires when {@code JobComponent.getCurrentTask()} equals the configured state name.
  * This is the bridge sensor between the NPC role state machine and the ECS job pipeline.
@@ -29,7 +29,7 @@ public class BuilderSensorEcsJobState extends BuilderSensorBase {
     @Nonnull
     @Override
     public Builder<Sensor> readConfig(@Nonnull JsonElement data) {
-        this.getString(data, "State", this.stateName, "Idle",
+        this.getString(data, "JobState", this.stateName, "Idle",
                 null,
                 BuilderDescriptorState.Experimental,
                 "The expected ECS job state (e.g. Idle, CollectingDrops)", null);

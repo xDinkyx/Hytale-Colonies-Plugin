@@ -42,8 +42,14 @@ public final class MinerHandlers {
      * shaft block, claims it, and transitions to {@link JobState#TravelingToJob}.
      */
     public static final JobStateHandler IDLE = ctx -> {
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Handler running.");
+
         Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
-        if (workStationPos == null) return;
+        if (workStationPos == null) {
+            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idle] No workstation position on JobComponent.");
+            return;
+        }
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Workstation pos = %s.", workStationPos);
 
         World world = ctx.world;
         Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
@@ -51,73 +57,94 @@ public final class MinerHandlers {
                 ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
                 : null;
         if (workStation == null) {
-            DebugLog.warning(DebugCategory.MINER_JOB,
-                    "[MinerJob] Idle — workstation block entity not found at %s.", workStationPos);
+            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idle] WorkStationComponent not found at %s (wsRef=%s).", workStationPos, wsRef);
             return;
         }
-
-        LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ctx.colonistRef, ctx.store);
-        if (colonist == null) return;
-        if (!ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), GATHER_TYPE_PICKAXE, 0)) {
-            DebugLog.fine(DebugCategory.MINER_JOB,
-                    "[MinerJob] Idle — no pickaxe ('%s') in inventory. Waiting at workstation.", GATHER_TYPE_PICKAXE);
-            return;
-        }
-        if (!ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), GATHER_TYPE_SHOVEL, 0)) {
-            DebugLog.fine(DebugCategory.MINER_JOB,
-                    "[MinerJob] Idle — no shovel ('%s') in inventory. Waiting at workstation.", GATHER_TYPE_SHOVEL);
-            return;
-        }
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] WorkStationComponent found. mineOffsetZ=%d mineSize=%d blocksPerRun=%d.",
+                workStation.mineOffsetZ, workStation.mineSize, workStation.blocksPerRun);
 
         MinerJobComponent miner = ctx.store.getComponent(ctx.colonistRef, MinerJobComponent.getComponentType());
-        if (miner == null) return;
+        if (miner == null) {
+            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idle] No MinerJobComponent on colonist — is this actually a miner?");
+            return;
+        }
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] MinerJobComponent found. blocksMinedThisRun=%d.", miner.blocksMinedThisRun);
 
-        // Compute mine origin once per workstation lifetime and persist it there.
+        LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ctx.colonistRef, ctx.store);
+        if (colonist == null) {
+            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idle] Could not resolve LivingEntity.");
+            return;
+        }
+        boolean hasPickaxe = ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), GATHER_TYPE_PICKAXE, 0);
+        boolean hasShovel = ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), GATHER_TYPE_SHOVEL, 0);
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Tool check — pickaxe=%b shovel=%b.", hasPickaxe, hasShovel);
+        if (!hasPickaxe || !hasShovel) {
+            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Missing tools — skipping until equipped.");
+            return;
+        }
+
+        // Compute mine origin once per workstation lifetime.
         if (workStation.mineOrigin == null) {
             workStation.mineOrigin = new Vector3i(
                     workStationPos.x,
                     workStationPos.y,
                     workStationPos.z + workStation.mineOffsetZ
             );
-            DebugLog.info(DebugCategory.MINER_JOB,
-                    "[MinerJob] Mine origin set to %s for workstation at %s.", workStation.mineOrigin, workStationPos);
+            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Mine origin set to %s.", workStation.mineOrigin);
         }
 
         miner.blocksMinedThisRun = 0;
 
         Vector3i nextBlock = findNextMineBlock(workStation, world);
         if (nextBlock == null) {
-            DebugLog.fine(DebugCategory.MINER_JOB,
-                    "[MinerJob] Idle — no solid/unclaimed blocks remain in mine shaft at %s. Waiting.",
-                    workStation.mineOrigin);
+            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] No solid/unclaimed blocks in shaft at %s - flagging no work.", workStation.mineOrigin);
+            ctx.job.workAvailable = false;
             return;
         }
+        ctx.job.workAvailable = true;
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Found next block at %s — claiming.", nextBlock);
 
-        // Atomically claim on the world thread — serializes same-tick races between miners.
         EntityStore entityStore = world.getEntityStore();
+        final Vector3i targetBlock = nextBlock;
         world.execute(() -> {
             JobComponent liveJob = entityStore.getStore().getComponent(ctx.colonistRef, JobComponent.getComponentType());
-            if (liveJob == null || liveJob.getCurrentTask() != JobState.Idle) return;
-
-            UUIDComponent uuidComp = entityStore.getStore().getComponent(ctx.colonistRef, UUIDComponent.getComponentType());
-            if (uuidComp == null) return;
-
-            if (!ClaimBlockUtil.claimBlock(world, nextBlock, uuidComp.getUuid(), "Mine")) {
-                DebugLog.fine(DebugCategory.MINER_JOB,
-                        "[MinerJob] Could not claim mine block %s (already taken) — staying Idle.", nextBlock);
+            if (liveJob == null || liveJob.getCurrentTask() != JobState.Idle) {
+                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] world.execute guard — state is now %s, skipping.",
+                        liveJob != null ? liveJob.getCurrentTask() : "null");
                 return;
             }
 
-            entityStore.getStore().addComponent(ctx.colonistRef, JobTargetComponent.getComponentType(), new JobTargetComponent(nextBlock));
+            UUIDComponent uuidComp = entityStore.getStore().getComponent(ctx.colonistRef, UUIDComponent.getComponentType());
+            if (uuidComp == null) {
+                DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idle] No UUIDComponent in world.execute.");
+                return;
+            }
+
+            if (!ClaimBlockUtil.claimBlock(world, targetBlock, uuidComp.getUuid(), "Mine")) {
+                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Block %s already claimed — staying Idle.", targetBlock);
+                return;
+            }
+
+            // Update or add JobTargetComponent — may already exist if a prior world.execute crashed.
+            JobTargetComponent existingTarget = entityStore.getStore().getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
+            if (existingTarget != null) {
+                existingTarget.targetPosition = targetBlock;
+            } else {
+                entityStore.getStore().addComponent(ctx.colonistRef, JobTargetComponent.getComponentType(), new JobTargetComponent(targetBlock));
+            }
+
+            // Set state BEFORE adding MoveToTargetComponent so that if PathFindingSystem
+            // throws, the state is already TravelingToJob and the IDLE handler won't re-fire.
+            liveJob.setCurrentTask(JobState.TravelingToJob);
+            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Claimed %s — state → TravelingToJob.", targetBlock);
+
             MoveToTargetComponent existingMove = entityStore.getStore().getComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType());
             if (existingMove != null) {
-                existingMove.target = blockCenter(nextBlock);
+                existingMove.target = blockCenter(targetBlock);
             } else {
                 entityStore.getStore().addComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType(),
-                        new MoveToTargetComponent(blockCenter(nextBlock)));
+                        new MoveToTargetComponent(blockCenter(targetBlock)));
             }
-            liveJob.setCurrentTask(JobState.TravelingToJob);
-            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob] Claimed mine block at %s — heading there.", nextBlock);
         });
     };
 
@@ -208,28 +235,43 @@ public final class MinerHandlers {
 
     /** Scans the mine shaft top-down and returns the first solid unclaimed block, or {@code null}. */
     @Nullable
-    private static Vector3i findNextMineBlock(WorkStationComponent workStation, World world) {
+    public static Vector3i findNextMineBlock(WorkStationComponent workStation, World world) {
         Vector3i origin = workStation.mineOrigin;
         if (origin == null) return null;
         int size = workStation.mineSize;
         Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
-        for (int dy = 0; dy < size; dy++) {        // dy=0 = top layer (workstation Y)
+        int checkedTotal = 0;
+        int nonAir = 0;
+        int claimed = 0;
+        for (int dy = 0; dy < size; dy++) {
             for (int dx = 0; dx < size; dx++) {
                 for (int dz = 0; dz < size; dz++) {
                     int x = origin.x + dx;
-                    int y = origin.y - dy;          // descend into the shaft
+                    int y = origin.y - dy;
                     int z = origin.z + dz;
-                    if (world.getBlock(x, y, z) == 0) continue;
+                    checkedTotal++;
+                    int blockId = world.getBlock(x, y, z);
+                    if (blockId == 0) continue;
+                    nonAir++;
+                    DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Scan] Non-air block id=%d at (%d,%d,%d).", blockId, x, y, z);
                     Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, x, y, z);
-                    if (blockRef != null && chunkStore.getComponent(blockRef, ClaimedBlockComponent.getComponentType()) != null) continue;
+                    if (blockRef != null && chunkStore.getComponent(blockRef, ClaimedBlockComponent.getComponentType()) != null) {
+                        claimed++;
+                        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Scan] Block at (%d,%d,%d) is claimed — skipping.", x, y, z);
+                        continue;
+                    }
+                    DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Scan] Returning block id=%d at (%d,%d,%d).", blockId, x, y, z);
                     return new Vector3i(x, y, z);
                 }
             }
         }
+        DebugLog.info(DebugCategory.MINER_JOB,
+                "[MinerJob:Scan] Done — checked=%d nonAir=%d claimed=%d → no eligible block. origin=%s size=%d.",
+                checkedTotal, nonAir, claimed, origin, size);
         return null;
     }
 
-    private static Vector3d blockCenter(Vector3i block) {
+    public static Vector3d blockCenter(Vector3i block) {
         return new Vector3d(block.x + 0.5, block.y, block.z + 0.5);
     }
 }

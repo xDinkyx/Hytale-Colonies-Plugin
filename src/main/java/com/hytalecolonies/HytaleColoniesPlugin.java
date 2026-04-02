@@ -30,11 +30,14 @@ import com.hytalecolonies.systems.jobs.ClaimedBlockCleanupSystem;
 import com.hytalecolonies.systems.jobs.ColonistCleanupSystem;
 import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.systems.jobs.MinerWorkingSystem;
 import com.hytalecolonies.systems.jobs.ColonistDeliverySystem;
 import com.hytalecolonies.systems.jobs.ColonistItemPickupSystem;
 import com.hytalecolonies.systems.jobs.ColonistJobSystem;
 import com.hytalecolonies.systems.jobs.JobRegistry;
+import com.hytalecolonies.systems.jobs.handlers.MinerHandlers;
 import com.hytalecolonies.systems.jobs.handlers.SharedHandlers;
+import com.hytalecolonies.npc.actions.BuilderActionNotifyBlockBroken;
 import com.hytalecolonies.npc.actions.BuilderActionEquipBestTool;
 import com.hytalecolonies.npc.actions.BuilderActionHarvestBlock;
 import com.hytalecolonies.npc.actions.BuilderActionClaimNearestTree;
@@ -163,7 +166,11 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         JobRegistry.register(MinerJobComponent.getComponentType());
         // Only shared ECS phases remain — job-specific Idle/Working are JSON-driven.
         ColonistJobSystem.registerShared(JobState.CollectingDrops, SharedHandlers.COLLECTING_DROPS);
-        ColonistJobSystem.registerShared(JobState.TravelingHome,   SharedHandlers.TRAVELING_HOME);
+        ColonistJobSystem.registerShared(JobState.TravelingToJob,   SharedHandlers.TRAVELING_TO_JOB);
+        ColonistJobSystem.registerShared(JobState.TravelingHome,    SharedHandlers.TRAVELING_HOME);
+        // Miner-specific Idle handler: scans for mine targets and transitions to TravelingToJob.
+        // Guards on MinerJobComponent internally, so it is safe to register as a shared handler.
+        ColonistJobSystem.registerShared(JobState.Idle, MinerHandlers.IDLE);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered shared job handlers");
     }
 
@@ -238,7 +245,8 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             .registerCoreComponentType("ReleaseJobTarget",      BuilderActionReleaseJobTarget::new)
             .registerCoreComponentType("IncrementBlocksMined",  BuilderActionIncrementBlocksMined::new)
             .registerCoreComponentType("ResetBlocksMined",      BuilderActionResetBlocksMined::new)
-            .registerCoreComponentType("SetEcsJobState",        BuilderActionSetEcsJobState::new);
+            .registerCoreComponentType("SetEcsJobState",        BuilderActionSetEcsJobState::new)
+            .registerCoreComponentType("NotifyBlockBroken",      BuilderActionNotifyBlockBroken::new);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered NPC component types");
     }
 
@@ -260,6 +268,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());
         getEntityStoreRegistry().registerSystem(new PathFindingSystem());
         getEntityStoreRegistry().registerSystem(new ColonistJobSystem());
+        getEntityStoreRegistry().registerSystem(new MinerWorkingSystem());
         getEntityStoreRegistry().registerSystem(new ColonistItemPickupSystem());
         getEntityStoreRegistry().registerSystem(new ColonistDeliverySystem());
         getEntityStoreRegistry().registerSystem(new TreeBlockChangeEventSystem.OnBreak(treeScannerSystem));

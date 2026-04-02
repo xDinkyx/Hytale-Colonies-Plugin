@@ -1,4 +1,4 @@
-{
+﻿{
   "$Comment": "Woodsman colonist role — handles finding, navigating to, and harvesting trees.",
   "Type": "Generic",
   "Appearance": "Mannequin",
@@ -58,7 +58,7 @@
           "Instructions": [
             {
               "$Comment": "Only work when the ECS delivery pipeline is idle.",
-              "Sensor": { "Type": "EcsJobState", "State": "Idle" },
+              "Sensor": { "Type": "EcsJobState", "JobState": "Idle" },
               "Instructions": [
                 {
                   "$Comment": "No woodcutting tool — show confused particle and wait. ActionsBlocking ensures the particle fires once, then waits, rather than every tick.",
@@ -135,7 +135,7 @@
               "$Comment": "On first entry, signal the ECS delivery pipeline to start.",
               "Sensor": { "Type": "Any", "Once": true },
               "Actions": [
-                { "Type": "SetEcsJobState", "State": "CollectingDrops" }
+                { "Type": "SetEcsJobState", "JobState": "CollectingDrops" }
               ]
             },
             {
@@ -158,7 +158,7 @@
             },
             {
               "$Comment": "ECS delivery pipeline finished (home, set Idle) — return to Idle role state.",
-              "Sensor": { "Type": "EcsJobState", "State": "Idle" },
+              "Sensor": { "Type": "EcsJobState", "JobState": "Idle" },
               "Actions": [
                 { "Type": "State", "State": "Idle" }
               ]

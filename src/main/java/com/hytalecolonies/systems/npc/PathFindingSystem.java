@@ -66,7 +66,14 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
         // Write the target to the "NavTarget" stored position slot (slot 0).
         // The ReadPosition sensor in Template_Colonist_Base.json checks this slot
         // every tick and activates the Seek body motion while the NPC is outside MinRange.
-        role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(component.target);
+        try {
+            role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(component.target);
+        } catch (NullPointerException e) {
+            DebugLog.warning(DebugCategory.MOVEMENT,
+                    "PathFindingSystem: role has no stored position slot %d — is Colonist_Miner.json loaded correctly?",
+                    NAV_TARGET_SLOT);
+            return;
+        }
 
         // Debug visualization — blue = NPC position, red = target, green line = intent.
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
