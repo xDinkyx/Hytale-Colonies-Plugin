@@ -55,6 +55,40 @@
       ]
     },
     {
+      "$Comment": "Idle — show confused particle when a required tool is missing.",
+      "Instructions": [
+        {
+          "Sensor": { "Type": "EcsJobState", "JobState": "Idle" },
+          "Instructions": [
+            {
+              "$Comment": "No pickaxe — confused particle + wait.",
+              "Sensor": {
+                "Type": "Not",
+                "Sensor": { "Type": "HasTool", "GatherType": "Rocks" }
+              },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
+                { "Type": "Timeout", "Delay": [3, 3] }
+              ]
+            },
+            {
+              "$Comment": "No shovel — confused particle + wait.",
+              "Sensor": {
+                "Type": "Not",
+                "Sensor": { "Type": "HasTool", "GatherType": "Soils" }
+              },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
+                { "Type": "Timeout", "Delay": [3, 3] }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "Sensor": { "Type": "Any" },
       "BodyMotion": { "Type": "Nothing" }
     }
