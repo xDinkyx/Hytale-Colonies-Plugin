@@ -18,6 +18,43 @@
       ]
     },
     {
+      "$Comment": "Working — mine the target block while in range. ActionsBlocking sequences equip→swing→cooldown each cycle.",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": { "Type": "EcsJobState", "JobState": "Working" },
+          "Instructions": [
+            {
+              "Sensor": { "Type": "JobTarget", "Range": 5.0 },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "EquipBestTool" },
+                { "Type": "HarvestBlock", "DamageScale": 0.1 },
+                { "Type": "Timeout", "Delay": [0.5, 0.5] }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "Working — when job-target block is air, notify ECS. ECS decides the next state (quota check, next block, or collect).",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Sensor": { "Type": "EcsJobState", "JobState": "Working" },
+          "Instructions": [
+            {
+              "Sensor": { "Type": "JobTargetBroken" },
+              "Actions": [
+                { "Type": "NotifyBlockBroken" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "Sensor": { "Type": "Any" },
       "BodyMotion": { "Type": "Nothing" }
     }
