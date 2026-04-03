@@ -38,6 +38,8 @@ import com.hypixel.hytale.server.npc.entities.NPCEntity;
  */
 public class ColonistRemovalSystem extends RefChangeSystem<EntityStore, ColonistComponent> {
 
+    private final Query<EntityStore> query = Query.and(ColonistComponent.getComponentType());
+
     @Nonnull
     @Override
     public ComponentType<EntityStore, ColonistComponent> componentType() {
@@ -130,6 +132,6 @@ public class ColonistRemovalSystem extends RefChangeSystem<EntityStore, Colonist
     @Override
     @Nullable
     public Query<EntityStore> getQuery() {
-        return null; // Called for every entity; no archetype filter needed.
+        return query;
     }
 }
