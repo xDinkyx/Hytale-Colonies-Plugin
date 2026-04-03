@@ -153,6 +153,75 @@ tasks.register('runServer', JavaExec) {
     }
 }
 
+// Reset the local dev server to a clean state.
+//
+// What gets wiped:
+//   server/worlds/*/          — world chunk data (regenerates on next boot)
+//   server/universe/players/  — all player files
+//   server/universe/memories.json(.bak)
+//
+// What gets restored:
+//   dev-config/player-snapshots/*.json  — copied back to server/universe/players/
+//   Edit those files to change the default dev inventory/position.
+//
+// What is intentionally KEPT:
+//   server/config.json, permissions.json, bans.json, whitelist.json
+tasks.register('resetServer') {
+    description = 'Wipes world/player state and restores dev-config snapshots for a clean test run.'
+    group = 'hytale'
+
+    doLast {
+        int deleted = 0
+
+        // Wipe world chunks — they regenerate on next server boot.
+        def worldsDir = file('server/universe/worlds')
+        if (worldsDir.exists()) {
+            worldsDir.eachDir { worldDir ->
+                delete(worldDir)
+                println "  Deleted world: ${worldDir.name}"
+                deleted++
+            }
+        }
+
+        // Wipe player files.
+        def playersDir = file('server/universe/players')
+        if (playersDir.exists()) {
+            playersDir.eachFile { f ->
+                delete(f)
+                deleted++
+            }
+        } else {
+            playersDir.mkdirs()
+        }
+
+        // Wipe universe memories.
+        ['memories.json', 'memories.json.bak'].each { fn ->
+            def f = file("server/universe/${fn}")
+            if (f.exists()) {
+                delete(f)
+                println "  Deleted ${fn}"
+                deleted++
+            }
+        }
+
+        // Restore player snapshots from dev-config.
+        def snapshotsDir = file('dev-config/player-snapshots')
+        int restored = 0
+        if (snapshotsDir.exists()) {
+            copy {
+                from snapshotsDir
+                into playersDir
+            }
+            restored = snapshotsDir.listFiles()?.size() ?: 0
+        }
+
+        println "resetServer complete — removed ${deleted} file(s)/dir(s), restored ${restored} player snapshot(s)."
+        if (restored == 0) {
+            println "  Tip: add player JSON files to dev-config/player-snapshots/ to auto-restore a dev inventory."
+        }
+    }
+}
+
 // Watch for changes and auto-rebuild (useful during development)
 tasks.register('watch') {
     doLast {

@@ -112,6 +112,33 @@
                 "clear": true
             },
             "problemMatcher": []
+        },
+        {
+            // Wipes worlds/, player files, and universe memories, then restores
+            // player snapshots from dev-config/player-snapshots/. Run this before
+            // "run server" when you need a clean slate. Does NOT start the server.
+            "label": "reset server",
+            "type": "shell",
+            "command": ".\\gradlew.bat",
+            "args": ["resetServer"],
+            "linux": {
+                "command": "./gradlew",
+                "args": ["resetServer"]
+            },
+            "osx": {
+                "command": "./gradlew",
+                "args": ["resetServer"]
+            },
+            "group": "none",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": []
         }
     ]
 }
