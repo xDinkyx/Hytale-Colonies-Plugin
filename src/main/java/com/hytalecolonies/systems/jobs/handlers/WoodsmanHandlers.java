@@ -3,7 +3,6 @@ package com.hytalecolonies.systems.jobs.handlers;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.debug.DebugTiming;
-import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
@@ -14,18 +13,13 @@ import com.hytalecolonies.systems.jobs.JobContext;
 import com.hytalecolonies.systems.jobs.JobStateHandler;
 import com.hytalecolonies.systems.treescan.TreeDetector;
 import com.hytalecolonies.utils.ClaimBlockUtil;
-import com.hytalecolonies.utils.ColonistToolUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.server.core.entity.EntityUtils;
-import com.hypixel.hytale.server.core.entity.LivingEntity;
-import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -49,61 +43,21 @@ public final class WoodsmanHandlers {
      * Waits for a suitable tool, finds the nearest unclaimed tree, claims it, dispatches
      * navigation, and transitions to {@link JobState#TravelingToJob}.
      */
-    public static final JobStateHandler IDLE = ctx -> {
-        Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
-        if (workStationPos == null) return;
-
-        World world = ctx.world;
-        Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
-        WorkStationComponent workStation = wsRef != null
-                ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
-                : null;
-        if (workStation == null) {
-            DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idling -- workstation not found at %s; cleanup system will reset colonist job.", workStationPos);
-            return;
-        }
-
-        LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ctx.colonistRef, ctx.store);
-        if (colonist == null) return;
-        if (!ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), REQUIRED_GATHER_TYPE, 0)) {
-            DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idling -- no '%s' tool in inventory. Waiting at workstation.", REQUIRED_GATHER_TYPE);
-            return;
-        }
-
-        Vector3i nearestTree;
-        try (var t = DebugTiming.measure("WoodsmanJob.findNearestAvailableTree@" + workStationPos, 50)) {
-            nearestTree = findNearestAvailableTree(workStation, workStationPos, world);
-        }
-        if (nearestTree == null) {
-            DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idling -- no available trees within radius %.1f of workstation %s.",
-                    workStation.treeSearchRadius, workStationPos);
-            return;
-        }
-
-        // Schedule claim and travel on the world thread -- world.execute() serializes
-        // callbacks between ticks, so two woodsmen finding the same tree in the same
-        // tick serialize here: the first claims it, the second backs off (stays Idling).
-        EntityStore entityStore = world.getEntityStore();
-        world.execute(() -> {
-            JobComponent liveJob = entityStore.getStore().getComponent(ctx.colonistRef, JobComponent.getComponentType());
-            if (liveJob == null || liveJob.getCurrentTask() != JobState.Idling) return;
-
-            UUIDComponent uuidComp = entityStore.getStore().getComponent(ctx.colonistRef, UUIDComponent.getComponentType());
-            if (uuidComp == null) return;
-
-            if (!ClaimBlockUtil.claimBlock(world, nearestTree, uuidComp.getUuid(), "Harvest")) return;
-
-            entityStore.getStore().addComponent(ctx.colonistRef, JobTargetComponent.getComponentType(), new JobTargetComponent(nearestTree));
-            Vector3d treeTarget = new Vector3d(nearestTree.x + 0.5, nearestTree.y, nearestTree.z + 0.5);
-            entityStore.getStore().tryRemoveComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType());
-            entityStore.getStore().addComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(treeTarget));
-            liveJob.setCurrentTask(JobState.TravelingToJob);
-            DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Claimed tree at %s -- heading there.", nearestTree);
-        });
-    };
+    public static final JobStateHandler IDLE = SharedHandlers.idle(
+            new String[]{REQUIRED_GATHER_TYPE},
+            (ctx, workStation, workStationPos) -> {
+                Vector3i nearestTree;
+                try (var t = DebugTiming.measure("WoodsmanJob.findNearestAvailableTree@" + workStationPos, 50)) {
+                    nearestTree = findNearestAvailableTree(workStation, workStationPos, ctx.world);
+                }
+                if (nearestTree == null) {
+                    DebugLog.fine(DebugCategory.WOODSMAN_JOB,
+                            "[WoodsmanJob] Idling -- no available trees within radius %.1f of workstation %s.",
+                            workStation.treeSearchRadius, workStationPos);
+                }
+                return nearestTree;
+            },
+            "Harvest");
 
     /**
      * Detects when the current target block is broken, then moves to the next adjacent base block

@@ -7,6 +7,9 @@ import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.utils.WorkStationUtil;
 import com.hypixel.hytale.component.ArchetypeChunk;
+import com.hypixel.hytale.component.ComponentType;
+import com.hytalecolonies.systems.jobs.JobBehaviorRegistry;
+import com.hytalecolonies.systems.jobs.JobRegistry;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -92,15 +95,29 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
             return;
         }
 
-        List<JobStateHandler> handlers = sharedHandlers.get(state);
-        if (handlers != null && !handlers.isEmpty()) {
-            JobContext ctx = new JobContext(colonistRef, job, store, commandBuffer);
-            for (JobStateHandler handler : handlers) {
+        // Detect which job-type component this colonist carries.
+        ComponentType<EntityStore, ?> jobType = null;
+        for (ComponentType<EntityStore, ?> type : JobRegistry.getJobComponentTypes()) {
+            if (store.getComponent(colonistRef, type) != null) {
+                jobType = type;
+                break;
+            }
+        }
+
+        // Resolve: job-specific handler first, shared fallback second.
+        JobStateHandler jobSpecific = JobBehaviorRegistry.resolve(jobType, state);
+        JobContext ctx = new JobContext(colonistRef, job, store, commandBuffer);
+        if (jobSpecific != null) {
+            jobSpecific.handle(ctx);
+        }
+        List<JobStateHandler> shared = sharedHandlers.get(state);
+        if (shared != null && !shared.isEmpty()) {
+            for (JobStateHandler handler : shared) {
                 handler.handle(ctx);
             }
         }
         // TravelingToJob, Working: driven by JSON navigation and MinerWorkingSystem respectively.
-        // NoWork, Idle (job-specific): handled by registered handlers above or fall through safely.
+        // NoWork: fall through safely until ECS assigns new work.
     }
 
     @Override

@@ -13,83 +13,29 @@
   "InventorySize": 12,
   "Instructions": [
     {
-      "$Comment": "Global navigation — always running. Drives body toward the NavTarget slot when a position is set.",
+      "$Comment": "Global navigation -- always running. ECS writes NavTarget slot via PathFindingSystem; JSON drives the body toward it.",
       "Continue": true,
       "Instructions": [
         {
-          "Sensor": {
-            "Type": "ReadPosition",
-            "Slot": "NavTarget",
-            "Range": 200.0,
-            "MinRange": 1.5
-          },
-          "BodyMotion": {
-            "Type": "Seek",
-            "StopDistance": 1.5,
-            "SlowDownDistance": 3,
-            "RelativeSpeed": 1.0
-          }
+          "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
+          "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
         }
       ]
     },
     {
-      "$Comment": "Global harvesting — fires in any state when within range of the job target.",
+      "$Comment": "Working -- chop the target block while in range. ActionsBlocking sequences equip->swing->cooldown each cycle.",
       "Continue": true,
       "Instructions": [
         {
-          "Sensor": {
-            "Type": "JobTarget",
-            "Range": 5.0
-          },
-          "Actions": [
-            { "Type": "EquipBestTool" },
-            { "Type": "HarvestBlock", "DamageScale": 0.01 }
-          ]
-        }
-      ]
-    },
-    {
-      "$Comment": "=== IDLE STATE ===",
-      "Instructions": [
-        {
-          "Sensor": { "Type": "State", "State": "Idle" },
+          "Sensor": { "Type": "EcsJobState", "JobState": "Working" },
           "Instructions": [
             {
-              "$Comment": "Only work when the ECS delivery pipeline is idle.",
-              "Sensor": { "Type": "EcsJobState", "JobState": "Idling" },
-              "Instructions": [
-                {
-                  "$Comment": "No woodcutting tool — show confused particle and wait. ActionsBlocking ensures the particle fires once, then waits, rather than every tick.",
-                  "Sensor": {
-                    "Type": "Not",
-                    "Sensor": { "Type": "HasTool", "GatherType": "Woods" }
-                  },
-                  "ActionsBlocking": true,
-                  "Actions": [
-                    { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
-                    { "Type": "Timeout", "Delay": [3, 3] }
-                  ]
-                },
-                {
-                  "$Comment": "Has tool, no target — find and claim nearest tree.",
-                  "Sensor": {
-                    "Type": "And",
-                    "Sensors": [
-                      { "Type": "HasTool", "GatherType": "Woods" },
-                      { "Type": "Not", "Sensor": { "Type": "JobTargetExists" } }
-                    ]
-                  },
-                  "Actions": [
-                    { "Type": "SeekNearestTree" }
-                  ]
-                },
-                {
-                  "$Comment": "Job target claimed and colonist is within harvesting range — switch to Working.",
-                  "Sensor": { "Type": "JobTarget", "Range": 5.0 },
-                  "Actions": [
-                    { "Type": "State", "State": "Working" }
-                  ]
-                }
+              "Sensor": { "Type": "JobTarget", "Range": 5.0 },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "EquipBestTool" },
+                { "Type": "HarvestBlock", "DamageScale": 0.1 },
+                { "Type": "Timeout", "Delay": [0.5, 0.5] }
               ]
             }
           ]
@@ -97,26 +43,16 @@
       ]
     },
     {
-      "$Comment": "=== WORKING STATE ===",
+      "$Comment": "Working -- when job-target block is air, notify ECS. ECS decides the next state (next trunk, collect, etc).",
+      "Continue": true,
       "Instructions": [
         {
-          "Sensor": { "Type": "State", "State": "Working" },
+          "Sensor": { "Type": "EcsJobState", "JobState": "Working" },
           "Instructions": [
             {
-              "$Comment": "Current target block was broken — find next adjacent trunk or clear target.",
               "Sensor": { "Type": "JobTargetBroken" },
               "Actions": [
-                { "Type": "FindNextTrunkBlock" }
-              ]
-            },
-            {
-              "$Comment": "No job target remaining (tree fully cut) — transition to Collecting.",
-              "Sensor": {
-                "Type": "Not",
-                "Sensor": { "Type": "JobTargetExists" }
-              },
-              "Actions": [
-                { "Type": "State", "State": "Collecting" }
+                { "Type": "NotifyBlockBroken" }
               ]
             }
           ]
@@ -124,18 +60,68 @@
       ]
     },
     {
-      "$Comment": "=== COLLECTING STATE === Picks up drops while ECS delivery pipeline runs, then returns to Idle.",
+      "$Comment": "Idle -- show confused particle when a required tool is missing, then wander gently near workstation.",
       "Instructions": [
         {
-          "Sensor": { "Type": "State", "State": "Collecting" },
+          "Sensor": { "Type": "EcsJobState", "JobState": "Idling" },
           "Instructions": [
             {
-              "$Comment": "On first entry, signal the ECS delivery pipeline to start.",
-              "Sensor": { "Type": "Any", "Once": true },
-              "Actions": [
-                { "Type": "SetEcsJobState", "JobState": "CollectingDrops" }
-              ]
+              "$Comment": "Set wander body motion first (Continue: true) so it runs persistently in the background while the particle+timeout blocks below execute.",
+              "Continue": true,
+              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 5.0 },
+              "BodyMotion": {
+                "Type": "Sequence",
+                "Looped": true,
+                "Motions": [
+                  { "Type": "Timer", "Time": [4, 6], "Motion": { "Type": "WanderInCircle", "Radius": 3, "MaxHeadingChange": 45, "RelativeSpeed": 0.35 } },
+                  { "Type": "Timer", "Time": [1, 2], "Motion": { "Type": "Nothing" } }
+                ]
+              }
             },
+            {
+              "$Comment": "No axe -- confused particle + wait.",
+              "Sensor": {
+                "Type": "Not",
+                "Sensor": { "Type": "HasTool", "GatherType": "Woods" }
+              },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
+                { "Type": "Timeout", "Delay": [3, 3] }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "NoWork -- no trees available. Wander gently until ECS assigns new work.",
+      "Instructions": [
+        {
+          "Sensor": { "Type": "EcsJobState", "JobState": "NoWork" },
+          "Instructions": [
+            {
+              "$Comment": "Fidget only when close to workstation.",
+              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 5.0 },
+              "BodyMotion": {
+                "Type": "Sequence",
+                "Looped": true,
+                "Motions": [
+                  { "Type": "Timer", "Time": [4, 6], "Motion": { "Type": "WanderInCircle", "Radius": 3, "MaxHeadingChange": 45, "RelativeSpeed": 0.25 } },
+                  { "Type": "Timer", "Time": [2, 3], "Motion": { "Type": "Nothing" } }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "CollectingDrops -- pick up drops while ECS delivery pipeline runs.",
+      "Instructions": [
+        {
+          "Sensor": { "Type": "EcsJobState", "JobState": "CollectingDrops" },
+          "Instructions": [
             {
               "$Comment": "Wander the area while waiting for delivery so the colonist does not stand still.",
               "Continue": true,
@@ -153,17 +139,14 @@
               "Actions": [
                 { "Type": "PickUpItem", "Hoover": true }
               ]
-            },
-            {
-              "$Comment": "ECS delivery pipeline finished (home, set Idle) — return to Idle role state.",
-              "Sensor": { "Type": "EcsJobState", "JobState": "Idling" },
-              "Actions": [
-                { "Type": "State", "State": "Idle" }
-              ]
             }
           ]
         }
       ]
+    },
+    {
+      "Sensor": { "Type": "Any" },
+      "BodyMotion": { "Type": "Nothing" }
     }
   ]
 }

@@ -35,8 +35,10 @@ import com.hytalecolonies.systems.jobs.ColonistDeliverySystem;
 import com.hytalecolonies.systems.jobs.ColonistItemPickupSystem;
 import com.hytalecolonies.systems.jobs.ColonistJobSystem;
 import com.hytalecolonies.systems.jobs.JobRegistry;
+import com.hytalecolonies.systems.jobs.JobBehaviorRegistry;
 import com.hytalecolonies.systems.jobs.handlers.MinerHandlers;
 import com.hytalecolonies.systems.jobs.handlers.SharedHandlers;
+import com.hytalecolonies.systems.jobs.handlers.WoodsmanHandlers;
 import com.hytalecolonies.npc.actions.BuilderActionNotifyBlockBroken;
 import com.hytalecolonies.npc.actions.BuilderActionEquipBestTool;
 import com.hytalecolonies.npc.actions.BuilderActionHarvestBlock;
@@ -158,20 +160,21 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     }
 
     /**
-     * Registers the shared ECS job handlers (CollectingDrops and TravelingHome).
-     * Job-specific Idling and Working states are now handled by the NPC role JSON.
+     * Registers the shared ECS job handlers (CollectingDrops, TravelingToJob, TravelingHome)
+     * and the per-job-type ECS Idling handlers.
      */
     private void registerSharedJobHandlers() {
         // Keep job types in JobRegistry so JobAssignmentSystems.fireColonist() can strip them.
         JobRegistry.register(WoodsmanJobComponent.getComponentType());
         JobRegistry.register(MinerJobComponent.getComponentType());
-        // Only shared ECS phases remain -- job-specific Idling/Working are JSON-driven.
+        // Shared phases that apply to all colonists regardless of job type.
         ColonistJobSystem.registerShared(JobState.CollectingDrops, SharedHandlers.COLLECTING_DROPS);
         ColonistJobSystem.registerShared(JobState.TravelingToJob,   SharedHandlers.TRAVELING_TO_JOB);
         ColonistJobSystem.registerShared(JobState.TravelingHome,    SharedHandlers.TRAVELING_HOME);
-        // Miner-specific Idling handler: scans for mine targets and transitions to TravelingToJob.
-        // Guards on MinerJobComponent internally, so it is safe to register as a shared handler.
-        ColonistJobSystem.registerShared(JobState.Idling, MinerHandlers.IDLE);
+        // Job-specific ECS Idling handlers: scan for targets and transition to TravelingToJob.
+        // Registered as job-defaults so they only run for the correct colonist type.
+        JobBehaviorRegistry.registerDefault(MinerJobComponent.getComponentType(),    JobState.Idling, MinerHandlers.IDLE);
+        JobBehaviorRegistry.registerDefault(WoodsmanJobComponent.getComponentType(), JobState.Idling, WoodsmanHandlers.IDLE);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered shared job handlers");
     }
 
