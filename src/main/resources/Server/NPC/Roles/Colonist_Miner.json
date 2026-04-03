@@ -13,8 +13,8 @@
       "Continue": true,
       "Instructions": [
         {
-          "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 4.0 },
-          "BodyMotion": { "Type": "Seek", "StopDistance": 1.5, "SlowDownDistance": 5, "RelativeSpeed": 1.0 }
+          "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
+          "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
         }
       ]
     },

@@ -20,10 +20,10 @@ public final class SharedHandlers {
     private static final long COLLECTING_DROPS_DURATION_MS = 5_000L;
 
     /** XZ distance (blocks) to consider arrived at a job target. */
-    private static final float JOB_ARRIVAL_XZ = 4.0f;
+    private static final float JOB_ARRIVAL_XZ = 3.0f;
 
-    /** 3D distance (blocks) to consider arrived at the workstation. */
-    private static final float WORKSTATION_ARRIVAL_3D = 3.5f;
+    /** XZ distance (blocks) to consider arrived at the workstation. */
+    private static final float WORKSTATION_ARRIVAL_XZ = 3.0f;
 
     /** Consecutive stuck ticks before forcing state advance or re-dispatching navigation. */
     private static final int STUCK_TICKS_LIMIT = 5;
@@ -142,10 +142,11 @@ public final class SharedHandlers {
             if (jobTarget.stuckTicks >= STUCK_TICKS_LIMIT) {
                 jobTarget.stuckTicks = 0;
                 jobTarget.lastKnownPosition = null;
+                DebugLog.info(DebugCategory.MOVEMENT,
+                        "[Shared] TravelingHome -- stuck at xzDist=%.2f, re-dispatching nav.", xzDist);
                 Vector3d wsTarget = new Vector3d(workStationPos.x + 0.5, workStationPos.y, workStationPos.z + 0.5);
                 ctx.commandBuffer.addComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType(),
                         new MoveToTargetComponent(wsTarget));
-                DebugLog.info(DebugCategory.MOVEMENT, "[Shared] TravelingHome — stuck, re-dispatching nav to workstation.");
             }
         }
     };
