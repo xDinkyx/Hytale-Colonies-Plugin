@@ -33,7 +33,7 @@ public class ActionSetEcsJobState extends ActionBase {
             parsed = JobState.valueOf(builder.getStateName(support));
         } catch (IllegalArgumentException e) {
             DebugLog.warning(DebugCategory.JOB_SYSTEM,
-                    "[SetEcsJobState] Unknown state name '%s' in role JSON — defaulting to Idle.", builder.getStateName(support));
+                    "[SetEcsJobState] Unknown state name '%s' in role JSON -- defaulting to Idle.", builder.getStateName(support));
             parsed = JobState.Idling;
         }
         this.targetState = parsed;
@@ -52,7 +52,7 @@ public class ActionSetEcsJobState extends ActionBase {
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null) {
             DebugLog.warning(DebugCategory.JOB_SYSTEM,
-                    "[SetEcsJobState] [%s] No JobComponent — cannot set state to %s.", npcId, targetState);
+                    "[SetEcsJobState] [%s] No JobComponent -- cannot set state to %s.", npcId, targetState);
             return true;
         }
 

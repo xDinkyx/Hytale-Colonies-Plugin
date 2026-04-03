@@ -17,7 +17,7 @@ import java.util.logging.Level;
  *
  * <p>Call {@link #applyToCategories()} once after loading to push the stored
  * levels into the live enum values. Call {@link #setLevelForCategory} when
- * changing a setting at runtime — it updates both the in-memory enum and this
+ * changing a setting at runtime -- it updates both the in-memory enum and this
  * config object so a subsequent {@code config.save()} persists it.
  */
 public class DebugConfig {

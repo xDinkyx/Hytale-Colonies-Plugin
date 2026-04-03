@@ -56,7 +56,7 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
         switch (workStation.getJobType()) {
             case Woodsman -> initWoodsman(ref, workStation, store, commandBuffer);
             case Miner -> DebugLog.info(DebugCategory.MINER_JOB,
-                    "[WorkstationInit] Miner workstation placed — no initial scan needed for phase 1.");
+                    "[WorkstationInit] Miner workstation placed -- no initial scan needed for phase 1.");
             case Farmer, Builder -> {
                 /* no-op: initialization not yet implemented */ }
         }
@@ -93,7 +93,7 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
                 ref, BlockModule.BlockStateInfo.getComponentType());
         if (blockStateInfo == null) {
             DebugLog.warning(DebugCategory.TREE_SCANNER,
-                    "[WorkstationInit] WorkStationComponent added without BlockStateInfo — skipping initial scan.");
+                    "[WorkstationInit] WorkStationComponent added without BlockStateInfo -- skipping initial scan.");
             return;
         }
 

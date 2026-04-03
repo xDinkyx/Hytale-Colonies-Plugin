@@ -165,7 +165,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         // Keep job types in JobRegistry so JobAssignmentSystems.fireColonist() can strip them.
         JobRegistry.register(WoodsmanJobComponent.getComponentType());
         JobRegistry.register(MinerJobComponent.getComponentType());
-        // Only shared ECS phases remain — job-specific Idling/Working are JSON-driven.
+        // Only shared ECS phases remain -- job-specific Idling/Working are JSON-driven.
         ColonistJobSystem.registerShared(JobState.CollectingDrops, SharedHandlers.COLLECTING_DROPS);
         ColonistJobSystem.registerShared(JobState.TravelingToJob,   SharedHandlers.TRAVELING_TO_JOB);
         ColonistJobSystem.registerShared(JobState.TravelingHome,    SharedHandlers.TRAVELING_HOME);

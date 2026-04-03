@@ -14,7 +14,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * JSON→ECS notification bridge for the miner. Sets {@link JobComponent#blockBrokenNotification};
+ * JSON->ECS notification bridge for the miner. Sets {@link JobComponent#blockBrokenNotification};
  * no game-logic. {@link com.hytalecolonies.systems.jobs.MinerWorkingSystem} reads and clears the flag.
  */
 public class ActionNotifyBlockBroken extends ActionBase {
@@ -33,7 +33,7 @@ public class ActionNotifyBlockBroken extends ActionBase {
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null) {
             DebugLog.fine(DebugCategory.MINER_JOB,
-                    "[NotifyBlockBroken] [%s] No JobComponent — skipping.",
+                    "[NotifyBlockBroken] [%s] No JobComponent -- skipping.",
                     DebugLog.npcId(ref, store));
             return true;
         }

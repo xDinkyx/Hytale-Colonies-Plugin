@@ -92,8 +92,8 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
             Vector3i containerPos = WorkstationContainerUtil.findNearbyContainer(world, workStationPos, DELIVERY_RADIUS);
             if (containerPos == null) {
                 DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                        "[ColonistDelivery] No chest within %d blocks of workstation %s — skipping delivery.",
-                        DELIVERY_RADIUS, workStationPos);
+                    "[ColonistDelivery] No chest within %d blocks of workstation %s -- skipping delivery.",
+                    DELIVERY_RADIUS, workStationPos);
                 navigateToWorkstation(ref, commandBuffer, workStationPos);
                 job.setCurrentTask(JobState.TravelingHome);
                 return;
@@ -106,7 +106,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
             return;
         }
 
-        // XZ-only arrival check — chest may be at a different Y than the colonist.
+        // XZ-only arrival check - chest may be at a different Y than the colonist.
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform == null) return;
 
@@ -118,15 +118,15 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
 
         if (xzDist > DELIVERY_ARRIVAL_XZ) {
             DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] Heading to chest at %s — xzDist=%.2f.", cp, xzDist);
+                    "[ColonistDelivery] Heading to chest at %s -- xzDist=%.2f.", cp, xzDist);
             return;
         }
 
-        // Arrived — deposit.
+        // Arrived -- deposit.
         Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, cp.x, cp.y, cp.z);
         if (blockRef == null || !blockRef.isValid()) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] Chest at %s is no longer present — skipping deposit.", cp);
+                    "[ColonistDelivery] Chest at %s is no longer present -- skipping deposit.", cp);
             job.deliveryContainerPosition = null;
             navigateToWorkstation(ref, commandBuffer, workStationPos);
             job.setCurrentTask(JobState.TravelingHome);
@@ -137,7 +137,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                 blockRef, BlockModule.get().getItemContainerBlockComponentType());
         if (containerBlock == null) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] Block at %s is no longer a container — skipping deposit.", cp);
+                    "[ColonistDelivery] Block at %s is no longer a container -- skipping deposit.", cp);
             job.deliveryContainerPosition = null;
             navigateToWorkstation(ref, commandBuffer, workStationPos);
             job.setCurrentTask(JobState.TravelingHome);
@@ -233,28 +233,28 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
         public void onEntityRemove(@Nonnull Ref<ChunkStore> ref, @Nonnull RemoveReason reason,
                                    @Nonnull Store<ChunkStore> store, @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
             DebugLog.info(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery:ContainerRemoved] Fired — reason=%s.", reason);
+                    "[ColonistDelivery:ContainerRemoved] Fired -- reason=%s.", reason);
 
             if (reason == RemoveReason.UNLOAD) return;
 
             BlockModule.BlockStateInfo info = commandBuffer.getComponent(ref, blockStateInfoType);
             if (info == null) {
                 DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                        "[ColonistDelivery:ContainerRemoved] No BlockStateInfo on removed container entity — cannot resolve position.");
+                        "[ColonistDelivery:ContainerRemoved] No BlockStateInfo on removed container entity -- cannot resolve position.");
                 return;
             }
 
             Ref<ChunkStore> chunkRef = info.getChunkRef();
             if (!chunkRef.isValid()) {
                 DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                        "[ColonistDelivery:ContainerRemoved] ChunkRef is invalid — cannot resolve position.");
+                        "[ColonistDelivery:ContainerRemoved] ChunkRef is invalid -- cannot resolve position.");
                 return;
             }
 
             BlockChunk blockChunk = commandBuffer.getComponent(chunkRef, BlockChunk.getComponentType());
             if (blockChunk == null) {
                 DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                        "[ColonistDelivery:ContainerRemoved] No BlockChunk on chunkRef — cannot resolve position.");
+                        "[ColonistDelivery:ContainerRemoved] No BlockChunk on chunkRef -- cannot resolve position.");
                 return;
             }
 
@@ -269,7 +269,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
             );
 
             DebugLog.info(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery:ContainerRemoved] Container removed at %s — scanning colonists.", pos);
+                    "[ColonistDelivery:ContainerRemoved] Container removed at %s -- scanning colonists.", pos);
 
             Store<EntityStore> entityStore = store.getExternalData().getWorld().getEntityStore().getStore();
             entityStore.forEachChunk(colonistQuery, (chunk, cb) -> {

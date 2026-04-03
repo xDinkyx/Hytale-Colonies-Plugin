@@ -42,7 +42,7 @@ public final class ColonistRoleMap {
 
     /**
      * Requests a live NPC role switch for the given colonist entity.
-     * Safe to call from {@link com.hypixel.hytale.component.system.RefChangeSystem} callbacks —
+     * Safe to call from {@link com.hypixel.hytale.component.system.RefChangeSystem} callbacks --
      * the actual swap is deferred to {@link RoleChangeSystem}'s tick.
      *
      * <p>No-ops if the entity has no {@link NPCEntity} component, no role loaded yet,
@@ -54,7 +54,7 @@ public final class ColonistRoleMap {
         NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
         if (npcEntity == null) {
             DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
-                    "[RoleSwitch] Colonist has no NPCEntity component — cannot switch role to '%s'.", roleName);
+                    "[RoleSwitch] Colonist has no NPCEntity component -- cannot switch role to '%s'.", roleName);
             return;
         }
         Role currentRole = npcEntity.getRole();
@@ -64,7 +64,7 @@ public final class ColonistRoleMap {
         int newRoleIndex = NPCPlugin.get().getIndex(roleName);
         if (newRoleIndex < 0) {
             DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
-                    "[RoleSwitch] Unknown NPC role '%s' — cannot switch.", roleName);
+                    "[RoleSwitch] Unknown NPC role '%s' -- cannot switch.", roleName);
             return;
         }
         DebugLog.info(DebugCategory.JOB_ASSIGNMENT,

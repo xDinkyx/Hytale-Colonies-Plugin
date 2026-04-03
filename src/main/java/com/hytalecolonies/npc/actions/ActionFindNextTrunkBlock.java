@@ -74,12 +74,12 @@ public class ActionFindNextTrunkBlock extends ActionBase {
         Set<String> allowedWoodTypes = workStation != null ? workStation.getAllowedTreeTypes() : null;
         if (allowedWoodTypes == null) {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[FindNextTrunkBlock] [%s] Workstation not found — cannot filter by wood type. Target will be cleared.", npcId);
+                    "[FindNextTrunkBlock] [%s] Workstation not found -- cannot filter by wood type. Target will be cleared.", npcId);
         }
 
         if (uuidComponent == null) {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[FindNextTrunkBlock] [%s] No UUIDComponent — cannot claim next trunk.", npcId);
+                    "[FindNextTrunkBlock] [%s] No UUIDComponent -- cannot claim next trunk.", npcId);
             return true;
         }
         UUID colonistUuid = uuidComponent.getUuid();
@@ -97,7 +97,7 @@ public class ActionFindNextTrunkBlock extends ActionBase {
             JobTargetComponent liveTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
             if (liveTarget == null) {
                 DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                        "[FindNextTrunkBlock] [%s] JobTargetComponent disappeared during world.execute — skipping.", npcId);
+                        "[FindNextTrunkBlock] [%s] JobTargetComponent disappeared during world.execute -- skipping.", npcId);
                 return;
             }
 

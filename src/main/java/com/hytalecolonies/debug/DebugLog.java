@@ -36,22 +36,22 @@ public final class DebugLog {
         return comp != null ? comp.getUuid().toString() : "?";
     }
 
-    /** Verbose debug message — only visible when category is set to FINE. */
+    /** Verbose debug message -- only visible when category is set to FINE. */
     public static void fine(DebugCategory category, String format, Object... args) {
         emit(category, Level.FINE, format, args);
     }
 
-    /** Informational message — visible at the default INFO threshold. */
+    /** Informational message -- visible at the default INFO threshold. */
     public static void info(DebugCategory category, String format, Object... args) {
         emit(category, Level.INFO, format, args);
     }
 
-    /** Warning message — always visible unless the category is OFF. */
+    /** Warning message -- always visible unless the category is OFF. */
     public static void warning(DebugCategory category, String format, Object... args) {
         emit(category, Level.WARNING, format, args);
     }
 
-    /** Severe/error message — always visible unless the category is OFF. */
+    /** Severe/error message -- always visible unless the category is OFF. */
     public static void severe(DebugCategory category, String format, Object... args) {
         emit(category, Level.SEVERE, format, args);
     }

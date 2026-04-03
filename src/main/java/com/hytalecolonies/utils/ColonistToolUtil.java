@@ -27,16 +27,16 @@ import javax.annotation.Nullable;
  * <p>A tool's spec for a gather type must pass two checks (mirroring
  * {@code BlockHarvestUtils.getSpecPowerDamageBlock}):
  * <ol>
- *   <li><strong>Power &gt; unarmed baseline</strong> — the spec must beat the power in
+ *   <li><strong>Power &gt; unarmed baseline</strong> -- the spec must beat the power in
  *       {@code Server/Item/Unarmed/Gathering/&lt;GatherType&gt;.json}, so equipping
  *       the tool is actually an improvement.  A crude hatchet's {@code Soils: 0.05}
  *       loses to unarmed {@code Soils: 0.10} and is therefore excluded.</li>
- *   <li><strong>Quality &ge; required quality</strong> — the block's
+ *   <li><strong>Quality &ge; required quality</strong> -- the block's
  *       {@code Breaking.Quality} sets a minimum tier.  A tier-3 Rocks block requires
  *       an iron pickaxe (quality 3); a crude pickaxe (quality 0) cannot break it
  *       even though it technically has a {@code Rocks} spec.</li>
  * </ol>
- * <p>Both checks are purely data-driven — no magic numbers here.
+ * <p>Both checks are purely data-driven -- no magic numbers here.
  */
 public final class ColonistToolUtil {
 
@@ -95,7 +95,7 @@ public final class ColonistToolUtil {
      * at the given {@code requiredQuality} tier.  Mirrors the logic in
      * {@code BlockHarvestUtils.getSpecPowerDamageBlock}: the spec's
      * {@code GatherType} must match and its {@code Quality} must be &ge;
-     * {@code requiredQuality}.  There is no unarmed-power floor — any power value
+     * {@code requiredQuality}.  There is no unarmed-power floor -- any power value
      * is valid as long as the quality tier is met.
      *
      * @param requiredQuality the {@code Breaking.Quality} value from the block's JSON
@@ -124,7 +124,7 @@ public final class ColonistToolUtil {
      *                   ({@code hotbar} or {@code storage/backpack}).
      * @param slot       The slot index within that container.
      * @param power      The tool's power for the requested gather type.
-     * @param inHotbar   {@code true} when {@code container} is the hotbar —
+     * @param inHotbar   {@code true} when {@code container} is the hotbar --
      *                   the tool can be equipped with a simple slot switch.
      */
     public record ToolMatch(
@@ -135,7 +135,7 @@ public final class ColonistToolUtil {
     ) {}
 
     /**
-     * Searches the colonist's entire inventory (hotbar → storage → backpack) for
+     * Searches the colonist's entire inventory (hotbar -> storage -> backpack) for
      * the <em>best</em> tool for the block described by {@code breaking} and returns
      * a {@link ToolMatch}, or {@code null} if no suitable tool exists.
      *
@@ -180,7 +180,7 @@ public final class ColonistToolUtil {
         if (heldItem != null && heldItem.getItem() != null) heldTool = heldItem.getItem().getTool();
         float heldPower = powerForGatherType(heldTool, breaking.getGatherType());
 
-        // Already holding the best (or equally good) tool — nothing to do.
+        // Already holding the best (or equally good) tool -- nothing to do.
         if (heldPower >= match.power()) return true;
 
         if (match.inHotbar()) {
@@ -227,7 +227,7 @@ public final class ColonistToolUtil {
         if (heldItem != null && heldItem.getItem() != null) heldTool = heldItem.getItem().getTool();
         float heldPower = powerForGatherType(heldTool, gatherType);
 
-        // Already holding the best (or equally good) tool — nothing to do.
+        // Already holding the best (or equally good) tool -- nothing to do.
         if (heldPower >= match.power()) return true;
 
         if (match.inHotbar()) {

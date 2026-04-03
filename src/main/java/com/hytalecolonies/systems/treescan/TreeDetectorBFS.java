@@ -24,8 +24,8 @@ import java.util.Set;
  *       TreeLeaves to build a deduplicated leaf count.</li>
  *   <li>The component is accepted as a tree if it meets the minimum wood and
  *       leaf thresholds.</li>
- *   <li>The BFS naturally identifies the {@code lowestBase} — the lowest y
- *       position in the connected component — which is not necessarily the
+ *   <li>The BFS naturally identifies the {@code lowestBase} -- the lowest y
+ *       position in the connected component -- which is not necessarily the
  *       block the scanner handed in.</li>
  * </ol>
  */
@@ -76,8 +76,8 @@ public class TreeDetectorBFS implements ITreeDetector {
         visitedWood.add(pack(start));
         queue.add(start);
 
-        // lowestBase   — minimum Y across all wood blocks (for consumedBlocks bookkeeping).
-        // lowestTrunkBase — minimum Y restricted to trunk/roots blocks (never a branch).
+        // lowestBase   -- minimum Y across all wood blocks (for consumedBlocks bookkeeping).
+        // lowestTrunkBase -- minimum Y restricted to trunk/roots blocks (never a branch).
         Vector3i lowestBase      = start;
         Vector3i lowestTrunkBase = null;
 
@@ -117,7 +117,7 @@ public class TreeDetectorBFS implements ITreeDetector {
                     // Reject blocks of a different tree species (e.g. Beech root touching Oak root).
                     if (startSpecies != null && !extractSpecies(key).equals(startSpecies)) continue;
 
-                    // Block branch→trunk expansion: branches can only spread to other branches,
+                    // Block branch->trunk expansion: branches can only spread to other branches,
                     // never back into a trunk. This prevents BFS from crossing into a neighbouring
                     // tree's trunk via touching branch blocks.
                     if (currentIsBranch && !isBranchBlock(key)) continue;
@@ -126,7 +126,7 @@ public class TreeDetectorBFS implements ITreeDetector {
                         queue.add(new Vector3i(nx, ny, nz));
                     }
                 } else if (leafKeys.contains(key)) {
-                    visitedLeaf.add(packed); // deduplicated — a leaf adjacent to 3 wood blocks counts once
+                    visitedLeaf.add(packed); // deduplicated -- a leaf adjacent to 3 wood blocks counts once
                 }
             }
         }
@@ -146,7 +146,7 @@ public class TreeDetectorBFS implements ITreeDetector {
 
     /**
      * Returns {@code true} if the block key belongs to a branch block
-     * (i.e. contains {@code "_Branch_"} — e.g. {@code Wood_Oak_Branch_Short}).
+     * (i.e. contains {@code "_Branch_"} -- e.g. {@code Wood_Oak_Branch_Short}).
      */
     private static boolean isBranchBlock(String key) {
         return key.contains("_Branch_");
@@ -158,8 +158,8 @@ public class TreeDetectorBFS implements ITreeDetector {
      * <p>Block keys follow the pattern {@code Wood_{Species}_{Type}}, where known
      * types are {@code Trunk}, {@code Trunk_Full}, {@code Roots},
      * {@code Branch_Short}, {@code Branch_Long}, and {@code Branch_Corner}.
-     * For example, {@code Wood_Oak_Trunk} → {@code "Wood_Oak"} and
-     * {@code Wood_Wisteria_Wild_Branch_Short} → {@code "Wood_Wisteria_Wild"}.
+     * For example, {@code Wood_Oak_Trunk} -> {@code "Wood_Oak"} and
+     * {@code Wood_Wisteria_Wild_Branch_Short} -> {@code "Wood_Wisteria_Wild"}.
      *
      * <p>Note: {@code _Trunk_Full} must be checked before {@code _Trunk} because
      * the shorter suffix is a substring of the longer one.
@@ -175,7 +175,7 @@ public class TreeDetectorBFS implements ITreeDetector {
         if (blockKey.endsWith("_Branch_Short"))  return blockKey.substring(0, blockKey.length() - "_Branch_Short".length());
         if (blockKey.endsWith("_Branch_Long"))   return blockKey.substring(0, blockKey.length() - "_Branch_Long".length());
         if (blockKey.endsWith("_Branch_Corner")) return blockKey.substring(0, blockKey.length() - "_Branch_Corner".length());
-        return blockKey; // unknown suffix — treat the full key as the species
+        return blockKey; // unknown suffix -- treat the full key as the species
     }
 
     /**
@@ -209,9 +209,9 @@ public class TreeDetectorBFS implements ITreeDetector {
     public static Vector3i unpack(long packed) {
         // Each axis occupies 21 bits (bits 0-20 = y, 21-41 = z, 42-62 = x; bit 63 unused).
         // Sign-extend each field by shifting its MSB to bit 63, then arithmetic-shifting back.
-        int y = (int) ((packed << 43) >> 43); // bit 20 → bit 63, then back
-        int z = (int) ((packed << 22) >> 43); // bit 41 → bit 63, then back
-        int x = (int) ((packed <<  1) >> 43); // bit 62 → bit 63, then back
+        int y = (int) ((packed << 43) >> 43); // bit 20 -> bit 63, then back
+        int z = (int) ((packed << 22) >> 43); // bit 41 -> bit 63, then back
+        int x = (int) ((packed <<  1) >> 43); // bit 62 -> bit 63, then back
         return new Vector3i(x, y, z);
     }
 
@@ -246,7 +246,7 @@ public class TreeDetectorBFS implements ITreeDetector {
      * @param base               lowest wood position found in the connected component
      * @param woodCount          number of connected wood blocks visited
      * @param leafCount          number of leaf blocks inthe component
-     * @param visitedWoodPacked  packed positions of every wood block visited — used by the
+     * @param visitedWoodPacked  packed positions of every wood block visited -- used by the
      *                           scanner to skip already-processed blocks
      */
     public record TreeCandidate(boolean isTree, Vector3i base, int woodCount, int leafCount,

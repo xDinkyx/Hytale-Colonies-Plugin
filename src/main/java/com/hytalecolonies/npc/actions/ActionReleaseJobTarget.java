@@ -41,7 +41,7 @@ public class ActionReleaseJobTarget extends ActionBase {
 
         JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
         if (jobTarget == null) {
-            DebugLog.fine(DebugCategory.JOB_SYSTEM, "[ReleaseJobTarget] [%s] No JobTargetComponent present — nothing to do.", npcId);
+            DebugLog.fine(DebugCategory.JOB_SYSTEM, "[ReleaseJobTarget] [%s] No JobTargetComponent present -- nothing to do.", npcId);
             return true;
         }
 

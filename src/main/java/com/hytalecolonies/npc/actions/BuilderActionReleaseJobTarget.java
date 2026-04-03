@@ -9,7 +9,7 @@ import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
 
 /**
- * Builder for {@code "ReleaseJobTarget"} — unclaims and clears the current
+ * Builder for {@code "ReleaseJobTarget"} -- unclaims and clears the current
  * {@code JobTargetComponent} position. No JSON configuration required.
  */
 public class BuilderActionReleaseJobTarget extends BuilderActionBase {

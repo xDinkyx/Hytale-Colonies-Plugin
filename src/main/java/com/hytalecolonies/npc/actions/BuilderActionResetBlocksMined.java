@@ -9,7 +9,7 @@ import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
 
 /**
- * Builder for {@code "ResetBlocksMined"} — resets
+ * Builder for {@code "ResetBlocksMined"} -- resets
  * {@code MinerJobComponent.blocksMinedThisRun} to zero. No JSON configuration required.
  */
 public class BuilderActionResetBlocksMined extends BuilderActionBase {

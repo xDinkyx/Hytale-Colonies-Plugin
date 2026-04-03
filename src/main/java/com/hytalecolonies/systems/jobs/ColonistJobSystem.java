@@ -75,10 +75,10 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
                     String actualRole = NPCPlugin.get().getName(currentRole.getRoleIndex());
                     if (!expectedRole.equals(actualRole)) {
                         DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
-                                "[ColonistJob] Role mismatch: NPC is '%s' but should be '%s' — switching.",
+                                "[ColonistJob] Role mismatch: NPC is '%s' but should be '%s' -- switching.",
                                 actualRole, expectedRole);
                         ColonistRoleMap.switchRole(colonistRef, store, expectedRole);
-                        return; // Skip handlers this tick — archetype change invalidates refs.
+                        return; // Skip handlers this tick -- archetype change invalidates refs.
                     }
                 }
             }
@@ -87,7 +87,7 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
         JobState state = job.getCurrentTask();
         if (state == null) {
             DebugLog.warning(DebugCategory.JOB_SYSTEM,
-                    "[ColonistJob] Colonist has null JobState — resetting to Idle.");
+                    "[ColonistJob] Colonist has null JobState -- resetting to Idle.");
             job.setCurrentTask(JobState.Idling);
             return;
         }

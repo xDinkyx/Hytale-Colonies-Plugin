@@ -38,7 +38,7 @@ public class ActionIncrementBlocksMined extends ActionBase {
                     "[IncrementBlocksMined] [%s] Blocks mined this run: %d.", npcId, minerJob.blocksMinedThisRun);
         } else {
             DebugLog.warning(DebugCategory.MINER_JOB,
-                    "[IncrementBlocksMined] [%s] No MinerJobComponent found — cannot increment.", npcId);
+                    "[IncrementBlocksMined] [%s] No MinerJobComponent found -- cannot increment.", npcId);
         }
 
         return true;

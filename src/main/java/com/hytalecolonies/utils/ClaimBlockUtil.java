@@ -77,7 +77,7 @@ public final class ClaimBlockUtil {
         Vector3i canonical = resolveCanonicalPosition(world, position);
         if (canonical == null) {
             DebugLog.fine(DebugCategory.CLAIM_SYSTEM,
-                    "[Claim] claimBlock(%s) — chunk not loaded, cannot claim.", position);
+                    "[Claim] claimBlock(%s) -- chunk not loaded, cannot claim.", position);
             return false;
         }
 
@@ -85,7 +85,7 @@ public final class ClaimBlockUtil {
         Ref<ChunkStore> chunkRef = world.getChunkStore().getChunkReference(chunkIdx);
         if (chunkRef == null || !chunkRef.isValid()) {
             DebugLog.fine(DebugCategory.CLAIM_SYSTEM,
-                    "[Claim] claimBlock(%s) — chunk ref not available.", canonical);
+                    "[Claim] claimBlock(%s) -- chunk ref not available.", canonical);
             return false;
         }
 
@@ -93,7 +93,7 @@ public final class ClaimBlockUtil {
         BlockComponentChunk bcc = chunkStore.getComponent(chunkRef, BlockComponentChunk.getComponentType());
         if (bcc == null) {
             DebugLog.fine(DebugCategory.CLAIM_SYSTEM,
-                    "[Claim] claimBlock(%s) — no BlockComponentChunk.", canonical);
+                    "[Claim] claimBlock(%s) -- no BlockComponentChunk.", canonical);
             return false;
         }
 
@@ -101,11 +101,11 @@ public final class ClaimBlockUtil {
         Ref<ChunkStore> blockRef = bcc.getEntityReference(blockIndex);
 
         if (blockRef != null && blockRef.isValid()) {
-            // Pre-existing block entity (e.g. HarvestableTreeComponent) — attach claim to it.
+            // Pre-existing block entity (e.g. HarvestableTreeComponent) -- attach claim to it.
             ClaimedBlockComponent existing = chunkStore.getComponent(blockRef, ClaimedBlockComponent.getComponentType());
             if (existing != null) {
                 DebugLog.fine(DebugCategory.CLAIM_SYSTEM,
-                        "[Claim] claimBlock(%s) — already claimed by %s (type=%s), rejecting.",
+                        "[Claim] claimBlock(%s) -- already claimed by %s (type=%s), rejecting.",
                         canonical, existing.getClaimedByUuid(), existing.getClaimType());
                 return false;
             }
@@ -114,7 +114,7 @@ public final class ClaimBlockUtil {
             DebugLog.info(DebugCategory.CLAIM_SYSTEM,
                     "[Claim] Claimed block at %s by %s (type=%s).", canonical, claimedByUuid, claimType);
         } else {
-            // No block entity — create a minimal one for the claim.
+            // No block entity -- create a minimal one for the claim.
             // ClaimedBlockCleanupSystem automatically destroys this entity when the
             // claim is released if no other components are present.
             Holder<ChunkStore> holder = ChunkStore.REGISTRY.newHolder();
@@ -188,14 +188,14 @@ public final class ClaimBlockUtil {
         Vector3i canonical = resolveCanonicalPosition(world, position);
         if (canonical == null) {
             DebugLog.fine(DebugCategory.CLAIM_SYSTEM,
-                    "[Claim] unclaimBlock(%s) — chunk not loaded, nothing to remove.", position);
+                    "[Claim] unclaimBlock(%s) -- chunk not loaded, nothing to remove.", position);
             return;
         }
 
         Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, canonical.x, canonical.y, canonical.z);
         if (blockRef == null || !blockRef.isValid()) {
             DebugLog.fine(DebugCategory.CLAIM_SYSTEM,
-                    "[Claim] unclaimBlock(%s) — no block entity, nothing to remove.", canonical);
+                    "[Claim] unclaimBlock(%s) -- no block entity, nothing to remove.", canonical);
             return;
         }
 
@@ -203,7 +203,7 @@ public final class ClaimBlockUtil {
         ClaimedBlockComponent existing = chunkStore.getComponent(blockRef, ClaimedBlockComponent.getComponentType());
         if (existing == null) {
             DebugLog.fine(DebugCategory.CLAIM_SYSTEM,
-                    "[Claim] unclaimBlock(%s) — no ClaimedBlockComponent present, nothing to remove.", canonical);
+                    "[Claim] unclaimBlock(%s) -- no ClaimedBlockComponent present, nothing to remove.", canonical);
             return;
         }
 
@@ -224,13 +224,13 @@ public final class ClaimBlockUtil {
         JobTargetComponent jobTarget = entityStore.getComponent(colonistRef, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.targetPosition == null) {
             DebugLog.fine(DebugCategory.CLAIM_SYSTEM,
-                    "[Claim] unclaimByColonist — no JobTargetComponent or null targetPosition, nothing to release.");
+                    "[Claim] unclaimByColonist -- no JobTargetComponent or null targetPosition, nothing to release.");
             return;
         }
 
         World world = entityStore.getExternalData().getWorld();
         DebugLog.fine(DebugCategory.CLAIM_SYSTEM,
-                "[Claim] unclaimByColonist — releasing claim at %s.", jobTarget.targetPosition);
+                "[Claim] unclaimByColonist -- releasing claim at %s.", jobTarget.targetPosition);
         unclaimBlock(world, jobTarget.targetPosition);
     }
 }

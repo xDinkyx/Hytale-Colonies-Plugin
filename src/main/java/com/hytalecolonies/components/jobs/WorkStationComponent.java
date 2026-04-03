@@ -21,7 +21,7 @@ import java.util.*;
  * capacity, and all job-specific configuration for the assigned job.
  *
  * <p>Job-specific configuration lives here so workstation placement (or JSON)
- * drives behaviour — individual job components carry only per-worker transient
+ * drives behaviour -- individual job components carry only per-worker transient
  * runtime state.
  */
 public class WorkStationComponent implements Component<ChunkStore> {

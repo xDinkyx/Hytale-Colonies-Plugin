@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
  *
  * <p>When {@code GatherType} is configured in the builder, that type is used directly.
  * When omitted, the required tool is auto-detected from the block at the position
- * provided by the active sensor — matching the same behaviour as
+ * provided by the active sensor -- matching the same behaviour as
  * {@link ActionHarvestBlock}.
  *
  * <p>Constructed by {@link BuilderActionEquipBestTool} when an NPC role is built.
@@ -67,13 +67,13 @@ public class ActionEquipBestTool extends ActionBase {
         if (inventory == null) return false;
 
         if (gatherType != null) {
-            // Explicit mode — use the configured gather type.
+            // Explicit mode -- use the configured gather type.
             boolean equipped = ColonistToolUtil.equipBestToolForGatherType(inventory, gatherType, minQuality, ref, store);
             DebugLog.fine(DebugCategory.JOB_SYSTEM, "[EquipBestTool] [%s] Action finished (explicit type=%s, equipped=%b).", npcId, gatherType, equipped);
             return equipped;
         }
 
-        // Auto-detect mode — resolve block gather type from the sensor position.
+        // Auto-detect mode -- resolve block gather type from the sensor position.
         if (sensorInfo == null || !sensorInfo.hasPosition()) return false;
         IPositionProvider pos = sensorInfo.getPositionProvider();
         if (pos == null || !pos.providePosition(targetVec)) return false;

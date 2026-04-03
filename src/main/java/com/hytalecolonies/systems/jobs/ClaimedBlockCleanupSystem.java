@@ -67,7 +67,7 @@ public class ClaimedBlockCleanupSystem extends RefChangeSystem<ChunkStore, Claim
             @Nonnull Store<ChunkStore> store,
             @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
         // Guard: if the entity is already being destroyed (e.g. the block was broken)
-        // the ref will be invalid here — avoid a double-remove.
+        // the ref will be invalid here -- avoid a double-remove.
         if (!ref.isValid()) {
             return;
         }

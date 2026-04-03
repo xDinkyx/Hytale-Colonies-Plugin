@@ -72,7 +72,7 @@ public final class MinerHandlers {
 
         MinerJobComponent miner = ctx.store.getComponent(ctx.colonistRef, MinerJobComponent.getComponentType());
         if (miner == null) {
-            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idling] No MinerJobComponent on colonist — is this actually a miner?");
+            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idling] No MinerJobComponent on colonist -- is this actually a miner?");
             return;
         }
         DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] MinerJobComponent found. blocksMinedThisRun=%d.", miner.blocksMinedThisRun);
@@ -84,9 +84,9 @@ public final class MinerHandlers {
         }
         boolean hasPickaxe = ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), GATHER_TYPE_PICKAXE, 0);
         boolean hasShovel = ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), GATHER_TYPE_SHOVEL, 0);
-        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Tool check — pickaxe=%b shovel=%b.", hasPickaxe, hasShovel);
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Tool check -- pickaxe=%b shovel=%b.", hasPickaxe, hasShovel);
         if (!hasPickaxe || !hasShovel) {
-            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Missing tools — skipping until equipped.");
+            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Missing tools -- skipping until equipped.");
             return;
         }
 
@@ -109,14 +109,14 @@ public final class MinerHandlers {
             return;
         }
         ctx.job.workAvailable = true;
-        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Found next block at %s — claiming.", nextBlock);
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Found next block at %s -- claiming.", nextBlock);
 
         EntityStore entityStore = world.getEntityStore();
         final Vector3i targetBlock = nextBlock;
         world.execute(() -> {
             JobComponent liveJob = entityStore.getStore().getComponent(ctx.colonistRef, JobComponent.getComponentType());
             if (liveJob == null || liveJob.getCurrentTask() != JobState.Idling) {
-                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] world.execute guard — state is now %s, skipping.",
+                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] world.execute guard -- state is now %s, skipping.",
                         liveJob != null ? liveJob.getCurrentTask() : "null");
                 return;
             }
@@ -128,11 +128,11 @@ public final class MinerHandlers {
             }
 
             if (!ClaimBlockUtil.claimBlock(world, targetBlock, uuidComp.getUuid(), "Mine")) {
-                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Block %s already claimed — staying Idling.", targetBlock);
+                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Block %s already claimed -- staying Idling.", targetBlock);
                 return;
             }
 
-            // Update or add JobTargetComponent — may already exist if a prior world.execute crashed.
+            // Update or add JobTargetComponent -- may already exist if a prior world.execute crashed.
             JobTargetComponent existingTarget = entityStore.getStore().getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
             if (existingTarget != null) {
                 existingTarget.targetPosition = targetBlock;
@@ -143,7 +143,7 @@ public final class MinerHandlers {
             // Set state BEFORE adding MoveToTargetComponent so that if PathFindingSystem
             // throws, the state is already TravelingToJob and the Idling handler won't re-fire.
             liveJob.setCurrentTask(JobState.TravelingToJob);
-            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Claimed %s — state -> TravelingToJob.", targetBlock);
+            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Claimed %s -- state -> TravelingToJob.", targetBlock);
 
             MoveToTargetComponent existingMove = entityStore.getStore().getComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType());
             if (existingMove != null) {
@@ -171,7 +171,7 @@ public final class MinerHandlers {
         Vector3i targetPos = jobTarget.targetPosition;
         World world = ctx.world;
 
-        // Block still standing — NPC role handles per-tick damage.
+        // Block still standing -- NPC role handles per-tick damage.
         if (world.getBlock(targetPos.x, targetPos.y, targetPos.z) != 0) return;
 
         Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
@@ -208,13 +208,13 @@ public final class MinerHandlers {
                 liveJob.collectingDropsSince = System.currentTimeMillis();
                 liveJob.setCurrentTask(JobState.CollectingDrops);
                 DebugLog.info(DebugCategory.MINER_JOB, quotaReached
-                        ? "[MinerJob] Run quota reached — collecting drops."
-                        : "[MinerJob] Mine exhausted mid-run — collecting drops.");
+                        ? "[MinerJob] Run quota reached -- collecting drops."
+                        : "[MinerJob] Mine exhausted mid-run -- collecting drops.");
             } else {
                 UUIDComponent uuidComp = entityStore.getStore().getComponent(ctx.colonistRef, UUIDComponent.getComponentType());
                 if (uuidComp == null || !ClaimBlockUtil.claimBlock(world, nextBlock, uuidComp.getUuid(), "Mine")) {
                     DebugLog.fine(DebugCategory.MINER_JOB,
-                            "[MinerJob] Could not claim next mine block %s — going Idling.", nextBlock);
+                            "[MinerJob] Could not claim next mine block %s -- going Idling.", nextBlock);
                     liveJob.setCurrentTask(JobState.Idling);
                     return;
                 }
@@ -233,7 +233,7 @@ public final class MinerHandlers {
                             new MoveToTargetComponent(blockCenter(nextBlock)));
                 }
                 liveJob.setCurrentTask(JobState.TravelingToJob);
-                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob] Claimed next mine block at %s — heading there.", nextBlock);
+                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob] Claimed next mine block at %s -- heading there.", nextBlock);
             }
         });
     };
@@ -264,7 +264,7 @@ public final class MinerHandlers {
                     Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, x, y, z);
                     if (blockRef != null && chunkStore.getComponent(blockRef, ClaimedBlockComponent.getComponentType()) != null) {
                         claimed++;
-                        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Scan] Block at (%d,%d,%d) is claimed — skipping.", x, y, z);
+                        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Scan] Block at (%d,%d,%d) is claimed -- skipping.", x, y, z);
                         continue;
                     }
                     DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Scan] Returning block id=%d at (%d,%d,%d).", blockId, x, y, z);
@@ -273,7 +273,7 @@ public final class MinerHandlers {
             }
         }
         DebugLog.info(DebugCategory.MINER_JOB,
-                "[MinerJob:Scan] Done — checked=%d nonAir=%d claimed=%d → no eligible block. origin=%s size=%d.",
+                "[MinerJob:Scan] Done -- checked=%d nonAir=%d claimed=%d -> no eligible block. origin=%s size=%d.",
                 checkedTotal, nonAir, claimed, origin, size);
         return null;
     }

@@ -48,7 +48,7 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
             @Nonnull Store<EntityStore> store,
             @Nonnull CommandBuffer<EntityStore> commandBuffer) {
 
-        // Remove the trigger component immediately — this is a one-shot navigation request.
+        // Remove the trigger component immediately -- this is a one-shot navigation request.
         commandBuffer.removeComponent(ref, MoveToTargetComponent.getComponentType());
 
         NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
@@ -70,12 +70,12 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
             role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(component.target);
         } catch (NullPointerException e) {
             DebugLog.warning(DebugCategory.MOVEMENT,
-                    "PathFindingSystem: role has no stored position slot %d — is Colonist_Miner.json loaded correctly?",
+                    "PathFindingSystem: role has no stored position slot %d -- is Colonist_Miner.json loaded correctly?",
                     NAV_TARGET_SLOT);
             return;
         }
 
-        // Debug visualization — blue = NPC position, red = target, green line = intent.
+        // Debug visualization -- blue = NPC position, red = target, green line = intent.
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform != null && HytaleColoniesPlugin.getInstance().getDebugConfig().get().isDrawColonistPaths()) {
             showDebugPath(

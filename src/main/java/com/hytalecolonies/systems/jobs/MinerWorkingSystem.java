@@ -112,7 +112,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
                 liveJob.collectingDropsSince = System.currentTimeMillis();
                 liveJob.setCurrentTask(JobState.CollectingDrops);
                 DebugLog.info(DebugCategory.MINER_JOB,
-                        "[MinerWorking] [%s] %s — transitioning to CollectingDrops.",
+                        "[MinerWorking] [%s] %s -- transitioning to CollectingDrops.",
                         npcId, quotaReached ? "Quota reached" : "Shaft exhausted mid-run");
             } else {
                 UUIDComponent uuidComp = entityStore.getStore().getComponent(colonistRef, UUIDComponent.getComponentType());
@@ -121,9 +121,9 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
                     return;
                 }
                 if (!ClaimBlockUtil.claimBlock(world, nextBlock, uuidComp.getUuid(), "Mine")) {
-                    // Race loss — retry via Idling.
+                    // Race loss -- retry via Idling.
                     DebugLog.fine(DebugCategory.MINER_JOB,
-                            "[MinerWorking] [%s] Could not claim next block %s — going Idling.", npcId, nextBlock);
+                            "[MinerWorking] [%s] Could not claim next block %s -- going Idling.", npcId, nextBlock);
                     liveJob.setCurrentTask(JobState.Idling);
                     return;
                 }
@@ -139,7 +139,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
                         new MoveToTargetComponent(MinerHandlers.blockCenter(nextBlock)));
                 liveJob.setCurrentTask(JobState.TravelingToJob);
                 DebugLog.info(DebugCategory.MINER_JOB,
-                        "[MinerWorking] [%s] Claimed next block at %s — transitioning to TravelingToJob.", npcId, nextBlock);
+                        "[MinerWorking] [%s] Claimed next block at %s -- transitioning to TravelingToJob.", npcId, nextBlock);
             }
         });
     }

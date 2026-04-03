@@ -30,7 +30,7 @@ import java.util.UUID;
  * <p>Claim semantics: when the sensor first fires it schedules adding a
  * {@link ClaimedBlockComponent} (with this NPC's UUID) on the tree's block
  * entity via {@code world.execute()}. On subsequent ticks the claim is
- * validated against the component — if another colonist won the race the sensor
+ * validated against the component -- if another colonist won the race the sensor
  * releases local state and searches for a different tree.
  *
  * <p>Constructed by {@link BuilderSensorHarvestableTree}.
@@ -90,7 +90,7 @@ public class SensorHarvestableTree extends SensorBase {
             if (blockRef != null && blockRef.isValid()) {
                 ClaimedBlockComponent claim = blockRef.getStore().getComponent(blockRef, ClaimedBlockComponent.getComponentType());
                 if (claim != null && myUuid != null && myUuid.equals(claim.getClaimedByUuid())) {
-                    // Our claim is confirmed — keep providing the same position.
+                    // Our claim is confirmed -- keep providing the same position.
                     positionProvider.setTarget(
                             claimedTreePos.x + 0.5, claimedTreePos.y, claimedTreePos.z + 0.5);
                     return true;

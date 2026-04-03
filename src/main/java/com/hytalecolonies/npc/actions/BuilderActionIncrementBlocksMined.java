@@ -9,7 +9,7 @@ import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
 
 /**
- * Builder for {@code "IncrementBlocksMined"} — increments
+ * Builder for {@code "IncrementBlocksMined"} -- increments
  * {@code MinerJobComponent.blocksMinedThisRun} by one. No JSON configuration required.
  */
 public class BuilderActionIncrementBlocksMined extends BuilderActionBase {

@@ -20,7 +20,7 @@ public class BuilderActionNotifyBlockBroken extends BuilderActionBase {
     @Nonnull
     @Override
     public String getLongDescription() {
-        return "Sets JobComponent.blockBrokenNotification = true. No logic — ECS decides the next state.";
+        return "Sets JobComponent.blockBrokenNotification = true. No logic -- ECS decides the next state.";
     }
 
     @Nonnull

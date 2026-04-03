@@ -41,7 +41,7 @@ import java.util.UUID;
  * <p>
  * Race safety: the claim is performed inside {@code world.execute()} so that
  * two
- * miners finding the same block in the same tick serialize here — the first
+ * miners finding the same block in the same tick serialize here -- the first
  * succeeds,
  * the second backs off.
  */
@@ -49,7 +49,7 @@ public class ActionSeekNextMineBlock extends ActionBase {
 
     /**
      * Slot index for the "NavTarget" stored position in the colonist role JSON.
-     * Must match the slot allocated to "NavTarget" in the role builder — it is the
+     * Must match the slot allocated to "NavTarget" in the role builder -- it is the
      * only position slot declared in Template_Colonist_Base, so it gets index 0.
      */
     private static final int NAV_TARGET_SLOT = 0;
@@ -72,14 +72,14 @@ public class ActionSeekNextMineBlock extends ActionBase {
 
         WorkStationComponent workStation = WorkStationUtil.resolve(store, ref);
         if (workStation == null) {
-            DebugLog.fine(DebugCategory.MINER_JOB, "[SeekNextMineBlock] [%s] Workstation not found — skipping.", npcId);
+            DebugLog.fine(DebugCategory.MINER_JOB, "[SeekNextMineBlock] [%s] Workstation not found -- skipping.", npcId);
             return true;
         }
 
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null) {
             DebugLog.warning(DebugCategory.MINER_JOB,
-                    "[SeekNextMineBlock] [%s] No JobComponent — cannot resolve workstation position.", npcId);
+                    "[SeekNextMineBlock] [%s] No JobComponent -- cannot resolve workstation position.", npcId);
             return true;
         }
         Vector3i workStationPosition = job.getWorkStationBlockPosition();
@@ -87,21 +87,21 @@ public class ActionSeekNextMineBlock extends ActionBase {
         initialiseMineOriginIfNeeded(workStation, workStationPosition, npcId);
 
         if (uuidComponent == null) {
-            DebugLog.warning(DebugCategory.MINER_JOB, "[SeekNextMineBlock] [%s] No UUIDComponent — cannot claim block.", npcId);
+            DebugLog.warning(DebugCategory.MINER_JOB, "[SeekNextMineBlock] [%s] No UUIDComponent -- cannot claim block.", npcId);
             return true;
         }
         UUID colonistUuid = uuidComponent.getUuid();
 
         // If a job target is already set (e.g. persisted from a previous session),
-        // keep navigation pointed at it — but only if the block is still solid.
+        // keep navigation pointed at it -- but only if the block is still solid.
         JobTargetComponent existingTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
         World world = store.getExternalData().getWorld();
         if (existingTarget != null && existingTarget.targetPosition != null) {
             Vector3i pos = existingTarget.targetPosition;
             if (world.getBlock(pos.x, pos.y, pos.z) == 0) {
-                // Target block is already air — release the stale claim and scan again.
+                // Target block is already air -- release the stale claim and scan again.
                 DebugLog.info(DebugCategory.MINER_JOB,
-                        "[SeekNextMineBlock] [%s] Persisted target %s is already air — releasing stale target.", npcId, pos);
+                        "[SeekNextMineBlock] [%s] Persisted target %s is already air -- releasing stale target.", npcId, pos);
                 final Vector3i capturedPos = new Vector3i(pos.x, pos.y, pos.z);
                 world.execute(() -> ClaimBlockUtil.unclaimBlock(world, capturedPos));
                 existingTarget.setTargetPosition(null);
@@ -110,7 +110,7 @@ public class ActionSeekNextMineBlock extends ActionBase {
                 role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT)
                         .assign(pos.x + 0.5, (double) pos.y, pos.z + 0.5);
                 DebugLog.fine(DebugCategory.MINER_JOB,
-                        "[SeekNextMineBlock] [%s] Persisted target %s — NavTarget restored.", npcId, pos);
+                        "[SeekNextMineBlock] [%s] Persisted target %s -- NavTarget restored.", npcId, pos);
                 return true;
             }
         }
@@ -118,7 +118,7 @@ public class ActionSeekNextMineBlock extends ActionBase {
 
         if (nextBlock == null) {
             DebugLog.fine(DebugCategory.MINER_JOB,
-                    "[SeekNextMineBlock] [%s] Shaft at origin %s has no solid unclaimed blocks — marking no work available.",
+                    "[SeekNextMineBlock] [%s] Shaft at origin %s has no solid unclaimed blocks -- marking no work available.",
                     npcId, workStation.mineOrigin);
             if (job != null) {
                 job.workAvailable = false;
@@ -146,14 +146,14 @@ public class ActionSeekNextMineBlock extends ActionBase {
             JobTargetComponent currentTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
             if (currentTarget != null && currentTarget.targetPosition != null) {
                 DebugLog.fine(DebugCategory.MINER_JOB,
-                        "[SeekNextMineBlock] [%s] Already has job target %s — skipping claim of %s.",
+                        "[SeekNextMineBlock] [%s] Already has job target %s -- skipping claim of %s.",
                         npcId, currentTarget.targetPosition, blockToMine);
                 return;
             }
 
             if (!ClaimBlockUtil.claimBlock(world, blockToMine, colonistUuid, "Mine")) {
                 DebugLog.fine(DebugCategory.MINER_JOB,
-                        "[SeekNextMineBlock] [%s] Block at %s claim FAILED (already taken) — will retry next cycle.", npcId, blockToMine);
+                        "[SeekNextMineBlock] [%s] Block at %s claim FAILED (already taken) -- will retry next cycle.", npcId, blockToMine);
                 return;
             }
 
@@ -166,7 +166,7 @@ public class ActionSeekNextMineBlock extends ActionBase {
                 jobForClear.workAvailable = true;
             }
             DebugLog.info(DebugCategory.MINER_JOB,
-                    "[SeekNextMineBlock] [%s] Claimed block at %s — navigating.", npcId, blockToMine);
+                    "[SeekNextMineBlock] [%s] Claimed block at %s -- navigating.", npcId, blockToMine);
         });
 
         return true;
@@ -194,7 +194,7 @@ public class ActionSeekNextMineBlock extends ActionBase {
         Vector3i origin = workStation.mineOrigin;
         if (origin == null) {
             DebugLog.warning(DebugCategory.MINER_JOB,
-                    "[SeekNextMineBlock] [%s] Mine origin is null — workstation may not have been initialised.", npcId);
+                    "[SeekNextMineBlock] [%s] Mine origin is null -- workstation may not have been initialised.", npcId);
             return null;
         }
         int size = workStation.mineSize;
@@ -218,19 +218,19 @@ public class ActionSeekNextMineBlock extends ActionBase {
                             && chunkStore.getComponent(blockEntity, ClaimedBlockComponent.getComponentType()) != null) {
                         claimedCount++;
                         DebugLog.fine(DebugCategory.MINER_JOB,
-                                "[SeekNextMineBlock] [%s] Block at (%d,%d,%d) is claimed — skipping.",
+                                "[SeekNextMineBlock] [%s] Block at (%d,%d,%d) is claimed -- skipping.",
                                 npcId, x, y, z);
                         continue;
                     }
                     DebugLog.fine(DebugCategory.MINER_JOB,
-                            "[SeekNextMineBlock] [%s] Scan complete: %d air, %d claimed — returning (%d,%d,%d).",
+                            "[SeekNextMineBlock] [%s] Scan complete: %d air, %d claimed -- returning (%d,%d,%d).",
                             npcId, airCount, claimedCount, x, y, z);
                     return new Vector3i(x, y, z);
                 }
             }
         }
         DebugLog.fine(DebugCategory.MINER_JOB,
-                "[SeekNextMineBlock] [%s] Scan complete: %d air, %d claimed — shaft exhausted.",
+                "[SeekNextMineBlock] [%s] Scan complete: %d air, %d claimed -- shaft exhausted.",
                 npcId, airCount, claimedCount);
         return null;
     }

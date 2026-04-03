@@ -17,7 +17,7 @@ import com.hytalecolonies.ui.DebugConfigUI;
 import javax.annotation.Nonnull;
 
 /**
- * /hc debuggui — Opens the Debug Configuration UI for adjusting per-category log levels.
+ * /hc debuggui -- Opens the Debug Configuration UI for adjusting per-category log levels.
  */
 public class DebugGuiCommand extends AbstractPlayerCommand {
 

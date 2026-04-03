@@ -9,7 +9,7 @@ import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
 
 /**
- * Builder for {@code "FindNextTrunkBlock"} — after a tree base block is broken,
+ * Builder for {@code "FindNextTrunkBlock"} -- after a tree base block is broken,
  * flood-fills horizontally to find the next adjacent standing wood block at the
  * same Y level as the workstation's allowed tree types. If found, unclaims the
  * broken block, claims the next, and navigates there. If not found, clears

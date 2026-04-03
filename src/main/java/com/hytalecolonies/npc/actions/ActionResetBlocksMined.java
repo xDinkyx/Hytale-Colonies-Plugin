@@ -37,7 +37,7 @@ public class ActionResetBlocksMined extends ActionBase {
             DebugLog.info(DebugCategory.MINER_JOB, "[ResetBlocksMined] [%s] Per-run counter reset to 0.", npcId);
         } else {
             DebugLog.warning(DebugCategory.MINER_JOB,
-                    "[ResetBlocksMined] [%s] No MinerJobComponent found — nothing to reset.", npcId);
+                    "[ResetBlocksMined] [%s] No MinerJobComponent found -- nothing to reset.", npcId);
         }
 
         return true;

@@ -78,7 +78,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         World world = chunkStore.getExternalData().getWorld();
         EntityStore entityStore = world.getEntityStore();
 
-        // Remove ghost workers — colonists recorded in the workstation that no longer
+        // Remove ghost workers -- colonists recorded in the workstation that no longer
         // exist.
         removeGhostWorkers(workStation, entityStore);
 
@@ -92,14 +92,14 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                 BlockModule.BlockStateInfo.getComponentType());
         if (blockStateInfo == null) {
             DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
-                    "[JobAssignment] WorkStation has no BlockStateInfo — skipping.");
+                    "[JobAssignment] WorkStation has no BlockStateInfo -- skipping.");
             return;
         }
 
         // Guard against concurrent chunk unloads invalidating the chunk ref.
         if (!blockStateInfo.getChunkRef().isValid()) {
             DebugLog.fine(DebugCategory.JOB_ASSIGNMENT,
-                    "[JobAssignment] WorkStation chunk ref is invalid (chunk unloading) — skipping.");
+                    "[JobAssignment] WorkStation chunk ref is invalid (chunk unloading) -- skipping.");
             return;
         }
 
@@ -302,7 +302,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             World world = commandBuffer.getExternalData().getWorld();
             EntityStore entityStore = world.getEntityStore();
 
-            // Snapshot UUIDs now — workStation is cleared before world.execute() runs.
+            // Snapshot UUIDs now -- workStation is cleared before world.execute() runs.
             // world.execute() defers EntityStore mutations: this can be called while the
             // EntityStore is ticking (e.g. a block broken during interaction processing
             // fires onEntityRemove on the ChunkStore workstation entity).
@@ -436,7 +436,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             WorkStationComponent workStation = WorkStationUtil.resolve(store, ref);
             if (workStation == null) {
                 DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
-                        "[RoleSwitch] No workstation found for colonist %s — keeping generic role.",
+                        "[RoleSwitch] No workstation found for colonist %s -- keeping generic role.",
                         uuidComponent != null ? uuidComponent.getUuid() : "?");
                 return;
             }

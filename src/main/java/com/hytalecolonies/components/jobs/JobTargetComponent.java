@@ -40,10 +40,10 @@ public class JobTargetComponent implements Component<EntityStore> {
     /** Where the colonist is headed for their job task. Null while the colonist is heading home. */
     public @Nullable Vector3i targetPosition = null;
 
-    /** Last recorded cell position for stuck detection. Transient — not persisted. */
+    /** Last recorded cell position for stuck detection. Transient -- not persisted. */
     public @Nullable Vector3i lastKnownPosition = null;
 
-    /** How many consecutive ticks the position has been unchanged while traveling. Transient — not persisted. */
+    /** How many consecutive ticks the position has been unchanged while traveling. Transient -- not persisted. */
     public int stuckTicks = 0;
 
     // ===== Constructors =====

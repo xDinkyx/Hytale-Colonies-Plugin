@@ -94,7 +94,7 @@ public class ColonistRemovalSystem extends RefChangeSystem<EntityStore, Colonist
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform == null) {
             DebugLog.warning(DebugCategory.COLONIST_LIFECYCLE,
-                    "[ColonistRemoval] No TransformComponent — cannot drop inventory.");
+                    "[ColonistRemoval] No TransformComponent -- cannot drop inventory.");
             return;
         }
 

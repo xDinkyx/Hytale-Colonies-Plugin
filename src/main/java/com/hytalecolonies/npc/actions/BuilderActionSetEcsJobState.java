@@ -10,7 +10,7 @@ import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
 
 /**
- * Builder for {@code "SetEcsJobState"} — sets {@code JobComponent.getCurrentTask()}
+ * Builder for {@code "SetEcsJobState"} -- sets {@code JobComponent.getCurrentTask()}
  * to the configured {@link com.hytalecolonies.components.jobs.JobState} value.
  *
  * <p>JSON usage:

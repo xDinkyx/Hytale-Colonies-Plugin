@@ -38,7 +38,7 @@ import java.util.UUID;
  * remain false and the instruction evaluator will retry on the next cycle.
  *
  * <p>Race safety: the claim is performed inside {@code world.execute()} so that two
- * woodsmen finding the same tree in the same tick serialize here — the first succeeds,
+ * woodsmen finding the same tree in the same tick serialize here -- the first succeeds,
  * the second backs off.
  */
 public class ActionSeekNearestTree extends ActionBase {
@@ -61,19 +61,19 @@ public class ActionSeekNearestTree extends ActionBase {
 
         WorkStationComponent workStation = WorkStationUtil.resolve(store, ref);
         if (workStation == null) {
-            DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] Workstation not found — skipping.", npcId);
+            DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] Workstation not found -- skipping.", npcId);
             return true;
         }
 
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null) {
-            DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] No JobComponent — cannot resolve workstation position.", npcId);
+            DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] No JobComponent -- cannot resolve workstation position.", npcId);
             return true;
         }
         Vector3i workStationPosition = job.getWorkStationBlockPosition();
 
         if (uuidComponent == null) {
-            DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] No UUIDComponent — cannot claim block.", npcId);
+            DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] No UUIDComponent -- cannot claim block.", npcId);
             return true;
         }
         UUID colonistUuid = uuidComponent.getUuid();
@@ -96,17 +96,17 @@ public class ActionSeekNearestTree extends ActionBase {
             JobTargetComponent existingTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
             if (existingTarget != null && existingTarget.targetPosition != null) {
                 DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                        "[SeekNearestTree] [%s] Already has a job target — skipping claim.", npcId);
+                        "[SeekNearestTree] [%s] Already has a job target -- skipping claim.", npcId);
                 return;
             }
 
             boolean claimed = JobNavigationUtil.claimAndNavigateTo(world, store, ref, colonistUuid, treePosition, "Harvest");
             if (claimed) {
                 DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                        "[SeekNearestTree] [%s] Claimed tree at %s — navigating.", npcId, treePosition);
+                        "[SeekNearestTree] [%s] Claimed tree at %s -- navigating.", npcId, treePosition);
             } else {
                 DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                        "[SeekNearestTree] [%s] Tree at %s was already taken — will retry next cycle.", npcId, treePosition);
+                        "[SeekNearestTree] [%s] Tree at %s was already taken -- will retry next cycle.", npcId, treePosition);
             }
         });
 

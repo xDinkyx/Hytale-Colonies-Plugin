@@ -60,7 +60,7 @@ public final class WoodsmanHandlers {
                 : null;
         if (workStation == null) {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idling — workstation not found at %s; cleanup system will reset colonist job.", workStationPos);
+                    "[WoodsmanJob] Idling -- workstation not found at %s; cleanup system will reset colonist job.", workStationPos);
             return;
         }
 
@@ -68,7 +68,7 @@ public final class WoodsmanHandlers {
         if (colonist == null) return;
         if (!ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), REQUIRED_GATHER_TYPE, 0)) {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idling — no '%s' tool in inventory. Waiting at workstation.", REQUIRED_GATHER_TYPE);
+                    "[WoodsmanJob] Idling -- no '%s' tool in inventory. Waiting at workstation.", REQUIRED_GATHER_TYPE);
             return;
         }
 
@@ -78,12 +78,12 @@ public final class WoodsmanHandlers {
         }
         if (nearestTree == null) {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idling — no available trees within radius %.1f of workstation %s.",
+                    "[WoodsmanJob] Idling -- no available trees within radius %.1f of workstation %s.",
                     workStation.treeSearchRadius, workStationPos);
             return;
         }
 
-        // Schedule claim and travel on the world thread — world.execute() serializes
+        // Schedule claim and travel on the world thread -- world.execute() serializes
         // callbacks between ticks, so two woodsmen finding the same tree in the same
         // tick serialize here: the first claims it, the second backs off (stays Idling).
         EntityStore entityStore = world.getEntityStore();
@@ -101,7 +101,7 @@ public final class WoodsmanHandlers {
             entityStore.getStore().tryRemoveComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType());
             entityStore.getStore().addComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(treeTarget));
             liveJob.setCurrentTask(JobState.TravelingToJob);
-            DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Claimed tree at %s — heading there.", nearestTree);
+            DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Claimed tree at %s -- heading there.", nearestTree);
         });
     };
 
@@ -115,7 +115,7 @@ public final class WoodsmanHandlers {
         JobTargetComponent jobTarget = ctx.store.getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.targetPosition == null) {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Working — no JobTargetComponent or target is null, resetting to Idling.");
+                    "[WoodsmanJob] Working -- no JobTargetComponent or target is null, resetting to Idling.");
             ctx.job.setCurrentTask(JobState.Idling);
             return;
         }
@@ -125,13 +125,13 @@ public final class WoodsmanHandlers {
         int blockId = world.getBlock(treeBase);
 
         DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanJob] Working — target=%s blockId=%d (0=broken).", treeBase, blockId);
+                "[WoodsmanJob] Working -- target=%s blockId=%d (0=broken).", treeBase, blockId);
 
-        // Block still standing — NPC role handles per-tick damage.
+        // Block still standing -- NPC role handles per-tick damage.
         if (blockId != 0) return;
 
         DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanJob] Block at %s is broken — scanning for adjacent base blocks.", treeBase);
+                "[WoodsmanJob] Block at %s is broken -- scanning for adjacent base blocks.", treeBase);
 
         Set<String> allowedTreeTypes = null;
         Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
@@ -151,9 +151,9 @@ public final class WoodsmanHandlers {
         world.execute(() -> ClaimBlockUtil.unclaimBlock(world, finalTreePos));
 
         if (nextBase != null) {
-            // Wide multi-block base — travel to the next connected base block.
+            // Wide multi-block base -- travel to the next connected base block.
             DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Found adjacent base block at %s — traveling there (TravelingToJob).", nextBase);
+                    "[WoodsmanJob] Found adjacent base block at %s -- traveling there (TravelingToJob).", nextBase);
             jobTarget.setTargetPosition(nextBase);
             boolean hadMove = ctx.store.getComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType()) != null;
             MoveToTargetComponent newMove = new MoveToTargetComponent(
@@ -165,9 +165,9 @@ public final class WoodsmanHandlers {
             }
             ctx.job.setCurrentTask(JobState.TravelingToJob);
         } else {
-            // All base-level trunks are gone — collect drops.
+            // All base-level trunks are gone -- collect drops.
             DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] No further base blocks found — transitioning to CollectingDrops.");
+                    "[WoodsmanJob] No further base blocks found -- transitioning to CollectingDrops.");
             jobTarget.setTargetPosition(null);
             ctx.job.collectingDropsSince = System.currentTimeMillis();
             ctx.job.setCurrentTask(JobState.CollectingDrops);
@@ -250,7 +250,7 @@ public final class WoodsmanHandlers {
             Vector3i cur = queue.poll();
             String key = TreeDetector.getBlockKey(world, cur.x, cur.y, cur.z);
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] findNextBaseBlock checking %s — blockKey=%s isWood=%b.",
+                    "[WoodsmanJob] findNextBaseBlock checking %s -- blockKey=%s isWood=%b.",
                     cur, key, key != null && woodKeys.contains(key));
             if (key == null || !woodKeys.contains(key)) continue;
             DebugLog.info(DebugCategory.WOODSMAN_JOB,
@@ -258,7 +258,7 @@ public final class WoodsmanHandlers {
             return cur;
         }
         DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanJob] findNextBaseBlock — no more standing base blocks adjacent to %s.", brokenPos);
+                "[WoodsmanJob] findNextBaseBlock -- no more standing base blocks adjacent to %s.", brokenPos);
         return null;
     }
 

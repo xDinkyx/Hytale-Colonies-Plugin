@@ -46,7 +46,7 @@ public class TreeDetector implements ITreeDetector {
     private static final String TREE_WOOD_LIST_ID = "TreeWood";
     private static final String SOILS_LIST_ID = "Soils";
 
-    // Lazy-loaded caches — assets are not guaranteed to be ready at construction time.
+    // Lazy-loaded caches -- assets are not guaranteed to be ready at construction time.
     private Set<String> treeWoodKeys;
     private Set<String> soilKeys;
 
@@ -94,7 +94,7 @@ public class TreeDetector implements ITreeDetector {
         BlockChunk blockChunk = chunk.getBlockChunk();
         if (blockChunk == null) return null;
 
-        // Mask to local 0-31 range — works correctly for negative world coordinates.
+        // Mask to local 0-31 range -- works correctly for negative world coordinates.
         int localX = wx & ChunkUtil.SIZE_MASK;
         int localZ = wz & ChunkUtil.SIZE_MASK;
 
