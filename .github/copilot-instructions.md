@@ -1,4 +1,5 @@
 # Hytale plugin
+
 This is a Hytale plugin project. Hytale plugins are used to extend the functionality of the Hytale server. Plugins can add new features, modify existing behavior, or integrate with other systems. Plugins are typically written in Java and packaged as JAR files that can be loaded by the Hytale server. The plugins are sent to the client at runtime so they are only needed on the server.
 
 - When you want to build the plugin, run the task build plugin
@@ -18,6 +19,7 @@ This is a Hytale plugin project. Hytale plugins are used to extend the functiona
 - There is a build and deploy task that will build the plugin and copy it to the local Hytale server plugins directory for testing. Use this to speed up your development workflow.
 - There should be no errors when compiling the plugin. Deprecation warnings are acceptable (do not suppress them with `@SuppressWarnings` unless there is a strong reason — prefer leaving them visible so they serve as a reminder to migrate when the stable API is updated). (ignoring pom.xml warnings)
 - Any user-facing text must be localized via translation keys (e.g., `Message.translation(...)`) and added to language resources under `src/main/resources/Server/Languages/<locale>/*.lang` (filename becomes the key prefix). `src/main/resources/Server/Languages/fallback.lang` is only for locale fallback mappings (e.g., `en-GB = en-US`).
+- Never use non-basic (non-ASCII) characters in code, comments, or user-facing text. Only use standard ASCII characters (U+0000 to U+007F). 
 
 ## .github/skills
 - Evaluate skills when given a task or problem to solve.
