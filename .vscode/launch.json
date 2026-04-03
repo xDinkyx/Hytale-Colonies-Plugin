@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // Builds + deploys the plugin, then launches the server via the VS Code Java Debugger.
+            // Uses the Debugger for Java extension — install "Extension Pack for Java" if not present.
+            "type": "java",
+            "name": "Run Hytale Server",
+            "request": "launch",
+            "mainClass": "com.hypixel.hytale.Main",
+            "classPaths": ["${workspaceFolder}/server/HytaleServer.jar"],
+            "args": "--allow-op --disable-sentry --assets=${workspaceFolder}/server/Assets.zip",
+            "cwd": "${workspaceFolder}/server",
+            "vmArgs": "-XX:+UseG1GC",
+            "preLaunchTask": "build and deploy",
+            "console": "integratedTerminal"
+        },
+        {
+            // Attach to a server already running with JDWP open on port 5005.
+            // Start it first with either:
+            //   - VS Code task "run server (debug)"
+            //   - ./gradlew runServer -Pdebug
+            "type": "java",
+            "name": "Debug Hytale Server (attach)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5005
+        }
+    ]
+}

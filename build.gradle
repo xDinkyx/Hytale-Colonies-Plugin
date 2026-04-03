@@ -116,6 +116,43 @@ tasks.register('deployToServer', Copy) {
     }
 }
 
+// Run the local dev server after deploying the plugin.
+// Working dir is server/ so config.json, mods/, universe/, and worlds/ are all found automatically.
+// Pass -Pdebug (e.g. ./gradlew runServer -Pdebug) to open JDWP on port 5005 for remote debugging.
+tasks.register('runServer', JavaExec) {
+    dependsOn 'deployToServer'
+    description = 'Deploys the plugin then starts the local Hytale dev server.'
+    group = 'hytale'
+
+    mainClass = 'com.hypixel.hytale.Main'
+    classpath = files('server/HytaleServer.jar')
+    workingDir = file('server')
+
+    // Forward server stdin so you can type commands into the integrated terminal.
+    standardInput = System.in
+
+    def assetsZip = file('server/Assets.zip')
+    def debugMode = project.hasProperty('debug')
+
+    jvmArgs = ['-XX:+UseG1GC'] +
+            (debugMode ? ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'] : [])
+
+    args = [
+        '--allow-op',
+        '--disable-sentry',
+        "--assets=${assetsZip.absolutePath}"
+    ]
+
+    doFirst {
+        if (!assetsZip.exists()) {
+            throw new GradleException("server/Assets.zip not found. Run the update-server-lib script first.")
+        }
+        if (debugMode) {
+            logger.lifecycle("Debug mode — JDWP listening on port 5005. Attach VS Code debugger using 'Debug Hytale Server (attach)'.")
+        }
+    }
+}
+
 // Watch for changes and auto-rebuild (useful during development)
 tasks.register('watch') {
     doLast {

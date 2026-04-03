@@ -1,0 +1,17 @@
+{
+    "java.compile.nullAnalysis.mode": "disabled",
+    "chat.tools.terminal.autoApprove": {
+        "/^\\$content = Get-Content \"c:\\\\_psrc\\\\Hytale-Colonies-Plugin\\\\src\\\\main\\\\java\\\\com\\\\hytalecolonies\\\\systems\\\\jobs\\\\WoodsmanMovementSystem\\.java\" -Raw; \\$cutAt = \\$content\\.IndexOf\\(\"`nimport javax\\.annotation\\.Nonnull;`nimport javax\\.annotation\\.Nullable;`nimport java\\.util\\.ArrayList;`nimport java\\.util\\.List;`n`n/\\*\\*`n \\* Drives the movement state machine\"\\); \\$content\\.Substring\\(0, \\$cutAt\\) \\| Set-Content \"c:\\\\_psrc\\\\Hytale-Colonies-Plugin\\\\src\\\\main\\\\java\\\\com\\\\hytalecolonies\\\\systems\\\\jobs\\\\WoodsmanMovementSystem\\.java\" -NoNewline$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Get-ChildItem -Path \"c:\\\\_psrc\\\\Hytale-Colonies-Plugin\\\\lib\\\\hytale-server\\\\src\" -Recurse -Filter \"\\*\\.java\" \\| Select-String -Pattern \"particle\\|Particle\" -List \\| ForEach-Object \\{ \\$_\\.Path \\} \\| Select-Object -First 20$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Get-ChildItem -Path \"c:\\\\_psrc\\\\Hytale-Colonies-Plugin\\\\lib\\\\hytale-server\\\\src\" -Recurse -Filter \"\\*\\.java\" \\| Select-String -Pattern \"SpawnParticle\\|EmotionParticle\\|ParticleAction\\|NpcParticle\\|WorldParticle\" -List \\| ForEach-Object \\{ \\$_\\.Path \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
