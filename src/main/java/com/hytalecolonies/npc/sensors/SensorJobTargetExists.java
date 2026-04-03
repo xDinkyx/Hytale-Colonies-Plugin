@@ -29,7 +29,7 @@ public class SensorJobTargetExists extends SensorBase {
 
         JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
         boolean exists = jobTarget != null && jobTarget.targetPosition != null;
-        DebugLog.fine(DebugCategory.JOB_SYSTEM, "[SensorJobTargetExists] result=%b.", exists);
+        DebugLog.fine(DebugCategory.JOB_SYSTEM, "[SensorJobTargetExists] [%s] result=%b.", DebugLog.npcId(ref, store), exists);
         return exists;
     }
 

@@ -9,10 +9,10 @@ import com.hytalecolonies.components.jobs.MinerJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.components.world.ClaimedBlockComponent;
-import com.hytalecolonies.systems.jobs.JobContext;
 import com.hytalecolonies.systems.jobs.JobStateHandler;
 import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hytalecolonies.utils.ColonistToolUtil;
+import com.hytalecolonies.utils.JobNavigationUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
@@ -42,14 +42,21 @@ public final class MinerHandlers {
      * shaft block, claims it, and transitions to {@link JobState#TravelingToJob}.
      */
     public static final JobStateHandler IDLE = ctx -> {
-        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Handler running.");
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Handler running.");
 
         Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
         if (workStationPos == null) {
-            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idle] No workstation position on JobComponent.");
+            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idling] No workstation position on JobComponent.");
             return;
         }
-        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Workstation pos = %s.", workStationPos);
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Workstation pos = %s.", workStationPos);
+
+        // Always keep NavTarget pointed at the workstation while idling.
+        // This ensures the JSON ReadPosition sensor fires so the fidget animation plays,
+        // and returns the miner if they drifted away from the workstation.
+        ctx.world.execute(() ->
+            JobNavigationUtil.dispatchNavigation(ctx.world.getEntityStore().getStore(), ctx.colonistRef, workStationPos)
+        );
 
         World world = ctx.world;
         Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
@@ -57,29 +64,29 @@ public final class MinerHandlers {
                 ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
                 : null;
         if (workStation == null) {
-            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idle] WorkStationComponent not found at %s (wsRef=%s).", workStationPos, wsRef);
+            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idling] WorkStationComponent not found at %s (wsRef=%s).", workStationPos, wsRef);
             return;
         }
-        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] WorkStationComponent found. mineOffsetZ=%d mineSize=%d blocksPerRun=%d.",
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] WorkStationComponent found. mineOffsetZ=%d mineSize=%d blocksPerRun=%d.",
                 workStation.mineOffsetZ, workStation.mineSize, workStation.blocksPerRun);
 
         MinerJobComponent miner = ctx.store.getComponent(ctx.colonistRef, MinerJobComponent.getComponentType());
         if (miner == null) {
-            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idle] No MinerJobComponent on colonist — is this actually a miner?");
+            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idling] No MinerJobComponent on colonist — is this actually a miner?");
             return;
         }
-        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] MinerJobComponent found. blocksMinedThisRun=%d.", miner.blocksMinedThisRun);
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] MinerJobComponent found. blocksMinedThisRun=%d.", miner.blocksMinedThisRun);
 
         LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ctx.colonistRef, ctx.store);
         if (colonist == null) {
-            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idle] Could not resolve LivingEntity.");
+            DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idling] Could not resolve LivingEntity.");
             return;
         }
         boolean hasPickaxe = ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), GATHER_TYPE_PICKAXE, 0);
         boolean hasShovel = ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), GATHER_TYPE_SHOVEL, 0);
-        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Tool check — pickaxe=%b shovel=%b.", hasPickaxe, hasShovel);
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Tool check — pickaxe=%b shovel=%b.", hasPickaxe, hasShovel);
         if (!hasPickaxe || !hasShovel) {
-            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Missing tools — skipping until equipped.");
+            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Missing tools — skipping until equipped.");
             return;
         }
 
@@ -90,38 +97,38 @@ public final class MinerHandlers {
                     workStationPos.y,
                     workStationPos.z + workStation.mineOffsetZ
             );
-            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Mine origin set to %s.", workStation.mineOrigin);
+            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Mine origin set to %s.", workStation.mineOrigin);
         }
 
         miner.blocksMinedThisRun = 0;
 
         Vector3i nextBlock = findNextMineBlock(workStation, world);
         if (nextBlock == null) {
-            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] No solid/unclaimed blocks in shaft at %s - flagging no work.", workStation.mineOrigin);
+            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] No solid/unclaimed blocks in shaft at %s - flagging no work.", workStation.mineOrigin);
             ctx.job.workAvailable = false;
             return;
         }
         ctx.job.workAvailable = true;
-        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Found next block at %s — claiming.", nextBlock);
+        DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Found next block at %s — claiming.", nextBlock);
 
         EntityStore entityStore = world.getEntityStore();
         final Vector3i targetBlock = nextBlock;
         world.execute(() -> {
             JobComponent liveJob = entityStore.getStore().getComponent(ctx.colonistRef, JobComponent.getComponentType());
-            if (liveJob == null || liveJob.getCurrentTask() != JobState.Idle) {
-                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] world.execute guard — state is now %s, skipping.",
+            if (liveJob == null || liveJob.getCurrentTask() != JobState.Idling) {
+                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] world.execute guard — state is now %s, skipping.",
                         liveJob != null ? liveJob.getCurrentTask() : "null");
                 return;
             }
 
             UUIDComponent uuidComp = entityStore.getStore().getComponent(ctx.colonistRef, UUIDComponent.getComponentType());
             if (uuidComp == null) {
-                DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idle] No UUIDComponent in world.execute.");
+                DebugLog.warning(DebugCategory.MINER_JOB, "[MinerJob:Idling] No UUIDComponent in world.execute.");
                 return;
             }
 
             if (!ClaimBlockUtil.claimBlock(world, targetBlock, uuidComp.getUuid(), "Mine")) {
-                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Block %s already claimed — staying Idle.", targetBlock);
+                DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Block %s already claimed — staying Idling.", targetBlock);
                 return;
             }
 
@@ -134,9 +141,9 @@ public final class MinerHandlers {
             }
 
             // Set state BEFORE adding MoveToTargetComponent so that if PathFindingSystem
-            // throws, the state is already TravelingToJob and the IDLE handler won't re-fire.
+            // throws, the state is already TravelingToJob and the Idling handler won't re-fire.
             liveJob.setCurrentTask(JobState.TravelingToJob);
-            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idle] Claimed %s — state → TravelingToJob.", targetBlock);
+            DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob:Idling] Claimed %s — state -> TravelingToJob.", targetBlock);
 
             MoveToTargetComponent existingMove = entityStore.getStore().getComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType());
             if (existingMove != null) {
@@ -157,7 +164,7 @@ public final class MinerHandlers {
     public static final JobStateHandler WORKING = ctx -> {
         JobTargetComponent jobTarget = ctx.store.getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.targetPosition == null) {
-            ctx.job.setCurrentTask(JobState.Idle);
+            ctx.job.setCurrentTask(JobState.Idling);
             return;
         }
 
@@ -168,15 +175,15 @@ public final class MinerHandlers {
         if (world.getBlock(targetPos.x, targetPos.y, targetPos.z) != 0) return;
 
         Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
-        if (workStationPos == null) { ctx.job.setCurrentTask(JobState.Idle); return; }
+        if (workStationPos == null) { ctx.job.setCurrentTask(JobState.Idling); return; }
         Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
         WorkStationComponent workStation = wsRef != null
                 ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
                 : null;
-        if (workStation == null) { ctx.job.setCurrentTask(JobState.Idle); return; }
+        if (workStation == null) { ctx.job.setCurrentTask(JobState.Idling); return; }
 
         MinerJobComponent miner = ctx.store.getComponent(ctx.colonistRef, MinerJobComponent.getComponentType());
-        if (miner == null) { ctx.job.setCurrentTask(JobState.Idle); return; }
+        if (miner == null) { ctx.job.setCurrentTask(JobState.Idling); return; }
 
         miner.blocksMinedThisRun++;
         DebugLog.info(DebugCategory.MINER_JOB,
@@ -207,8 +214,8 @@ public final class MinerHandlers {
                 UUIDComponent uuidComp = entityStore.getStore().getComponent(ctx.colonistRef, UUIDComponent.getComponentType());
                 if (uuidComp == null || !ClaimBlockUtil.claimBlock(world, nextBlock, uuidComp.getUuid(), "Mine")) {
                     DebugLog.fine(DebugCategory.MINER_JOB,
-                            "[MinerJob] Could not claim next mine block %s — going Idle.", nextBlock);
-                    liveJob.setCurrentTask(JobState.Idle);
+                            "[MinerJob] Could not claim next mine block %s — going Idling.", nextBlock);
+                    liveJob.setCurrentTask(JobState.Idling);
                     return;
                 }
                 JobTargetComponent jt = entityStore.getStore().getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());

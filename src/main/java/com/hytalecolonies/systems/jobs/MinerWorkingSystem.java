@@ -64,7 +64,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
 
         Vector3i workStationPos = job.getWorkStationBlockPosition();
         if (workStationPos == null) {
-            job.setCurrentTask(JobState.Idle);
+            job.setCurrentTask(JobState.Idling);
             return;
         }
 
@@ -74,7 +74,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
                 ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
                 : null;
         if (workStation == null) {
-            job.setCurrentTask(JobState.Idle);
+            job.setCurrentTask(JobState.Idling);
             return;
         }
 
@@ -117,14 +117,14 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
             } else {
                 UUIDComponent uuidComp = entityStore.getStore().getComponent(colonistRef, UUIDComponent.getComponentType());
                 if (uuidComp == null) {
-                    liveJob.setCurrentTask(JobState.Idle);
+                    liveJob.setCurrentTask(JobState.Idling);
                     return;
                 }
                 if (!ClaimBlockUtil.claimBlock(world, nextBlock, uuidComp.getUuid(), "Mine")) {
-                    // Race loss — retry via Idle.
+                    // Race loss — retry via Idling.
                     DebugLog.fine(DebugCategory.MINER_JOB,
-                            "[MinerWorking] [%s] Could not claim next block %s — going Idle.", npcId, nextBlock);
-                    liveJob.setCurrentTask(JobState.Idle);
+                            "[MinerWorking] [%s] Could not claim next block %s — going Idling.", npcId, nextBlock);
+                    liveJob.setCurrentTask(JobState.Idling);
                     return;
                 }
                 JobTargetComponent jt = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());

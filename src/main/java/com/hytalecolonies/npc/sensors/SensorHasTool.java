@@ -37,13 +37,14 @@ public class SensorHasTool extends SensorBase {
         LivingEntity entity = (LivingEntity) EntityUtils.getEntity(ref, store);
         if (entity == null || entity.getInventory() == null) {
             DebugLog.fine(DebugCategory.JOB_SYSTEM,
-                    "[SensorHasTool] Entity or inventory is null -- returning false.");
+                    "[SensorHasTool] [%s] Entity or inventory is null -- returning false.",
+                    DebugLog.npcId(ref, store));
             return false;
         }
 
         boolean hasTool = ColonistToolUtil.hasToolForGatherType(entity.getInventory(), gatherType, 0);
         DebugLog.fine(DebugCategory.JOB_SYSTEM,
-                "[SensorHasTool] gather=%s result=%b.", gatherType, hasTool);
+                "[SensorHasTool] [%s] gather=%s result=%b.", DebugLog.npcId(ref, store), gatherType, hasTool);
         return hasTool;
     }
 

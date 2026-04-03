@@ -38,7 +38,8 @@ public class SensorNoWorkAvailable extends SensorBase {
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         boolean result = job != null && !job.workAvailable;
         DebugLog.fine(DebugCategory.JOB_SYSTEM,
-                "[SensorNoWorkAvailable] worker=%s workAvailable=%s result=%s.",
+                "[SensorNoWorkAvailable] [%s] worker=%s workAvailable=%s result=%s.",
+                DebugLog.npcId(ref, store),
                 job != null ? "present" : "null",
                 job != null ? job.workAvailable : "N/A",
                 result);

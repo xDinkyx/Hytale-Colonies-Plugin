@@ -101,7 +101,7 @@
 
       "Instructions": [
         {
-          "Sensor": { "Type": "EcsJobState", "JobState": "Idle" },
+          "Sensor": { "Type": "EcsJobState", "JobState": "Idling" },
           "Instructions": [
             {
               "$Comment": "No pickaxe — confused particle + wait.",

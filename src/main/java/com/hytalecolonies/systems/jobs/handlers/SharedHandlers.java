@@ -49,12 +49,12 @@ public final class SharedHandlers {
     public static final JobStateHandler TRAVELING_TO_JOB = ctx -> {
         JobTargetComponent jobTarget = ctx.store.getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
         if (jobTarget == null) {
-            ctx.job.setCurrentTask(JobState.Idle);
+            ctx.job.setCurrentTask(JobState.Idling);
             return;
         }
         Vector3i targetPos = jobTarget.targetPosition;
         if (targetPos == null) {
-            ctx.job.setCurrentTask(JobState.Idle);
+            ctx.job.setCurrentTask(JobState.Idling);
             return;
         }
 
@@ -97,7 +97,7 @@ public final class SharedHandlers {
         }
     };
 
-    /** Moves toward the workstation. On arrival removes {@link JobTargetComponent} and returns to {@link JobState#Idle}. */
+    /** Moves toward the workstation. On arrival removes {@link JobTargetComponent} and returns to {@link JobState#Idling}. */
     public static final JobStateHandler TRAVELING_HOME = ctx -> {
         Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
         if (workStationPos == null) return;
@@ -125,7 +125,7 @@ public final class SharedHandlers {
         if (dist <= WORKSTATION_ARRIVAL_3D) {
             if (jobTarget != null) { jobTarget.stuckTicks = 0; jobTarget.lastKnownPosition = null; }
             ctx.commandBuffer.removeComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
-            ctx.job.setCurrentTask(JobState.Idle);
+            ctx.job.setCurrentTask(JobState.Idling);
             DebugLog.info(DebugCategory.MOVEMENT, "[Shared] Arrived home at workstation.");
             return;
         }

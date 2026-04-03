@@ -2,23 +2,24 @@
   "Type": "Generic",
   "Appearance": "Mannequin",
   "MaxHealth": 20,
+  "InventorySize": 12,
   "NameTranslationKey": "server.npcRoles.Colonist_Miner.name",
   "MotionControllerList": [
     { "Type": "Walk", "MaxWalkSpeed": 4 }
   ],
   "Instructions": [
     {
-      "$Comment": "Global navigation — always running. ECS writes NavTarget slot via PathFindingSystem; JSON drives the body toward it.",
+      "$Comment": "Global navigation -- always running. ECS writes NavTarget slot via PathFindingSystem; JSON drives the body toward it.",
       "Continue": true,
       "Instructions": [
         {
-          "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.5 },
-          "BodyMotion": { "Type": "Seek", "StopDistance": 1.5, "SlowDownDistance": 3, "RelativeSpeed": 1.0 }
+          "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 4.0 },
+          "BodyMotion": { "Type": "Seek", "StopDistance": 1.5, "SlowDownDistance": 5, "RelativeSpeed": 1.0 }
         }
       ]
     },
     {
-      "$Comment": "Working — mine the target block while in range. ActionsBlocking sequences equip→swing→cooldown each cycle.",
+      "$Comment": "Working -- mine the target block while in range. ActionsBlocking sequences equip->swing->cooldown each cycle.",
       "Continue": true,
       "Instructions": [
         {
@@ -38,7 +39,7 @@
       ]
     },
     {
-      "$Comment": "Working — when job-target block is air, notify ECS. ECS decides the next state (quota check, next block, or collect).",
+      "$Comment": "Working -- when job-target block is air, notify ECS. ECS decides the next state (quota check, next block, or collect).",
       "Continue": true,
       "Instructions": [
         {
@@ -55,34 +56,69 @@
       ]
     },
     {
-      "$Comment": "Idle — show confused particle when a required tool is missing.",
+      "$Comment": "Idle -- show confused particle when a required tool is missing, then wander gently near workstation.",
       "Instructions": [
         {
-          "Sensor": { "Type": "EcsJobState", "JobState": "Idle" },
+          "Sensor": { "Type": "EcsJobState", "JobState": "Idling" },
           "Instructions": [
             {
-              "$Comment": "No pickaxe — confused particle + wait.",
+              "$Comment": "Set wander body motion first (Continue: true) so it runs persistently in the background while the particle+timeout blocks below execute.",
+              "Continue": true,
+              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 5.0 },
+              "BodyMotion": {
+                "Type": "Sequence",
+                "Looped": true,
+                "Motions": [
+                  { "Type": "Timer", "Time": [4, 6], "Motion": { "Type": "WanderInCircle", "Radius": 3, "MaxHeadingChange": 45, "RelativeSpeed": 0.35 } },
+                  { "Type": "Timer", "Time": [1, 2], "Motion": { "Type": "Nothing" } }
+                ]
+              }
+            },
+            {
+              "$Comment": "No pickaxe -- confused particle + wait.",
               "Sensor": {
                 "Type": "Not",
                 "Sensor": { "Type": "HasTool", "GatherType": "Rocks" }
               },
               "ActionsBlocking": true,
               "Actions": [
-                { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
+                { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
                 { "Type": "Timeout", "Delay": [3, 3] }
               ]
             },
             {
-              "$Comment": "No shovel — confused particle + wait.",
+              "$Comment": "No shovel -- confused particle + wait.",
               "Sensor": {
                 "Type": "Not",
                 "Sensor": { "Type": "HasTool", "GatherType": "Soils" }
               },
               "ActionsBlocking": true,
               "Actions": [
-                { "Type": "SpawnParticles", "ParticleSystem": "Question", "Offset": [0, 2.1, 0] },
+                { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
                 { "Type": "Timeout", "Delay": [3, 3] }
               ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "$Comment": "NoWork -- no mine blocks available. Wander gently until ECS assigns new work.",
+      "Instructions": [
+        {
+          "Sensor": { "Type": "EcsJobState", "JobState": "NoWork" },
+          "Instructions": [
+            {
+              "$Comment": "Fidget only when close to workstation.",
+              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 5.0 },
+              "BodyMotion": {
+                "Type": "Sequence",
+                "Looped": true,
+                "Motions": [
+                  { "Type": "Timer", "Time": [4, 6], "Motion": { "Type": "WanderInCircle", "Radius": 3, "MaxHeadingChange": 45, "RelativeSpeed": 0.25 } },
+                  { "Type": "Timer", "Time": [2, 3], "Motion": { "Type": "Nothing" } }
+                ]
+              }
             }
           ]
         }

@@ -13,6 +13,7 @@ import java.util.logging.Level;
  */
 public enum DebugCategory {
 
+    COLONIST_LIFECYCLE("Colonist Lifecycle"),
     MOVEMENT("Movement"),
     JOB_SYSTEM("Job System"),
     JOB_ASSIGNMENT("Job Assignment"),

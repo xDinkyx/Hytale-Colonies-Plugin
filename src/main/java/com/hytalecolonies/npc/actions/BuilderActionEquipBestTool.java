@@ -55,7 +55,7 @@ public class BuilderActionEquipBestTool extends BuilderActionBase {
     @Nonnull
     @Override
     public Builder<Action> readConfig(@Nonnull JsonElement data) {
-        if (data.isJsonObject()) {
+        if (data != null && data.isJsonObject()) {
             JsonObject obj = data.getAsJsonObject();
             if (obj.has("GatherType")) {
                 this.gatherType = obj.get("GatherType").getAsString();

@@ -337,7 +337,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                 return;
 
             // On server load, transient fields (targetTreePosition etc.) are gone.
-            // Reset any in-progress travel state back to Idle so the movement system
+            // Reset any in-progress travel state back to Idling so the movement system
             // cleanly picks up the colonist and finds a new tree.
             JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
             if (job == null)
@@ -345,8 +345,8 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             JobState state = job.getCurrentTask();
             if (state == JobState.TravelingToJob || state == JobState.TravelingHome || state == JobState.Working) {
                 DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
-                        "[JobAssignment] Resetting colonist job state from %s to Idle on load.", state);
-                job.setCurrentTask(JobState.Idle);
+                        "[JobAssignment] Resetting colonist job state from %s to Idling on load.", state);
+                job.setCurrentTask(JobState.Idling);
                 // Remove the job target so ColonistMovementSystem does not process stale
                 // travel.
                 // StaleMarkCleanupSystem will clear any orphaned tree marks.

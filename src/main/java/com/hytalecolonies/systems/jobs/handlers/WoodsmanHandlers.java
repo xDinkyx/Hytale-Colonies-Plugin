@@ -60,7 +60,7 @@ public final class WoodsmanHandlers {
                 : null;
         if (workStation == null) {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idle — workstation not found at %s; cleanup system will reset colonist job.", workStationPos);
+                    "[WoodsmanJob] Idling — workstation not found at %s; cleanup system will reset colonist job.", workStationPos);
             return;
         }
 
@@ -68,7 +68,7 @@ public final class WoodsmanHandlers {
         if (colonist == null) return;
         if (!ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), REQUIRED_GATHER_TYPE, 0)) {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idle — no '%s' tool in inventory. Waiting at workstation.", REQUIRED_GATHER_TYPE);
+                    "[WoodsmanJob] Idling — no '%s' tool in inventory. Waiting at workstation.", REQUIRED_GATHER_TYPE);
             return;
         }
 
@@ -78,18 +78,18 @@ public final class WoodsmanHandlers {
         }
         if (nearestTree == null) {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idle — no available trees within radius %.1f of workstation %s.",
+                    "[WoodsmanJob] Idling — no available trees within radius %.1f of workstation %s.",
                     workStation.treeSearchRadius, workStationPos);
             return;
         }
 
         // Schedule claim and travel on the world thread — world.execute() serializes
         // callbacks between ticks, so two woodsmen finding the same tree in the same
-        // tick serialize here: the first claims it, the second backs off (stays Idle).
+        // tick serialize here: the first claims it, the second backs off (stays Idling).
         EntityStore entityStore = world.getEntityStore();
         world.execute(() -> {
             JobComponent liveJob = entityStore.getStore().getComponent(ctx.colonistRef, JobComponent.getComponentType());
-            if (liveJob == null || liveJob.getCurrentTask() != JobState.Idle) return;
+            if (liveJob == null || liveJob.getCurrentTask() != JobState.Idling) return;
 
             UUIDComponent uuidComp = entityStore.getStore().getComponent(ctx.colonistRef, UUIDComponent.getComponentType());
             if (uuidComp == null) return;
@@ -115,8 +115,8 @@ public final class WoodsmanHandlers {
         JobTargetComponent jobTarget = ctx.store.getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.targetPosition == null) {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Working — no JobTargetComponent or target is null, resetting to Idle.");
-            ctx.job.setCurrentTask(JobState.Idle);
+                    "[WoodsmanJob] Working — no JobTargetComponent or target is null, resetting to Idling.");
+            ctx.job.setCurrentTask(JobState.Idling);
             return;
         }
 

@@ -58,6 +58,7 @@ import com.hytalecolonies.npc.sensors.BuilderSensorMineQuotaReached;
 import com.hytalecolonies.npc.sensors.BuilderSensorNoWorkAvailable;
 import com.hytalecolonies.npc.sensors.BuilderSensorEcsJobState;
 
+import com.hytalecolonies.systems.npc.ColonistRemovalSystem;
 import com.hytalecolonies.systems.npc.PathFindingSystem;
 import com.hytalecolonies.systems.treescan.TreeBlockChangeEventSystem;
 import com.hytalecolonies.systems.treescan.TreeScannerSystem;
@@ -158,19 +159,19 @@ public class HytaleColoniesPlugin extends JavaPlugin {
 
     /**
      * Registers the shared ECS job handlers (CollectingDrops and TravelingHome).
-     * Job-specific Idle and Working states are now handled by the NPC role JSON.
+     * Job-specific Idling and Working states are now handled by the NPC role JSON.
      */
     private void registerSharedJobHandlers() {
         // Keep job types in JobRegistry so JobAssignmentSystems.fireColonist() can strip them.
         JobRegistry.register(WoodsmanJobComponent.getComponentType());
         JobRegistry.register(MinerJobComponent.getComponentType());
-        // Only shared ECS phases remain — job-specific Idle/Working are JSON-driven.
+        // Only shared ECS phases remain — job-specific Idling/Working are JSON-driven.
         ColonistJobSystem.registerShared(JobState.CollectingDrops, SharedHandlers.COLLECTING_DROPS);
         ColonistJobSystem.registerShared(JobState.TravelingToJob,   SharedHandlers.TRAVELING_TO_JOB);
         ColonistJobSystem.registerShared(JobState.TravelingHome,    SharedHandlers.TRAVELING_HOME);
-        // Miner-specific Idle handler: scans for mine targets and transitions to TravelingToJob.
+        // Miner-specific Idling handler: scans for mine targets and transitions to TravelingToJob.
         // Guards on MinerJobComponent internally, so it is safe to register as a shared handler.
-        ColonistJobSystem.registerShared(JobState.Idle, MinerHandlers.IDLE);
+        ColonistJobSystem.registerShared(JobState.Idling, MinerHandlers.IDLE);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered shared job handlers");
     }
 
@@ -268,6 +269,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());
         getEntityStoreRegistry().registerSystem(new PathFindingSystem());
         getEntityStoreRegistry().registerSystem(new ColonistJobSystem());
+        getEntityStoreRegistry().registerSystem(new ColonistRemovalSystem());
         getEntityStoreRegistry().registerSystem(new MinerWorkingSystem());
         getEntityStoreRegistry().registerSystem(new ColonistItemPickupSystem());
         getEntityStoreRegistry().registerSystem(new ColonistDeliverySystem());

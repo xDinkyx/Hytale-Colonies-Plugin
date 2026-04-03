@@ -29,7 +29,7 @@ public class BuilderSensorEcsJobState extends BuilderSensorBase {
     @Nonnull
     @Override
     public Builder<Sensor> readConfig(@Nonnull JsonElement data) {
-        this.getString(data, "JobState", this.stateName, "Idle",
+        this.getString(data, "JobState", this.stateName, "Idling",
                 null,
                 BuilderDescriptorState.Experimental,
                 "The expected ECS job state (e.g. Idle, CollectingDrops)", null);

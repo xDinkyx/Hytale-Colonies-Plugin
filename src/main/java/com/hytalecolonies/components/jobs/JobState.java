@@ -3,7 +3,7 @@ package com.hytalecolonies.components.jobs;
 import com.hypixel.hytale.codec.codecs.EnumCodec;
 
 public enum JobState {
-    Idle,
+    Idling,
     Working,
     CollectingDrops,
     DeliveringItems,

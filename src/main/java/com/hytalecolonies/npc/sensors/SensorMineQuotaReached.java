@@ -40,14 +40,15 @@ public class SensorMineQuotaReached extends SensorBase {
         WorkStationComponent workStation = WorkStationUtil.resolve(store, ref);
         if (workStation == null) {
             DebugLog.fine(DebugCategory.MINER_JOB,
-                    "[SensorMineQuotaReached] WorkStation not found -- returning false.");
+                    "[SensorMineQuotaReached] [%s] WorkStation not found -- returning false.",
+                    DebugLog.npcId(ref, store));
             return false;
         }
 
         boolean quotaReached = minerJob.blocksMinedThisRun >= workStation.blocksPerRun;
         DebugLog.fine(DebugCategory.MINER_JOB,
-                "[SensorMineQuotaReached] mined=%d quota=%d result=%b.",
-                minerJob.blocksMinedThisRun, workStation.blocksPerRun, quotaReached);
+                "[SensorMineQuotaReached] [%s] mined=%d quota=%d result=%b.",
+                DebugLog.npcId(ref, store), minerJob.blocksMinedThisRun, workStation.blocksPerRun, quotaReached);
         return quotaReached;
     }
 

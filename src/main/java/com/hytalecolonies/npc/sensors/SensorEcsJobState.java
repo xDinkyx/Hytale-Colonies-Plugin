@@ -32,7 +32,7 @@ public class SensorEcsJobState extends SensorBase {
         try {
             parsed = JobState.valueOf(builder.getStateName(support));
         } catch (IllegalArgumentException e) {
-            parsed = JobState.Idle;
+            parsed = JobState.Idling;
         }
         this.targetState = parsed;
     }
@@ -51,8 +51,8 @@ public class SensorEcsJobState extends SensorBase {
 
         boolean matches = job.getCurrentTask() == targetState;
         DebugLog.fine(DebugCategory.JOB_SYSTEM,
-                "[SensorEcsJobState] current=%s target=%s result=%b.",
-                job.getCurrentTask(), targetState, matches);
+                "[SensorEcsJobState] [%s] current=%s target=%s result=%b.",
+                DebugLog.npcId(ref, store), job.getCurrentTask(), targetState, matches);
         return matches;
     }
 
