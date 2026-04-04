@@ -92,8 +92,8 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
             Vector3i containerPos = WorkstationContainerUtil.findNearbyContainer(world, workStationPos, DELIVERY_RADIUS);
             if (containerPos == null) {
                 DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] No chest within %d blocks of workstation %s -- skipping delivery.",
-                    DELIVERY_RADIUS, workStationPos);
+                    "[ColonistDelivery] [%s] No chest within %d blocks of workstation %s -- skipping delivery.",
+                    DebugLog.npcId(ref, store), DELIVERY_RADIUS, workStationPos);
                 navigateToWorkstation(ref, commandBuffer, workStationPos);
                 job.setCurrentTask(JobState.TravelingHome);
                 return;
@@ -102,7 +102,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
             commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(),
                     new MoveToTargetComponent(new Vector3d(containerPos.x + 0.5, containerPos.y, containerPos.z + 0.5)));
             DebugLog.info(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] Heading to chest at %s.", containerPos);
+                    "[ColonistDelivery] [%s] Heading to chest at %s.", DebugLog.npcId(ref, store), containerPos);
             return;
         }
 
@@ -118,7 +118,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
 
         if (xzDist > DELIVERY_ARRIVAL_XZ) {
             DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] Heading to chest at %s -- xzDist=%.2f.", cp, xzDist);
+                    "[ColonistDelivery] [%s] Heading to chest at %s -- xzDist=%.2f.", DebugLog.npcId(ref, store), cp, xzDist);
             return;
         }
 
@@ -126,7 +126,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
         Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, cp.x, cp.y, cp.z);
         if (blockRef == null || !blockRef.isValid()) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] Chest at %s is no longer present -- skipping deposit.", cp);
+                    "[ColonistDelivery] [%s] Chest at %s is no longer present -- resetting delivery container position.", DebugLog.npcId(ref, store), cp);
             job.deliveryContainerPosition = null;
             navigateToWorkstation(ref, commandBuffer, workStationPos);
             job.setCurrentTask(JobState.TravelingHome);
@@ -137,7 +137,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                 blockRef, BlockModule.get().getItemContainerBlockComponentType());
         if (containerBlock == null) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] Block at %s is no longer a container -- skipping deposit.", cp);
+                    "[ColonistDelivery] [%s] Block at %s is no longer a container -- resetting delivery container position.", DebugLog.npcId(ref, store), cp);
             job.deliveryContainerPosition = null;
             navigateToWorkstation(ref, commandBuffer, workStationPos);
             job.setCurrentTask(JobState.TravelingHome);
@@ -182,7 +182,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
         }
 
         DebugLog.info(DebugCategory.COLONIST_DELIVERY,
-                "[ColonistDelivery] -> %s", summarise(deposited));
+                "[ColonistDelivery] [%s] -> %s", DebugLog.npcId(ref, store), summarise(deposited));
     }
 
     /** Formats deposited items as {@code "id*qty, id*qty"}, or {@code "-"} if empty. */
@@ -277,8 +277,8 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                     JobComponent job = chunk.getComponent(i, JobComponent.getComponentType());
                     if (job == null) continue;
                     DebugLog.info(DebugCategory.COLONIST_DELIVERY,
-                            "[ColonistDelivery:ContainerRemoved] Colonist state=%s deliveryTarget=%s.",
-                            job.getCurrentTask(), job.deliveryContainerPosition);
+                            "[ColonistDelivery:ContainerRemoved] [%s] Colonist state=%s deliveryTarget=%s.",
+                            DebugLog.npcId(chunk.getReferenceTo(i), entityStore), job.getCurrentTask(), job.deliveryContainerPosition);
                     if (job.getCurrentTask() != JobState.DeliveringItems) continue;
                     if (!pos.equals(job.deliveryContainerPosition)) continue;
 
@@ -291,7 +291,8 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                     }
                     job.setCurrentTask(JobState.TravelingHome);
                     DebugLog.info(DebugCategory.COLONIST_DELIVERY,
-                            "[ColonistDelivery:ContainerRemoved] Redirected colonist home.");
+                            "[ColonistDelivery:ContainerRemoved] [%s] Redirected colonist home.",
+                            DebugLog.npcId(colonistRef, entityStore));
                 }
             });
         }

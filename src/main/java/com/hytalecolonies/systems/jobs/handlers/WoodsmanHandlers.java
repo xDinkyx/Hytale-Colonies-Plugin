@@ -52,8 +52,8 @@ public final class WoodsmanHandlers {
                 }
                 if (nearestTree == null) {
                     DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                            "[WoodsmanJob] Idling -- no available trees within radius %.1f of workstation %s.",
-                            workStation.treeSearchRadius, workStationPos);
+                            "[WoodsmanJob] [%s] Idling -- no available trees within radius %.1f of workstation %s.",
+                            DebugLog.npcId(ctx.colonistRef, ctx.store), workStation.treeSearchRadius, workStationPos);
                 }
                 return nearestTree;
             },
@@ -69,7 +69,8 @@ public final class WoodsmanHandlers {
         JobTargetComponent jobTarget = ctx.store.getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.targetPosition == null) {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Working -- no JobTargetComponent or target is null, resetting to Idling.");
+                    "[WoodsmanJob] [%s] Working -- no JobTargetComponent or target is null, resetting to Idling.",
+                    DebugLog.npcId(ctx.colonistRef, ctx.store));
             ctx.job.setCurrentTask(JobState.Idling);
             return;
         }
@@ -79,13 +80,15 @@ public final class WoodsmanHandlers {
         int blockId = world.getBlock(treeBase);
 
         DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanJob] Working -- target=%s blockId=%d (0=broken).", treeBase, blockId);
+                "[WoodsmanJob] [%s] Working -- target=%s blockId=%d (0=broken).",
+                DebugLog.npcId(ctx.colonistRef, ctx.store), treeBase, blockId);
 
         // Block still standing -- NPC role handles per-tick damage.
         if (blockId != 0) return;
 
         DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanJob] Block at %s is broken -- scanning for adjacent base blocks.", treeBase);
+                "[WoodsmanJob] [%s] Block at %s is broken -- scanning for adjacent base blocks.",
+                DebugLog.npcId(ctx.colonistRef, ctx.store), treeBase);
 
         Set<String> allowedTreeTypes = null;
         Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
@@ -107,7 +110,8 @@ public final class WoodsmanHandlers {
         if (nextBase != null) {
             // Wide multi-block base -- travel to the next connected base block.
             DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Found adjacent base block at %s -- traveling there (TravelingToJob).", nextBase);
+                    "[WoodsmanJob] [%s] Found adjacent base block at %s -- traveling there (TravelingToJob).",
+                    DebugLog.npcId(ctx.colonistRef, ctx.store), nextBase);
             jobTarget.setTargetPosition(nextBase);
             boolean hadMove = ctx.store.getComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType()) != null;
             MoveToTargetComponent newMove = new MoveToTargetComponent(
@@ -121,7 +125,8 @@ public final class WoodsmanHandlers {
         } else {
             // All base-level trunks are gone -- collect drops.
             DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] No further base blocks found -- transitioning to CollectingDrops.");
+                    "[WoodsmanJob] [%s] No further base blocks found -- transitioning to CollectingDrops.",
+                    DebugLog.npcId(ctx.colonistRef, ctx.store));
             jobTarget.setTargetPosition(null);
             ctx.job.collectingDropsSince = System.currentTimeMillis();
             ctx.job.setCurrentTask(JobState.CollectingDrops);

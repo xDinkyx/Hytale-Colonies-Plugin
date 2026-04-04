@@ -224,13 +224,15 @@ public final class ClaimBlockUtil {
         JobTargetComponent jobTarget = entityStore.getComponent(colonistRef, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.targetPosition == null) {
             DebugLog.fine(DebugCategory.CLAIM_SYSTEM,
-                    "[Claim] unclaimByColonist -- no JobTargetComponent or null targetPosition, nothing to release.");
+                    "[Claim] [%s] unclaimByColonist -- no JobTargetComponent or null targetPosition, nothing to release.",
+                    DebugLog.npcId(colonistRef, entityStore));
             return;
         }
 
         World world = entityStore.getExternalData().getWorld();
         DebugLog.fine(DebugCategory.CLAIM_SYSTEM,
-                "[Claim] unclaimByColonist -- releasing claim at %s.", jobTarget.targetPosition);
+                "[Claim] [%s] unclaimByColonist -- releasing claim at %s.",
+                DebugLog.npcId(colonistRef, entityStore), jobTarget.targetPosition);
         unclaimBlock(world, jobTarget.targetPosition);
     }
 }

@@ -62,8 +62,8 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
         assert job != null;
 
         DebugLog.fine(DebugCategory.JOB_SYSTEM,
-                "[ColonistJob] Tick colonist %d with job state %s.",
-                index, job.getCurrentTask());
+                "[ColonistJob] [%s] Tick colonist %d with job state %s.",
+                DebugLog.npcId(archetypeChunk.getReferenceTo(index), store), index, job.getCurrentTask());
 
         // Self-correct if the NPC loaded with a persisted JobComponent but is still
         // on the wrong role (e.g. server restart after a role-switch failure).
@@ -78,8 +78,8 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
                     String actualRole = NPCPlugin.get().getName(currentRole.getRoleIndex());
                     if (!expectedRole.equals(actualRole)) {
                         DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
-                                "[ColonistJob] Role mismatch: NPC is '%s' but should be '%s' -- switching.",
-                                actualRole, expectedRole);
+                                "[ColonistJob] [%s] Role mismatch: NPC is '%s' but should be '%s' -- switching.",
+                                DebugLog.npcId(colonistRef, store), actualRole, expectedRole);
                         ColonistRoleMap.switchRole(colonistRef, store, expectedRole);
                         return; // Skip handlers this tick -- archetype change invalidates refs.
                     }
@@ -90,7 +90,8 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
         JobState state = job.getCurrentTask();
         if (state == null) {
             DebugLog.warning(DebugCategory.JOB_SYSTEM,
-                    "[ColonistJob] Colonist has null JobState -- resetting to Idle.");
+                    "[ColonistJob] [%s] Colonist has null JobState -- resetting to Idle.",
+                    DebugLog.npcId(colonistRef, store));
             job.setCurrentTask(JobState.Idling);
             return;
         }

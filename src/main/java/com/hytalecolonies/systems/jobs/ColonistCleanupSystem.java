@@ -124,7 +124,8 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore> {
                     if (ref.isValid()) {
                         JobAssignmentSystems.fireColonist(ref, entityStore.getStore());
                         DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
-                                "[ColonistCleanup] Fired colonist with missing workstation (safety net).");
+                                "[ColonistCleanup] [%s] Fired colonist with missing workstation (safety net).",
+                                DebugLog.npcId(ref, entityStore.getStore()));
                     }
                 }
             });

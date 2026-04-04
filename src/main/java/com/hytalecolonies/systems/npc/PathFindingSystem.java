@@ -53,13 +53,15 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
 
         NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
         if (npcEntity == null) {
-            DebugLog.warning(DebugCategory.MOVEMENT, "PathFindingSystem: entity has no NPCEntity component, cannot navigate.");
+            DebugLog.warning(DebugCategory.MOVEMENT, "PathFindingSystem: [%s] entity has no NPCEntity component, cannot navigate.",
+                    DebugLog.npcId(ref, store));
             return;
         }
 
         Role role = npcEntity.getRole();
         if (role == null) {
-            DebugLog.warning(DebugCategory.MOVEMENT, "PathFindingSystem: NPC role is null, cannot navigate.");
+            DebugLog.warning(DebugCategory.MOVEMENT, "PathFindingSystem: [%s] NPC role is null, cannot navigate.",
+                    DebugLog.npcId(ref, store));
             return;
         }
 
@@ -70,8 +72,8 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
             role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(component.target);
         } catch (NullPointerException e) {
             DebugLog.warning(DebugCategory.MOVEMENT,
-                    "PathFindingSystem: role has no stored position slot %d -- is Colonist_Miner.json loaded correctly?",
-                    NAV_TARGET_SLOT);
+                    "PathFindingSystem: [%s] role has no stored position slot %d -- is Colonist_Miner.json loaded correctly?",
+                    DebugLog.npcId(ref, store), NAV_TARGET_SLOT);
             return;
         }
 

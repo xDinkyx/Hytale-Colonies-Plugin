@@ -54,7 +54,8 @@ public final class ColonistRoleMap {
         NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
         if (npcEntity == null) {
             DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
-                    "[RoleSwitch] Colonist has no NPCEntity component -- cannot switch role to '%s'.", roleName);
+                    "[RoleSwitch] [%s] Colonist has no NPCEntity component -- cannot switch role to '%s'.",
+                    DebugLog.npcId(ref, store), roleName);
             return;
         }
         Role currentRole = npcEntity.getRole();
@@ -64,11 +65,13 @@ public final class ColonistRoleMap {
         int newRoleIndex = NPCPlugin.get().getIndex(roleName);
         if (newRoleIndex < 0) {
             DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
-                    "[RoleSwitch] Unknown NPC role '%s' -- cannot switch.", roleName);
+                    "[RoleSwitch] [%s] Unknown NPC role '%s' -- cannot switch.",
+                    DebugLog.npcId(ref, store), roleName);
             return;
         }
         DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
-                "[RoleSwitch] Switching colonist role to '%s' (index %d).", roleName, newRoleIndex);
+                "[RoleSwitch] [%s] Switching colonist role to '%s' (index %d).",
+                DebugLog.npcId(ref, store), roleName, newRoleIndex);
         RoleChangeSystem.requestRoleChange(ref, currentRole, newRoleIndex, false, store);
     }
 }

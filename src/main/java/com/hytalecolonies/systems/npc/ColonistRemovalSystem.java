@@ -31,7 +31,8 @@ import com.hypixel.hytale.server.npc.entities.NPCEntity;
  * Logs when a colonist is removed from the world and drops all items from
  * its inventory onto the ground at its last known position.
  *
- * <p>Triggered by {@code ColonistComponent} removal, which happens both when
+ * <p>
+ * Triggered by {@code ColonistComponent} removal, which happens both when
  * the component is explicitly removed and when the entity is deleted entirely.
  * The entity's other components (TransformComponent, NPCEntity, etc.) are still
  * accessible through the store at this point.
@@ -94,12 +95,16 @@ public class ColonistRemovalSystem extends RefChangeSystem<EntityStore, Colonist
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform == null) {
             DebugLog.warning(DebugCategory.COLONIST_LIFECYCLE,
-                    "[ColonistRemoval] No TransformComponent -- cannot drop inventory.");
+                    "[ColonistRemoval] [%s] No TransformComponent -- cannot drop inventory.",
+                    DebugLog.npcId(ref, store));
             return;
         }
 
         NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
         if (npcEntity == null || npcEntity.getInventory() == null) {
+            DebugLog.warning(DebugCategory.COLONIST_LIFECYCLE,
+                    "[ColonistRemoval] [%s] No NPCEntity or inventory -- cannot drop inventory.",
+                    DebugLog.npcId(ref, store));
             return; // No inventory to drop.
         }
 
@@ -116,13 +121,17 @@ public class ColonistRemovalSystem extends RefChangeSystem<EntityStore, Colonist
         commandBuffer.addEntities(drops, AddReason.SPAWN);
 
         DebugLog.info(DebugCategory.COLONIST_LIFECYCLE,
-                "[ColonistRemoval] Dropped %d item stack(s) at %s.",
-                toDrop.size(), dropPosition);
+                "[ColonistRemoval] [%s] Dropped %d item stack(s) at %s.",
+                DebugLog.npcId(ref, store), toDrop.size(), dropPosition);
     }
 
-    /** Removes all non-empty stacks from {@code container} and adds them to {@code out}. */
+    /**
+     * Removes all non-empty stacks from {@code container} and adds them to
+     * {@code out}.
+     */
     private void collectItems(@Nullable ItemContainer container, @Nonnull List<ItemStack> out) {
-        if (container == null) return;
+        if (container == null)
+            return;
         List<ItemStack> dropped = container.dropAllItemStacks();
         if (dropped != null) {
             out.addAll(dropped);

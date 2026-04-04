@@ -122,8 +122,8 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore> {
                     // Animate the partial amount flying to the colonist.
                     Holder<EntityStore> animHolder = ItemComponent.generatePickedUpItem(itemRef, commandBuffer, colonistRef, colonistPos);
                     if (animHolder != null) commandBuffer.addEntity(animHolder, AddReason.SPAWN);
-                    DebugLog.info(DebugCategory.JOB_SYSTEM, "[ItemPickup] Partially picked up %dx %s.",
-                            pickedQty, itemStack.getItemId());
+                    DebugLog.info(DebugCategory.JOB_SYSTEM, "[ItemPickup] [%s] Partially picked up %dx %s.",
+                            DebugLog.npcId(colonistRef, store), pickedQty, itemStack.getItemId());
                 }
             } else {
                 // Full pickup -- mark as claimed immediately so any other colonist scanning
@@ -133,8 +133,8 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore> {
                 Holder<EntityStore> animHolder = ItemComponent.generatePickedUpItem(itemRef, commandBuffer, colonistRef, colonistPos);
                 if (animHolder != null) commandBuffer.addEntity(animHolder, AddReason.SPAWN);
                 commandBuffer.removeEntity(itemRef, RemoveReason.REMOVE);
-                DebugLog.info(DebugCategory.JOB_SYSTEM, "[ItemPickup] Picked up %dx %s.",
-                        itemStack.getQuantity(), itemStack.getItemId());
+                DebugLog.info(DebugCategory.JOB_SYSTEM, "[ItemPickup] [%s] Picked up %dx %s.",
+                        DebugLog.npcId(colonistRef, store), itemStack.getQuantity(), itemStack.getItemId());
             }
         }
     }

@@ -345,7 +345,8 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             JobState state = job.getCurrentTask();
             if (state == JobState.TravelingToJob || state == JobState.TravelingHome || state == JobState.Working) {
                 DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
-                        "[JobAssignment] Resetting colonist job state from %s to Idling on load.", state);
+                        "[JobAssignment] [%s] Resetting colonist job state from %s to Idling on load.",
+                        DebugLog.npcId(ref, store), state);
                 job.setCurrentTask(JobState.Idling);
                 // Remove the job target so ColonistMovementSystem does not process stale
                 // travel.

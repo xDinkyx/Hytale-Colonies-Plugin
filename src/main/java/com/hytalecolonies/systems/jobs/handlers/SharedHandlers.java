@@ -110,11 +110,12 @@ public final class SharedHandlers {
     public static final JobStateHandler COLLECTING_DROPS = ctx -> {
         long elapsedMs = System.currentTimeMillis() - ctx.job.collectingDropsSince;
         if (elapsedMs < COLLECTING_DROPS_DURATION_MS) {
-            DebugLog.fine(DebugCategory.JOB_SYSTEM, "[Shared] Collecting drops -- %.1f s remaining.",
-                    (COLLECTING_DROPS_DURATION_MS - elapsedMs) / 1000.0);
+            DebugLog.fine(DebugCategory.JOB_SYSTEM, "[Shared] [%s] Collecting drops -- %.1f s remaining.",
+                    DebugLog.npcId(ctx.colonistRef, ctx.store), (COLLECTING_DROPS_DURATION_MS - elapsedMs) / 1000.0);
             return;
         }
-        DebugLog.info(DebugCategory.JOB_SYSTEM, "[Shared] Done collecting drops -- delivering items.");
+        DebugLog.info(DebugCategory.JOB_SYSTEM, "[Shared] [%s] Done collecting drops -- delivering items.",
+                DebugLog.npcId(ctx.colonistRef, ctx.store));
         ctx.job.deliveryContainerPosition = null; // Clear stale cache so ColonistDeliverySystem scans fresh.
         ctx.job.setCurrentTask(JobState.DeliveringItems);
     };
@@ -134,7 +135,8 @@ public final class SharedHandlers {
 
         TransformComponent transform = ctx.getTransform();
         if (transform == null) {
-            DebugLog.warning(DebugCategory.MOVEMENT, "[Shared] TravelingToJob -- colonist has no TransformComponent, skipping.");
+            DebugLog.warning(DebugCategory.MOVEMENT, "[Shared] [%s] TravelingToJob -- colonist has no TransformComponent, skipping.",
+                    DebugLog.npcId(ctx.colonistRef, ctx.store));
             return;
         }
 
@@ -156,18 +158,20 @@ public final class SharedHandlers {
         boolean stuck = jobTarget.stuckTicks >= STUCK_TICKS_LIMIT;
 
         DebugLog.fine(DebugCategory.MOVEMENT,
-                "[Shared] TravelingToJob -- xzDist=%.2f to %s (threshold %.1f) stuckTicks=%d.",
-                xzDist, targetPos, JOB_ARRIVAL_XZ, jobTarget.stuckTicks);
+                "[Shared] [%s] TravelingToJob -- xzDist=%.2f to %s (threshold %.1f) stuckTicks=%d.",
+                DebugLog.npcId(ctx.colonistRef, ctx.store), xzDist, targetPos, JOB_ARRIVAL_XZ, jobTarget.stuckTicks);
 
         if (arrivedXZ || stuck) {
             if (stuck && !arrivedXZ) {
                 DebugLog.info(DebugCategory.MOVEMENT,
-                        "[Shared] Stuck near job target %s (xzDist=%.2f) -- advancing to Working.", targetPos, xzDist);
+                        "[Shared] [%s] Stuck near job target %s (xzDist=%.2f) -- advancing to Working.",
+                        DebugLog.npcId(ctx.colonistRef, ctx.store), targetPos, xzDist);
             }
             jobTarget.stuckTicks = 0;
             jobTarget.lastKnownPosition = null;
             ctx.job.setCurrentTask(JobState.Working);
-            DebugLog.info(DebugCategory.MOVEMENT, "[Shared] Arrived at job target %s.", targetPos);
+            DebugLog.info(DebugCategory.MOVEMENT, "[Shared] [%s] Arrived at job target %s.",
+                    DebugLog.npcId(ctx.colonistRef, ctx.store), targetPos);
         }
     };
 
@@ -178,7 +182,8 @@ public final class SharedHandlers {
 
         TransformComponent transform = ctx.getTransform();
         if (transform == null) {
-            DebugLog.warning(DebugCategory.MOVEMENT, "[Shared] TravelingHome -- colonist has no TransformComponent, skipping.");
+            DebugLog.warning(DebugCategory.MOVEMENT, "[Shared] [%s] TravelingHome -- colonist has no TransformComponent, skipping.",
+                    DebugLog.npcId(ctx.colonistRef, ctx.store));
             return;
         }
 
@@ -188,8 +193,8 @@ public final class SharedHandlers {
         double xzDist = Math.sqrt(dx * dx + dz * dz);
 
         DebugLog.fine(DebugCategory.MOVEMENT,
-                "[Shared] TravelingHome -- xzDist=%.2f to workstation %s (threshold %.1f).",
-                xzDist, workStationPos, WORKSTATION_ARRIVAL_XZ);
+                "[Shared] [%s] TravelingHome -- xzDist=%.2f to workstation %s (threshold %.1f).",
+                DebugLog.npcId(ctx.colonistRef, ctx.store), xzDist, workStationPos, WORKSTATION_ARRIVAL_XZ);
 
         // Fetch once -- used in both the arrival and stuck-detection paths.
         @Nullable JobTargetComponent jobTarget =
@@ -199,7 +204,8 @@ public final class SharedHandlers {
             if (jobTarget != null) { jobTarget.stuckTicks = 0; jobTarget.lastKnownPosition = null; }
             ctx.commandBuffer.removeComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
             ctx.job.setCurrentTask(JobState.Idling);
-            DebugLog.info(DebugCategory.MOVEMENT, "[Shared] Arrived home at workstation.");
+            DebugLog.info(DebugCategory.MOVEMENT, "[Shared] [%s] Arrived home at workstation.",
+                    DebugLog.npcId(ctx.colonistRef, ctx.store));
             return;
         }
 
@@ -216,7 +222,8 @@ public final class SharedHandlers {
                 jobTarget.stuckTicks = 0;
                 jobTarget.lastKnownPosition = null;
                 DebugLog.info(DebugCategory.MOVEMENT,
-                        "[Shared] TravelingHome -- stuck at xzDist=%.2f, re-dispatching nav.", xzDist);
+                        "[Shared] [%s] TravelingHome -- stuck at xzDist=%.2f, re-dispatching nav.",
+                        DebugLog.npcId(ctx.colonistRef, ctx.store), xzDist);
                 Vector3d wsTarget = new Vector3d(workStationPos.x + 0.5, workStationPos.y, workStationPos.z + 0.5);
                 ctx.commandBuffer.addComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType(),
                         new MoveToTargetComponent(wsTarget));
