@@ -1,25 +1,25 @@
 package com.hytalecolonies.systems.jobs.handlers;
 
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.components.jobs.JobState;
-import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.npc.MoveToTargetComponent;
-import com.hytalecolonies.systems.jobs.JobContext;
-import com.hytalecolonies.systems.jobs.JobStateHandler;
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hytalecolonies.components.jobs.JobComponent;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
-import com.hytalecolonies.utils.ColonistLeashUtil;
-import com.hytalecolonies.utils.ColonistToolUtil;
-import com.hytalecolonies.utils.JobNavigationUtil;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
-
-import javax.annotation.Nullable;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobState;
+import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.npc.MoveToTargetComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.systems.jobs.JobContext;
+import com.hytalecolonies.systems.jobs.JobStateHandler;
+import com.hytalecolonies.utils.ColonistLeashUtil;
+import com.hytalecolonies.utils.ColonistToolUtil;
+import com.hytalecolonies.utils.JobNavigationUtil;
 
 /** {@link JobStateHandler} implementations shared as defaults across all job types. */
 public final class SharedHandlers {
@@ -27,8 +27,12 @@ public final class SharedHandlers {
     /** How long a colonist lingers at the drop site before delivering. */
     private static final long COLLECTING_DROPS_DURATION_MS = 5_000L;
 
-    /** XZ distance (blocks) to consider arrived at a job target. */
-    private static final float JOB_ARRIVAL_XZ = 3.0f;
+    /**
+     * XZ distance (blocks) to consider arrived at a job target.
+     * Must be <= the smallest JobTarget sensor Range used in any role JSON (currently 2.5)
+     * so the NPC is guaranteed within sensor range the moment the ECS transitions to Working.
+     */
+    private static final float JOB_ARRIVAL_XZ = 2.5f;
 
     /** XZ distance (blocks) to consider arrived at the workstation. */
     private static final float WORKSTATION_ARRIVAL_XZ = 3.0f;

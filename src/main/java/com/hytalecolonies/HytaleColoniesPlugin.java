@@ -1,73 +1,72 @@
 package com.hytalecolonies;
 
-import com.hypixel.hytale.server.core.plugin.JavaPlugin;
-import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import java.util.logging.Level;
+
+import javax.annotation.Nonnull;
+
+import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.component.ComponentType;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
-
+import com.hypixel.hytale.server.core.plugin.JavaPlugin;
+import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.util.Config;
+import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hytalecolonies.commands.HytaleColoniesPluginCommand;
-import com.hytalecolonies.debug.DebugConfig;
-import com.hytalecolonies.listeners.PlayerListener;
-import com.hytalecolonies.components.npc.ColonistComponent;
-import com.hytalecolonies.components.npc.MoveToTargetComponent;
-import com.hytalecolonies.components.world.ClaimedBlockComponent;
-import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
+import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
-import com.hypixel.hytale.server.npc.NPCPlugin;
+import com.hytalecolonies.components.npc.ColonistComponent;
+import com.hytalecolonies.components.npc.MoveToTargetComponent;
+import com.hytalecolonies.components.world.ClaimedBlockComponent;
+import com.hytalecolonies.components.world.HarvestableTreeComponent;
+import com.hytalecolonies.debug.DebugConfig;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
+import com.hytalecolonies.listeners.PlayerListener;
+import com.hytalecolonies.npc.actions.BuilderActionClaimNearestTree;
+import com.hytalecolonies.npc.actions.BuilderActionClaimNextMineBlock;
+import com.hytalecolonies.npc.actions.BuilderActionEquipBestTool;
+import com.hytalecolonies.npc.actions.BuilderActionFindNextTrunkBlock;
+import com.hytalecolonies.npc.actions.BuilderActionHarvestBlock;
+import com.hytalecolonies.npc.actions.BuilderActionIncrementBlocksMined;
+import com.hytalecolonies.npc.actions.BuilderActionNotifyBlockBroken;
+import com.hytalecolonies.npc.actions.BuilderActionReleaseJobTarget;
+import com.hytalecolonies.npc.actions.BuilderActionResetBlocksMined;
+import com.hytalecolonies.npc.actions.BuilderActionSeekNearestTree;
+import com.hytalecolonies.npc.actions.BuilderActionSeekNextMineBlock;
+import com.hytalecolonies.npc.actions.BuilderActionSetEcsJobState;
+import com.hytalecolonies.npc.sensors.BuilderSensorEcsJobState;
+import com.hytalecolonies.npc.sensors.BuilderSensorHarvestableTree;
+import com.hytalecolonies.npc.sensors.BuilderSensorHasTool;
+import com.hytalecolonies.npc.sensors.BuilderSensorJobTarget;
+import com.hytalecolonies.npc.sensors.BuilderSensorJobTargetBroken;
+import com.hytalecolonies.npc.sensors.BuilderSensorJobTargetExists;
+import com.hytalecolonies.npc.sensors.BuilderSensorMineQuotaReached;
+import com.hytalecolonies.npc.sensors.BuilderSensorNoWorkAvailable;
 import com.hytalecolonies.systems.ColonySystem;
-import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
 import com.hytalecolonies.systems.jobs.ClaimedBlockCleanupSystem;
 import com.hytalecolonies.systems.jobs.ColonistCleanupSystem;
-import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
-import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.systems.jobs.MinerWorkingSystem;
 import com.hytalecolonies.systems.jobs.ColonistDeliverySystem;
 import com.hytalecolonies.systems.jobs.ColonistItemPickupSystem;
 import com.hytalecolonies.systems.jobs.ColonistJobSystem;
-import com.hytalecolonies.systems.jobs.JobRegistry;
+import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
 import com.hytalecolonies.systems.jobs.JobBehaviorRegistry;
+import com.hytalecolonies.systems.jobs.JobRegistry;
+import com.hytalecolonies.systems.jobs.MinerWorkingSystem;
+import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
 import com.hytalecolonies.systems.jobs.handlers.MinerHandlers;
 import com.hytalecolonies.systems.jobs.handlers.SharedHandlers;
 import com.hytalecolonies.systems.jobs.handlers.WoodsmanHandlers;
-import com.hytalecolonies.npc.actions.BuilderActionNotifyBlockBroken;
-import com.hytalecolonies.npc.actions.BuilderActionEquipBestTool;
-import com.hytalecolonies.npc.actions.BuilderActionHarvestBlock;
-import com.hytalecolonies.npc.actions.BuilderActionClaimNearestTree;
-import com.hytalecolonies.npc.actions.BuilderActionSeekNearestTree;
-import com.hytalecolonies.npc.actions.BuilderActionFindNextTrunkBlock;
-import com.hytalecolonies.npc.actions.BuilderActionClaimNextMineBlock;
-import com.hytalecolonies.npc.actions.BuilderActionSeekNextMineBlock;
-import com.hytalecolonies.npc.actions.BuilderActionReleaseJobTarget;
-import com.hytalecolonies.npc.actions.BuilderActionIncrementBlocksMined;
-import com.hytalecolonies.npc.actions.BuilderActionResetBlocksMined;
-import com.hytalecolonies.npc.actions.BuilderActionSetEcsJobState;
-import com.hytalecolonies.npc.sensors.BuilderSensorHarvestableTree;
-import com.hytalecolonies.npc.sensors.BuilderSensorJobTarget;
-import com.hytalecolonies.npc.sensors.BuilderSensorHasTool;
-import com.hytalecolonies.npc.sensors.BuilderSensorJobTargetExists;
-import com.hytalecolonies.npc.sensors.BuilderSensorJobTargetBroken;
-import com.hytalecolonies.npc.sensors.BuilderSensorMineQuotaReached;
-import com.hytalecolonies.npc.sensors.BuilderSensorNoWorkAvailable;
-import com.hytalecolonies.npc.sensors.BuilderSensorEcsJobState;
-
 import com.hytalecolonies.systems.npc.ColonistRemovalSystem;
 import com.hytalecolonies.systems.npc.PathFindingSystem;
 import com.hytalecolonies.systems.treescan.TreeBlockChangeEventSystem;
 import com.hytalecolonies.systems.treescan.TreeScannerSystem;
-
-import javax.annotation.Nonnull;
-import java.util.logging.Level;
-import com.hypixel.hytale.server.core.util.Config;
 
 /**
  * HytaleColonies - A Hytale server plugin.
@@ -175,6 +174,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         // Registered as job-defaults so they only run for the correct colonist type.
         JobBehaviorRegistry.registerDefault(MinerJobComponent.getComponentType(),    JobState.Idling, MinerHandlers.IDLE);
         JobBehaviorRegistry.registerDefault(WoodsmanJobComponent.getComponentType(), JobState.Idling, WoodsmanHandlers.IDLE);
+        JobBehaviorRegistry.registerDefault(WoodsmanJobComponent.getComponentType(), JobState.Working, WoodsmanHandlers.WORKING);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered shared job handlers");
     }
 
