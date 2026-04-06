@@ -10,17 +10,11 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.hytalecolonies.components.jobs.JobState;
-import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
-import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.debug.DebugCategory;
@@ -28,8 +22,6 @@ import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.debug.DebugTiming;
 import com.hytalecolonies.systems.jobs.JobStateHandler;
 import com.hytalecolonies.systems.treescan.TreeDetector;
-import com.hytalecolonies.utils.ClaimBlockUtil;
-import com.hytalecolonies.utils.ColonistLeashUtil;
 
 
 /** Default {@link JobStateHandler} implementations for woodsman colonists. */
@@ -65,94 +57,6 @@ public final class WoodsmanHandlers
         }
         return nearestTree;
     }, "Harvest");
-
-    /**
-     * Detects when the current target block is broken, then moves to the next
-     * adjacent base block
-     * (wide multi-block trees) or transitions to {@link JobState#CollectingDrops}.
-     *
-     * <p>
-     * Per-tick block damage is handled by the NPC role's sensor/action pipeline.
-     */
-    public static final JobStateHandler WORKING = ctx ->
-    {
-        JobTargetComponent jobTarget = ctx.store.getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
-        if (jobTarget == null || jobTarget.targetPosition == null)
-        {
-            DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                             "[WoodsmanJob] [%s] Working -- no JobTargetComponent or target is null, resetting to Idling.",
-                             DebugLog.npcId(ctx.colonistRef, ctx.store));
-            ctx.job.setCurrentTask(JobState.Idling);
-            return;
-        }
-
-        Vector3i treeBase = jobTarget.targetPosition;
-        World world = ctx.world;
-        int blockId = world.getBlock(treeBase);
-
-        DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                      "[WoodsmanJob] [%s] Working -- target=%s blockId=%d (0=broken).",
-                      DebugLog.npcId(ctx.colonistRef, ctx.store),
-                      treeBase,
-                      blockId);
-
-        // Block still standing -- NPC role handles per-tick damage.
-        if (blockId != 0)
-            return;
-
-        DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                      "[WoodsmanJob] [%s] Block at %s is broken -- scanning for adjacent base blocks.",
-                      DebugLog.npcId(ctx.colonistRef, ctx.store),
-                      treeBase);
-
-        Set<String> allowedTreeTypes = null;
-        Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
-        if (workStationPos != null)
-        {
-            Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
-            WorkStationComponent workStation = wsRef != null ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType()) : null;
-            if (workStation != null)
-                allowedTreeTypes = workStation.getAllowedTreeTypes();
-        }
-        Vector3i nextBase = allowedTreeTypes != null ? findNextBaseBlock(treeBase, allowedTreeTypes, world) : null;
-
-        // Always release the claim on the broken block entity.
-        final Vector3i finalTreePos = treeBase;
-        world.execute(() -> ClaimBlockUtil.unclaimBlock(world, finalTreePos));
-
-        if (nextBase != null)
-        {
-            // Wide multi-block base -- travel to the next connected base block.
-            DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                          "[WoodsmanJob] [%s] Found adjacent base block at %s -- traveling there (TravelingToJob).",
-                          DebugLog.npcId(ctx.colonistRef, ctx.store),
-                          nextBase);
-            jobTarget.setTargetPosition(nextBase);
-            boolean hadMove = ctx.store.getComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType()) != null;
-            MoveToTargetComponent newMove = new MoveToTargetComponent(new Vector3d(nextBase.x + 0.5, nextBase.y, nextBase.z + 0.5));
-            if (hadMove)
-            {
-                ctx.commandBuffer.replaceComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType(), newMove);
-            }
-            else
-            {
-                ctx.commandBuffer.addComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType(), newMove);
-            }
-            ctx.job.setCurrentTask(JobState.TravelingToJob);
-        }
-        else
-        {
-            // All base-level trunks are gone -- collect drops.
-            DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                          "[WoodsmanJob] [%s] No further base blocks found -- transitioning to CollectingDrops.",
-                          DebugLog.npcId(ctx.colonistRef, ctx.store));
-            // Set leash to harvested block area so WanderInCircle constrains drop-pickup to that spot.
-            ColonistLeashUtil.setLeashToBlockCenter(ctx.colonistRef, ctx.store, treeBase);
-            jobTarget.setTargetPosition(null);
-            ctx.job.collectingDropsSince = System.currentTimeMillis();
-            ctx.job.setCurrentTask(JobState.CollectingDrops);
-        }
-    };
 
     // ===== Private helpers =====
 
@@ -229,7 +133,7 @@ public final class WoodsmanHandlers
      * wood blocks
      * at the same Y (wide multi-block tree base detection).
      */
-    @Nullable private static Vector3i findNextBaseBlock(@Nonnull Vector3i brokenPos, @Nonnull Set<String> woodKeys, @Nonnull World world)
+    @Nullable public static Vector3i findNextBaseBlock(@Nonnull Vector3i brokenPos, @Nonnull Set<String> woodKeys, @Nonnull World world)
     {
         int baseY = brokenPos.y;
         Set<Long> visited = new HashSet<>();

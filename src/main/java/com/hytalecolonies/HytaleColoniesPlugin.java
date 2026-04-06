@@ -59,6 +59,7 @@ import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
 import com.hytalecolonies.systems.jobs.JobBehaviorRegistry;
 import com.hytalecolonies.systems.jobs.JobRegistry;
 import com.hytalecolonies.systems.jobs.MinerWorkingSystem;
+import com.hytalecolonies.systems.jobs.WoodsmanWorkingSystem;
 import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
 import com.hytalecolonies.systems.jobs.handlers.MinerHandlers;
 import com.hytalecolonies.systems.jobs.handlers.SharedHandlers;
@@ -174,7 +175,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         // Registered as job-defaults so they only run for the correct colonist type.
         JobBehaviorRegistry.registerDefault(MinerJobComponent.getComponentType(),    JobState.Idling, MinerHandlers.IDLE);
         JobBehaviorRegistry.registerDefault(WoodsmanJobComponent.getComponentType(), JobState.Idling, WoodsmanHandlers.IDLE);
-        JobBehaviorRegistry.registerDefault(WoodsmanJobComponent.getComponentType(), JobState.Working, WoodsmanHandlers.WORKING);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered shared job handlers");
     }
 
@@ -274,6 +274,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new ColonistJobSystem());
         getEntityStoreRegistry().registerSystem(new ColonistRemovalSystem());
         getEntityStoreRegistry().registerSystem(new MinerWorkingSystem());
+        getEntityStoreRegistry().registerSystem(new WoodsmanWorkingSystem());
         getEntityStoreRegistry().registerSystem(new ColonistItemPickupSystem());
         getEntityStoreRegistry().registerSystem(new ColonistDeliverySystem());
         getChunkStoreRegistry().registerSystem(new ColonistDeliverySystem.OnContainerRemoved());
