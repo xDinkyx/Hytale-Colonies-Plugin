@@ -30,6 +30,32 @@
             "problemMatcher": []
         },
         {
+            // Sync only the resource files (JSON, UI, lang, etc.) to server/mods/HytaleColonies-Assets/
+            // without rebuilding the JAR. Safe to run while the server is running — no restart needed.
+            "label": "sync assets",
+            "type": "shell",
+            "command": ".\\gradlew.bat",
+            "args": ["syncAssetsDir"],
+            "linux": {
+                "command": "./gradlew",
+                "args": ["syncAssetsDir"]
+            },
+            "osx": {
+                "command": "./gradlew",
+                "args": ["syncAssetsDir"]
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
             // Build the plugin JAR and copy it (+ assets) to server/mods/ for the local dev server.
             "label": "build and deploy",
             "type": "shell",
