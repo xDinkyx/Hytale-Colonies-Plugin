@@ -50,9 +50,13 @@ public class SensorEcsJobState extends SensorBase {
         }
 
         boolean matches = job.getCurrentTask() == targetState;
-        DebugLog.fine(DebugCategory.JOB_SYSTEM,
-                "[SensorEcsJobState] [%s] current=%s target=%s result=%b.",
-                DebugLog.npcId(ref, store), job.getCurrentTask(), targetState, matches);
+        // We only log when the sensor matches to avoid spamming logs for every NPC every tick.
+        if(matches) {
+            DebugLog.fine(DebugCategory.JOB_SYSTEM,
+                    "[SensorEcsJobState] [%s] current=%s target=%s matches.",
+                    DebugLog.npcId(ref, store), job.getCurrentTask(), targetState);
+        }
+        
         return matches;
     }
 

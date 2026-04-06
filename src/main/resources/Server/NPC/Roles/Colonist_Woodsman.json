@@ -1,5 +1,5 @@
 ﻿{
-  "$Comment": "Woodsman colonist role — handles finding, navigating to, and harvesting trees.",
+  "$Comment": "Woodsman colonist role -- handles finding, navigating to, and harvesting trees.",
   "Type": "Generic",
   "Appearance": "Mannequin",
   "MaxHealth": 20,
@@ -13,8 +13,9 @@
   "InventorySize": 12,
   "Instructions": [
     {
-      "$Comment": "Global navigation -- always running. ECS writes NavTarget slot via PathFindingSystem; JSON drives the body toward it.",
+      "$Comment": "TravelingToJob -- seek to claimed tree. ECS writes NavTarget via PathFindingSystem.",
       "Continue": true,
+      "Sensor": { "Type": "EcsJobState", "JobState": "TravelingToJob" },
       "Instructions": [
         {
           "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
@@ -23,21 +24,22 @@
       ]
     },
     {
-      "$Comment": "Working -- chop the target block while in range. ActionsBlocking sequences equip->swing->cooldown each cycle.",
+      "$Comment": "Working -- approach tree and chop. Seek handles final approach so the NPC gets close enough; chop fires once within range.",
       "Continue": true,
+      "Sensor": { "Type": "EcsJobState", "JobState": "Working" },
       "Instructions": [
         {
-          "Sensor": { "Type": "EcsJobState", "JobState": "Working" },
-          "Instructions": [
-            {
-              "Sensor": { "Type": "JobTarget", "Range": 5.0 },
-              "ActionsBlocking": true,
-              "Actions": [
-                { "Type": "EquipBestTool" },
-                { "Type": "HarvestBlock", "DamageScale": 0.1 },
-                { "Type": "Timeout", "Delay": [0.5, 0.5] }
-              ]
-            }
+          "Continue": true,
+          "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 5.0, "MinRange": 1.5 },
+          "BodyMotion": { "Type": "Seek", "StopDistance": 1.0, "SlowDownDistance": 2.0, "RelativeSpeed": 0.8 }
+        },
+        {
+          "Sensor": { "Type": "JobTarget", "Range": 2.5 },
+          "ActionsBlocking": true,
+          "Actions": [
+            { "Type": "EquipBestTool" },
+            { "Type": "HarvestBlock", "DamageScale": 0.1 },
+            { "Type": "Timeout", "Delay": [0.5, 0.5] }
           ]
         }
       ]
@@ -45,101 +47,81 @@
     {
       "$Comment": "Working -- when job-target block is air, notify ECS. ECS decides the next state (next trunk, collect, etc).",
       "Continue": true,
+      "Sensor": { "Type": "EcsJobState", "JobState": "Working" },
       "Instructions": [
         {
-          "Sensor": { "Type": "EcsJobState", "JobState": "Working" },
-          "Instructions": [
-            {
-              "Sensor": { "Type": "JobTargetBroken" },
-              "Actions": [
-                { "Type": "NotifyBlockBroken" }
-              ]
-            }
+          "Sensor": { "Type": "JobTargetBroken" },
+          "Actions": [
+            { "Type": "NotifyBlockBroken" }
           ]
         }
       ]
     },
     {
-      "$Comment": "Idle -- show confused particle when a required tool is missing, then wander gently near workstation.",
+      "$Comment": "CollectingDrops -- wander area and pick up drops while ECS delivery pipeline runs.",
+      "Continue": true,
+      "Sensor": { "Type": "EcsJobState", "JobState": "CollectingDrops" },
       "Instructions": [
         {
-          "Sensor": { "Type": "EcsJobState", "JobState": "Idling" },
-          "Instructions": [
-            {
-              "$Comment": "Set wander body motion first (Continue: true) so it runs persistently in the background while the particle+timeout blocks below execute.",
-              "Continue": true,
-              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 5.0 },
-              "BodyMotion": {
-                "Type": "Sequence",
-                "Looped": true,
-                "Motions": [
-                  { "Type": "Timer", "Time": [4, 6], "Motion": { "Type": "WanderInCircle", "Radius": 3, "MaxHeadingChange": 45, "RelativeSpeed": 0.35 } },
-                  { "Type": "Timer", "Time": [1, 2], "Motion": { "Type": "Nothing" } }
-                ]
-              }
-            },
-            {
-              "$Comment": "No axe -- confused particle + wait.",
-              "Sensor": {
-                "Type": "Not",
-                "Sensor": { "Type": "HasTool", "GatherType": "Woods" }
-              },
-              "ActionsBlocking": true,
-              "Actions": [
-                { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
-                { "Type": "Timeout", "Delay": [3, 3] }
-              ]
-            }
+          "Continue": true,
+          "Sensor": { "Type": "Any" },
+          "BodyMotion": { "Type": "WanderInCircle", "Radius": 5, "MaxHeadingChange": 60, "RelativeSpeed": 0.5 }
+        },
+        {
+          "Sensor": { "Type": "DroppedItem", "Range": 5.0 },
+          "Actions": [
+            { "Type": "PickUpItem", "Hoover": true }
           ]
         }
       ]
     },
     {
-      "$Comment": "NoWork -- no trees available. Wander gently until ECS assigns new work.",
+      "$Comment": "DeliveringItems -- seek to delivery container. ECS writes NavTarget.",
+      "Continue": true,
+      "Sensor": { "Type": "EcsJobState", "JobState": "DeliveringItems" },
       "Instructions": [
         {
-          "Sensor": { "Type": "EcsJobState", "JobState": "NoWork" },
-          "Instructions": [
-            {
-              "$Comment": "Fidget only when close to workstation.",
-              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 5.0 },
-              "BodyMotion": {
-                "Type": "Sequence",
-                "Looped": true,
-                "Motions": [
-                  { "Type": "Timer", "Time": [4, 6], "Motion": { "Type": "WanderInCircle", "Radius": 3, "MaxHeadingChange": 45, "RelativeSpeed": 0.25 } },
-                  { "Type": "Timer", "Time": [2, 3], "Motion": { "Type": "Nothing" } }
-                ]
-              }
-            }
-          ]
+          "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
+          "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
         }
       ]
     },
     {
-      "$Comment": "CollectingDrops -- pick up drops while ECS delivery pipeline runs.",
+      "$Comment": "TravelingHome -- seek back to workstation. ECS writes NavTarget.",
+      "Continue": true,
+      "Sensor": { "Type": "EcsJobState", "JobState": "TravelingHome" },
       "Instructions": [
         {
-          "Sensor": { "Type": "EcsJobState", "JobState": "CollectingDrops" },
-          "Instructions": [
-            {
-              "$Comment": "Wander the area while waiting for delivery so the colonist does not stand still.",
-              "Continue": true,
-              "Sensor": { "Type": "Any" },
-              "BodyMotion": {
-                "Type": "WanderInCircle",
-                "Radius": 5,
-                "MaxHeadingChange": 60,
-                "RelativeSpeed": 0.5
-              }
-            },
-            {
-              "$Comment": "Pick up nearby dropped items while waiting for delivery to complete.",
-              "Sensor": { "Type": "DroppedItem", "Range": 5.0 },
-              "Actions": [
-                { "Type": "PickUpItem", "Hoover": true }
-              ]
-            }
+          "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
+          "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
+        }
+      ]
+    },
+    {
+      "$Comment": "Idling -- wander near workstation; confused particle when axe is missing.",
+      "Continue": true,
+      "Sensor": { "Type": "EcsJobState", "JobState": "Idling" },
+      "Instructions": [
+        {
+          "$Comment": "Wander near workstation (WanderInCircle uses leash point set by ECS). Continue: true so tool-check block below also runs.",
+          "Continue": true,
+          "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 5.0 },
+          "BodyMotion": {
+            "Type": "Sequence",
+            "Looped": true,
+            "Motions": [
+              { "Type": "Timer", "Time": [4, 6], "Motion": { "Type": "WanderInCircle", "Radius": 3, "MaxHeadingChange": 45, "RelativeSpeed": 0.35 } },
+              { "Type": "Timer", "Time": [1, 2], "Motion": { "Type": "Nothing" } }
+            ]
+          }
+        },
+        {
+          "$Comment": "No axe -- confused particle + wait.",
+          "Sensor": { "Type": "Not", "Sensor": { "Type": "HasTool", "GatherType": "Woods" } },
+          "ActionsBlocking": true,
+          "Actions": [
+            { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
+            { "Type": "Timeout", "Delay": [3, 3] }
           ]
         }
       ]

@@ -12,6 +12,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.utils.ColonistLeashUtil;
 import com.hytalecolonies.utils.ColonistToolUtil;
 import com.hytalecolonies.utils.JobNavigationUtil;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
@@ -35,7 +36,8 @@ public final class SharedHandlers {
     /** Consecutive stuck ticks before forcing state advance or re-dispatching navigation. */
     private static final int STUCK_TICKS_LIMIT = 5;
 
-    private SharedHandlers() {}
+    private SharedHandlers() {
+    }
 
     // ===== Idle factory =====
 
@@ -46,39 +48,49 @@ public final class SharedHandlers {
     @FunctionalInterface
     public interface TargetFinder {
         /** Finds the next target block, or {@code null} if none is available. */
-        @Nullable Vector3i find(JobContext ctx, WorkStationComponent workStation, Vector3i workStationPos);
+        @Nullable
+        Vector3i find(JobContext ctx, WorkStationComponent workStation, Vector3i workStationPos);
     }
 
     /**
      * Builds a generic Idling handler shared across all job types.
      *
-     * <p>Common sequence: keep nav pointed at the workstation, check all required tools,
+     * <p>
+     * Common sequence: keep nav pointed at the workstation, check all required tools,
      * find a target block via {@code targetFinder}, claim it, dispatch navigation,
      * and transition to {@link com.hytalecolonies.components.jobs.JobState#TravelingToJob}.
      *
-     * @param requiredGatherTypes  gather-type tags the colonist must hold a tool for (all required)
-     * @param targetFinder         job-specific function to locate the next target block
-     * @param claimType            label stored on the claimed block (e.g. {@code "Mine"}, {@code "Harvest"})
+     * @param requiredGatherTypes
+     *                                gather-type tags the colonist must hold a tool for (all required)
+     * @param targetFinder
+     *                                job-specific function to locate the next target block
+     * @param claimType
+     *                                label stored on the claimed block (e.g. {@code "Mine"}, {@code "Harvest"})
      */
     public static JobStateHandler idle(String[] requiredGatherTypes, TargetFinder targetFinder, String claimType) {
         return ctx -> {
             Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
-            if (workStationPos == null) return;
+            if (workStationPos == null)
+                return;
 
             // Keep NavTarget pointed at the workstation while idling so the JSON
             // ReadPosition sensor fires and the wander/fidget animation plays.
+            // Also set the leash point so WanderInCircle constrains to the workstation area.
             final Vector3i wsPos = workStationPos;
-            ctx.world.execute(() ->
-                JobNavigationUtil.dispatchNavigation(ctx.world.getEntityStore().getStore(), ctx.colonistRef, wsPos)
-            );
+            ColonistLeashUtil.setLeashToBlockCenter(ctx.colonistRef, ctx.store, wsPos);
+            ctx.world.execute(() -> JobNavigationUtil.dispatchNavigation(ctx.world.getEntityStore().getStore(),
+                    ctx.colonistRef, wsPos));
 
             WorkStationComponent workStation = ctx.getWorkStation();
-            if (workStation == null) return;
+            if (workStation == null)
+                return;
 
             LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ctx.colonistRef, ctx.store);
-            if (colonist == null) return;
+            if (colonist == null)
+                return;
             for (String gatherType : requiredGatherTypes) {
-                if (!ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), gatherType, 0)) return;
+                if (!ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), gatherType, 0))
+                    return;
             }
 
             Vector3i target = targetFinder.find(ctx, workStation, workStationPos);
@@ -91,13 +103,18 @@ public final class SharedHandlers {
             final var entityStore = ctx.world.getEntityStore();
             final Vector3i claimTarget = target;
             ctx.world.execute(() -> {
-                JobComponent liveJob = entityStore.getStore().getComponent(ctx.colonistRef, JobComponent.getComponentType());
-                if (liveJob == null || liveJob.getCurrentTask() != JobState.Idling) return;
-                UUIDComponent uuidComp = entityStore.getStore().getComponent(ctx.colonistRef, UUIDComponent.getComponentType());
-                if (uuidComp == null) return;
+                JobComponent liveJob = entityStore.getStore().getComponent(ctx.colonistRef,
+                        JobComponent.getComponentType());
+                if (liveJob == null || liveJob.getCurrentTask() != JobState.Idling)
+                    return;
+                UUIDComponent uuidComp = entityStore.getStore().getComponent(ctx.colonistRef,
+                        UUIDComponent.getComponentType());
+                if (uuidComp == null)
+                    return;
                 // claimAndNavigateTo atomically claims, sets JobTargetComponent, and dispatches navigation.
                 if (!JobNavigationUtil.claimAndNavigateTo(ctx.world, entityStore.getStore(), ctx.colonistRef,
-                        uuidComp.getUuid(), claimTarget, claimType)) return;
+                        uuidComp.getUuid(), claimTarget, claimType))
+                    return;
                 // Set state after claim+nav so PathFindingSystem reads a consistent state.
                 liveJob.setCurrentTask(JobState.TravelingToJob);
             });
@@ -135,7 +152,8 @@ public final class SharedHandlers {
 
         TransformComponent transform = ctx.getTransform();
         if (transform == null) {
-            DebugLog.warning(DebugCategory.MOVEMENT, "[Shared] [%s] TravelingToJob -- colonist has no TransformComponent, skipping.",
+            DebugLog.warning(DebugCategory.MOVEMENT,
+                    "[Shared] [%s] TravelingToJob -- colonist has no TransformComponent, skipping.",
                     DebugLog.npcId(ctx.colonistRef, ctx.store));
             return;
         }
@@ -178,11 +196,13 @@ public final class SharedHandlers {
     /** Moves toward the workstation. On arrival removes {@link JobTargetComponent} and returns to {@link JobState#Idling}. */
     public static final JobStateHandler TRAVELING_HOME = ctx -> {
         Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
-        if (workStationPos == null) return;
+        if (workStationPos == null)
+            return;
 
         TransformComponent transform = ctx.getTransform();
         if (transform == null) {
-            DebugLog.warning(DebugCategory.MOVEMENT, "[Shared] [%s] TravelingHome -- colonist has no TransformComponent, skipping.",
+            DebugLog.warning(DebugCategory.MOVEMENT,
+                    "[Shared] [%s] TravelingHome -- colonist has no TransformComponent, skipping.",
                     DebugLog.npcId(ctx.colonistRef, ctx.store));
             return;
         }
@@ -197,11 +217,14 @@ public final class SharedHandlers {
                 DebugLog.npcId(ctx.colonistRef, ctx.store), xzDist, workStationPos, WORKSTATION_ARRIVAL_XZ);
 
         // Fetch once -- used in both the arrival and stuck-detection paths.
-        @Nullable JobTargetComponent jobTarget =
-                ctx.store.getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
+        @Nullable
+        JobTargetComponent jobTarget = ctx.store.getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
 
         if (xzDist <= WORKSTATION_ARRIVAL_XZ) {
-            if (jobTarget != null) { jobTarget.stuckTicks = 0; jobTarget.lastKnownPosition = null; }
+            if (jobTarget != null) {
+                jobTarget.stuckTicks = 0;
+                jobTarget.lastKnownPosition = null;
+            }
             ctx.commandBuffer.removeComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
             ctx.job.setCurrentTask(JobState.Idling);
             DebugLog.info(DebugCategory.MOVEMENT, "[Shared] [%s] Arrived home at workstation.",

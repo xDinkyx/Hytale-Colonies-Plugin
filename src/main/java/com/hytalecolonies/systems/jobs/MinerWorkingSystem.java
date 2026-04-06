@@ -10,6 +10,7 @@ import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.systems.jobs.handlers.MinerHandlers;
 import com.hytalecolonies.utils.ClaimBlockUtil;
+import com.hytalecolonies.utils.ColonistLeashUtil;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
@@ -109,6 +110,10 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
             if (goCollect) {
                 JobTargetComponent jt = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());
                 if (jt != null) jt.setTargetPosition(null);
+                // Set leash to the last mined block so WanderInCircle constrains drop-pickup to that area.
+                if (currentTargetPos != null) {
+                    ColonistLeashUtil.setLeashToBlockCenter(colonistRef, entityStore.getStore(), currentTargetPos);
+                }
                 liveJob.collectingDropsSince = System.currentTimeMillis();
                 liveJob.setCurrentTask(JobState.CollectingDrops);
                 DebugLog.info(DebugCategory.MINER_JOB,
