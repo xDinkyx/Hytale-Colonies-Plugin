@@ -12,7 +12,6 @@ pom.xml.versionsBackup
 .idea/*
 !.idea/runConfigurations/
 *.iml
-.vscode/
 
 # Hytale
 server/*
@@ -21,6 +20,8 @@ lib/*
 # Generated files
 .github/skills/update-server-lib/LAST_VERSION.txt
 temp_manifest/META-INF/MANIFEST.MF
+dev-config/*
 
 # Build
 bin/
+

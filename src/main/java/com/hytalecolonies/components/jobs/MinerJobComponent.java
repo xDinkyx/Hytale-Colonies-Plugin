@@ -29,7 +29,7 @@ public class MinerJobComponent implements Component<EntityStore> {
             .build();
 
     // ===== Persisted runtime state =====
-    /** How many blocks have been mined during the current work run. Resets each Idle tick. */
+    /** How many blocks have been mined during the current work run. Resets each Idling tick. */
     public int blocksMinedThisRun = 0;
 
     // ===== Constructors =====

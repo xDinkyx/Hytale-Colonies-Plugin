@@ -1,34 +1,5 @@
 package com.hytalecolonies.systems.jobs.handlers;
 
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.debug.DebugTiming;
-import com.hytalecolonies.components.jobs.JobComponent;
-import com.hytalecolonies.components.jobs.JobState;
-import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
-import com.hytalecolonies.components.npc.MoveToTargetComponent;
-import com.hytalecolonies.components.world.ClaimedBlockComponent;
-import com.hytalecolonies.components.world.HarvestableTreeComponent;
-import com.hytalecolonies.systems.jobs.JobContext;
-import com.hytalecolonies.systems.jobs.JobStateHandler;
-import com.hytalecolonies.systems.treescan.TreeDetector;
-import com.hytalecolonies.utils.ClaimBlockUtil;
-import com.hytalecolonies.utils.ColonistToolUtil;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.server.core.entity.EntityUtils;
-import com.hypixel.hytale.server.core.entity.LivingEntity;
-import com.hypixel.hytale.server.core.entity.UUIDComponent;
-import com.hypixel.hytale.server.core.modules.block.BlockModule;
-import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -36,233 +7,172 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.world.ClaimedBlockComponent;
+import com.hytalecolonies.components.world.HarvestableTreeComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.debug.DebugTiming;
+import com.hytalecolonies.systems.jobs.JobStateHandler;
+import com.hytalecolonies.systems.treescan.TreeDetector;
+
+
 /** Default {@link JobStateHandler} implementations for woodsman colonists. */
-public final class WoodsmanHandlers {
+public final class WoodsmanHandlers
+{
 
     private static final String REQUIRED_GATHER_TYPE = "Woods";
 
-    private WoodsmanHandlers() {}
+    private WoodsmanHandlers()
+    {
+    }
 
     // ===== Handlers =====
 
     /**
-     * Waits for a suitable tool, finds the nearest unclaimed tree, claims it, dispatches
+     * Waits for a suitable tool, finds the nearest unclaimed tree, claims it,
+     * dispatches
      * navigation, and transitions to {@link JobState#TravelingToJob}.
      */
-    public static final JobStateHandler IDLE = ctx -> {
-        Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
-        if (workStationPos == null) return;
-
-        World world = ctx.world;
-        Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
-        WorkStationComponent workStation = wsRef != null
-                ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
-                : null;
-        if (workStation == null) {
-            DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idle — workstation not found at %s; cleanup system will reset colonist job.", workStationPos);
-            return;
-        }
-
-        LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ctx.colonistRef, ctx.store);
-        if (colonist == null) return;
-        if (!ColonistToolUtil.hasToolForGatherType(colonist.getInventory(), REQUIRED_GATHER_TYPE, 0)) {
-            DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idle — no '%s' tool in inventory. Waiting at workstation.", REQUIRED_GATHER_TYPE);
-            return;
-        }
-
+    public static final JobStateHandler IDLE = SharedHandlers.idle(new String[] {REQUIRED_GATHER_TYPE}, (ctx, workStation, workStationPos) -> {
         Vector3i nearestTree;
-        try (var t = DebugTiming.measure("WoodsmanJob.findNearestAvailableTree@" + workStationPos, 50)) {
-            nearestTree = findNearestAvailableTree(workStation, workStationPos, world);
+        try (var t = DebugTiming.measure("WoodsmanJob.findNearestAvailableTree@" + workStationPos, 50))
+        {
+            nearestTree = findNearestAvailableTree(workStation, workStationPos, ctx.world);
         }
-        if (nearestTree == null) {
+        if (nearestTree == null)
+        {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Idle — no available trees within radius %.1f of workstation %s.",
-                    workStation.treeSearchRadius, workStationPos);
-            return;
+                          "[WoodsmanJob] [%s] Idling -- no available trees within radius %.1f of workstation %s.",
+                          DebugLog.npcId(ctx.colonistRef, ctx.store),
+                          workStation.treeSearchRadius,
+                          workStationPos);
         }
-
-        // Schedule claim and travel on the world thread — world.execute() serializes
-        // callbacks between ticks, so two woodsmen finding the same tree in the same
-        // tick serialize here: the first claims it, the second backs off (stays Idle).
-        EntityStore entityStore = world.getEntityStore();
-        world.execute(() -> {
-            JobComponent liveJob = entityStore.getStore().getComponent(ctx.colonistRef, JobComponent.getComponentType());
-            if (liveJob == null || liveJob.getCurrentTask() != JobState.Idle) return;
-
-            UUIDComponent uuidComp = entityStore.getStore().getComponent(ctx.colonistRef, UUIDComponent.getComponentType());
-            if (uuidComp == null) return;
-
-            if (!ClaimBlockUtil.claimBlock(world, nearestTree, uuidComp.getUuid(), "Harvest")) return;
-
-            entityStore.getStore().addComponent(ctx.colonistRef, JobTargetComponent.getComponentType(), new JobTargetComponent(nearestTree));
-            Vector3d treeTarget = new Vector3d(nearestTree.x + 0.5, nearestTree.y, nearestTree.z + 0.5);
-            entityStore.getStore().tryRemoveComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType());
-            entityStore.getStore().addComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType(), new MoveToTargetComponent(treeTarget));
-            liveJob.setCurrentTask(JobState.TravelingToJob);
-            DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] Claimed tree at %s — heading there.", nearestTree);
-        });
-    };
-
-    /**
-     * Detects when the current target block is broken, then moves to the next adjacent base block
-     * (wide multi-block trees) or transitions to {@link JobState#CollectingDrops}.
-     *
-     * <p>Per-tick block damage is handled by the NPC role's sensor/action pipeline.
-     */
-    public static final JobStateHandler WORKING = ctx -> {
-        JobTargetComponent jobTarget = ctx.store.getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
-        if (jobTarget == null || jobTarget.targetPosition == null) {
-            DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Working — no JobTargetComponent or target is null, resetting to Idle.");
-            ctx.job.setCurrentTask(JobState.Idle);
-            return;
-        }
-
-        Vector3i treeBase = jobTarget.targetPosition;
-        World world = ctx.world;
-        int blockId = world.getBlock(treeBase);
-
-        DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanJob] Working — target=%s blockId=%d (0=broken).", treeBase, blockId);
-
-        // Block still standing — NPC role handles per-tick damage.
-        if (blockId != 0) return;
-
-        DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanJob] Block at %s is broken — scanning for adjacent base blocks.", treeBase);
-
-        Set<String> allowedTreeTypes = null;
-        Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
-        if (workStationPos != null) {
-            Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
-            WorkStationComponent workStation = wsRef != null
-                    ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
-                    : null;
-            if (workStation != null) allowedTreeTypes = workStation.getAllowedTreeTypes();
-        }
-        Vector3i nextBase = allowedTreeTypes != null
-                ? findNextBaseBlock(treeBase, allowedTreeTypes, world)
-                : null;
-
-        // Always release the claim on the broken block entity.
-        final Vector3i finalTreePos = treeBase;
-        world.execute(() -> ClaimBlockUtil.unclaimBlock(world, finalTreePos));
-
-        if (nextBase != null) {
-            // Wide multi-block base — travel to the next connected base block.
-            DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Found adjacent base block at %s — traveling there (TravelingToJob).", nextBase);
-            jobTarget.setTargetPosition(nextBase);
-            boolean hadMove = ctx.store.getComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType()) != null;
-            MoveToTargetComponent newMove = new MoveToTargetComponent(
-                    new Vector3d(nextBase.x + 0.5, nextBase.y, nextBase.z + 0.5));
-            if (hadMove) {
-                ctx.commandBuffer.replaceComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType(), newMove);
-            } else {
-                ctx.commandBuffer.addComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType(), newMove);
-            }
-            ctx.job.setCurrentTask(JobState.TravelingToJob);
-        } else {
-            // All base-level trunks are gone — collect drops.
-            DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] No further base blocks found — transitioning to CollectingDrops.");
-            jobTarget.setTargetPosition(null);
-            ctx.job.collectingDropsSince = System.currentTimeMillis();
-            ctx.job.setCurrentTask(JobState.CollectingDrops);
-        }
-    };
+        return nearestTree;
+    }, "Harvest");
 
     // ===== Private helpers =====
 
-    @Nullable
-    private static Vector3i findNearestAvailableTree(WorkStationComponent workStation,
-                                                      Vector3i workStationPos, World world) {
+    @Nullable private static Vector3i findNearestAvailableTree(WorkStationComponent workStation, Vector3i workStationPos, World world)
+    {
         List<Vector3i> candidates = new ArrayList<>();
         int[] totalTrees = {0}, markedTrees = {0}, wrongTypeTrees = {0};
         Query<ChunkStore> treeQuery = Query.and(HarvestableTreeComponent.getComponentType());
 
         world.getChunkStore().getStore().forEachChunk(treeQuery, (treeChunk, _unused) -> {
-            for (int i = 0; i < treeChunk.size(); i++) {
+            for (int i = 0; i < treeChunk.size(); i++)
+            {
                 HarvestableTreeComponent tree = treeChunk.getComponent(i, HarvestableTreeComponent.getComponentType());
-                if (tree == null) continue;
+                if (tree == null)
+                    continue;
                 totalTrees[0]++;
-                if (treeChunk.getComponent(i, ClaimedBlockComponent.getComponentType()) != null) { markedTrees[0]++; continue; }
-                if (!workStation.getAllowedTreeTypes().contains(tree.getTreeTypeKey())) { wrongTypeTrees[0]++; continue; }
+                if (treeChunk.getComponent(i, ClaimedBlockComponent.getComponentType()) != null)
+                {
+                    markedTrees[0]++;
+                    continue;
+                }
+                if (!workStation.getAllowedTreeTypes().contains(tree.getTreeTypeKey()))
+                {
+                    wrongTypeTrees[0]++;
+                    continue;
+                }
                 candidates.add(tree.getBasePosition());
             }
         });
 
         DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanJob] Tree scan: total=%d, marked=%d, wrongType=%d, candidates=%d",
-                totalTrees[0], markedTrees[0], wrongTypeTrees[0], candidates.size());
+                      "[WoodsmanJob] Tree scan: total=%d, marked=%d, wrongType=%d, candidates=%d",
+                      totalTrees[0],
+                      markedTrees[0],
+                      wrongTypeTrees[0],
+                      candidates.size());
 
         Vector3i nearest = null;
         double nearestDistSq = workStation.treeSearchRadius * workStation.treeSearchRadius;
         double closestOutsideRadiusDist = Double.MAX_VALUE;
         Vector3i closestOutsideRadius = null;
 
-        for (Vector3i pos : candidates) {
+        for (Vector3i pos : candidates)
+        {
             double dx = pos.x - workStationPos.x;
             double dy = pos.y - workStationPos.y;
             double dz = pos.z - workStationPos.z;
             double distSq = dx * dx + dy * dy + dz * dz;
-            if (distSq < nearestDistSq) {
+            if (distSq < nearestDistSq)
+            {
                 nearestDistSq = distSq;
                 nearest = pos;
-            } else if (distSq < closestOutsideRadiusDist) {
+            }
+            else if (distSq < closestOutsideRadiusDist)
+            {
                 closestOutsideRadiusDist = distSq;
                 closestOutsideRadius = pos;
             }
         }
 
-        if (nearest == null && closestOutsideRadius != null) {
+        if (nearest == null && closestOutsideRadius != null)
+        {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] Closest tree outside radius: %s at dist=%.1f (radius=%.1f).",
-                    closestOutsideRadius, Math.sqrt(closestOutsideRadiusDist), workStation.treeSearchRadius);
+                          "[WoodsmanJob] Closest tree outside radius: %s at dist=%.1f (radius=%.1f).",
+                          closestOutsideRadius,
+                          Math.sqrt(closestOutsideRadiusDist),
+                          workStation.treeSearchRadius);
         }
         return nearest;
     }
 
     /**
-     * Horizontal flood-fill from broken trunk block looking for adjacent standing wood blocks
+     * Horizontal flood-fill from broken trunk block looking for adjacent standing
+     * wood blocks
      * at the same Y (wide multi-block tree base detection).
      */
-    @Nullable
-    private static Vector3i findNextBaseBlock(@Nonnull Vector3i brokenPos,
-                                              @Nonnull Set<String> woodKeys,
-                                              @Nonnull World world) {
+    @Nullable public static Vector3i findNextBaseBlock(@Nonnull Vector3i brokenPos, @Nonnull Set<String> woodKeys, @Nonnull World world)
+    {
         int baseY = brokenPos.y;
         Set<Long> visited = new HashSet<>();
         Deque<Vector3i> queue = new ArrayDeque<>();
         visited.add(pack3i(brokenPos));
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-        for (int[] d : dirs) {
+        for (int[] d : dirs)
+        {
             Vector3i neighbour = new Vector3i(brokenPos.x + d[0], baseY, brokenPos.z + d[1]);
-            if (visited.add(pack3i(neighbour))) queue.add(neighbour);
+            if (visited.add(pack3i(neighbour)))
+                queue.add(neighbour);
         }
         DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanJob] findNextBaseBlock from %s (Y=%d), queued %d neighbours, woodKeys=%d.",
-                brokenPos, baseY, queue.size(), woodKeys.size());
+                      "[WoodsmanJob] findNextBaseBlock from %s (Y=%d), queued %d neighbours, woodKeys=%d.",
+                      brokenPos,
+                      baseY,
+                      queue.size(),
+                      woodKeys.size());
 
-        while (!queue.isEmpty()) {
+        while (!queue.isEmpty())
+        {
             Vector3i cur = queue.poll();
             String key = TreeDetector.getBlockKey(world, cur.x, cur.y, cur.z);
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] findNextBaseBlock checking %s — blockKey=%s isWood=%b.",
-                    cur, key, key != null && woodKeys.contains(key));
-            if (key == null || !woodKeys.contains(key)) continue;
-            DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanJob] findNextBaseBlock found standing base block at %s (key=%s).", cur, key);
+                          "[WoodsmanJob] findNextBaseBlock checking %s -- blockKey=%s isWood=%b.",
+                          cur,
+                          key,
+                          key != null && woodKeys.contains(key));
+            if (key == null || !woodKeys.contains(key))
+                continue;
+            DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] findNextBaseBlock found standing base block at %s (key=%s).", cur, key);
             return cur;
         }
-        DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanJob] findNextBaseBlock — no more standing base blocks adjacent to %s.", brokenPos);
+        DebugLog.info(DebugCategory.WOODSMAN_JOB, "[WoodsmanJob] findNextBaseBlock -- no more standing base blocks adjacent to %s.", brokenPos);
         return null;
     }
 
-    private static long pack3i(Vector3i v) {
-        return ((long) (v.x & 0x1FFFFFL) << 42) | ((long) (v.z & 0x1FFFFFL) << 21) | (v.y & 0x1FFFFFL);
+    private static long pack3i(Vector3i v)
+    {
+        return ((long)(v.x & 0x1FFFFFL) << 42) | ((long)(v.z & 0x1FFFFFL) << 21) | (v.y & 0x1FFFFFL);
     }
 }

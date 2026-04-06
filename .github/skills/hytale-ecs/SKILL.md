@@ -1,6 +1,6 @@
 ---
 name: hytale-ecs
-description: Core Hytale ECS (Entity Component System) architecture and patterns for plugin development. Covers Store, EntityStore, ChunkStore, Holder, Ref, Components, Systems (EntityTickingSystem, TickingSystem, DelayedEntitySystem, RefChangeSystem), Queries, SystemGroups, CommandBuffer, block components, and plugin registration. Use when creating components, systems, queries, or working with entity/block data. Triggers - ECS, entity component system, Store, EntityStore, ChunkStore, Holder, Ref, Component, System, Query, CommandBuffer, SystemGroup, ArchetypeChunk, ComponentType, registerComponent, registerSystem, block component, block tick, RefChangeSystem, EntityTickingSystem, TickingSystem, DelayedEntitySystem.
+description: Core Hytale ECS (Entity Component System) architecture and patterns for plugin development. Covers Store, EntityStore, ChunkStore, Holder, Ref, Components, Systems (EntityTickingSystem, TickingSystem, DelayedEntitySystem, RefSystem, RefChangeSystem), Queries, SystemGroups, CommandBuffer, block components, and plugin registration. Use when creating components, systems, queries, or working with entity/block data. Triggers - ECS, entity component system, Store, EntityStore, ChunkStore, Holder, Ref, Component, System, Query, CommandBuffer, SystemGroup, ArchetypeChunk, ComponentType, registerComponent, registerSystem, block component, block tick, RefSystem, RefChangeSystem, EntityTickingSystem, TickingSystem, DelayedEntitySystem, onEntityRemove, entity removal, entity death, entity despawn.
 ---
 
 # Hytale ECS (Entity Component System)
@@ -20,7 +20,8 @@ Comprehensive reference for Hytale's ECS architecture. This is the foundation of
 | Per-entity tick logic | Extend `EntityTickingSystem<EntityStore>` |
 | Global tick logic | Extend `TickingSystem<EntityStore>` |
 | Interval-based logic | Extend `DelayedEntitySystem<EntityStore>` |
-| React to component changes | Extend `RefChangeSystem<EntityStore, T>` |
+| React to entity add/remove (death, despawn) | Extend `RefSystem<EntityStore>`, implement `onEntityRemove` (skip `UNLOAD`) |
+| React to component changes | Extend `RefChangeSystem<EntityStore, T>` — fires on explicit API mutations only, NOT on entity deletion |
 | Filter entities | `Query.and(componentTypes...)`, `Query.not(componentType)` |
 | Register component | `getEntityStoreRegistry().registerComponent(Class, factory)` in `setup()` |
 | Register system | `getEntityStoreRegistry().registerSystem(system)` in `start()` |
@@ -329,9 +330,53 @@ public void tick(float dt, int systemIndex, @Nonnull Store<ChunkStore> store) {
 
 This is useful when `tick()` is called multiple times per cycle (once per matching entity/archetype chunk) and you need state that is shared across all those calls but reset between cycles.
 
-### RefChangeSystem (RefSystem)
+### RefSystem (Entity Add/Remove)
 
-Reacts to component add/set/remove events. Use for caching, side effects, and initialization logic.
+Reacts when an **entity** matching the query is added to or removed from the store. Use when you need to react to entity death, despawn, or removal — not just to individual component changes.
+
+> **Critical distinction:** `RefSystem` fires on entity lifecycle events (entity added/removed). `RefChangeSystem` fires only when a component is explicitly added/removed via the API (e.g. `commandBuffer.removeComponent`). `RefChangeSystem.onComponentRemoved` does **NOT** fire when an entity is deleted from the store — use `RefSystem.onEntityRemove` for that.
+
+```java
+public class MyEntityRemovalSystem extends RefSystem<EntityStore> {
+    @Override
+    public void onEntityAdded(@Nonnull Ref<EntityStore> ref,
+                               @Nonnull AddReason reason,
+                               @Nonnull Store<EntityStore> store,
+                               @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        // Entity matching query was added to the store
+    }
+
+    @Override
+    public void onEntityRemove(@Nonnull Ref<EntityStore> ref,
+                                @Nonnull RemoveReason reason,
+                                @Nonnull Store<EntityStore> store,
+                                @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+        if (reason == RemoveReason.UNLOAD)
+            return; // Chunk unload is not the same as death/despawn -- skip it
+
+        // Entity was truly removed (died, despawned, etc.)
+        // All components are still readable from the store at this point
+        MyComponent comp = store.getComponent(ref, MyComponent.getComponentType());
+        // ...
+    }
+
+    @Override
+    @Nullable
+    public Query<EntityStore> getQuery() {
+        return Query.and(MyComponent.getComponentType());
+    }
+}
+```
+
+Register with: `getEntityStoreRegistry().registerSystem(new MyEntityRemovalSystem());` in `start()`.
+
+---
+
+### RefChangeSystem
+
+Reacts to component add/set/remove events **via the API**. Use for caching, side effects, and initialization logic triggered by explicit component mutations.
+
+> **Does NOT fire on entity deletion.** If an entity is deleted from the store (e.g. NPC dies), `onComponentRemoved` is not called. Use `RefSystem.onEntityRemove` for entity lifecycle events instead.
 
 Works with **both** `EntityStore` (entities) and `ChunkStore` (block components) — just swap the generic type parameter.
 
@@ -560,7 +605,7 @@ if (existing != null && existing.isValid()) {
 
 > **Important:** Any entity you create for a plain block is your responsibility to destroy. Consider using a `RefChangeSystem<ChunkStore, MyBlockComponent>.onComponentRemoved` to clean it up reactively (see the RefChangeSystem section above).
 
-### Block RefSystem (Initializer)
+### Block RefSystem (Block Initializer)
 
 Reacts when block entities with your component are added. Use to mark blocks as ticking:
 

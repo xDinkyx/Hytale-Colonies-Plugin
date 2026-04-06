@@ -10,12 +10,12 @@ package com.hytalecolonies.debug;
  *   <li>If the block finishes under the optional slow threshold, the time is
  *       logged at {@code FINE} (hidden unless the category is set to FINE).
  *   <li>If the block exceeds the slow threshold, the time is logged at
- *       {@code WARNING} — visible by default, drawing attention to slow paths.
+ *       {@code WARNING} -- visible by default, drawing attention to slow paths.
  *   <li>If no threshold is provided the time is always logged at {@code FINE}.
  * </ul>
  *
  * <pre>{@code
- *   // Basic — logged at FINE
+ *   // Basic -- logged at FINE
  *   try (var t = DebugTiming.measure("TreeScanner.detectTrees")) {
  *       confirmedTrees = detectTrees(segmentBottoms, world);
  *   }
@@ -49,7 +49,7 @@ public final class DebugTiming {
         return new Timer(label, slowThresholdMs);
     }
 
-    /** A single timed measurement — use in a try-with-resources block. */
+    /** A single timed measurement -- use in a try-with-resources block. */
     public static final class Timer implements AutoCloseable {
 
         private final String label;
@@ -67,7 +67,7 @@ public final class DebugTiming {
             long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
             if (slowThresholdMs >= 0 && elapsedMs > slowThresholdMs) {
                 DebugLog.warning(DebugCategory.PERFORMANCE,
-                        "[Performance] %s took %d ms (threshold: %d ms) — SLOW.",
+                        "[Performance] %s took %d ms (threshold: %d ms) -- SLOW.",
                         label, elapsedMs, slowThresholdMs);
             } else {
                 DebugLog.fine(DebugCategory.PERFORMANCE,

@@ -8,7 +8,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
  * the base of a harvestable tree.
  *
  * <p>Swap implementations in {@link TreeScannerSystem} by changing the
- * field type — both {@link TreeDetector} (simple vertical stack) and
+ * field type -- both {@link TreeDetector} (simple vertical stack) and
  * {@link TreeDetectorBFS} (flood-fill) implement this interface.
  */
 public interface ITreeDetector {

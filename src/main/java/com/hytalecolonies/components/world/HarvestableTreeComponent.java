@@ -13,7 +13,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
  * TreeScannerSystem and its ITreeDetector implementations.
  *
  * <p>Whether a tree is currently reserved by a colonist is tracked by the
- * presence of a {@link ClaimedBlockComponent} on the same block entity —
+ * presence of a {@link ClaimedBlockComponent} on the same block entity --
  * not by any field on this component.
  */
 public class HarvestableTreeComponent implements Component<ChunkStore> {

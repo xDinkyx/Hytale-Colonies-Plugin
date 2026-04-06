@@ -115,7 +115,7 @@ public class TreeBlockChangeEventSystem {
                 if (!scanner.getTreeWoodBlockKeys().contains(blockType.getId())) return;
 
                 DebugLog.fine(DebugCategory.TREE_SCANNER,
-                        "[TreeScanner] Tree-wood block placed at %s — checking for new tree.", pos);
+                        "[TreeScanner] Tree-wood block placed at %s -- checking for new tree.", pos);
                 Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
                 scanner.onTreeWoodBlockAdded(pos, world, chunkStore);
                 scanner.invalidateChunkCacheAt(pos.x, pos.z);

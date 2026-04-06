@@ -26,12 +26,12 @@ import java.util.UUID;
  * of desync:
  *
  * <ol>
- *   <li><b>Orphaned block claims</b> — Any block entity with a
+ *   <li><b>Orphaned block claims</b> -- Any block entity with a
  *       {@link ClaimedBlockComponent} whose colonist UUID is no longer valid
  *       (colonist has been fired/removed or no longer holds a job target) has
  *       its claim released. This covers claims left by crashes, hard removes,
  *       or server restarts.</li>
- *   <li><b>Colonists with missing workstations</b> — Any colonist with a
+ *   <li><b>Colonists with missing workstations</b> -- Any colonist with a
  *       {@link JobComponent} whose recorded workstation no longer exists is
  *       fired. Primary firing happens in
  *       {@link JobAssignmentSystems.WorkStationEntitySystem#onEntityRemove};
@@ -84,7 +84,7 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore> {
                 int cleared = 0;
                 for (Ref<ChunkStore> ref : orphanedRefs) {
                     if (!ref.isValid()) continue;
-                    // Just remove the claim component — ClaimedBlockCleanupSystem will
+                    // Just remove the claim component -- ClaimedBlockCleanupSystem will
                     // automatically destroy the entity if it was created solely for the claim.
                     ref.getStore().tryRemoveComponent(ref, ClaimedBlockComponent.getComponentType());
                     cleared++;
@@ -124,7 +124,8 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore> {
                     if (ref.isValid()) {
                         JobAssignmentSystems.fireColonist(ref, entityStore.getStore());
                         DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
-                                "[ColonistCleanup] Fired colonist with missing workstation (safety net).");
+                                "[ColonistCleanup] [%s] Fired colonist with missing workstation (safety net).",
+                                DebugLog.npcId(ref, entityStore.getStore()));
                     }
                 }
             });

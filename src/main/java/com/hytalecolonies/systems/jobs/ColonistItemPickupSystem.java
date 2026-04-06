@@ -30,7 +30,7 @@ import java.util.List;
 
 /**
  * Continuously picks up nearby dropped items for every colonist
- * — mirroring how players auto-collect items.
+ * -- mirroring how players auto-collect items.
  *
  * <p>Runs at a 0.5 s cadence (vs. the ~0.25 s player pickup throttle) so
  * players maintain a slight pickup priority over colonists when both are
@@ -53,7 +53,7 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore> {
     private final Query<EntityStore> query = Query.and(ColonistComponent.getComponentType());
 
     public ColonistItemPickupSystem() {
-        super(0.5f); // 0.5 s — hopefully gives players a mild pickup priority over colonists.
+        super(0.5f); // 0.5 s -- hopefully gives players a mild pickup priority over colonists.
     }
 
     @Override
@@ -114,7 +114,7 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore> {
             ItemStackTransaction transaction = container.addItemStack(itemStack);
             ItemStack remainder = transaction.getRemainder();
             if (remainder != null && !remainder.isEmpty()) {
-                // Partial pickup — update the item entity with the remainder and throttle retries.
+                // Partial pickup -- update the item entity with the remainder and throttle retries.
                 itemComponent.setPickupDelay(0.25f);
                 itemComponent.setItemStack(remainder);
                 int pickedQty = itemStack.getQuantity() - remainder.getQuantity();
@@ -122,19 +122,19 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore> {
                     // Animate the partial amount flying to the colonist.
                     Holder<EntityStore> animHolder = ItemComponent.generatePickedUpItem(itemRef, commandBuffer, colonistRef, colonistPos);
                     if (animHolder != null) commandBuffer.addEntity(animHolder, AddReason.SPAWN);
-                    DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[ItemPickup] Partially picked up %dx %s.",
-                            pickedQty, itemStack.getItemId());
+                    DebugLog.info(DebugCategory.JOB_SYSTEM, "[ItemPickup] [%s] Partially picked up %dx %s.",
+                            DebugLog.npcId(colonistRef, store), pickedQty, itemStack.getItemId());
                 }
             } else {
-                // Full pickup — mark as claimed immediately so any other colonist scanning
+                // Full pickup -- mark as claimed immediately so any other colonist scanning
                 // in the same tick sees canPickUp()==false and skips it, spawn the
                 // fly-to animation, then defer entity removal via CommandBuffer.
                 itemComponent.setPickupDelay(Float.MAX_VALUE);
                 Holder<EntityStore> animHolder = ItemComponent.generatePickedUpItem(itemRef, commandBuffer, colonistRef, colonistPos);
                 if (animHolder != null) commandBuffer.addEntity(animHolder, AddReason.SPAWN);
                 commandBuffer.removeEntity(itemRef, RemoveReason.REMOVE);
-                DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[ItemPickup] Picked up %dx %s.",
-                        itemStack.getQuantity(), itemStack.getItemId());
+                DebugLog.info(DebugCategory.JOB_SYSTEM, "[ItemPickup] [%s] Picked up %dx %s.",
+                        DebugLog.npcId(colonistRef, store), itemStack.getQuantity(), itemStack.getItemId());
             }
         }
     }

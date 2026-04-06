@@ -116,6 +116,112 @@ tasks.register('deployToServer', Copy) {
     }
 }
 
+// Run the local dev server after deploying the plugin.
+// Working dir is server/ so config.json, mods/, universe/, and worlds/ are all found automatically.
+// Pass -Pdebug (e.g. ./gradlew runServer -Pdebug) to open JDWP on port 5005 for remote debugging.
+tasks.register('runServer', JavaExec) {
+    dependsOn 'deployToServer'
+    description = 'Deploys the plugin then starts the local Hytale dev server.'
+    group = 'hytale'
+
+    mainClass = 'com.hypixel.hytale.Main'
+    classpath = files('server/HytaleServer.jar')
+    workingDir = file('server')
+
+    // Forward server stdin so you can type commands into the integrated terminal.
+    standardInput = System.in
+
+    def assetsZip = file('server/Assets.zip')
+    def debugMode = project.hasProperty('debug')
+
+    jvmArgs = ['-XX:+UseG1GC'] +
+            (debugMode ? ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'] : [])
+
+    args = [
+        '--allow-op',
+        '--disable-sentry',
+        "--assets=${assetsZip.absolutePath}"
+    ]
+
+    doFirst {
+        if (!assetsZip.exists()) {
+            throw new GradleException("server/Assets.zip not found. Run the update-server-lib script first.")
+        }
+        if (debugMode) {
+            logger.lifecycle("Debug mode — JDWP listening on port 5005. Attach VS Code debugger using 'Debug Hytale Server (attach)'.")
+        }
+    }
+}
+
+// Reset the local dev server to a clean state.
+//
+// What gets wiped:
+//   server/worlds/*/          — world chunk data (regenerates on next boot)
+//   server/universe/players/  — all player files
+//   server/universe/memories.json(.bak)
+//
+// What gets restored:
+//   dev-config/player-snapshots/*.json  — copied back to server/universe/players/
+//   Edit those files to change the default dev inventory/position.
+//
+// What is intentionally KEPT:
+//   server/config.json, permissions.json, bans.json, whitelist.json
+tasks.register('resetServer') {
+    description = 'Wipes world/player state and restores dev-config snapshots for a clean test run.'
+    group = 'hytale'
+
+    doLast {
+        int deleted = 0
+
+        // Wipe world chunks — they regenerate on next server boot.
+        def worldsDir = file('server/universe/worlds')
+        if (worldsDir.exists()) {
+            worldsDir.eachDir { worldDir ->
+                delete(worldDir)
+                println "  Deleted world: ${worldDir.name}"
+                deleted++
+            }
+        }
+
+        // Wipe player files.
+        def playersDir = file('server/universe/players')
+        if (playersDir.exists()) {
+            playersDir.eachFile { f ->
+                delete(f)
+                deleted++
+            }
+        } else {
+            playersDir.mkdirs()
+        }
+
+        // Wipe universe memories.
+        ['memories.json', 'memories.json.bak'].each { fn ->
+            def f = file("server/universe/${fn}")
+            if (f.exists()) {
+                delete(f)
+                println "  Deleted ${fn}"
+                deleted++
+            }
+        }
+
+        // Restore player snapshots from dev-config.
+        def snapshotsDir = file('dev-config/player-snapshots')
+        int restored = 0
+        if (snapshotsDir.exists()) {
+            copy {
+                from snapshotsDir
+                into playersDir
+            }
+            restored = snapshotsDir.listFiles()?.size() ?: 0
+        }
+
+        println "resetServer complete — removed ${deleted} file(s)/dir(s), restored ${restored} player snapshot(s)."
+        if (restored == 0) {
+            println "  Tip: add player JSON files to dev-config/player-snapshots/ to auto-restore a dev inventory."
+        }
+    }
+}
+
 // Watch for changes and auto-rebuild (useful during development)
 tasks.register('watch') {
     doLast {

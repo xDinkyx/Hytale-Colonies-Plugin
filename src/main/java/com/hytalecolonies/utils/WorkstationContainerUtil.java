@@ -15,7 +15,7 @@ import java.util.List;
 
 /**
  * Generic utility for locating block-based item containers (chests, crates, etc.)
- * that are close to a workstation — within a configurable block radius.
+ * that are close to a workstation - within a configurable block radius.
  *
  * <p>Uses the engine's {@link ItemContainerBlock} spatial index for efficient
  * lookup rather than scanning all chunks. This is the same spatial index the server
@@ -45,7 +45,7 @@ public final class WorkstationContainerUtil {
         Vector3d searchCenter = new Vector3d(workStationPos.x + 0.5, workStationPos.y + 0.5, workStationPos.z + 0.5);
         List<Ref<ChunkStore>> nearby = new ArrayList<>();
         // Use ordered3DAxis (same as engine's CraftingManager chest-linking) to allow separate
-        // horizontal/vertical radii — here they're equal for a uniform 3D sphere search.
+        // horizontal/vertical radii -- here they're equal for a uniform 3D sphere search.
         spatialResource.getSpatialStructure().ordered3DAxis(searchCenter, radiusBlocks, radiusBlocks, radiusBlocks, nearby);
 
         if (nearby.isEmpty()) return null;

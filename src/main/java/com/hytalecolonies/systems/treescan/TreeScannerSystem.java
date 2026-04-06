@@ -66,7 +66,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
     private final ITreeDetector treeDetector = new TreeDetectorBFS();
 
     /**
-     * Lazy-initialised cache — assets are not guaranteed loaded at construction
+     * Lazy-initialised cache -- assets are not guaranteed loaded at construction
      * time.
      */
     private Set<String> treeWoodBlockKeys;
@@ -81,7 +81,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
     private final Map<Long, Integer> chunkWoodCountCache = new HashMap<>();
 
     public TreeScannerSystem() {
-        super(SCAN_DELAY_SECONDS); // Run every 60 s — count-comparison ensures BFS only fires for chunks whose wood count changed
+        super(SCAN_DELAY_SECONDS); // Run every 60 s -- count-comparison ensures BFS only fires for chunks whose wood count changed
     }
 
     @Override
@@ -109,7 +109,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         }
     }
 
-    /** Orchestrates a full scan cycle: collect candidates → detect trees → register → debug draw. */
+    /** Orchestrates a full scan cycle: collect candidates -> detect trees -> register -> debug draw. */
     public void scanForTreeWoodBlocks(Vector3i centerPos, Store<ChunkStore> chunkStore,
             CommandBuffer<ChunkStore> commandBuffer) {
         World world = chunkStore.getExternalData().getWorld();
@@ -214,7 +214,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         }
 
         DebugLog.fine(DebugCategory.TREE_SCANNER,
-                "[TreeScanner] HarvestableTree registration — created: %d, updated: %d, already registered: %d, failed: %d.",
+                "[TreeScanner] HarvestableTree registration -- created: %d, updated: %d, already registered: %d, failed: %d.",
                 created, updated, skipped, failed);
     }
 
@@ -224,13 +224,13 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
      *
      * <p>When {@code commandBuffer} is non-null the entity creation / component
      * add is deferred through it (safe inside an ECS tick).  When it is
-     * {@code null} the store is mutated directly — only call with a {@code null}
+     * {@code null} the store is mutated directly -- only call with a {@code null}
      * buffer from a {@code world.execute()} callback on the world thread.
      *
-     * @return {@code 1}  — new block entity created with component<br>
-     *         {@code 0}  — existing block entity updated with component<br>
-     *         {@code -1} — component already present, nothing changed<br>
-     *         {@code -2} — failed (missing block type or chunk)
+     * @return {@code 1}  -- new block entity created with component<br>
+     *         {@code 0}  -- existing block entity updated with component<br>
+     *         {@code -1} -- component already present, nothing changed<br>
+     *         {@code -2} -- failed (missing block type or chunk)
      */
     int ensureHarvestableBlockEntity(
             TreeDetectorBFS.TreeCandidate tree,
@@ -243,14 +243,14 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
         if (blockType == null) {
             DebugLog.warning(DebugCategory.TREE_SCANNER,
-                    "[TreeScanner] No block type found at tree base %s — skipping registration.", base);
+                    "[TreeScanner] No block type found at tree base %s -- skipping registration.", base);
             return -2;
         }
 
         WorldChunk baseChunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(base.x, base.z));
         if (baseChunk == null) {
             DebugLog.fine(DebugCategory.TREE_SCANNER,
-                    "[TreeScanner] Chunk not in memory for tree base %s — skipping registration.", base);
+                    "[TreeScanner] Chunk not in memory for tree base %s -- skipping registration.", base);
             return -2;
         }
 
@@ -259,7 +259,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
                 chunkRef, BlockComponentChunk.getComponentType());
         if (blockComponentChunk == null) {
             DebugLog.warning(DebugCategory.TREE_SCANNER,
-                    "[TreeScanner] No BlockComponentChunk at tree base %s — skipping registration.", base);
+                    "[TreeScanner] No BlockComponentChunk at tree base %s -- skipping registration.", base);
             return -2;
         }
 
@@ -269,10 +269,10 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         if (existingRef != null && existingRef.isValid()) {
             if (chunkStore.getComponent(existingRef, HarvestableTreeComponent.getComponentType()) != null) {
                 DebugLog.fine(DebugCategory.TREE_SCANNER,
-                        "[TreeScanner] Tree at %s already registered — skipping.", base);
+                        "[TreeScanner] Tree at %s already registered -- skipping.", base);
                 return -1;
             }
-            // Block entity exists (e.g. from another plugin) but lacks our component — add it.
+            // Block entity exists (e.g. from another plugin) but lacks our component -- add it.
             HarvestableTreeComponent newComp = new HarvestableTreeComponent(blockType.getId(), tree.woodCount(), base);
             if (commandBuffer != null) {
                 commandBuffer.addComponent(existingRef, HarvestableTreeComponent.getComponentType(), newComp);
@@ -285,7 +285,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             return 0;
         }
 
-        // Plain blocks have no block entity — create one now.
+        // Plain blocks have no block entity -- create one now.
         // BlockStateInfo is the mandatory anchor; BlockStateInfoRefSystem wires the
         // new Ref<ChunkStore> into BlockComponentChunk on AddReason.SPAWN automatically.
         Holder<ChunkStore> holder = ChunkStore.REGISTRY.newHolder();
@@ -301,7 +301,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             // the same tick, each calls ensureHarvestableBlockEntity for shared trees.
             // blockComponentChunk.getEntityReference() returns null for all of them (the
             // commandBuffer hasn't been consumed yet), so each one would queue
-            // commandBuffer.addEntity for the same block slot → crash.
+            // commandBuffer.addEntity for the same block slot -> crash.
             //
             // Using world.execute() serialises creation onto the world thread. Each callback
             // re-checks whether the entity was already added by a preceding callback and
@@ -338,7 +338,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
 
     /**
      * Counts all tree-wood blocks in the chunk via the palette-based
-     * {@link BlockChunk#blockCounts()} map — O(unique block types), not O(volume).
+     * {@link BlockChunk#blockCounts()} map -- O(unique block types), not O(volume).
      */
     private int countWoodBlocksInChunk(BlockChunk blockChunk, Set<String> treeWoodKeys) {
         int total = 0;
@@ -401,14 +401,14 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
                         if (blockType == null || !treeWoodKeys.contains(blockType.getId()))
                             continue;
 
-                        // Only trunk/roots blocks are valid segment bottoms — branches should never
+                        // Only trunk/roots blocks are valid segment bottoms -- branches should never
                         // be a tree base candidate (a low-hanging branch would otherwise be mistaken
                         // for the trunk base).
                         if (blockType.getId().contains("_Branch_"))
                             continue;
 
                         // Check if the block directly below is also wood.
-                        // If it is, this block is mid-trunk — not a segment bottom.
+                        // If it is, this block is mid-trunk -- not a segment bottom.
                         if (worldY > 0) {
                             BlockSection belowSection = blockChunk.getSectionAtBlockY(worldY - 1);
                             int belowId = belowSection.get(localX, worldY - 1, localZ);
@@ -436,7 +436,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
      * has lost blocks; re-evaluate via BFS and update (or remove) the
      * {@link HarvestableTreeComponent} at the surviving base.  If there is no
      * wood below, the base itself was broken and its block entity (with our
-     * component) is auto-removed by the server — nothing to do.
+     * component) is auto-removed by the server -- nothing to do.
      *
      * <p>Must be called on the world thread (e.g. inside a {@code world.execute()}
      * callback).
@@ -479,11 +479,11 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
             updated.setWoodCount(result.woodCount());
             chunkStore.putComponent(blockRef, HarvestableTreeComponent.getComponentType(), updated);
             DebugLog.info(DebugCategory.TREE_SCANNER,
-                    "[TreeScanner] Tree at %s updated — %d wood blocks remaining after break.", basePos, result.woodCount());
+                    "[TreeScanner] Tree at %s updated -- %d wood blocks remaining after break.", basePos, result.woodCount());
         } else {
             chunkStore.removeComponent(blockRef, HarvestableTreeComponent.getComponentType());
             DebugLog.info(DebugCategory.TREE_SCANNER,
-                    "[TreeScanner] Tree at %s removed — no valid structure remains.", basePos);
+                    "[TreeScanner] Tree at %s removed -- no valid structure remains.", basePos);
         }
     }
 
@@ -508,7 +508,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore> {
         // Branch blocks cannot be tree bases.
         if (blockType.getId().contains("_Branch_")) return;
 
-        // Walk down to find the segment bottom — the lowest connected wood block.
+        // Walk down to find the segment bottom -- the lowest connected wood block.
         int baseY = pos.y;
         while (baseY > 0) {
             int belowId = world.getBlock(new Vector3i(pos.x, baseY - 1, pos.z));

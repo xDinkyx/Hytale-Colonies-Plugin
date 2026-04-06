@@ -63,7 +63,7 @@ public class BuilderSensorHarvestableTree extends BuilderSensorBase {
             BuilderDescriptorState.Experimental,
             "Horizontal range to search for harvestable trees (metres)", null
         );
-        // Declare that this sensor provides a position — Seek will pick it up.
+        // Declare that this sensor provides a position -- Seek will pick it up.
         this.provideFeature(Feature.Position);
         return this;
     }

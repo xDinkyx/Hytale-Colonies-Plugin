@@ -18,6 +18,8 @@ import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
 import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.sensorinfo.IPositionProvider;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.ColonistToolUtil;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -27,7 +29,7 @@ import javax.annotation.Nullable;
  *
  * <p>When {@code GatherType} is configured in the builder, that type is used directly.
  * When omitted, the required tool is auto-detected from the block at the position
- * provided by the active sensor — matching the same behaviour as
+ * provided by the active sensor -- matching the same behaviour as
  * {@link ActionHarvestBlock}.
  *
  * <p>Constructed by {@link BuilderActionEquipBestTool} when an NPC role is built.
@@ -54,6 +56,10 @@ public class ActionEquipBestTool extends ActionBase {
             @Nonnull Store<EntityStore> store) {
         super.execute(ref, role, sensorInfo, dt, store);
 
+        String npcId = DebugLog.npcId(ref, store);
+
+        DebugLog.fine(DebugCategory.JOB_SYSTEM, "[EquipBestTool] [%s] Action started.", npcId);
+
         LivingEntity entity = (LivingEntity) EntityUtils.getEntity(ref, store);
         if (entity == null) return false;
 
@@ -61,11 +67,13 @@ public class ActionEquipBestTool extends ActionBase {
         if (inventory == null) return false;
 
         if (gatherType != null) {
-            // Explicit mode — use the configured gather type.
-            return ColonistToolUtil.equipBestToolForGatherType(inventory, gatherType, minQuality, ref, store);
+            // Explicit mode -- use the configured gather type.
+            boolean equipped = ColonistToolUtil.equipBestToolForGatherType(inventory, gatherType, minQuality, ref, store);
+            DebugLog.fine(DebugCategory.JOB_SYSTEM, "[EquipBestTool] [%s] Action finished (explicit type=%s, equipped=%b).", npcId, gatherType, equipped);
+            return equipped;
         }
 
-        // Auto-detect mode — resolve block gather type from the sensor position.
+        // Auto-detect mode -- resolve block gather type from the sensor position.
         if (sensorInfo == null || !sensorInfo.hasPosition()) return false;
         IPositionProvider pos = sensorInfo.getPositionProvider();
         if (pos == null || !pos.providePosition(targetVec)) return false;
@@ -81,8 +89,13 @@ public class ActionEquipBestTool extends ActionBase {
         if (chunkRef == null || !chunkRef.isValid()) return false;
 
         BlockBreakingDropType breaking = ColonistToolUtil.getBreakingConfig(world, chunkRef, blockPos);
-        if (breaking == null) return true; // Block requires no special tool.
+        if (breaking == null) {
+            DebugLog.fine(DebugCategory.JOB_SYSTEM, "[EquipBestTool] [%s] Action finished (no tool required).", npcId);
+            return true; // Block requires no special tool.
+        }
 
-        return ColonistToolUtil.equipBestToolForBlock(inventory, breaking, ref, store);
+        boolean equipped = ColonistToolUtil.equipBestToolForBlock(inventory, breaking, ref, store);
+        DebugLog.fine(DebugCategory.JOB_SYSTEM, "[EquipBestTool] [%s] Action finished (auto-detect, equipped=%b).", npcId, equipped);
+        return equipped;
     }
 }

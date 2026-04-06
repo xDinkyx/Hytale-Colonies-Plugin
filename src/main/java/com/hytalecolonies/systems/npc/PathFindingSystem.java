@@ -48,27 +48,36 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
             @Nonnull Store<EntityStore> store,
             @Nonnull CommandBuffer<EntityStore> commandBuffer) {
 
-        // Remove the trigger component immediately — this is a one-shot navigation request.
+        // Remove the trigger component immediately -- this is a one-shot navigation request.
         commandBuffer.removeComponent(ref, MoveToTargetComponent.getComponentType());
 
         NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
         if (npcEntity == null) {
-            DebugLog.warning(DebugCategory.MOVEMENT, "PathFindingSystem: entity has no NPCEntity component, cannot navigate.");
+            DebugLog.warning(DebugCategory.MOVEMENT, "PathFindingSystem: [%s] entity has no NPCEntity component, cannot navigate.",
+                    DebugLog.npcId(ref, store));
             return;
         }
 
         Role role = npcEntity.getRole();
         if (role == null) {
-            DebugLog.warning(DebugCategory.MOVEMENT, "PathFindingSystem: NPC role is null, cannot navigate.");
+            DebugLog.warning(DebugCategory.MOVEMENT, "PathFindingSystem: [%s] NPC role is null, cannot navigate.",
+                    DebugLog.npcId(ref, store));
             return;
         }
 
         // Write the target to the "NavTarget" stored position slot (slot 0).
         // The ReadPosition sensor in Template_Colonist_Base.json checks this slot
         // every tick and activates the Seek body motion while the NPC is outside MinRange.
-        role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(component.target);
+        try {
+            role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(component.target);
+        } catch (NullPointerException e) {
+            DebugLog.warning(DebugCategory.MOVEMENT,
+                    "PathFindingSystem: [%s] role has no stored position slot %d -- is Colonist_Miner.json loaded correctly?",
+                    DebugLog.npcId(ref, store), NAV_TARGET_SLOT);
+            return;
+        }
 
-        // Debug visualization — blue = NPC position, red = target, green line = intent.
+        // Debug visualization -- blue = NPC position, red = target, green line = intent.
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform != null && HytaleColoniesPlugin.getInstance().getDebugConfig().get().isDrawColonistPaths()) {
             showDebugPath(

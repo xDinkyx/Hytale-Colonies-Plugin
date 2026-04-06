@@ -1,7 +1,12 @@
 package com.hytalecolonies.debug;
 
 import com.hytalecolonies.HytaleColoniesPlugin;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
+import javax.annotation.Nonnull;
 import java.util.logging.Level;
 
 /**
@@ -22,22 +27,31 @@ public final class DebugLog {
 
     private DebugLog() {}
 
-    /** Verbose debug message — only visible when category is set to FINE. */
+    /**
+     * Returns the UUID string of the NPC entity for use in log messages, or {@code "?"}
+     * if no {@link UUIDComponent} is present.
+     */
+    public static String npcId(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
+        UUIDComponent comp = store.getComponent(ref, UUIDComponent.getComponentType());
+        return comp != null ? comp.getUuid().toString() : "?";
+    }
+
+    /** Verbose debug message -- only visible when category is set to FINE. */
     public static void fine(DebugCategory category, String format, Object... args) {
         emit(category, Level.FINE, format, args);
     }
 
-    /** Informational message — visible at the default INFO threshold. */
+    /** Informational message -- visible at the default INFO threshold. */
     public static void info(DebugCategory category, String format, Object... args) {
         emit(category, Level.INFO, format, args);
     }
 
-    /** Warning message — always visible unless the category is OFF. */
+    /** Warning message -- always visible unless the category is OFF. */
     public static void warning(DebugCategory category, String format, Object... args) {
         emit(category, Level.WARNING, format, args);
     }
 
-    /** Severe/error message — always visible unless the category is OFF. */
+    /** Severe/error message -- always visible unless the category is OFF. */
     public static void severe(DebugCategory category, String format, Object... args) {
         emit(category, Level.SEVERE, format, args);
     }

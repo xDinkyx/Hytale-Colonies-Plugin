@@ -17,7 +17,7 @@ import java.util.logging.Level;
  *
  * <p>Call {@link #applyToCategories()} once after loading to push the stored
  * levels into the live enum values. Call {@link #setLevelForCategory} when
- * changing a setting at runtime — it updates both the in-memory enum and this
+ * changing a setting at runtime -- it updates both the in-memory enum and this
  * config object so a subsequent {@code config.save()} persists it.
  */
 public class DebugConfig {
@@ -48,6 +48,9 @@ public class DebugConfig {
             .append(new KeyedCodec<>("ClaimSystemLevel", Codec.STRING),
                     (c, v) -> c.claimSystemLevel = v, c -> c.claimSystemLevel)
             .add()
+            .append(new KeyedCodec<>("ColonistLifecycleLevel", Codec.STRING),
+                    (c, v) -> c.colonistLifecycleLevel = v, c -> c.colonistLifecycleLevel)
+            .add()
             .append(new KeyedCodec<>("DrawColonistPaths", Codec.BOOLEAN),
                     (c, v) -> c.drawColonistPaths = v, c -> c.drawColonistPaths)
             .add()
@@ -67,6 +70,7 @@ public class DebugConfig {
     private String treeScannerLevel    = "INFO";
     private String colonistDeliveryLevel = "INFO";
     private String claimSystemLevel      = "INFO";
+    private String colonistLifecycleLevel = "INFO";
     private String performanceLevel      = "WARNING";
     private boolean drawColonistPaths = false;
     private boolean drawTreeDetection = false;
@@ -83,6 +87,7 @@ public class DebugConfig {
         DebugCategory.TREE_SCANNER.setMinLevel(parseLevel(treeScannerLevel));
         DebugCategory.COLONIST_DELIVERY.setMinLevel(parseLevel(colonistDeliveryLevel));
         DebugCategory.CLAIM_SYSTEM.setMinLevel(parseLevel(claimSystemLevel));
+        DebugCategory.COLONIST_LIFECYCLE.setMinLevel(parseLevel(colonistLifecycleLevel));
         DebugCategory.PERFORMANCE.setMinLevel(parseLevel(performanceLevel));
     }
 
@@ -100,8 +105,9 @@ public class DebugConfig {
             case MINER_JOB          -> minerJobLevel = name;
             case TREE_SCANNER       -> treeScannerLevel = name;
             case COLONIST_DELIVERY  -> colonistDeliveryLevel = name;
-            case CLAIM_SYSTEM       -> claimSystemLevel = name;
-            case PERFORMANCE        -> performanceLevel = name;
+            case CLAIM_SYSTEM           -> claimSystemLevel = name;
+            case COLONIST_LIFECYCLE     -> colonistLifecycleLevel = name;
+            case PERFORMANCE            -> performanceLevel = name;
         }
         category.setMinLevel(level);
     }
@@ -109,15 +115,16 @@ public class DebugConfig {
     /** Returns the stored level name string for the given category. */
     public String getLevelNameForCategory(DebugCategory category) {
         return switch (category) {
-            case MOVEMENT           -> movementLevel;
-            case JOB_SYSTEM         -> jobSystemLevel;
-            case JOB_ASSIGNMENT     -> jobAssignmentLevel;
-            case WOODSMAN_JOB       -> woodsmanJobLevel;
-            case MINER_JOB          -> minerJobLevel;
-            case TREE_SCANNER       -> treeScannerLevel;
-            case COLONIST_DELIVERY  -> colonistDeliveryLevel;
-            case CLAIM_SYSTEM       -> claimSystemLevel;
-            case PERFORMANCE        -> performanceLevel;
+            case MOVEMENT               -> movementLevel;
+            case JOB_SYSTEM             -> jobSystemLevel;
+            case JOB_ASSIGNMENT         -> jobAssignmentLevel;
+            case WOODSMAN_JOB           -> woodsmanJobLevel;
+            case MINER_JOB              -> minerJobLevel;
+            case TREE_SCANNER           -> treeScannerLevel;
+            case COLONIST_DELIVERY      -> colonistDeliveryLevel;
+            case CLAIM_SYSTEM           -> claimSystemLevel;
+            case COLONIST_LIFECYCLE     -> colonistLifecycleLevel;
+            case PERFORMANCE            -> performanceLevel;
         };
     }
 

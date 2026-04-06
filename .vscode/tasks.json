@@ -1,0 +1,170 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            // Compile only — produces the plugin JAR in build/libs/.
+            "label": "build plugin",
+            "type": "shell",
+            "command": ".\\gradlew.bat",
+            "args": ["shadowJar"],
+            "linux": {
+                "command": "./gradlew",
+                "args": ["shadowJar"]
+            },
+            "osx": {
+                "command": "./gradlew",
+                "args": ["shadowJar"]
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            // Sync only the resource files (JSON, UI, lang, etc.) to server/mods/HytaleColonies-Assets/
+            // without rebuilding the JAR. Safe to run while the server is running — no restart needed.
+            "label": "sync assets",
+            "type": "shell",
+            "command": ".\\gradlew.bat",
+            "args": ["syncAssetsDir"],
+            "linux": {
+                "command": "./gradlew",
+                "args": ["syncAssetsDir"]
+            },
+            "osx": {
+                "command": "./gradlew",
+                "args": ["syncAssetsDir"]
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            // Build the plugin JAR and copy it (+ assets) to server/mods/ for the local dev server.
+            "label": "build and deploy",
+            "type": "shell",
+            "command": ".\\gradlew.bat",
+            "args": ["deployToServer"],
+            "linux": {
+                "command": "./gradlew",
+                "args": ["deployToServer"]
+            },
+            "osx": {
+                "command": "./gradlew",
+                "args": ["deployToServer"]
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            // Build, deploy, then start the local Hytale dev server.
+            // To enable JDWP debugging on port 5005, run: ./gradlew runServer -Pdebug
+            // then attach with the "Debug Hytale Server (attach)" launch configuration.
+            "label": "run server",
+            "type": "shell",
+            "command": ".\\gradlew.bat",
+            "args": ["runServer"],
+            "linux": {
+                "command": "./gradlew",
+                "args": ["runServer"]
+            },
+            "osx": {
+                "command": "./gradlew",
+                "args": ["runServer"]
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "isBackground": true,
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            // Same as "run server" but with JDWP enabled on port 5005.
+            // After the server prints "Debug mode — JDWP listening", attach with
+            // the "Debug Hytale Server (attach)" launch configuration in launch.json.
+            "label": "run server (debug)",
+            "type": "shell",
+            "command": ".\\gradlew.bat",
+            "args": ["runServer", "-Pdebug"],
+            "linux": {
+                "command": "./gradlew",
+                "args": ["runServer", "-Pdebug"]
+            },
+            "osx": {
+                "command": "./gradlew",
+                "args": ["runServer", "-Pdebug"]
+            },
+            "group": "test",
+            "isBackground": true,
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            // Wipes worlds/, player files, and universe memories, then restores
+            // player snapshots from dev-config/player-snapshots/. Run this before
+            // "run server" when you need a clean slate. Does NOT start the server.
+            "label": "reset server",
+            "type": "shell",
+            "command": ".\\gradlew.bat",
+            "args": ["resetServer"],
+            "linux": {
+                "command": "./gradlew",
+                "args": ["resetServer"]
+            },
+            "osx": {
+                "command": "./gradlew",
+                "args": ["resetServer"]
+            },
+            "group": "none",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}

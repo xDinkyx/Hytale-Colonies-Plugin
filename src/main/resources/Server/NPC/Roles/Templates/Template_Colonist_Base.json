@@ -1,5 +1,6 @@
 {
   "Type": "Abstract",
+  "StartState": "Idle",
   "Parameters": {
     "Appearance": {
       "Value": "Mannequin",
@@ -28,35 +29,33 @@
   ],
   "Instructions": [
     {
-      "Continue": true,
+      "Sensor": { "Type": "State", "State": "Idle" },
       "Instructions": [
         {
-          "Sensor": {
-            "Type": "ReadPosition",
-            "Slot": "NavTarget",
-            "Range": 200.0,
-            "MinRange": 1.5
-          },
+          "Continue": true,
+          "Sensor": { "Type": "Any" },
           "BodyMotion": {
-            "Type": "Seek",
-            "StopDistance": 1.5,
-            "SlowDownDistance": 3.0,
-            "RelativeSpeed": 1.0
+            "Type": "Sequence",
+            "Looped": true,
+            "Motions": [
+              {
+                "Type": "Timer",
+                "Time": [3, 6],
+                "Motion": {
+                  "Type": "WanderInRect",
+                  "Width": 8,
+                  "Depth": 8,
+                  "MaxHeadingChange": 135,
+                  "RelativeSpeed": 0.5
+                }
+              },
+              {
+                "Type": "Timer",
+                "Time": [2, 4],
+                "Motion": { "Type": "Nothing" }
+              }
+            ]
           }
-        }
-      ]
-    },
-    {
-      "Instructions": [
-        {
-          "Sensor": {
-            "Type": "JobTarget",
-            "Range": 5.0
-          },
-          "Actions": [
-            { "Type": "EquipBestTool" },
-            { "Type": "HarvestBlock", "DamageScale": 0.01 }
-          ]
         }
       ]
     }

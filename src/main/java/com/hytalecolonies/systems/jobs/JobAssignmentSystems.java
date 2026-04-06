@@ -30,8 +30,9 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.UnemployedComponent;
+import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
+import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
@@ -40,6 +41,9 @@ import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.debug.DebugTiming;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
 import com.hytalecolonies.utils.ClaimBlockUtil;
+import com.hytalecolonies.utils.ColonistStateUtil;
+import com.hytalecolonies.utils.WorkStationUtil;
+
 
 public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
@@ -75,7 +79,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         World world = chunkStore.getExternalData().getWorld();
         EntityStore entityStore = world.getEntityStore();
 
-        // Remove ghost workers — colonists recorded in the workstation that no longer
+        // Remove ghost workers -- colonists recorded in the workstation that no longer
         // exist.
         removeGhostWorkers(workStation, entityStore);
 
@@ -89,14 +93,14 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                 BlockModule.BlockStateInfo.getComponentType());
         if (blockStateInfo == null) {
             DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
-                    "[JobAssignment] WorkStation has no BlockStateInfo — skipping.");
+                    "[JobAssignment] WorkStation has no BlockStateInfo -- skipping.");
             return;
         }
 
         // Guard against concurrent chunk unloads invalidating the chunk ref.
         if (!blockStateInfo.getChunkRef().isValid()) {
             DebugLog.fine(DebugCategory.JOB_ASSIGNMENT,
-                    "[JobAssignment] WorkStation chunk ref is invalid (chunk unloading) — skipping.");
+                    "[JobAssignment] WorkStation chunk ref is invalid (chunk unloading) -- skipping.");
             return;
         }
 
@@ -204,6 +208,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             case Farmer, Builder -> { /* TODO: implement job-specific component */ }
         }
 
+
         DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "Assigned Colonist %s to job at %s.", colonistEntityUuid.getUuid(),
                 workStation.getJobType());
     }
@@ -298,7 +303,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             World world = commandBuffer.getExternalData().getWorld();
             EntityStore entityStore = world.getEntityStore();
 
-            // Snapshot UUIDs now — workStation is cleared before world.execute() runs.
+            // Snapshot UUIDs now -- workStation is cleared before world.execute() runs.
             // world.execute() defers EntityStore mutations: this can be called while the
             // EntityStore is ticking (e.g. a block broken during interaction processing
             // fires onEntityRemove on the ChunkStore workstation entity).
@@ -333,7 +338,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                 return;
 
             // On server load, transient fields (targetTreePosition etc.) are gone.
-            // Reset any in-progress travel state back to Idle so the movement system
+            // Reset any in-progress travel state back to Idling so the movement system
             // cleanly picks up the colonist and finds a new tree.
             JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
             if (job == null)
@@ -341,8 +346,9 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             JobState state = job.getCurrentTask();
             if (state == JobState.TravelingToJob || state == JobState.TravelingHome || state == JobState.Working) {
                 DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
-                        "[JobAssignment] Resetting colonist job state from %s to Idle on load.", state);
-                job.setCurrentTask(JobState.Idle);
+                        "[JobAssignment] [%s] Resetting colonist job state from %s to Idling on load.",
+                        DebugLog.npcId(ref, store), state);
+                ColonistStateUtil.setJobState(ref, store, job, JobState.Idling);
                 // Remove the job target so ColonistMovementSystem does not process stale
                 // travel.
                 // StaleMarkCleanupSystem will clear any orphaned tree marks.
@@ -398,8 +404,14 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
     }
 
     /**
-     * Only here to log when colonists get assigned a job but are still accidentally
-     * marked as unemployed.
+     * Switches the colonist's NPC role when a job is assigned or removed.
+     *
+     * <ul>
+     *   <li>On assignment: looks up the workstation's {@link JobType} and switches
+     *       to the matching role (e.g. {@code Colonist_Miner}, {@code Colonist_Woodsman}).</li>
+     *   <li>On removal: reverts to {@code Colonist_Dummy} so the colonist wanders
+     *       while waiting for a new job.</li>
+     * </ul>
      */
     public static class JobAssignedSystem extends RefChangeSystem<EntityStore, JobComponent> {
 
@@ -420,6 +432,18 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                         "Colonist with UUID %s has a job component but is still marked as unemployed. This should not happen.",
                         uuidComponent.getUuid());
             }
+
+            // Switch to the job-specific NPC role.
+            World world = store.getExternalData().getWorld();
+            WorkStationComponent workStation = WorkStationUtil.resolve(store, ref);
+            if (workStation == null) {
+                DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
+                        "[RoleSwitch] No workstation found for colonist %s -- keeping generic role.",
+                        uuidComponent != null ? uuidComponent.getUuid() : "?");
+                return;
+            }
+            String targetRole = ColonistRoleMap.roleFor(workStation.getJobType());
+            ColonistRoleMap.switchRole(ref, store, targetRole);
         }
 
         @Override
@@ -429,14 +453,17 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         }
 
         @Override
-        public void onComponentRemoved(@Nonnull Ref<EntityStore> var1, @Nonnull JobComponent var2,
-                @Nonnull Store<EntityStore> var3, @Nonnull CommandBuffer<EntityStore> var4) {
+        public void onComponentRemoved(@Nonnull Ref<EntityStore> ref, @Nonnull JobComponent component,
+                @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+            // Revert to generic wandering role when the colonist loses their job.
+            ColonistRoleMap.switchRole(ref, store, ColonistRoleMap.ROLE_GENERIC);
         }
 
         @Override
         public Query<EntityStore> getQuery() {
             return Query.and(ColonistComponent.getComponentType(), JobComponent.getComponentType());
         }
+
     }
 
     /**

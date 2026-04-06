@@ -1,6 +1,6 @@
 ---
 name: hytale-npc-templates
-version: 2
+version: 3
 source: https://hytalemodding.com/official-documentation/npc/
 authors:
   - name: "HytaleModding"
@@ -460,13 +460,36 @@ The `Beacon` action's `Range` field can be computed from template variables:
 
 ## Instruction Flags
 
-| Flag | Description |
-|------|-------------|
-| `Continue` | If `true`, continue evaluating subsequent instructions even if this one matches |
-| `ActionsBlocking` | If `true`, wait for all actions to complete before proceeding |
-| `Once` | (On sensors) Execute only once when first entering the state |
+| Flag | Default | Description |
+|------|---------|-------------|
+| `Continue` | `false` | If `true`, continue evaluating subsequent siblings even after this one matches |
+| `ActionsBlocking` | `false` | Actions execute one at a time in sequence; each must complete before the next starts |
+| `ActionsAtomic` | `false` | Only execute actions if ALL actions can currently execute; if any one fails, none run |
+| `TreeMode` | `false` | Behavior-tree selector mode: keep continuing to siblings unless a child matches (see below) |
+| `InvertTreeModeResult` | `false` | Invert the success/failure result propagated to a parent `TreeMode` instruction |
+| `Once` | `false` | (On sensors) Sensor fires only once; resets when the state is cleared |
+| `Enabled` | `true` | Computable — can conditionally disable an entire instruction |
 
-**Common pattern** — timeout then switch state:
+### Evaluation rules (source-verified)
+
+The engine iterates siblings and for each matching instruction calls `execute()`; only if `isContinueAfter()` returns `false` does it break out of the loop.
+
+- A node with **no sensor always matches** (implicit `Any`).
+- Without `Continue: true`, the first matching node **stops all sibling evaluation**.
+- `Continue: true` means: "I matched — AND keep evaluating the next sibling too".
+- You **cannot** have both `BodyMotion` and `Instructions` on the same instruction (enforced by a validation constraint). Leaf instructions carry motion/actions; nested instruction lists carry children only.
+- Only **one** `BodyMotion` and one `HeadMotion` are active per tick (the last `setNextBodyMotionStep`/`setNextHeadMotionStep` call wins). Two `Continue: true` siblings setting `BodyMotion` will have the second one override the first.
+
+**Consequence for state-gated blocks**: if each ECS state is wrapped in a sensorless outer `{ "Instructions": [...] }`, the first wrapper always matches and stops the loop. The correct pattern is `Continue: true` + sensor placed directly on each instruction:
+
+```json
+{ "Continue": true, "Sensor": { "Type": "EcsJobState", "JobState": "StateA" }, "Instructions": [ ... ] },
+{ "Continue": true, "Sensor": { "Type": "EcsJobState", "JobState": "StateB" }, "Instructions": [ ... ] }
+```
+
+### ActionsBlocking — sequential action execution (source-verified)
+
+`ActionsBlocking: true` runs actions as a **one-at-a-time sequence**. The engine tracks the current index, advances only when the current action "completes" (returns true from `execute()`), and runs nothing if the current action reports `canExecute() = false`. This is the correct way to chain: Timeout → State switch.
 
 ```json
 {
@@ -479,6 +502,29 @@ The `Beacon` action's `Range` field can be computed from template variables:
 }
 ```
 
+### TreeMode — behavior-tree selector semantics (source-verified)
+
+When `TreeMode: true` is set on an instruction:
+1. When it is matched, `continueAfter` is **forced to `true`** internally (it always yields to its next sibling).
+2. If **any child** instruction's sensor matches, `continueAfter` is **set back to `false`** (it stops yielding; this instruction "succeeded").
+3. Net result: **"keep going past this instruction unless at least one child succeeded."**
+
+This maps to a behavior-tree **Selector (fallback) node**: keep trying siblings until something works. Constraint: `If TreeMode is true, Continue must be false` (the engine manages `continueAfter` dynamically).
+
+```json
+{
+  "TreeMode": true,
+  "Instructions": [
+    {
+      "Sensor": { "Type": "Target", "Range": 5 },
+      "Actions": [ { "Type": "State", "State": "Combat" } ]
+    }
+  ]
+}
+```
+
+`InvertTreeModeResult` flips the success/failure signal propagated to a parent `TreeMode` node — used for behavior-tree Decorator patterns.
+
 ---
 
 ## Motions
@@ -488,13 +534,19 @@ Motions control NPC movement. Set via `BodyMotion` or `HeadMotion` on instructio
 | Motion Type | Description | Key Fields |
 |------------|-------------|------------|
 | `Nothing` | Stand still | — |
-| `Seek` | Move toward target/position | `SlowDownDistance`, `StopDistance`, `RelativeSpeed`, `UsePathfinder` |
-| `Wander` | Random wandering | `MaxHeadingChange`, `RelativeSpeed` |
-| `WanderInCircle` | Circular wandering | `Radius`, `MaxHeadingChange`, `RelativeSpeed` |
-| `Watch` | Look at target (head only) | — |
-| `Aim` | Aim at target (combat) | `RelativeTurnSpeed` |
-| `Sequence` | Chain motions | `Motions` (array), `Looped` |
-| `Timer` | Motion for a duration | `Time`, `Motion` |
+| `Seek` | Move toward target/position | `SlowDownDistance`, `StopDistance`, `AbortDistance` (default 96), `RelativeSpeed`, `UsePathfinder`; constraint: `SlowDownDistance >= StopDistance` |
+| `Flee` | Move away from target | `SlowDownDistance`, `StopDistance`, `HoldDirectionTimeRange` |
+| `Wander` | Unconstrained random wandering | `MaxHeadingChange`, `RelativeSpeed`, `MinWalkTime`, `MaxWalkTime` |
+| `WanderInCircle` | Circular wandering constrained to the NPC's **leash point** | `Radius` (default 10), `MaxHeadingChange`, `RelativeSpeed` |
+| `WanderInRect` | Rectangular wandering constrained to the NPC's **spawn/leash position** | `Width` (default 10), `Depth` (default 10), `RelativeSpeed` |
+| `MaintainDistance` | Keep a specified distance range from target | `DesiredDistanceRange`, `StrafingDurationRange` |
+| `Watch` | Look at target (head only) | `RelativeTurnSpeed` |
+| `Observe` | Sweep/pan head across an angle range | `AngleRange`, `PauseTimeRange`, `PickRandomAngle` |
+| `Aim` | Aim at target (combat, head) | `RelativeTurnSpeed` |
+| `Sequence` | Chain motions in order | `Motions` (array), `Looped` |
+| `Timer` | Run a motion for a capped duration | `Time` (range), `Motion` |
+| `Path` | Walk along a named path marker | `Shape` (LOOP/LINE/CHAIN/POINTS), `Direction`, `MinNodeDelay`, `MaxNodeDelay` |
+| `Teleport` | Teleport NPC to sensor-provided position | `OffsetRange`, `Orientation` |
 
 ### MotionControllerList
 
@@ -537,6 +589,21 @@ Defined at template level:
 }
 ```
 
+### WanderInCircle — leash point
+
+`WanderInCircle` does **not** wander around the NPC's current position — it constrains movement to a circle centred on `NPCEntity.getLeashPoint()`. The leash point defaults to the NPC's spawn position. To make wander stay around a different location (e.g. a workstation or a harvested block), set the leash point from ECS via `NPCEntity.getLeashPoint().assign(position)` before entering the state, or use the `SetLeashPosition` action (`ToCurrent: true` sets it to the NPC's current position; `ToTarget: true` sets it to the locked target entity's position).
+
+```java
+// From ECS Java code:
+NPCEntity npc = store.getComponent(ref, NPCEntity.getComponentType());
+if (npc != null) npc.getLeashPoint().assign(targetPosition);
+```
+
+```json
+// From JSON (set leash to current NPC position):
+{ "Type": "SetLeashPosition", "ToCurrent": true }
+```
+
 ### Search Wander Pattern
 
 ```json
@@ -567,6 +634,30 @@ Defined at template level:
   ]
 }
 ```
+
+---
+
+## State Sensor Validator (XOR Rule)
+
+The NPC role loader runs a validation pass (`StateMappingHelper.StateMap.validate()`) that enforces **strict bidirectionality** between state sensors and state setters using a XOR check:
+
+| Situation | Result |
+|---|---|
+| `"Type": "State"` sensor for `Foo` exists AND a `"Type": "State"` action setter for `Foo` exists | pass |
+| Sensor exists, **no setter** | SEVERE error — role rejected |
+| Setter exists, **no sensor** | SEVERE error — role rejected |
+
+Symptoms of failure: `FAIL: MyRole.json: State sensor or State setter action/motion exists without accompanying state/setter: MyState` at startup, followed by `Unknown NPC role 'MyRole' -- cannot switch` repeating every tick.
+
+### `IgnoreMissingSetState` — escape hatch for externally-driven states
+
+When a plugin drives NPC state externally (e.g. via ECS calling `role.getStateSupport().setState()`), the JSON has sensors but no setter actions. Adding `"IgnoreMissingSetState": true` to the sensor registers a no-op dummy setter, satisfying the XOR check:
+
+```json
+{ "Type": "State", "State": "TravelingToJob", "IgnoreMissingSetState": true }
+```
+
+**`StateTransitions` does NOT satisfy the validator.** Its `From`/`To` entries call `registerStateRequirer()` only — they never touch the sensor or setter bitsets. A role with only `StateTransitions` referencing a state and no sensor+setter pair will still fail validation.
 
 ---
 
@@ -1278,7 +1369,292 @@ Wander around looking for lost target before returning to idle:
 
 ---
 
-## Debugging
+## Block Detection Sensors
+
+### Block: Sensor — cached block search
+
+Scans for any block in a `BlockSet` within a radius. **The result is cached** — the sensor does not re-scan every tick once a block is found; it remembers the found block until it changes/is removed or `ResetBlockSensors` is called. **All `Block` sensors on the same NPC that search the same `BlockSet` share the same cached target.** Provides a vector position.
+
+```json
+{
+  "Sensor": {
+    "Type": "Block",
+    "Blocks": { "Compute": "TreeBlocks" },
+    "Range": 20.0,
+    "MaxHeight": 8.0,
+    "Reserve": true
+  },
+  "BodyMotion": { "Type": "Seek", "StopDistance": 1.5, "SlowDownDistance": 3.0 }
+}
+```
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `Range` | — | Search radius (required) |
+| `MaxHeight` | 4.0 | Vertical search range |
+| `Random` | `false` | Pick a random matching block; otherwise pick the closest |
+| `Reserve` | `false` | Reserve this block so other NPCs skip it |
+
+Use `ResetBlockSensors` action to clear the cached result (e.g., after the block is destroyed):
+```json
+{ "Type": "ResetBlockSensors" }
+```
+
+### BlockChange: Sensor — detect block events
+
+Fires when a block in a `BlockSet` within range is damaged, destroyed, or interacted with by a player or NPC. Provides player/NPC target.
+
+```json
+{
+  "Sensor": {
+    "Type": "BlockChange",
+    "BlockSet": { "Compute": "MineableBlocks" },
+    "Range": 15.0,
+    "EventType": "DESTRUCTION",
+    "SearchType": "PlayerFirst"
+  },
+  "Actions": [ { "Type": "State", "State": "Alert" } ]
+}
+```
+
+| `EventType` | Description |
+|-------------|-------------|
+| `DAMAGE` | Block is being attacked (default) |
+| `DESTRUCTION` | Block is fully destroyed |
+| `INTERACTION` | Block is interacted with (e.g., right-clicked) |
+
+| `SearchType` | Description |
+|--------------|-------------|
+| `PlayerOnly` | Only events from players (default) |
+| `NpcOnly` | Only events from NPCs |
+| `PlayerFirst` | Players first, then NPCs |
+| `NpcFirst` | NPCs first, then players |
+
+### BlockType: Sensor — check block at a position
+
+Wraps another sensor (which provides a position) and checks whether the block at that position matches a `BlockSet`.
+
+```json
+{
+  "Sensor": {
+    "Type": "BlockType",
+    "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 5.0 },
+    "BlockSet": { "Compute": "TreeBlocks" }
+  }
+}
+```
+
+### SearchRay: Sensor — directional block detection
+
+Fires a ray at a fixed angle from the NPC's heading to detect blocks. The result is **cached** and only re-tested when the NPC rotates or moves past thresholds (`MinRetestAngle`, `MinRetestMove`). Identifies blocks directly ahead (good for detecting trees/ore before the NPC reaches them). Provides vector position.
+
+```json
+{
+  "Sensor": {
+    "Type": "SearchRay",
+    "Name": "ForwardTreeCheck",
+    "Angle": 0.0,
+    "Range": 8.0,
+    "Blocks": { "Compute": "TreeBlocks" },
+    "MinRetestAngle": 5.0,
+    "MinRetestMove": 1.0,
+    "ThrottleTime": 0.5
+  },
+  "Actions": [ { "Type": "StorePosition", "Slot": "NavTarget" } ]
+}
+```
+
+`Angle` field: 0 = horizontal (straight ahead), positive = downward, range −90..90.
+
+Use `ResetSearchRays` action to clear cached results:
+```json
+{ "Type": "ResetSearchRays", "Names": ["ForwardTreeCheck"] }
+```
+
+### StorePosition: Action — save sensor position to a slot
+
+Stores the vector position provided by the instruction's sensor into a named slot. This slot can then be read by `ReadPosition` to navigate to that position later.
+
+```json
+{
+  "Sensor": { "Type": "Block", "Blocks": { "Compute": "TreeBlocks" }, "Range": 20.0 },
+  "Actions": [ { "Type": "StorePosition", "Slot": "NavTarget" } ]
+}
+```
+
+---
+
+## Target Slot System
+
+NPCs can lock onto entities using **named target slots** (strings). The default slot name is `"LockedTarget"`. Multiple custom slots allow tracking several entities simultaneously.
+
+| Action / Sensor | Slot field | Description |
+|-----------------|------------|-------------|
+| `Mob` / `Player` / `Damage` sensor | `LockedTargetSlot` | Slot where the matched entity is stored |
+| `Target` sensor | `TargetSlot` | Test if a specific slot has a valid entity |
+| `SetMarkedTarget` action | `TargetSlot` | Explicitly copy sensor-provided target into a slot |
+| `ReleaseTarget` action | `TargetSlot` | Clear a slot |
+| `Not` sensor + `UseTargetSlot` | — | Feed a stored target into action context without a fresh sensor |
+
+```json
+// Store the attacker in a custom slot on damage:
+{
+  "Sensor": { "Type": "Damage", "Combat": true, "TargetSlot": "Attacker" },
+  "Actions": [ { "Type": "State", "State": "Combat" } ]
+}
+
+// Later: seek toward "Attacker":
+{
+  "Sensor": { "Type": "Target", "TargetSlot": "Attacker", "Range": 50 },
+  "BodyMotion": { "Type": "Seek", "StopDistance": 1.5, "SlowDownDistance": 3.0 }
+}
+```
+
+---
+
+## Navigation State Query (Nav: Sensor)
+
+`Nav: Sensor` queries the NPC's current pathfinder state. Use it to detect arrival, failure, or being stuck.
+
+| `NavState` flag | Meaning |
+|-----------------|---------|
+| `INIT` | Doing nothing / idle |
+| `PROGRESSING` | Moving or computing a path |
+| `AT_GOAL` | Reached target |
+| `BLOCKED` | Can't advance any further |
+| `ABORTED` | Search stopped, target not reached |
+| `DEFER` | Delaying / throttled retry |
+
+```json
+{
+  "Sensor": {
+    "Type": "Nav",
+    "NavStates": ["AT_GOAL"],
+    "ThrottleDuration": 0.0
+  },
+  "Actions": [ { "Type": "State", "State": "Working" } ]
+}
+```
+
+`ThrottleDuration`: minimum seconds the NPC must stay in the queried state before the sensor fires (useful with `BLOCKED`/`ABORTED` to avoid reacting to transient hiccups).
+
+---
+
+## Timer System
+
+Named, countdown timers. Each has a current value that decrements at a configurable `Rate`. Stop/pause/restart via actions. Query state and remaining time via `Timer: Sensor`.
+
+### Starting and managing a timer
+
+```json
+// Start a 5–10 second cooldown timer named "AttackCooldown":
+{ "Type": "TimerStart", "Name": "AttackCooldown", "StartValueRange": [5, 10], "Rate": 1.0 }
+
+// Stop it:
+{ "Type": "TimerStop", "Name": "AttackCooldown" }
+
+// Pause / continue:
+{ "Type": "TimerPause", "Name": "AttackCooldown" }
+{ "Type": "TimerContinue", "Name": "AttackCooldown" }
+
+// Restart to original values:
+{ "Type": "TimerRestart", "Name": "AttackCooldown" }
+
+// Modify (add time, change rate, set repeating):
+{ "Type": "TimerModify", "Name": "AttackCooldown", "AddValue": 3.0, "Repeating": true }
+```
+
+### Querying a timer
+
+```json
+{
+  "Sensor": {
+    "Type": "Timer",
+    "Name": "AttackCooldown",
+    "State": "STOPPED",
+    "TimeRemainingRange": [0, 999]
+  },
+  "Actions": [ { "Type": "Attack", "Attack": { "Compute": "Attack" } } ]
+}
+```
+
+| `State` flag | Meaning |
+|---|---|
+| `RUNNING` | Timer is ticking |
+| `PAUSED` | Timer is paused |
+| `STOPPED` | Timer has expired or was stopped |
+| `ANY` | Any state |
+
+---
+
+## Alarm System
+
+Lighter-weight alternative to timers for simple "set a one-shot delay" patterns. No rate/pause needed.
+
+```json
+// Set an alarm to fire in 3–5 seconds:
+{ "Type": "SetAlarm", "Name": "CooldownAlarm", "DurationRange": ["PT3S", "PT5S"] }
+
+// Check if it has passed (and auto-clear it):
+{
+  "Sensor": { "Type": "Alarm", "Name": "CooldownAlarm", "State": "PASSED", "Clear": true },
+  "Actions": [ ... ]
+}
+```
+
+Duration uses ISO-8601 duration strings: `"PT5S"` = 5 seconds, `"PT1M30S"` = 90 seconds.
+
+| `State` flag | Meaning |
+|---|---|
+| `SET` | Alarm is active, hasn't passed yet |
+| `UNSET` | Alarm was never set or was cleared |
+| `PASSED` | Alarm time has elapsed |
+
+---
+
+## Flag System
+
+Named boolean flags that persist on the NPC within a session. Use for "has this happened yet?" gates.
+
+```json
+// Set a flag:
+{ "Type": "SetFlag", "Name": "HasSpokenToPlayer", "SetTo": true }
+
+// Clear it:
+{ "Type": "SetFlag", "Name": "HasSpokenToPlayer", "SetTo": false }
+
+// Test it:
+{
+  "Sensor": { "Type": "Flag", "Name": "HasSpokenToPlayer", "Set": true },
+  "Actions": [ ... ]
+}
+```
+
+---
+
+## Random: Instruction (source-verified)
+
+`Random: Instruction` picks a weighted random child instruction and executes it. It does **not** re-pick every tick; it keeps the same choice for `ExecuteFor` seconds, then re-rolls.
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `ExecuteFor` | `[inf, inf]` | `[min, max]` seconds to keep the same random choice before picking a new one |
+| `ResetOnStateChange` | `true` | Whether to re-pick when the NPC state changes |
+
+The selected child's sensor is still checked every tick — if it fails the engine runs nothing for that tick (it does NOT fall back to another child; it simply does nothing until the timeout expires and re-picks).
+
+```json
+{
+  "Type": "Random",
+  "ExecuteFor": [5, 10],
+  "Instructions": [
+    { "Weight": 3, "BodyMotion": { "Type": "WanderInCircle", "Radius": 8 } },
+    { "Weight": 1, "BodyMotion": { "Type": "Nothing" } }
+  ]
+}
+```
+
+---
 
 Add to the top of a template to display the current state:
 
@@ -1360,6 +1736,12 @@ These NPC template parameters are configurable:
 8. **Beacons for inter-NPC communication** — Don't hard-code NPC coupling; use message passing.
 9. **Leash prevents runaway NPCs** — Always add `Soft_Leash` in combat to prevent infinite chasing.
 10. **`UseTarget: false`** — Required for actions that modify the NPC itself (inventory, stats).
+11. **`Continue: true` on every state block** — Without it, the first matching state stops the engine.
+12. **`ActionsBlocking` for sequential logic** — Use it with `Timeout → State` to chain actions over time.
+13. **`TreeMode` for fallback logic** — Keeps evaluating siblings until a child matches (behavior-tree selector).
+14. **`Block: Sensor` caches its result** — Call `ResetBlockSensors` after destroying the block.
+15. **`Reserve: true`** on `Block: Sensor` prevents multiple NPCs competing for the same block.
+16. **Timers for long-running cooldowns; Alarms for simpler one-shot delays; Flags for one-time booleans.**
 
 ---
 
@@ -1377,6 +1759,11 @@ These NPC template parameters are configurable:
 | State transitions not firing | Ensure `StateTransitions` block is above `Instructions` in the JSON |
 | Beacon messages not received | Verify NPC groups and beacon `Range` parameter |
 | Food NPC not spawning | Check spawn beacon exists, is placed in world, and `TriggerSpawnBeacon` range is sufficient |
+| First NPC state blocks all others | Missing `Continue: true` — without it, the first matching entry stops evaluation |
+| Only one state ever evaluates | Outer sensorless wrappers, or missing `Continue: true` on state blocks |
+| WanderInCircle wanders away from workstation | WanderInCircle uses `getLeashPoint()` — set it from ECS or use `SetLeashPosition` before the state |
+| NPC not reaching target closely enough | `StopDistance` too large on `Seek`; add an inner `Seek` with tighter `StopDistance` in the Working state |
+| NPC finds wrong block / blocks fight over same block | Use `Block: Sensor` with `Reserve: true` so NPCs don't share target blocks |
 
 ---
 

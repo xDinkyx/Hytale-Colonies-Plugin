@@ -21,7 +21,7 @@ public interface IClaimableBlock {
     boolean isClaimed();
 
     /**
-     * Returns the world position used as the claim key — must match the value
+     * Returns the world position used as the claim key -- must match the value
      * stored in the colonist's
      * {@link com.hytalecolonies.components.jobs.JobTargetComponent#targetPosition}.
      */

@@ -8,11 +8,12 @@ import java.util.logging.Level;
  * are silently discarded, keeping the console clean while still allowing fine-grained
  * debug output per subsystem when needed.
  *
- * <p>Default threshold: {@link Level#INFO} — INFO/WARNING/SEVERE are visible,
+ * <p>Default threshold: {@link Level#INFO} -- INFO/WARNING/SEVERE are visible,
  * FINE (debug) messages are hidden until explicitly enabled.
  */
 public enum DebugCategory {
 
+    COLONIST_LIFECYCLE("Colonist Lifecycle"),
     MOVEMENT("Movement"),
     JOB_SYSTEM("Job System"),
     JOB_ASSIGNMENT("Job Assignment"),

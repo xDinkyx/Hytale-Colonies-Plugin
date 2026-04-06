@@ -23,8 +23,8 @@ import javax.annotation.Nonnull;
  * Interactive UI page for adjusting per-category debug log levels and
  * debug visualization toggles at runtime.
  *
- * <p>Each category row shows a cycle {@code TextButton} — clicking it advances
- * the level through FINE → INFO → WARNING → SEVERE → OFF → FINE.
+ * <p>Each category row shows a cycle {@code TextButton} -- clicking it advances
+ * the level through FINE -> INFO -> WARNING -> SEVERE -> OFF -> FINE.
  * Two toggle buttons control debug drawing for colonist paths and tree detection.
  */
 public class DebugConfigUI extends InteractiveCustomUIPage<DebugConfigUI.UIEventData> {
@@ -158,7 +158,7 @@ public class DebugConfigUI extends InteractiveCustomUIPage<DebugConfigUI.UIEvent
         return sb.toString();
     }
 
-    /** Returns the next level name in the cycle order: FINE → INFO → WARNING → SEVERE → OFF → FINE. */
+    /** Returns the next level name in the cycle order: FINE -> INFO -> WARNING -> SEVERE -> OFF -> FINE. */
     private static String nextLevel(String currentName) {
         for (int i = 0; i < LEVEL_CYCLE.length; i++) {
             if (LEVEL_CYCLE[i].equalsIgnoreCase(currentName)) {

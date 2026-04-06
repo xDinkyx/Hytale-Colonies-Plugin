@@ -1,0 +1,47 @@
+---
+Language: Java
+
+# Line length
+ColumnLimit: 160
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 8
+
+# Brace style: Allman - opening brace always on a new line
+BreakBeforeBraces: Allman
+
+# Parameter / argument alignment
+# Horizontally align to the opening parenthesis when wrapping
+AlignAfterOpenBracket: true
+# When parameters don't fit on one line, put each on its own line
+BinPackParameters: OnePerLine
+BinPackArguments: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+
+# Disallow collapsing to single lines
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# Operand / ternary alignment
+AlignOperands: Align
+BreakBeforeTernaryOperators: true
+
+# Trailing comments
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0
+
+# Switch / case
+IndentCaseLabels: true
+
+# Blank lines
+MaxEmptyLinesToKeep: 1
+
+# Always end files with a newline
+InsertNewlineAtEOF: true
