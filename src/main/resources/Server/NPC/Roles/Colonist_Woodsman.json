@@ -2,15 +2,15 @@
   "$Comment": "Woodsman colonist role -- handles finding, navigating to, and harvesting trees.",
   "Type": "Generic",
   "Appearance": "Mannequin",
-  "MaxHealth": 20,
   "NameTranslationKey": "server.npcRoles.Colonist_Woodsman.name",
+  "MaxHealth": 20,
+  "InventorySize": 12,
   "MotionControllerList": [
     {
       "Type": "Walk",
-      "MaxWalkSpeed": 4
+      "MaxWalkSpeed": 3
     }
   ],
-  "InventorySize": 12,
   "Instructions": [
     {
       "$Comment": "TravelingToJob -- seek to claimed tree. ECS writes NavTarget via PathFindingSystem.",
@@ -116,8 +116,8 @@
           }
         },
         {
-          "$Comment": "No axe -- confused particle + wait.",
-          "Sensor": { "Type": "Not", "Sensor": { "Type": "HasTool", "GatherType": "Woods" } },
+          "$Comment": "No hatchet -- confused particle + wait.",
+          "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Hatchet_*"], "CountRange": [1, 999] }] } },
           "ActionsBlocking": true,
           "Actions": [
             { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },

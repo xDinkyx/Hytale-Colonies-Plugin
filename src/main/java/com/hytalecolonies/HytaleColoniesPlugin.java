@@ -43,7 +43,6 @@ import com.hytalecolonies.npc.actions.BuilderActionSeekNextMineBlock;
 import com.hytalecolonies.npc.actions.BuilderActionSetEcsJobState;
 import com.hytalecolonies.npc.sensors.BuilderSensorEcsJobState;
 import com.hytalecolonies.npc.sensors.BuilderSensorHarvestableTree;
-import com.hytalecolonies.npc.sensors.BuilderSensorHasTool;
 import com.hytalecolonies.npc.sensors.BuilderSensorJobTarget;
 import com.hytalecolonies.npc.sensors.BuilderSensorJobTargetBroken;
 import com.hytalecolonies.npc.sensors.BuilderSensorJobTargetExists;
@@ -234,7 +233,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             .registerCoreComponentType("HarvestBlock",          BuilderActionHarvestBlock::new)
             .registerCoreComponentType("JobTarget",             BuilderSensorJobTarget::new)
             // New sensors
-            .registerCoreComponentType("HasTool",               BuilderSensorHasTool::new)
             .registerCoreComponentType("JobTargetExists",       BuilderSensorJobTargetExists::new)
             .registerCoreComponentType("JobTargetBroken",       BuilderSensorJobTargetBroken::new)
             .registerCoreComponentType("MineQuotaReached",      BuilderSensorMineQuotaReached::new)

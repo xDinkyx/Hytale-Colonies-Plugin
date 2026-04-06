@@ -1,9 +1,9 @@
 ﻿{
   "Type": "Generic",
   "Appearance": "Mannequin",
+  "NameTranslationKey": "server.npcRoles.Colonist_Miner.name",
   "MaxHealth": 20,
   "InventorySize": 12,
-  "NameTranslationKey": "server.npcRoles.Colonist_Miner.name",
   "MotionControllerList": [
     {
       "Type": "Walk",
@@ -116,7 +116,7 @@
         },
         {
           "$Comment": "No pickaxe -- confused particle + wait.",
-          "Sensor": { "Type": "Not", "Sensor": { "Type": "HasTool", "GatherType": "Rocks" } },
+          "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Pickaxe_*"], "CountRange": [1, 999] }] } },
           "ActionsBlocking": true,
           "Actions": [
             { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [ 0, 2.1, 0 ] },
@@ -125,7 +125,7 @@
         },
         {
           "$Comment": "No shovel -- confused particle + wait.",
-          "Sensor": { "Type": "Not", "Sensor": { "Type": "HasTool", "GatherType": "Soils" } },
+          "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Shovel_*"], "CountRange": [1, 999] }] } },
           "ActionsBlocking": true,
           "Actions": [
             { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [ 0, 2.1, 0 ] },
