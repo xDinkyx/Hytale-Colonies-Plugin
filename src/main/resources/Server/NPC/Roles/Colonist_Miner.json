@@ -10,6 +10,35 @@
       "MaxWalkSpeed": 3
     }
   ],
+  "StateTransitions": [
+    {
+      "$Comment": "Equip best mining tool when entering Working.",
+      "States": [
+        { "From": [], "To": ["Working"] }
+      ],
+      "Actions": [
+        { "Type": "EquipBestTool", "GatherType": "Rocks" }
+      ]
+    },
+    {
+      "$Comment": "Put tool away when leaving Working (traveling, collecting, delivering, idling).",
+      "States": [
+        { "From": ["Working"], "To": [] }
+      ],
+      "Actions": [
+        { "Type": "Inventory", "Operation": "ClearHeldItem", "UseTarget": false }
+      ]
+    },
+    {
+      "$Comment": "Reset any stuck blocking instruction chain when returning to Idling.",
+      "States": [
+        { "From": [], "To": ["Idling"] }
+      ],
+      "Actions": [
+        { "Type": "ResetInstructions" }
+      ]
+    }
+  ],
   "Instructions": [
     {
       "$Comment": "TravelingToJob -- seek to claimed mine block. ECS writes NavTarget via PathFindingSystem.",
