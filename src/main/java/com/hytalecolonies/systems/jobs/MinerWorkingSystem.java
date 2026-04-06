@@ -1,5 +1,20 @@
 package com.hytalecolonies.systems.jobs;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.hypixel.hytale.component.ArchetypeChunk;
+import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
+import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
+import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
@@ -11,21 +26,7 @@ import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.systems.jobs.handlers.MinerHandlers;
 import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hytalecolonies.utils.ColonistLeashUtil;
-import com.hypixel.hytale.component.ArchetypeChunk;
-import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
-import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.server.core.modules.block.BlockModule;
-import com.hypixel.hytale.server.core.entity.UUIDComponent;
-import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import com.hytalecolonies.utils.ColonistStateUtil;
 
 /**
  * Reacts to {@link JobComponent#blockBrokenNotification} for miners in {@link JobState#Working}.
@@ -58,6 +59,8 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
         // Clear immediately so a second notification in the same cycle is ignored until world.execute settles.
         job.blockBrokenNotification = false;
 
+        Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
+
         MinerJobComponent miner = archetypeChunk.getComponent(index, MinerJobComponent.getComponentType());
         if (miner == null) return;
 
@@ -65,7 +68,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
 
         Vector3i workStationPos = job.getWorkStationBlockPosition();
         if (workStationPos == null) {
-            job.setCurrentTask(JobState.Idling);
+            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idling);
             return;
         }
 
@@ -75,11 +78,9 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
                 ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
                 : null;
         if (workStation == null) {
-            job.setCurrentTask(JobState.Idling);
+            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idling);
             return;
         }
-
-        Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
         String npcId = DebugLog.npcId(colonistRef, store);
 
         boolean quotaReached = miner.blocksMinedThisRun >= workStation.blocksPerRun;
@@ -115,21 +116,21 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
                     ColonistLeashUtil.setLeashToBlockCenter(colonistRef, entityStore.getStore(), currentTargetPos);
                 }
                 liveJob.collectingDropsSince = System.currentTimeMillis();
-                liveJob.setCurrentTask(JobState.CollectingDrops);
+                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.CollectingDrops);
                 DebugLog.info(DebugCategory.MINER_JOB,
                         "[MinerWorking] [%s] %s -- transitioning to CollectingDrops.",
                         npcId, quotaReached ? "Quota reached" : "Shaft exhausted mid-run");
             } else {
                 UUIDComponent uuidComp = entityStore.getStore().getComponent(colonistRef, UUIDComponent.getComponentType());
                 if (uuidComp == null) {
-                    liveJob.setCurrentTask(JobState.Idling);
+                    ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Idling);
                     return;
                 }
                 if (!ClaimBlockUtil.claimBlock(world, nextBlock, uuidComp.getUuid(), "Mine")) {
                     // Race loss -- retry via Idling.
                     DebugLog.fine(DebugCategory.MINER_JOB,
                             "[MinerWorking] [%s] Could not claim next block %s -- going Idling.", npcId, nextBlock);
-                    liveJob.setCurrentTask(JobState.Idling);
+                    ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Idling);
                     return;
                 }
                 JobTargetComponent jt = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());
@@ -142,7 +143,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
                 entityStore.getStore().tryRemoveComponent(colonistRef, MoveToTargetComponent.getComponentType());
                 entityStore.getStore().addComponent(colonistRef, MoveToTargetComponent.getComponentType(),
                         new MoveToTargetComponent(MinerHandlers.blockCenter(nextBlock)));
-                liveJob.setCurrentTask(JobState.TravelingToJob);
+                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToJob);
                 DebugLog.info(DebugCategory.MINER_JOB,
                         "[MinerWorking] [%s] Claimed next block at %s -- transitioning to TravelingToJob.", npcId, nextBlock);
             }

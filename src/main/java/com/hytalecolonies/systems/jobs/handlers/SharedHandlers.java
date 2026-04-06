@@ -18,6 +18,7 @@ import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.systems.jobs.JobContext;
 import com.hytalecolonies.systems.jobs.JobStateHandler;
 import com.hytalecolonies.utils.ColonistLeashUtil;
+import com.hytalecolonies.utils.ColonistStateUtil;
 import com.hytalecolonies.utils.ColonistToolUtil;
 import com.hytalecolonies.utils.JobNavigationUtil;
 
@@ -120,7 +121,7 @@ public final class SharedHandlers {
                         uuidComp.getUuid(), claimTarget, claimType))
                     return;
                 // Set state after claim+nav so PathFindingSystem reads a consistent state.
-                liveJob.setCurrentTask(JobState.TravelingToJob);
+                ColonistStateUtil.setJobState(ctx.colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToJob);
             });
         };
     }
@@ -138,19 +139,19 @@ public final class SharedHandlers {
         DebugLog.info(DebugCategory.JOB_SYSTEM, "[Shared] [%s] Done collecting drops -- delivering items.",
                 DebugLog.npcId(ctx.colonistRef, ctx.store));
         ctx.job.deliveryContainerPosition = null; // Clear stale cache so ColonistDeliverySystem scans fresh.
-        ctx.job.setCurrentTask(JobState.DeliveringItems);
+        ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.DeliveringItems);
     };
 
     /** Moves toward the job target. Advances to {@link JobState#Working} on arrival or after being stuck. */
     public static final JobStateHandler TRAVELING_TO_JOB = ctx -> {
         JobTargetComponent jobTarget = ctx.store.getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
         if (jobTarget == null) {
-            ctx.job.setCurrentTask(JobState.Idling);
+            ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idling);
             return;
         }
         Vector3i targetPos = jobTarget.targetPosition;
         if (targetPos == null) {
-            ctx.job.setCurrentTask(JobState.Idling);
+            ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idling);
             return;
         }
 
@@ -191,7 +192,7 @@ public final class SharedHandlers {
             }
             jobTarget.stuckTicks = 0;
             jobTarget.lastKnownPosition = null;
-            ctx.job.setCurrentTask(JobState.Working);
+            ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Working);
             DebugLog.info(DebugCategory.MOVEMENT, "[Shared] [%s] Arrived at job target %s.",
                     DebugLog.npcId(ctx.colonistRef, ctx.store), targetPos);
         }
@@ -230,7 +231,7 @@ public final class SharedHandlers {
                 jobTarget.lastKnownPosition = null;
             }
             ctx.commandBuffer.removeComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
-            ctx.job.setCurrentTask(JobState.Idling);
+            ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idling);
             DebugLog.info(DebugCategory.MOVEMENT, "[Shared] [%s] Arrived home at workstation.",
                     DebugLog.npcId(ctx.colonistRef, ctx.store));
             return;

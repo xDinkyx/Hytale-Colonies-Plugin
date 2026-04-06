@@ -28,6 +28,7 @@ import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.systems.jobs.handlers.WoodsmanHandlers;
 import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hytalecolonies.utils.ColonistLeashUtil;
+import com.hytalecolonies.utils.ColonistStateUtil;
 
 /**
  * Reacts to {@link JobComponent#blockBrokenNotification} for woodsmen in
@@ -71,7 +72,7 @@ public class WoodsmanWorkingSystem extends EntityTickingSystem<EntityStore> {
         if (jobTarget == null || jobTarget.targetPosition == null) {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,
                     "[WoodsmanWorking] [%s] No JobTargetComponent or target is null -- resetting to Idling.", npcId);
-            job.setCurrentTask(JobState.Idling);
+            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idling);
             return;
         }
 
@@ -118,13 +119,13 @@ public class WoodsmanWorkingSystem extends EntityTickingSystem<EntityStore> {
                 ColonistLeashUtil.setLeashToBlockCenter(colonistRef, entityStore.getStore(), finalTreeBase);
                 liveTarget.setTargetPosition(null);
                 liveJob.collectingDropsSince = System.currentTimeMillis();
-                liveJob.setCurrentTask(JobState.CollectingDrops);
+                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.CollectingDrops);
             } else {
                 liveTarget.setTargetPosition(finalNextBase);
                 entityStore.getStore().tryRemoveComponent(colonistRef, MoveToTargetComponent.getComponentType());
                 entityStore.getStore().addComponent(colonistRef, MoveToTargetComponent.getComponentType(),
                         new MoveToTargetComponent(new Vector3d(finalNextBase.x + 0.5, finalNextBase.y, finalNextBase.z + 0.5)));
-                liveJob.setCurrentTask(JobState.TravelingToJob);
+                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToJob);
             }
         });
     }

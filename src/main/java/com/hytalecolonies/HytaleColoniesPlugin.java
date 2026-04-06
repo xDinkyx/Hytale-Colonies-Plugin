@@ -41,7 +41,6 @@ import com.hytalecolonies.npc.actions.BuilderActionResetBlocksMined;
 import com.hytalecolonies.npc.actions.BuilderActionSeekNearestTree;
 import com.hytalecolonies.npc.actions.BuilderActionSeekNextMineBlock;
 import com.hytalecolonies.npc.actions.BuilderActionSetEcsJobState;
-import com.hytalecolonies.npc.sensors.BuilderSensorEcsJobState;
 import com.hytalecolonies.npc.sensors.BuilderSensorHarvestableTree;
 import com.hytalecolonies.npc.sensors.BuilderSensorJobTarget;
 import com.hytalecolonies.npc.sensors.BuilderSensorJobTargetBroken;
@@ -236,7 +235,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             .registerCoreComponentType("JobTargetExists",       BuilderSensorJobTargetExists::new)
             .registerCoreComponentType("JobTargetBroken",       BuilderSensorJobTargetBroken::new)
             .registerCoreComponentType("MineQuotaReached",      BuilderSensorMineQuotaReached::new)
-            .registerCoreComponentType("EcsJobState",           BuilderSensorEcsJobState::new)
             .registerCoreComponentType("NoWorkAvailable",       BuilderSensorNoWorkAvailable::new)
             // New actions
             .registerCoreComponentType("SeekNearestTree",       BuilderActionSeekNearestTree::new)

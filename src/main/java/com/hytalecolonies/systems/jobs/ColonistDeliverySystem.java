@@ -1,14 +1,13 @@
 package com.hytalecolonies.systems.jobs;
 
-import com.hytalecolonies.components.jobs.JobComponent;
-import com.hytalecolonies.components.jobs.JobState;
-import com.hytalecolonies.components.npc.ColonistComponent;
-import com.hytalecolonies.components.npc.MoveToTargetComponent;
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.utils.WorkstationContainerUtil;
-import com.hypixel.hytale.component.ArchetypeChunk;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.component.AddReason;
+import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
@@ -18,7 +17,6 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
@@ -30,13 +28,17 @@ import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.block.components.ItemContainerBlock;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobState;
+import com.hytalecolonies.components.npc.ColonistComponent;
+import com.hytalecolonies.components.npc.MoveToTargetComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.ColonistStateUtil;
+import com.hytalecolonies.utils.WorkstationContainerUtil;
 
 /** Navigates colonists in {@link JobState#DeliveringItems} to a nearby chest and deposits their inventory. */
 public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
@@ -82,7 +84,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                                        @Nonnull CommandBuffer<EntityStore> commandBuffer) {
         Vector3i workStationPos = job.getWorkStationBlockPosition();
         if (workStationPos == null) {
-            job.setCurrentTask(JobState.TravelingHome);
+            ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingHome);
             return;
         }
 
@@ -95,7 +97,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                     "[ColonistDelivery] [%s] No chest within %d blocks of workstation %s -- skipping delivery.",
                     DebugLog.npcId(ref, store), DELIVERY_RADIUS, workStationPos);
                 navigateToWorkstation(ref, commandBuffer, workStationPos);
-                job.setCurrentTask(JobState.TravelingHome);
+                ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingHome);
                 return;
             }
             job.deliveryContainerPosition = containerPos;
@@ -129,7 +131,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                     "[ColonistDelivery] [%s] Chest at %s is no longer present -- resetting delivery container position.", DebugLog.npcId(ref, store), cp);
             job.deliveryContainerPosition = null;
             navigateToWorkstation(ref, commandBuffer, workStationPos);
-            job.setCurrentTask(JobState.TravelingHome);
+            ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingHome);
             return;
         }
 
@@ -140,14 +142,14 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                     "[ColonistDelivery] [%s] Block at %s is no longer a container -- resetting delivery container position.", DebugLog.npcId(ref, store), cp);
             job.deliveryContainerPosition = null;
             navigateToWorkstation(ref, commandBuffer, workStationPos);
-            job.setCurrentTask(JobState.TravelingHome);
+            ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingHome);
             return;
         }
 
         depositItems(ref, store, containerBlock.getItemContainer(), cp);
         job.deliveryContainerPosition = null;
         navigateToWorkstation(ref, commandBuffer, workStationPos);
-        job.setCurrentTask(JobState.TravelingHome);
+        ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingHome);
     }
 
     /** Tools stay on the colonist; everything else gets deposited. */
@@ -289,7 +291,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                         cb.addComponent(colonistRef, MoveToTargetComponent.getComponentType(),
                                 new MoveToTargetComponent(new Vector3d(wsPos.x + 0.5, wsPos.y, wsPos.z + 0.5)));
                     }
-                    job.setCurrentTask(JobState.TravelingHome);
+                    ColonistStateUtil.setJobState(colonistRef, entityStore, job, JobState.TravelingHome);
                     DebugLog.info(DebugCategory.COLONIST_DELIVERY,
                             "[ColonistDelivery:ContainerRemoved] [%s] Redirected colonist home.",
                             DebugLog.npcId(colonistRef, entityStore));

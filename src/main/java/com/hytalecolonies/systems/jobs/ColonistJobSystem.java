@@ -1,16 +1,16 @@
 package com.hytalecolonies.systems.jobs;
 
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.components.jobs.JobComponent;
-import com.hytalecolonies.components.jobs.JobState;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
-import com.hytalecolonies.utils.WorkStationUtil;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.component.ArchetypeChunk;
-import com.hypixel.hytale.component.ComponentType;
-import com.hytalecolonies.systems.jobs.JobBehaviorRegistry;
-import com.hytalecolonies.systems.jobs.JobRegistry;
 import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
@@ -19,13 +19,13 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.npc.role.Role;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobState;
+import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.ColonistStateUtil;
+import com.hytalecolonies.utils.WorkStationUtil;
 
 /**
  * Dispatches the shared ECS job states ({@link JobState#CollectingDrops} and
@@ -92,7 +92,7 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
             DebugLog.warning(DebugCategory.JOB_SYSTEM,
                     "[ColonistJob] [%s] Colonist has null JobState -- resetting to Idle.",
                     DebugLog.npcId(colonistRef, store));
-            job.setCurrentTask(JobState.Idling);
+            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idling);
             return;
         }
 

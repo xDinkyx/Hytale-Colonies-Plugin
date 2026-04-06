@@ -1,16 +1,7 @@
 package com.hytalecolonies.systems.jobs.handlers;
 
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.components.jobs.JobComponent;
-import com.hytalecolonies.components.jobs.JobState;
-import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.MinerJobComponent;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
-import com.hytalecolonies.components.npc.MoveToTargetComponent;
-import com.hytalecolonies.components.world.ClaimedBlockComponent;
-import com.hytalecolonies.systems.jobs.JobStateHandler;
-import com.hytalecolonies.utils.ClaimBlockUtil;
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
@@ -20,8 +11,18 @@ import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
-import javax.annotation.Nullable;
+import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobState;
+import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.components.jobs.MinerJobComponent;
+import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.npc.MoveToTargetComponent;
+import com.hytalecolonies.components.world.ClaimedBlockComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.systems.jobs.JobStateHandler;
+import com.hytalecolonies.utils.ClaimBlockUtil;
+import com.hytalecolonies.utils.ColonistStateUtil;
 
 /** Default {@link JobStateHandler} implementations for miner colonists. */
 public final class MinerHandlers {
@@ -77,7 +78,7 @@ public final class MinerHandlers {
     public static final JobStateHandler WORKING = ctx -> {
         JobTargetComponent jobTarget = ctx.store.getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.targetPosition == null) {
-            ctx.job.setCurrentTask(JobState.Idling);
+            ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idling);
             return;
         }
 
@@ -88,15 +89,15 @@ public final class MinerHandlers {
         if (world.getBlock(targetPos.x, targetPos.y, targetPos.z) != 0) return;
 
         Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
-        if (workStationPos == null) { ctx.job.setCurrentTask(JobState.Idling); return; }
+        if (workStationPos == null) { ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idling); return; }
         Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
         WorkStationComponent workStation = wsRef != null
                 ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
                 : null;
-        if (workStation == null) { ctx.job.setCurrentTask(JobState.Idling); return; }
+        if (workStation == null) { ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idling); return; }
 
         MinerJobComponent miner = ctx.store.getComponent(ctx.colonistRef, MinerJobComponent.getComponentType());
-        if (miner == null) { ctx.job.setCurrentTask(JobState.Idling); return; }
+        if (miner == null) { ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idling); return; }
 
         miner.blocksMinedThisRun++;
         DebugLog.info(DebugCategory.MINER_JOB,
@@ -120,7 +121,7 @@ public final class MinerHandlers {
                 JobTargetComponent jt = entityStore.getStore().getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
                 if (jt != null) jt.setTargetPosition(null);
                 liveJob.collectingDropsSince = System.currentTimeMillis();
-                liveJob.setCurrentTask(JobState.CollectingDrops);
+                ColonistStateUtil.setJobState(ctx.colonistRef, entityStore.getStore(), liveJob, JobState.CollectingDrops);
                 DebugLog.info(DebugCategory.MINER_JOB, quotaReached
                         ? "[MinerJob] [%s] Run quota reached -- collecting drops."
                         : "[MinerJob] [%s] Mine exhausted mid-run -- collecting drops.",
@@ -131,7 +132,7 @@ public final class MinerHandlers {
                     DebugLog.fine(DebugCategory.MINER_JOB,
                             "[MinerJob] [%s] Could not claim next mine block %s -- going Idling.",
                             DebugLog.npcId(ctx.colonistRef, entityStore.getStore()), nextBlock);
-                    liveJob.setCurrentTask(JobState.Idling);
+                    ColonistStateUtil.setJobState(ctx.colonistRef, entityStore.getStore(), liveJob, JobState.Idling);
                     return;
                 }
                 JobTargetComponent jt = entityStore.getStore().getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
@@ -148,7 +149,7 @@ public final class MinerHandlers {
                     entityStore.getStore().addComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType(),
                             new MoveToTargetComponent(blockCenter(nextBlock)));
                 }
-                liveJob.setCurrentTask(JobState.TravelingToJob);
+                ColonistStateUtil.setJobState(ctx.colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToJob);
                 DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob] [%s] Claimed next mine block at %s -- heading there.",
                         DebugLog.npcId(ctx.colonistRef, entityStore.getStore()), nextBlock);
             }

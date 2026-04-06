@@ -1,4 +1,4 @@
-﻿{
+{
   "$Comment": "Woodsman colonist role -- handles finding, navigating to, and harvesting trees.",
   "Type": "Generic",
   "Appearance": "Mannequin",
@@ -15,7 +15,7 @@
     {
       "$Comment": "TravelingToJob -- seek to claimed tree. ECS writes NavTarget via PathFindingSystem.",
       "Continue": true,
-      "Sensor": { "Type": "EcsJobState", "JobState": "TravelingToJob" },
+      "Sensor": { "Type": "State", "State": "TravelingToJob", "IgnoreMissingSetState": true },
       "Instructions": [
         {
           "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
@@ -26,7 +26,7 @@
     {
       "$Comment": "Working -- approach tree and chop. Seek handles final approach so the NPC gets close enough; chop fires once within range.",
       "Continue": true,
-      "Sensor": { "Type": "EcsJobState", "JobState": "Working" },
+      "Sensor": { "Type": "State", "State": "Working", "IgnoreMissingSetState": true },
       "Instructions": [
         {
           "Continue": true,
@@ -47,7 +47,7 @@
     {
       "$Comment": "Working -- when job-target block is air, notify ECS. ECS decides the next state (next trunk, collect, etc).",
       "Continue": true,
-      "Sensor": { "Type": "EcsJobState", "JobState": "Working" },
+      "Sensor": { "Type": "State", "State": "Working", "IgnoreMissingSetState": true },
       "Instructions": [
         {
           "Sensor": { "Type": "JobTargetBroken" },
@@ -60,7 +60,7 @@
     {
       "$Comment": "CollectingDrops -- wander area and pick up drops while ECS delivery pipeline runs.",
       "Continue": true,
-      "Sensor": { "Type": "EcsJobState", "JobState": "CollectingDrops" },
+      "Sensor": { "Type": "State", "State": "CollectingDrops", "IgnoreMissingSetState": true },
       "Instructions": [
         {
           "Continue": true,
@@ -78,7 +78,7 @@
     {
       "$Comment": "DeliveringItems -- seek to delivery container. ECS writes NavTarget.",
       "Continue": true,
-      "Sensor": { "Type": "EcsJobState", "JobState": "DeliveringItems" },
+      "Sensor": { "Type": "State", "State": "DeliveringItems", "IgnoreMissingSetState": true },
       "Instructions": [
         {
           "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
@@ -89,7 +89,7 @@
     {
       "$Comment": "TravelingHome -- seek back to workstation. ECS writes NavTarget.",
       "Continue": true,
-      "Sensor": { "Type": "EcsJobState", "JobState": "TravelingHome" },
+      "Sensor": { "Type": "State", "State": "TravelingHome", "IgnoreMissingSetState": true },
       "Instructions": [
         {
           "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
@@ -100,7 +100,7 @@
     {
       "$Comment": "Idling -- wander near workstation; confused particle when axe is missing.",
       "Continue": true,
-      "Sensor": { "Type": "EcsJobState", "JobState": "Idling" },
+      "Sensor": { "Type": "State", "State": "Idling", "IgnoreMissingSetState": true },
       "Instructions": [
         {
           "$Comment": "Wander near workstation (WanderInCircle uses leash point set by ECS). Continue: true so tool-check block below also runs.",

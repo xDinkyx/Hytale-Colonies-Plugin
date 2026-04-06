@@ -1,9 +1,8 @@
 package com.hytalecolonies.npc.actions;
 
-import com.hytalecolonies.components.jobs.JobComponent;
-import com.hytalecolonies.components.jobs.JobState;
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -11,8 +10,11 @@ import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
 import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobState;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.ColonistStateUtil;
 
 /**
  * Sets {@link JobComponent#getCurrentTask()} to the state configured in
@@ -59,7 +61,7 @@ public class ActionSetEcsJobState extends ActionBase {
         if (targetState == JobState.CollectingDrops) {
             job.collectingDropsSince = System.currentTimeMillis();
         }
-        job.setCurrentTask(targetState);
+        ColonistStateUtil.setJobState(ref, store, job, targetState);
 
         DebugLog.info(DebugCategory.JOB_SYSTEM,
                 "[SetEcsJobState] [%s] ECS job state set to %s.", npcId, targetState);

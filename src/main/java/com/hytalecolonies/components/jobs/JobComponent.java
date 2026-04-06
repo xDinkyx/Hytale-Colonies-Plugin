@@ -2,15 +2,17 @@ package com.hytalecolonies.components.jobs;
 
 // Imports
 
-import com.hytalecolonies.HytaleColoniesPlugin;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
-import javax.annotation.Nullable;
+import com.hytalecolonies.HytaleColoniesPlugin;
+import com.hytalecolonies.utils.ColonistStateUtil;
 
 /**
  * Added to colonist to assign them a job.
@@ -78,7 +80,10 @@ public class JobComponent implements Component<EntityStore> {
     public @Nullable JobState getCurrentTask() {
         return jobState;
     }
-    public void setCurrentTask(@Nullable JobState currentTask) {
+
+    /// Only updates the field if the caller has the key, which is only obtainable by code in {@link ColonistStateUtil}.
+    /// This enforces that all state changes go through the utility method which mirrors to NPC role state.
+    public void setCurrentTask(@Nonnull ColonistStateUtil.Key key, @Nullable JobState currentTask) {
         this.jobState = currentTask;
     }
 }

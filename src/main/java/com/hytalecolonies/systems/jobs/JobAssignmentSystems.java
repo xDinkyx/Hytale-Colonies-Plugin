@@ -31,8 +31,8 @@ import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.JobType;
-import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
+import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
@@ -41,6 +41,7 @@ import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.debug.DebugTiming;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
 import com.hytalecolonies.utils.ClaimBlockUtil;
+import com.hytalecolonies.utils.ColonistStateUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
 
 
@@ -347,7 +348,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                 DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
                         "[JobAssignment] [%s] Resetting colonist job state from %s to Idling on load.",
                         DebugLog.npcId(ref, store), state);
-                job.setCurrentTask(JobState.Idling);
+                ColonistStateUtil.setJobState(ref, store, job, JobState.Idling);
                 // Remove the job target so ColonistMovementSystem does not process stale
                 // travel.
                 // StaleMarkCleanupSystem will clear any orphaned tree marks.
