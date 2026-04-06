@@ -1,4 +1,5 @@
 {
+    "files.encoding": "utf8",
     "java.compile.nullAnalysis.mode": "disabled",
     "chat.tools.terminal.autoApprove": {
         "/^\\$content = Get-Content \"c:\\\\_psrc\\\\Hytale-Colonies-Plugin\\\\src\\\\main\\\\java\\\\com\\\\hytalecolonies\\\\systems\\\\jobs\\\\WoodsmanMovementSystem\\.java\" -Raw; \\$cutAt = \\$content\\.IndexOf\\(\"`nimport javax\\.annotation\\.Nonnull;`nimport javax\\.annotation\\.Nullable;`nimport java\\.util\\.ArrayList;`nimport java\\.util\\.List;`n`n/\\*\\*`n \\* Drives the movement state machine\"\\); \\$content\\.Substring\\(0, \\$cutAt\\) \\| Set-Content \"c:\\\\_psrc\\\\Hytale-Colonies-Plugin\\\\src\\\\main\\\\java\\\\com\\\\hytalecolonies\\\\systems\\\\jobs\\\\WoodsmanMovementSystem\\.java\" -NoNewline$/": {
@@ -14,5 +15,11 @@
             "matchCommandLine": true
         }
     },
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "[json]": {
+        "files.encoding": "utf8"
+    },
+    "[jsonc]": {
+        "files.encoding": "utf8"
+    },
 }
