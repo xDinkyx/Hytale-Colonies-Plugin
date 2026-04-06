@@ -20,6 +20,7 @@ This is a Hytale plugin project. Hytale plugins are used to extend the functiona
 - There should be no errors when compiling the plugin. Deprecation warnings are acceptable (do not suppress them with `@SuppressWarnings` unless there is a strong reason — prefer leaving them visible so they serve as a reminder to migrate when the stable API is updated). (ignoring pom.xml warnings)
 - Any user-facing text must be localized via translation keys (e.g., `Message.translation(...)`) and added to language resources under `src/main/resources/Server/Languages/<locale>/*.lang` (filename becomes the key prefix). `src/main/resources/Server/Languages/fallback.lang` is only for locale fallback mappings (e.g., `en-GB = en-US`).
 - Never use non-basic (non-ASCII) characters in code, comments, or user-facing text. Only use standard ASCII characters (U+0000 to U+007F). 
+- All JSON files must be created and saved with UTF-8 encoding without BOM. Never use UTF-8 BOM or any other encoding variant.
 
 ## .github/skills
 - Evaluate skills when given a task or problem to solve.
@@ -33,6 +34,7 @@ This is a Hytale plugin project. Hytale plugins are used to extend the functiona
 ## HytaleColonies Plugin
 - This plugin implements a colony-management system with colonist NPCs that perform jobs (mining, woodcutting, etc.).
 - For any work involving colonist NPCs, job systems, or role JSON files, load the `hytalecolonies-npc-design` skill — it defines the canonical ECS/JSON architecture for this plugin and overrides general Hytale NPC patterns where they conflict.
+- For any work involving debug logging, `DebugLog`, `DebugCategory`, `DebugConfig`, `DebugConfigUI`, or the `DebugConfig.ui` file, load the `hytalecolonies-debug` skill — it defines the NPC UUID tagging requirement and the step-by-step checklist for adding new log categories.
 
 ## Hytale ECS notes (follow these patterns)
 - ECS is composition over inheritance. Entities are identifiers only, Components are pure data, Systems contain logic.

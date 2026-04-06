@@ -88,7 +88,7 @@ Group #ButtonRow {
 
 ## Common Components and Styles
 
-The exact list of available styles and components can be viewed via the `/ui-gallery` command in-game. (Note: This command is planned for a future patch.)
+The exact list of available styles and components can be viewed via the `/ui-gallery` command in-game.
 
 ### Frequently Used Styles
 
