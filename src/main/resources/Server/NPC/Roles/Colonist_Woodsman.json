@@ -18,6 +18,7 @@
         { "From": [], "To": ["Working"] }
       ],
       "Actions": [
+        { "Type": "LogDebug", "Message": "StateTransition -> Working.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
         { "Type": "EquipBestTool", "GatherType": "Woods" }
       ]
     },
@@ -27,6 +28,7 @@
         { "From": ["Working"], "To": [] }
       ],
       "Actions": [
+        { "Type": "LogDebug", "Message": "StateTransition Working ->.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
         { "Type": "Inventory", "Operation": "ClearHeldItem", "UseTarget": false }
       ]
     },
@@ -36,6 +38,7 @@
         { "From": [], "To": ["Idling"] }
       ],
       "Actions": [
+        { "Type": "LogDebug", "Message": "StateTransition -> Idling.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
         { "Type": "ResetInstructions" }
       ]
     }

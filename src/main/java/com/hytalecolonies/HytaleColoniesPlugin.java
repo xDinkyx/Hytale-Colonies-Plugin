@@ -37,6 +37,7 @@ import com.hytalecolonies.npc.actions.BuilderActionHarvestBlock;
 import com.hytalecolonies.npc.actions.BuilderActionIncrementBlocksMined;
 import com.hytalecolonies.npc.actions.BuilderActionNotifyBlockBroken;
 import com.hytalecolonies.npc.actions.BuilderActionReleaseJobTarget;
+import com.hytalecolonies.npc.actions.BuilderActionLogDebug;
 import com.hytalecolonies.npc.actions.BuilderActionResetBlocksMined;
 import com.hytalecolonies.npc.actions.BuilderActionSeekNearestTree;
 import com.hytalecolonies.npc.actions.BuilderActionSeekNextMineBlock;
@@ -246,7 +247,9 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             .registerCoreComponentType("IncrementBlocksMined",  BuilderActionIncrementBlocksMined::new)
             .registerCoreComponentType("ResetBlocksMined",      BuilderActionResetBlocksMined::new)
             .registerCoreComponentType("SetEcsJobState",        BuilderActionSetEcsJobState::new)
-            .registerCoreComponentType("NotifyBlockBroken",      BuilderActionNotifyBlockBroken::new);
+            .registerCoreComponentType("NotifyBlockBroken",      BuilderActionNotifyBlockBroken::new)
+            // Debug utilities
+            .registerCoreComponentType("LogDebug",              BuilderActionLogDebug::new);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered NPC component types");
     }
 

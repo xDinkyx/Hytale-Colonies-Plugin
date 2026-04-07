@@ -9,6 +9,8 @@ import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.npc.role.Role;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 
 
 /**
@@ -45,7 +47,11 @@ public final class ColonistStateUtil
      */
     public static void setJobState(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull JobComponent job, @Nonnull JobState state)
     {
+        JobState previousState = job.getCurrentTask();
         job.setCurrentTask(INSTANCE, state);
+
+        DebugLog.fine(DebugCategory.JOB_SYSTEM,
+                "[StateTransition] [%s] %s -> %s.", DebugLog.npcId(ref, store), previousState, state);
 
         NPCEntity npc = store.getComponent(ref, NPCEntity.getComponentType());
         if (npc == null)

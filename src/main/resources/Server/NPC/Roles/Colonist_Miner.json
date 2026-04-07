@@ -1,4 +1,4 @@
-{
+﻿{
   "Type": "Generic",
   "Appearance": "Mannequin",
   "NameTranslationKey": "server.npcRoles.Colonist_Miner.name",
@@ -17,6 +17,7 @@
         { "From": [], "To": ["Working"] }
       ],
       "Actions": [
+        { "Type": "LogDebug", "Message": "StateTransition -> Working.", "Category": "MINER_JOB", "Level": "INFO" },
         { "Type": "EquipBestTool", "GatherType": "Rocks" }
       ]
     },
@@ -26,6 +27,7 @@
         { "From": ["Working"], "To": [] }
       ],
       "Actions": [
+        { "Type": "LogDebug", "Message": "StateTransition Working ->.", "Category": "MINER_JOB", "Level": "INFO" },
         { "Type": "Inventory", "Operation": "ClearHeldItem", "UseTarget": false }
       ]
     },
@@ -35,6 +37,7 @@
         { "From": [], "To": ["Idling"] }
       ],
       "Actions": [
+        { "Type": "LogDebug", "Message": "StateTransition -> Idling.", "Category": "MINER_JOB", "Level": "INFO" },
         { "Type": "ResetInstructions" }
       ]
     }

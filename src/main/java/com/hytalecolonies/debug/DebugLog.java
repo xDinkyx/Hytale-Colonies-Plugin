@@ -18,9 +18,11 @@ import java.util.logging.Level;
  * {@link Level#OFF} suppresses all its output.
  *
  * <pre>{@code
- *   DebugLog.fine(DebugCategory.MOVEMENT, "[Movement] xzDist=%.2f", dist);
+ *   DebugLog.fine(DebugCategory.MOVEMENT, "[Movement] xzDist=%.2f", dist);   // verbose, hidden by default
  *   DebugLog.info(DebugCategory.MOVEMENT, "[Movement] Arrived at %s.", target);
  *   DebugLog.warning(DebugCategory.MOVEMENT, "[Movement] Nav target is null.");
+ *   // runtime-configurable level (e.g. from JSON): use DebugLogUtil.parseLevel("DEBUG") -- DEBUG is an alias for FINE
+ *   DebugLog.log(DebugCategory.GENERAL, level, "[LogDebug] [%s] %s", npcId, msg);
  * }</pre>
  */
 public final class DebugLog {
@@ -36,8 +38,13 @@ public final class DebugLog {
         return comp != null ? comp.getUuid().toString() : "?";
     }
 
-    /** Verbose debug message -- only visible when category is set to FINE. */
+    /** Verbose debug message -- only visible when category is set to FINE or DEBUG. Alias: {@link #debug}. */
     public static void fine(DebugCategory category, String format, Object... args) {
+        emit(category, Level.FINE, format, args);
+    }
+
+    /** Alias for {@link #fine} -- matches the {@code "DEBUG"} level name accepted by {@link DebugLogUtil#parseLevel}. */
+    public static void debug(DebugCategory category, String format, Object... args) {
         emit(category, Level.FINE, format, args);
     }
 
@@ -54,6 +61,11 @@ public final class DebugLog {
     /** Severe/error message -- always visible unless the category is OFF. */
     public static void severe(DebugCategory category, String format, Object... args) {
         emit(category, Level.SEVERE, format, args);
+    }
+
+    /** Logs at the given {@link Level}. The level may be obtained via {@link DebugLogUtil#parseLevel} (supports {@code "DEBUG"} as alias for FINE). */
+    public static void log(DebugCategory category, Level level, String format, Object... args) {
+        emit(category, level, format, args);
     }
 
     private static void emit(DebugCategory category, Level level, String format, Object... args) {

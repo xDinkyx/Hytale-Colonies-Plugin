@@ -11,9 +11,9 @@ import java.util.logging.Level;
  * Saved to the plugin's mods folder so settings survive server restarts.
  *
  * <p>Each field stores the {@link Level} name for the corresponding
- * {@link DebugCategory} (e.g. {@code "OFF"}, {@code "FINE"}, {@code "INFO"},
+ * {@link DebugCategory} (e.g. {@code "OFF"}, {@code "FINE"}, {@code "DEBUG"} (alias for FINE), {@code "INFO"},
  * {@code "WARNING"}, {@code "SEVERE"}). Default is {@code "INFO"} for all
- * categories, meaning INFO/WARNING/SEVERE are visible and FINE (debug) is hidden.
+ * categories, meaning INFO/WARNING/SEVERE are visible and FINE/DEBUG messages are hidden.
  *
  * <p>Call {@link #applyToCategories()} once after loading to push the stored
  * levels into the live enum values. Call {@link #setLevelForCategory} when
@@ -24,6 +24,9 @@ public class DebugConfig {
 
     public static final BuilderCodec<DebugConfig> CODEC =
         BuilderCodec.builder(DebugConfig.class, DebugConfig::new)
+            .append(new KeyedCodec<>("GeneralLevel", Codec.STRING),
+                    (c, v) -> c.generalLevel = v, c -> c.generalLevel)
+            .add()
             .append(new KeyedCodec<>("MovementLevel", Codec.STRING),
                     (c, v) -> c.movementLevel = v, c -> c.movementLevel)
             .add()
@@ -62,6 +65,7 @@ public class DebugConfig {
             .add()
             .build();
 
+    private String generalLevel         = "INFO";
     private String movementLevel       = "INFO";
     private String jobSystemLevel      = "INFO";
     private String jobAssignmentLevel  = "INFO";
@@ -79,16 +83,17 @@ public class DebugConfig {
 
     /** Parses all stored level strings and applies them to the live {@link DebugCategory} values. */
     public void applyToCategories() {
-        DebugCategory.MOVEMENT.setMinLevel(parseLevel(movementLevel));
-        DebugCategory.JOB_SYSTEM.setMinLevel(parseLevel(jobSystemLevel));
-        DebugCategory.JOB_ASSIGNMENT.setMinLevel(parseLevel(jobAssignmentLevel));
-        DebugCategory.WOODSMAN_JOB.setMinLevel(parseLevel(woodsmanJobLevel));
-        DebugCategory.MINER_JOB.setMinLevel(parseLevel(minerJobLevel));
-        DebugCategory.TREE_SCANNER.setMinLevel(parseLevel(treeScannerLevel));
-        DebugCategory.COLONIST_DELIVERY.setMinLevel(parseLevel(colonistDeliveryLevel));
-        DebugCategory.CLAIM_SYSTEM.setMinLevel(parseLevel(claimSystemLevel));
-        DebugCategory.COLONIST_LIFECYCLE.setMinLevel(parseLevel(colonistLifecycleLevel));
-        DebugCategory.PERFORMANCE.setMinLevel(parseLevel(performanceLevel));
+        DebugCategory.GENERAL.setMinLevel(DebugLogUtil.parseLevel(generalLevel));
+        DebugCategory.MOVEMENT.setMinLevel(DebugLogUtil.parseLevel(movementLevel));
+        DebugCategory.JOB_SYSTEM.setMinLevel(DebugLogUtil.parseLevel(jobSystemLevel));
+        DebugCategory.JOB_ASSIGNMENT.setMinLevel(DebugLogUtil.parseLevel(jobAssignmentLevel));
+        DebugCategory.WOODSMAN_JOB.setMinLevel(DebugLogUtil.parseLevel(woodsmanJobLevel));
+        DebugCategory.MINER_JOB.setMinLevel(DebugLogUtil.parseLevel(minerJobLevel));
+        DebugCategory.TREE_SCANNER.setMinLevel(DebugLogUtil.parseLevel(treeScannerLevel));
+        DebugCategory.COLONIST_DELIVERY.setMinLevel(DebugLogUtil.parseLevel(colonistDeliveryLevel));
+        DebugCategory.CLAIM_SYSTEM.setMinLevel(DebugLogUtil.parseLevel(claimSystemLevel));
+        DebugCategory.COLONIST_LIFECYCLE.setMinLevel(DebugLogUtil.parseLevel(colonistLifecycleLevel));
+        DebugCategory.PERFORMANCE.setMinLevel(DebugLogUtil.parseLevel(performanceLevel));
     }
 
     /**
@@ -98,6 +103,7 @@ public class DebugConfig {
     public void setLevelForCategory(DebugCategory category, Level level) {
         String name = level.getName();
         switch (category) {
+            case GENERAL                -> generalLevel = name;
             case MOVEMENT           -> movementLevel = name;
             case JOB_SYSTEM         -> jobSystemLevel = name;
             case JOB_ASSIGNMENT     -> jobAssignmentLevel = name;
@@ -115,6 +121,7 @@ public class DebugConfig {
     /** Returns the stored level name string for the given category. */
     public String getLevelNameForCategory(DebugCategory category) {
         return switch (category) {
+            case GENERAL                -> generalLevel;
             case MOVEMENT               -> movementLevel;
             case JOB_SYSTEM             -> jobSystemLevel;
             case JOB_ASSIGNMENT         -> jobAssignmentLevel;
@@ -128,24 +135,14 @@ public class DebugConfig {
         };
     }
 
-    private static Level parseLevel(String name) {
-        return switch (name.toUpperCase()) {
-            case "OFF"     -> Level.OFF;
-            case "SEVERE"  -> Level.SEVERE;
-            case "WARNING" -> Level.WARNING;
-            case "FINE"    -> Level.FINE;
-            default        -> Level.INFO;
-        };
-    }
-
     public boolean isDrawColonistPaths() { return drawColonistPaths; }
     public void setDrawColonistPaths(boolean v) { drawColonistPaths = v; }
 
     public boolean isDrawTreeDetection() { return drawTreeDetection; }
     public void setDrawTreeDetection(boolean v) { drawTreeDetection = v; }
 
-    /** Parses a level name string into a {@link Level}. */
+    /** Parses a level name string into a {@link Level}. Delegates to {@link DebugLogUtil#parseLevel}. */
     public static Level parseLevelName(String name) {
-        return parseLevel(name);
+        return DebugLogUtil.parseLevel(name);
     }
 }
