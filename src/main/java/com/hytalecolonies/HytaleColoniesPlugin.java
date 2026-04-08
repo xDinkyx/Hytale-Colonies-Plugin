@@ -35,9 +35,9 @@ import com.hytalecolonies.npc.actions.BuilderActionEquipBestTool;
 import com.hytalecolonies.npc.actions.BuilderActionFindNextTrunkBlock;
 import com.hytalecolonies.npc.actions.BuilderActionHarvestBlock;
 import com.hytalecolonies.npc.actions.BuilderActionIncrementBlocksMined;
+import com.hytalecolonies.npc.actions.BuilderActionLogDebug;
 import com.hytalecolonies.npc.actions.BuilderActionNotifyBlockBroken;
 import com.hytalecolonies.npc.actions.BuilderActionReleaseJobTarget;
-import com.hytalecolonies.npc.actions.BuilderActionLogDebug;
 import com.hytalecolonies.npc.actions.BuilderActionResetBlocksMined;
 import com.hytalecolonies.npc.actions.BuilderActionSeekNearestTree;
 import com.hytalecolonies.npc.actions.BuilderActionSeekNextMineBlock;
@@ -159,7 +159,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     }
 
     /**
-     * Registers the shared ECS job handlers and the per-job-type Idling/WaitingForWork handlers.
+     * Registers the shared ECS job handlers and the per-job-type Idle/WaitingForWork handlers.
      */
     private void registerSharedJobHandlers() {
         // Keep job types in JobRegistry so JobAssignmentSystems.fireColonist() can strip them.
@@ -172,10 +172,10 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         // TravelingToWorkSite = going to a specific claimed work block within a work session.
         ColonistJobSystem.registerShared(JobState.TravelingToWorkSite,    SharedHandlers.TRAVELING_TO_JOB);
         ColonistJobSystem.registerShared(JobState.TravelingToHome,        SharedHandlers.TRAVELING_HOME);
-        // Job-specific handlers for Idling and WaitingForWork: scan for targets and claim.
+        // Job-specific handlers for Idle and WaitingForWork: scan for targets and claim.
         // Registered as job-defaults so they only run for the correct colonist type.
-        JobBehaviorRegistry.registerDefault(MinerJobComponent.getComponentType(),    JobState.Idling,        MinerHandlers.IDLE);
-        JobBehaviorRegistry.registerDefault(WoodsmanJobComponent.getComponentType(), JobState.Idling,        WoodsmanHandlers.IDLE);
+        JobBehaviorRegistry.registerDefault(MinerJobComponent.getComponentType(),    JobState.Idle,        MinerHandlers.IDLE);
+        JobBehaviorRegistry.registerDefault(WoodsmanJobComponent.getComponentType(), JobState.Idle,        WoodsmanHandlers.IDLE);
         JobBehaviorRegistry.registerDefault(MinerJobComponent.getComponentType(),    JobState.WaitingForWork, MinerHandlers.IDLE);
         JobBehaviorRegistry.registerDefault(WoodsmanJobComponent.getComponentType(), JobState.WaitingForWork, WoodsmanHandlers.IDLE);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered shared job handlers");

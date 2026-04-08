@@ -50,7 +50,7 @@ public final class WoodsmanHandlers
         if (nearestTree == null)
         {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-                          "[WoodsmanJob] [%s] Idling -- no available trees within radius %.1f of workstation %s.",
+                          "[WoodsmanJob] [%s] Idle -- no available trees within radius %.1f of workstation %s.",
                           DebugLog.npcId(ctx.colonistRef, ctx.store),
                           workStation.treeSearchRadius,
                           workStationPos);

@@ -1,6 +1,6 @@
 {
   "Type": "Generic",
-  "StartState": "Idling",
+  "StartState": "Idle",
   "Appearance": "Mannequin",
   "NameTranslationKey": "server.npcRoles.Colonist_Miner.name",
   "MaxHealth": 20,
@@ -23,7 +23,7 @@
       ]
     },
     {
-      "$Comment": "Put tool away when leaving Working main state back to Idling.",
+      "$Comment": "Put tool away when leaving Working main state back to Idle.",
       "States": [
         { "From": ["Working"], "To": [] }
       ],
@@ -33,12 +33,12 @@
       ]
     },
     {
-      "$Comment": "Reset any stuck blocking instruction chain when entering Idling main state.",
+      "$Comment": "Reset any stuck blocking instruction chain when entering Idle main state.",
       "States": [
-        { "From": [], "To": ["Idling"] }
+        { "From": [], "To": ["Idle"] }
       ],
       "Actions": [
-        { "Type": "LogDebug", "Message": "StateTransition -> Idling.", "Category": "MINER_JOB", "Level": "INFO" },
+        { "Type": "LogDebug", "Message": "StateTransition -> Idle.", "Category": "MINER_JOB", "Level": "INFO" },
         { "Type": "ResetInstructions" }
       ]
     }
@@ -163,9 +163,9 @@
       ]
     },
     {
-      "$Comment": "Idling -- gates all off-shift behavior. Fires for any Idling substate.",
+      "$Comment": "Idle -- gates all off-shift behavior. Fires for any Idle substate.",
       "Continue": true,
-      "Sensor": { "Type": "State", "State": "Idling", "IgnoreMissingSetState": true },
+      "Sensor": { "Type": "State", "State": "Idle", "IgnoreMissingSetState": true },
       "Instructions": [
         {
           "$Comment": "TravelingToWorkstation -- seek to workstation/work area. ECS writes NavTarget.",

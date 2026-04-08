@@ -338,7 +338,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                 return;
 
             // On server load, transient fields (targetTreePosition etc.) are gone.
-            // Reset any in-progress travel state back to Idling so the movement system
+            // Reset any in-progress travel state back to Idle so the movement system
             // cleanly picks up the colonist and finds a new tree.
             JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
             if (job == null)
@@ -348,18 +348,18 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             // Reset states where a claimed block (JobTargetComponent) was active -- the claim
             // is gone after a server restart or role switch.  TravelingToWorkstation and
             // TravelingToHome do not involve claimed blocks; their handlers re-establish nav
-            // naturally, so we preserve those states rather than looping back through Idling.
+            // naturally, so we preserve those states rather than looping back through Idle.
             boolean needsReset = state == JobState.Working
                     || state == JobState.TravelingToWorkSite;
             if (needsReset) {
                 DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
-                        "[JobAssignment] [%s] Resetting colonist job state from %s to Idling on load.",
+                        "[JobAssignment] [%s] Resetting colonist job state from %s to Idle on load.",
                         DebugLog.npcId(ref, store), state);
-                ColonistStateUtil.setJobState(ref, store, job, JobState.Idling);
+                ColonistStateUtil.setJobState(ref, store, job, JobState.Idle);
                 // Use tryRemoveComponent -- the component may not be present if the role
                 // changed before the target was claimed.
                 commandBuffer.tryRemoveComponent(ref, JobTargetComponent.getComponentType());
-            } else if (state != JobState.Idling) {
+            } else if (state != JobState.Idle) {
                 // Preserved transit state -- re-sync the NPC JSON state to match so the
                 // new role's state machine is consistent from the first tick.
                 ColonistStateUtil.setJobState(ref, store, job, state);

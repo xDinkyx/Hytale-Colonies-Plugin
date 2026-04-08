@@ -1,14 +1,14 @@
 package com.hytalecolonies.components.jobs;
 
-import com.hytalecolonies.HytaleColoniesPlugin;
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
-import javax.annotation.Nullable;
+import com.hytalecolonies.HytaleColoniesPlugin;
 
 /**
  * Per-colonist component for miner colonists. Carries runtime state that is
@@ -29,7 +29,7 @@ public class MinerJobComponent implements Component<EntityStore> {
             .build();
 
     // ===== Persisted runtime state =====
-    /** How many blocks have been mined during the current work run. Resets each Idling tick. */
+    /** How many blocks have been mined during the current work run. Resets each Idle tick. */
     public int blocksMinedThisRun = 0;
 
     // ===== Constructors =====

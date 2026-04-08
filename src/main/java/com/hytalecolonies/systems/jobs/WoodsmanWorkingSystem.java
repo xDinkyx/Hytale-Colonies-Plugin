@@ -71,8 +71,8 @@ public class WoodsmanWorkingSystem extends EntityTickingSystem<EntityStore> {
         JobTargetComponent jobTarget = store.getComponent(colonistRef, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.targetPosition == null) {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanWorking] [%s] No JobTargetComponent or target is null -- resetting to Idling.", npcId);
-            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idling);
+                    "[WoodsmanWorking] [%s] No JobTargetComponent or target is null -- resetting to Idle.", npcId);
+            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
             return;
         }
 

@@ -92,7 +92,7 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
             DebugLog.warning(DebugCategory.JOB_SYSTEM,
                     "[ColonistJob] [%s] Colonist has null JobState -- resetting to Idle.",
                     DebugLog.npcId(colonistRef, store));
-            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idling);
+            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
             return;
         }
 

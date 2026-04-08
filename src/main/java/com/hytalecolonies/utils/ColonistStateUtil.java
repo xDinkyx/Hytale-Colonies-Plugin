@@ -66,12 +66,12 @@ public final class ColonistStateUtil
 
     /**
      * Maps a {@link JobState} to the NPC role main-state name.
-     * Idling substates belong to main state {@code "Idling"},
+     * Idle substates belong to main state {@code "Idle"},
      * Working substates to {@code "Working"}, others are standalone.
      */
     private static String npcMainState(JobState state) {
         return switch (state) {
-            case Idling, Sleeping, TravelingToWorkstation, TravelingToHome -> "Idling";
+            case Idle, Sleeping, TravelingToWorkstation, TravelingToHome -> "Idle";
             case Working, WaitingForWork, TravelingToWorkSite, CollectingDrops, DeliveringItems -> "Working";
             case Recharging -> "Recharging";
         };
@@ -83,7 +83,7 @@ public final class ColonistStateUtil
      */
     private static String npcSubState(JobState state) {
         return switch (state) {
-            case Idling, Recharging -> null;
+            case Idle, Recharging -> null;
             case Sleeping             -> "Sleeping";
             case TravelingToWorkstation -> "TravelingToWorkstation";
             case TravelingToHome      -> "TravelingToHome";

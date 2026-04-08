@@ -68,7 +68,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
 
         Vector3i workStationPos = job.getWorkStationBlockPosition();
         if (workStationPos == null) {
-            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idling);
+            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
             return;
         }
 
@@ -78,7 +78,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
                 ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
                 : null;
         if (workStation == null) {
-            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idling);
+            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
             return;
         }
         String npcId = DebugLog.npcId(colonistRef, store);
@@ -123,14 +123,14 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
             } else {
                 UUIDComponent uuidComp = entityStore.getStore().getComponent(colonistRef, UUIDComponent.getComponentType());
                 if (uuidComp == null) {
-                    ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Idling);
+                    ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Idle);
                     return;
                 }
                 if (!ClaimBlockUtil.claimBlock(world, nextBlock, uuidComp.getUuid(), "Mine")) {
-                    // Race loss -- retry via Idling.
+                    // Race loss -- retry via Idle.
                     DebugLog.fine(DebugCategory.MINER_JOB,
-                            "[MinerWorking] [%s] Could not claim next block %s -- going Idling.", npcId, nextBlock);
-                    ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Idling);
+                            "[MinerWorking] [%s] Could not claim next block %s -- going Idle.", npcId, nextBlock);
+                    ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Idle);
                     return;
                 }
                 JobTargetComponent jt = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());

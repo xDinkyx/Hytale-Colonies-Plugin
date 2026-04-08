@@ -47,7 +47,7 @@ public final class SharedHandlers {
     // ===== Idle factory =====
 
     /**
-     * Functional interface for the job-specific part of an Idling handler: locates the next
+     * Functional interface for the job-specific part of an Idle handler: locates the next
      * work target and performs any job-specific preparation (e.g. resetting run counters).
      */
     @FunctionalInterface
@@ -58,7 +58,7 @@ public final class SharedHandlers {
     }
 
     /**
-     * Builds a handler for both {@link JobState#Idling} and {@link JobState#WaitingForWork}.
+     * Builds a handler for both {@link JobState#Idle} and {@link JobState#WaitingForWork}.
      *
      * <p>When the colonist is not yet at the workstation (e.g. freshly assigned), dispatches
      * navigation there and transitions to {@link JobState#TravelingToWorkstation}. Once at the
@@ -127,7 +127,7 @@ public final class SharedHandlers {
                 if (liveJob == null)
                     return;
                 JobState currentTask = liveJob.getCurrentTask();
-                if (currentTask != JobState.Idling && currentTask != JobState.WaitingForWork)
+                if (currentTask != JobState.Idle && currentTask != JobState.WaitingForWork)
                     return;
                 UUIDComponent uuidComp = entityStore.getStore().getComponent(ctx.colonistRef,
                         UUIDComponent.getComponentType());
@@ -203,12 +203,12 @@ public final class SharedHandlers {
     public static final JobStateHandler TRAVELING_TO_JOB = ctx -> {
         JobTargetComponent jobTarget = ctx.store.getComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
         if (jobTarget == null) {
-            ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idling);
+            ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idle);
             return;
         }
         Vector3i targetPos = jobTarget.targetPosition;
         if (targetPos == null) {
-            ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idling);
+            ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idle);
             return;
         }
 
@@ -255,7 +255,7 @@ public final class SharedHandlers {
         }
     };
 
-    /** Moves toward the workstation. On arrival removes {@link JobTargetComponent} and returns to {@link JobState#Idling}. */
+    /** Moves toward the workstation. On arrival removes {@link JobTargetComponent} and returns to {@link JobState#Idle}. */
     public static final JobStateHandler TRAVELING_HOME = ctx -> {
         Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
         if (workStationPos == null)
@@ -288,7 +288,7 @@ public final class SharedHandlers {
                 jobTarget.lastKnownPosition = null;
             }
             ctx.commandBuffer.removeComponent(ctx.colonistRef, JobTargetComponent.getComponentType());
-            ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idling);
+            ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.Idle);
             DebugLog.info(DebugCategory.MOVEMENT, "[Shared] [%s] Arrived home at workstation.",
                     DebugLog.npcId(ctx.colonistRef, ctx.store));
             return;
