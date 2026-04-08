@@ -61,6 +61,37 @@ public final class ColonistStateUtil
         if (role == null)
             return;
 
-        role.getStateSupport().setState(ref, state.name(), null, store);
+        role.getStateSupport().setState(ref, npcMainState(state), npcSubState(state), store);
+    }
+
+    /**
+     * Maps a {@link JobState} to the NPC role main-state name.
+     * Idling substates belong to main state {@code "Idling"},
+     * Working substates to {@code "Working"}, others are standalone.
+     */
+    private static String npcMainState(JobState state) {
+        return switch (state) {
+            case Idling, Sleeping, TravelingToWorkstation, TravelingToHome -> "Idling";
+            case Working, WaitingForWork, TravelingToWorkSite, CollectingDrops, DeliveringItems -> "Working";
+            case Recharging -> "Recharging";
+        };
+    }
+
+    /**
+     * Maps a {@link JobState} to the NPC role substate name, or {@code null} for the default substate.
+     * Bare names only (no leading dot -- the dot notation is JSON DSL only).
+     */
+    private static String npcSubState(JobState state) {
+        return switch (state) {
+            case Idling, Recharging -> null;
+            case Sleeping             -> "Sleeping";
+            case TravelingToWorkstation -> "TravelingToWorkstation";
+            case TravelingToHome      -> "TravelingToHome";
+            case Working              -> "Harvesting";
+            case WaitingForWork       -> "WaitingForWork";
+            case TravelingToWorkSite  -> "TravelingToWorkSite";
+            case CollectingDrops      -> "CollectingDrops";
+            case DeliveringItems      -> "DeliveringItems";
+        };
     }
 }

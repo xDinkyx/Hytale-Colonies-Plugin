@@ -125,7 +125,7 @@ public class WoodsmanWorkingSystem extends EntityTickingSystem<EntityStore> {
                 entityStore.getStore().tryRemoveComponent(colonistRef, MoveToTargetComponent.getComponentType());
                 entityStore.getStore().addComponent(colonistRef, MoveToTargetComponent.getComponentType(),
                         new MoveToTargetComponent(new Vector3d(finalNextBase.x + 0.5, finalNextBase.y, finalNextBase.z + 0.5)));
-                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToJob);
+                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToWorkSite);
             }
         });
     }

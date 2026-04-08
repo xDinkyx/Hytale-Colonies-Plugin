@@ -63,6 +63,7 @@ public final class JobNavigationUtil {
     public static void dispatchNavigation(Store<EntityStore> entityStore,
                                            Ref<EntityStore> entityRef,
                                            Vector3i block) {
+        if (!entityRef.isValid()) return;
         Vector3d navigationTarget = new Vector3d(block.x + 0.5, block.y, block.z + 0.5);
         MoveToTargetComponent existingMove = entityStore.getComponent(entityRef, MoveToTargetComponent.getComponentType());
         if (existingMove != null) {

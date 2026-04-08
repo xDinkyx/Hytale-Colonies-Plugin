@@ -84,7 +84,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                                        @Nonnull CommandBuffer<EntityStore> commandBuffer) {
         Vector3i workStationPos = job.getWorkStationBlockPosition();
         if (workStationPos == null) {
-            ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingHome);
+            ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToHome);
             return;
         }
 
@@ -97,7 +97,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                     "[ColonistDelivery] [%s] No chest within %d blocks of workstation %s -- skipping delivery.",
                     DebugLog.npcId(ref, store), DELIVERY_RADIUS, workStationPos);
                 navigateToWorkstation(ref, commandBuffer, workStationPos);
-                ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingHome);
+                ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToHome);
                 return;
             }
             job.deliveryContainerPosition = containerPos;
@@ -131,7 +131,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                     "[ColonistDelivery] [%s] Chest at %s is no longer present -- resetting delivery container position.", DebugLog.npcId(ref, store), cp);
             job.deliveryContainerPosition = null;
             navigateToWorkstation(ref, commandBuffer, workStationPos);
-            ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingHome);
+            ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToHome);
             return;
         }
 
@@ -142,14 +142,14 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                     "[ColonistDelivery] [%s] Block at %s is no longer a container -- resetting delivery container position.", DebugLog.npcId(ref, store), cp);
             job.deliveryContainerPosition = null;
             navigateToWorkstation(ref, commandBuffer, workStationPos);
-            ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingHome);
+            ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToHome);
             return;
         }
 
         depositItems(ref, store, containerBlock.getItemContainer(), cp);
         job.deliveryContainerPosition = null;
         navigateToWorkstation(ref, commandBuffer, workStationPos);
-        ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingHome);
+        ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToHome);
     }
 
     /** Tools stay on the colonist; everything else gets deposited. */
@@ -291,7 +291,7 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                         cb.addComponent(colonistRef, MoveToTargetComponent.getComponentType(),
                                 new MoveToTargetComponent(new Vector3d(wsPos.x + 0.5, wsPos.y, wsPos.z + 0.5)));
                     }
-                    ColonistStateUtil.setJobState(colonistRef, entityStore, job, JobState.TravelingHome);
+                    ColonistStateUtil.setJobState(colonistRef, entityStore, job, JobState.TravelingToHome);
                     DebugLog.info(DebugCategory.COLONIST_DELIVERY,
                             "[ColonistDelivery:ContainerRemoved] [%s] Redirected colonist home.",
                             DebugLog.npcId(colonistRef, entityStore));

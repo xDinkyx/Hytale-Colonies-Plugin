@@ -149,7 +149,7 @@ public final class MinerHandlers {
                     entityStore.getStore().addComponent(ctx.colonistRef, MoveToTargetComponent.getComponentType(),
                             new MoveToTargetComponent(blockCenter(nextBlock)));
                 }
-                ColonistStateUtil.setJobState(ctx.colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToJob);
+                ColonistStateUtil.setJobState(ctx.colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToWorkstation);
                 DebugLog.info(DebugCategory.MINER_JOB, "[MinerJob] [%s] Claimed next mine block at %s -- heading there.",
                         DebugLog.npcId(ctx.colonistRef, entityStore.getStore()), nextBlock);
             }

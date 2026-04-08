@@ -58,12 +58,12 @@ public final class SharedHandlers {
     }
 
     /**
-     * Builds a generic Idling handler shared across all job types.
+     * Builds a handler for both {@link JobState#Idling} and {@link JobState#WaitingForWork}.
      *
-     * <p>
-     * Common sequence: keep nav pointed at the workstation, check all required tools,
-     * find a target block via {@code targetFinder}, claim it, dispatch navigation,
-     * and transition to {@link com.hytalecolonies.components.jobs.JobState#TravelingToJob}.
+     * <p>When the colonist is not yet at the workstation (e.g. freshly assigned), dispatches
+     * navigation there and transitions to {@link JobState#TravelingToWorkstation}. Once at the
+     * workstation, checks tools, finds a target block, claims it, and transitions to
+     * {@link JobState#TravelingToWorkSite}.
      *
      * @param requiredGatherTypes
      *                                gather-type tags the colonist must hold a tool for (all required)
@@ -78,10 +78,24 @@ public final class SharedHandlers {
             if (workStationPos == null)
                 return;
 
-            // Keep NavTarget pointed at the workstation while idling so the JSON
-            // ReadPosition sensor fires and the wander/fidget animation plays.
-            // Also set the leash point so WanderInCircle constrains to the workstation area.
             final Vector3i wsPos = workStationPos;
+
+            // If not yet at the workstation, navigate there first.
+            // NOTE: do NOT dispatch any world.execute tasks here -- the entity may be mid-role-switch
+            // and the ref would be invalid by the time the lambda runs.
+            TransformComponent proximityTransform = ctx.getTransform();
+            if (proximityTransform != null) {
+                Vector3d colonistPos = proximityTransform.getTransform().getPosition();
+                double pdx = colonistPos.x - (wsPos.x + 0.5);
+                double pdz = colonistPos.z - (wsPos.z + 0.5);
+                if (pdx * pdx + pdz * pdz > WORKSTATION_ARRIVAL_XZ * WORKSTATION_ARRIVAL_XZ) {
+                    ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job,
+                            JobState.TravelingToWorkstation);
+                    return;
+                }
+            }
+
+            // Already at workstation -- anchor leash and keep nav pointed here.
             ColonistLeashUtil.setLeashToBlockCenter(ctx.colonistRef, ctx.store, wsPos);
             ctx.world.execute(() -> JobNavigationUtil.dispatchNavigation(ctx.world.getEntityStore().getStore(),
                     ctx.colonistRef, wsPos));
@@ -110,7 +124,10 @@ public final class SharedHandlers {
             ctx.world.execute(() -> {
                 JobComponent liveJob = entityStore.getStore().getComponent(ctx.colonistRef,
                         JobComponent.getComponentType());
-                if (liveJob == null || liveJob.getCurrentTask() != JobState.Idling)
+                if (liveJob == null)
+                    return;
+                JobState currentTask = liveJob.getCurrentTask();
+                if (currentTask != JobState.Idling && currentTask != JobState.WaitingForWork)
                     return;
                 UUIDComponent uuidComp = entityStore.getStore().getComponent(ctx.colonistRef,
                         UUIDComponent.getComponentType());
@@ -121,12 +138,52 @@ public final class SharedHandlers {
                         uuidComp.getUuid(), claimTarget, claimType))
                     return;
                 // Set state after claim+nav so PathFindingSystem reads a consistent state.
-                ColonistStateUtil.setJobState(ctx.colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToJob);
+                ColonistStateUtil.setJobState(ctx.colonistRef, entityStore.getStore(), liveJob,
+                        JobState.TravelingToWorkSite);
             });
         };
     }
 
     // ===== Handlers =====
+
+    /**
+     * Moves toward the workstation building after initial job assignment (or when returning
+     * from a previous task). On arrival transitions to {@link JobState#WaitingForWork}.
+     */
+    public static final JobStateHandler TRAVELING_TO_WORKSTATION = ctx -> {
+        Vector3i workStationPos = ctx.job.getWorkStationBlockPosition();
+        if (workStationPos == null)
+            return;
+
+        final Vector3i wsPos = workStationPos;
+        ctx.world.execute(() -> {
+            if (!ctx.colonistRef.isValid()) return;
+            JobNavigationUtil.dispatchNavigation(ctx.world.getEntityStore().getStore(), ctx.colonistRef, wsPos);
+        });
+
+        TransformComponent transform = ctx.getTransform();
+        if (transform == null) {
+            DebugLog.warning(DebugCategory.MOVEMENT,
+                    "[Shared] [%s] TravelingToWorkstation -- colonist has no TransformComponent, skipping.",
+                    DebugLog.npcId(ctx.colonistRef, ctx.store));
+            return;
+        }
+
+        Vector3d colonistPos = transform.getTransform().getPosition();
+        double dx = colonistPos.x - (wsPos.x + 0.5);
+        double dz = colonistPos.z - (wsPos.z + 0.5);
+        double xzDist = Math.sqrt(dx * dx + dz * dz);
+
+        DebugLog.fine(DebugCategory.MOVEMENT,
+                "[Shared] [%s] TravelingToWorkstation -- xzDist=%.2f to %s (threshold %.1f).",
+                DebugLog.npcId(ctx.colonistRef, ctx.store), xzDist, wsPos, WORKSTATION_ARRIVAL_XZ);
+
+        if (xzDist <= WORKSTATION_ARRIVAL_XZ) {
+            ColonistStateUtil.setJobState(ctx.colonistRef, ctx.store, ctx.job, JobState.WaitingForWork);
+            DebugLog.info(DebugCategory.MOVEMENT, "[Shared] [%s] Arrived at workstation -- waiting for work.",
+                    DebugLog.npcId(ctx.colonistRef, ctx.store));
+        }
+    };
 
     /** Waits at the drop site for items to settle, then transitions to {@link JobState#DeliveringItems}. */
     public static final JobStateHandler COLLECTING_DROPS = ctx -> {

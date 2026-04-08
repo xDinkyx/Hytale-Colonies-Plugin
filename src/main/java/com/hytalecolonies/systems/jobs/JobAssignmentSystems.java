@@ -344,15 +344,25 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             if (job == null)
                 return;
             JobState state = job.getCurrentTask();
-            if (state == JobState.TravelingToJob || state == JobState.TravelingHome || state == JobState.Working) {
+
+            // Reset states where a claimed block (JobTargetComponent) was active -- the claim
+            // is gone after a server restart or role switch.  TravelingToWorkstation and
+            // TravelingToHome do not involve claimed blocks; their handlers re-establish nav
+            // naturally, so we preserve those states rather than looping back through Idling.
+            boolean needsReset = state == JobState.Working
+                    || state == JobState.TravelingToWorkSite;
+            if (needsReset) {
                 DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
                         "[JobAssignment] [%s] Resetting colonist job state from %s to Idling on load.",
                         DebugLog.npcId(ref, store), state);
                 ColonistStateUtil.setJobState(ref, store, job, JobState.Idling);
-                // Remove the job target so ColonistMovementSystem does not process stale
-                // travel.
-                // StaleMarkCleanupSystem will clear any orphaned tree marks.
-                commandBuffer.removeComponent(ref, JobTargetComponent.getComponentType());
+                // Use tryRemoveComponent -- the component may not be present if the role
+                // changed before the target was claimed.
+                commandBuffer.tryRemoveComponent(ref, JobTargetComponent.getComponentType());
+            } else if (state != JobState.Idling) {
+                // Preserved transit state -- re-sync the NPC JSON state to match so the
+                // new role's state machine is consistent from the first tick.
+                ColonistStateUtil.setJobState(ref, store, job, state);
             }
         }
 

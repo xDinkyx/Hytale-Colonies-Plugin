@@ -143,9 +143,9 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
                 entityStore.getStore().tryRemoveComponent(colonistRef, MoveToTargetComponent.getComponentType());
                 entityStore.getStore().addComponent(colonistRef, MoveToTargetComponent.getComponentType(),
                         new MoveToTargetComponent(MinerHandlers.blockCenter(nextBlock)));
-                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToJob);
+                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToWorkSite);
                 DebugLog.info(DebugCategory.MINER_JOB,
-                        "[MinerWorking] [%s] Claimed next block at %s -- transitioning to TravelingToJob.", npcId, nextBlock);
+                        "[MinerWorking] [%s] Claimed next block at %s -- transitioning to TravelingToWorkSite.", npcId, nextBlock);
             }
         });
     }
