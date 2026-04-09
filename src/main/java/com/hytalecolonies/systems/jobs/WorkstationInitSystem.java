@@ -57,7 +57,7 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
             case Woodsman -> initWoodsman(ref, workStation, store, commandBuffer);
             case Miner -> DebugLog.info(DebugCategory.MINER_JOB,
                     "[WorkstationInit] Miner workstation placed -- no initial scan needed for phase 1.");
-            case Farmer, Builder -> {
+            case Farmer, Constructor -> {
                 /* no-op: initialization not yet implemented */ }
         }
     }

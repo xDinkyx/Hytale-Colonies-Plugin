@@ -7,6 +7,8 @@ import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.codec.codecs.set.SetCodec;
+import java.util.ArrayList;
+import java.util.List;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -70,6 +72,17 @@ public class WorkStationComponent implements Component<ChunkStore> {
                     (o, v) -> o.blocksPerRun = v,
                     o -> o.blocksPerRun)
             .add()
+            // ===== Constructor config =====
+            .append(new KeyedCodec<>("ConstructionOrders", new ArrayCodec<>(Vector3i.CODEC, Vector3i[]::new)),
+                    (o, v) -> {
+                        o.constructionOrders.clear();
+                        java.util.Collections.addAll(o.constructionOrders, v);
+                    }, o -> o.constructionOrders.toArray(Vector3i[]::new))
+            .add()
+            .append(new KeyedCodec<>("ActiveConstructionOrderOrigin", Vector3i.CODEC),
+                    (o, v) -> o.activeConstructionOrderOrigin = v,
+                    o -> o.activeConstructionOrderOrigin)
+            .add()
             .build();
 
     // ===== Shared fields =====
@@ -99,6 +112,12 @@ public class WorkStationComponent implements Component<ChunkStore> {
     /** How many blocks each miner digs per run before collecting drops (Miner). */
     public int blocksPerRun = 16;
 
+    // ===== Constructor config =====
+    /** World positions of pending/in-progress construction order origin blocks. */
+    public List<Vector3i> constructionOrders = new ArrayList<>();
+    /** Origin of the construction order currently being worked on. Null if none assigned. */
+    public @Nullable Vector3i activeConstructionOrderOrigin = null;
+
     // ===== Constructors =====
     public WorkStationComponent() {
     }
@@ -124,6 +143,8 @@ public class WorkStationComponent implements Component<ChunkStore> {
         copy.mineSize = this.mineSize;
         copy.mineOffsetZ = this.mineOffsetZ;
         copy.blocksPerRun = this.blocksPerRun;
+        copy.constructionOrders = new ArrayList<>(this.constructionOrders);
+        copy.activeConstructionOrderOrigin = this.activeConstructionOrderOrigin;
         return copy;
     }
 

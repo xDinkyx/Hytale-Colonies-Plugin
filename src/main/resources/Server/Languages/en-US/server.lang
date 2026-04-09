@@ -1,5 +1,7 @@
 items.Bench_Colony_Miner.name=Colony Mine Shaft
 items.Bench_Colony_Miner.description=Place this workstation to set miners to work digging a 4x4x4 shaft.
+items.Bench_Colony_Constructor.name=Colony Construction Site
+items.Bench_Colony_Constructor.description=Place this workstation to assign constructors to build prefab structures block by block.
 items.Example_Block.name=Example Block
 items.Tool_Colony_Clockwork_Kit.name=Colony Clockwork Kit
 items.Tool_Colony_Clockwork_Kit.description=This kit contains all the necessary components to assemble a functional Colony Clockwork.

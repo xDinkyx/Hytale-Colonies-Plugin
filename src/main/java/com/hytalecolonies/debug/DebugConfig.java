@@ -42,6 +42,9 @@ public class DebugConfig {
             .append(new KeyedCodec<>("MinerJobLevel", Codec.STRING),
                     (c, v) -> c.minerJobLevel = v, c -> c.minerJobLevel)
             .add()
+            .append(new KeyedCodec<>("ConstructorJobLevel", Codec.STRING),
+                    (c, v) -> c.constructorJobLevel = v, c -> c.constructorJobLevel)
+            .add()
             .append(new KeyedCodec<>("TreeScannerLevel", Codec.STRING),
                     (c, v) -> c.treeScannerLevel = v, c -> c.treeScannerLevel)
             .add()
@@ -71,6 +74,7 @@ public class DebugConfig {
     private String jobAssignmentLevel  = "INFO";
     private String woodsmanJobLevel    = "INFO";
     private String minerJobLevel       = "INFO";
+    private String constructorJobLevel = "INFO";
     private String treeScannerLevel    = "INFO";
     private String colonistDeliveryLevel = "INFO";
     private String claimSystemLevel      = "INFO";
@@ -89,6 +93,7 @@ public class DebugConfig {
         DebugCategory.JOB_ASSIGNMENT.setMinLevel(DebugLogUtil.parseLevel(jobAssignmentLevel));
         DebugCategory.WOODSMAN_JOB.setMinLevel(DebugLogUtil.parseLevel(woodsmanJobLevel));
         DebugCategory.MINER_JOB.setMinLevel(DebugLogUtil.parseLevel(minerJobLevel));
+        DebugCategory.CONSTRUCTOR_JOB.setMinLevel(DebugLogUtil.parseLevel(constructorJobLevel));
         DebugCategory.TREE_SCANNER.setMinLevel(DebugLogUtil.parseLevel(treeScannerLevel));
         DebugCategory.COLONIST_DELIVERY.setMinLevel(DebugLogUtil.parseLevel(colonistDeliveryLevel));
         DebugCategory.CLAIM_SYSTEM.setMinLevel(DebugLogUtil.parseLevel(claimSystemLevel));
@@ -109,6 +114,7 @@ public class DebugConfig {
             case JOB_ASSIGNMENT     -> jobAssignmentLevel = name;
             case WOODSMAN_JOB       -> woodsmanJobLevel = name;
             case MINER_JOB          -> minerJobLevel = name;
+            case CONSTRUCTOR_JOB    -> constructorJobLevel = name;
             case TREE_SCANNER       -> treeScannerLevel = name;
             case COLONIST_DELIVERY  -> colonistDeliveryLevel = name;
             case CLAIM_SYSTEM           -> claimSystemLevel = name;
@@ -127,6 +133,7 @@ public class DebugConfig {
             case JOB_ASSIGNMENT         -> jobAssignmentLevel;
             case WOODSMAN_JOB           -> woodsmanJobLevel;
             case MINER_JOB              -> minerJobLevel;
+            case CONSTRUCTOR_JOB        -> constructorJobLevel;
             case TREE_SCANNER           -> treeScannerLevel;
             case COLONIST_DELIVERY      -> colonistDeliveryLevel;
             case CLAIM_SYSTEM           -> claimSystemLevel;

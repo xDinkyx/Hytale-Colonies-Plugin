@@ -15,6 +15,8 @@ public enum JobState {
 
     // Working group
     Working(Group.Working, "Harvesting"),
+    WorkingClearing(Group.Working, "Clearing"),
+    WorkingConstructing(Group.Working, "Constructing"),
     WaitingForWork(Group.Working, "WaitingForWork"),
     TravelingToWorkSite(Group.Working, "TravelingToWorkSite"),
     CollectingDrops(Group.Working, "CollectingDrops"),

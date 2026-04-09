@@ -34,9 +34,10 @@ public final class ColonistRoleMap {
     @Nonnull
     public static String roleFor(@Nonnull JobType jobType) {
         return switch (jobType) {
-            case Miner    -> "Colonist_Miner";
-            case Woodsman -> "Colonist_Woodsman";
-            default       -> ROLE_GENERIC;
+            case Miner       -> "Colonist_Miner";
+            case Woodsman    -> "Colonist_Woodsman";
+            case Constructor -> "Colonist_Constructor";
+            default          -> ROLE_GENERIC;
         };
     }
 

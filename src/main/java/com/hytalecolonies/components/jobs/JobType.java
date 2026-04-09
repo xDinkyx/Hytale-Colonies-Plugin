@@ -6,7 +6,7 @@ public enum JobType {
     Woodsman,
     Miner,
     Farmer,
-    Builder; // ToDo: Would be cool if structures need to be built by different types of builders (e.g. Carpenter for wooden structures, Mason for stone structures, etc.)
+    Constructor; // ToDo: Split into separate specialist roles later. Constructor is a jack-of-all-trades for now.
 
     public static final EnumCodec<JobType> CODEC = new EnumCodec<>(JobType.class);
 }

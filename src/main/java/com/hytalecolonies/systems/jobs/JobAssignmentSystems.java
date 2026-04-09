@@ -32,6 +32,7 @@ import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
+import com.hytalecolonies.components.jobs.ConstructorJobComponent;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
@@ -205,7 +206,9 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
                     new WoodsmanJobComponent());
             case Miner -> _commandBuffer.addComponent(colonistRef, MinerJobComponent.getComponentType(),
                     new MinerJobComponent());
-            case Farmer, Builder -> { /* TODO: implement job-specific component */ }
+            case Constructor -> _commandBuffer.addComponent(colonistRef, ConstructorJobComponent.getComponentType(),
+                    new ConstructorJobComponent());
+            case Farmer -> { /* TODO: implement job-specific component */ }
         }
 
 
