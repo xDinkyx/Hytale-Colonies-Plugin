@@ -14,7 +14,7 @@
   ],
   "StateTransitions": [
     {
-      "$Comment": "Equip best woodcutting tool when entering Working main state (fires once regardless of which working substate is entered).",
+      "$Comment": "Equip best woodcutting tool when entering Working main state.",
       "States": [
         { "From": [], "To": ["Working"] }
       ],
@@ -24,7 +24,7 @@
       ]
     },
     {
-      "$Comment": "Put tool away when leaving Working main state back to Idle.",
+      "$Comment": "Put tool away when leaving Working main state.",
       "States": [
         { "From": ["Working"], "To": [] }
       ],
@@ -72,7 +72,7 @@
           ]
         },
         {
-          "$Comment": "Harvesting -- when job-target block is air, notify ECS.",
+          "$Comment": "Harvesting -- when job-target block is air, notify ECS working system.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".Harvesting", "IgnoreMissingSetState": true },
           "Instructions": [
@@ -85,18 +85,26 @@
           ]
         },
         {
-          "$Comment": "TravelingToWorkSite -- seek to next claimed tree trunk within the same work session.",
+          "$Comment": "TravelingToWorkSite -- seek to next claimed tree trunk. On arrival transition to Harvesting.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".TravelingToWorkSite", "IgnoreMissingSetState": true },
           "Instructions": [
             {
+              "Continue": true,
               "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
               "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
+            },
+            {
+              "Sensor": { "Type": "JobTarget", "Range": 2.5 },
+              "Actions": [
+                { "Type": "LogDebug", "Message": "TravelingToWorkSite: arrived -> Working.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
+                { "Type": "SetEcsJobState", "JobState": "Working" }
+              ]
             }
           ]
         },
         {
-          "$Comment": "WaitingForWork -- at workstation, waiting for tools or work. Wander + question mark particle.",
+          "$Comment": "WaitingForWork -- wander at workstation, scan for a tree. Blocked if missing hatchet.",
           "Sensor": { "Type": "State", "State": ".WaitingForWork", "IgnoreMissingSetState": true },
           "Instructions": [
             {
@@ -119,11 +127,32 @@
                 { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
                 { "Type": "Timeout", "Delay": [3, 3] }
               ]
+            },
+            {
+              "$Comment": "Has hatchet -- scan for the nearest available tree and claim it.",
+              "Continue": true,
+              "Sensor": {
+                "Type": "Self",
+                "Filters": [
+                  { "Type": "Inventory", "Items": ["Tool_Hatchet_*"], "CountRange": [1, 999] }
+                ]
+              },
+              "Actions": [
+                { "Type": "SeekNearestTree" }
+              ]
+            },
+            {
+              "$Comment": "Target found -- travel to the claimed tree.",
+              "Sensor": { "Type": "JobTargetExists" },
+              "Actions": [
+                { "Type": "LogDebug", "Message": "WaitingForWork: tree found -> TravelingToWorkSite.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
+                { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
+              ]
             }
           ]
         },
         {
-          "$Comment": "CollectingDrops -- wander area and pick up drops.",
+          "$Comment": "CollectingDrops -- wander and pick up wood drops. After 5 s, deliver.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".CollectingDrops", "IgnoreMissingSetState": true },
           "Instructions": [
@@ -133,21 +162,47 @@
               "BodyMotion": { "Type": "WanderInCircle", "Radius": 5, "MaxHeadingChange": 60, "RelativeSpeed": 0.5 }
             },
             {
+              "Continue": true,
               "Sensor": { "Type": "DroppedItem", "Range": 5.0 },
               "Actions": [
                 { "Type": "PickUpItem", "Hoover": true }
+              ]
+            },
+            {
+              "$Comment": "Timer elapsed -- transition to DeliveringItems.",
+              "Sensor": { "Type": "CollectionTimerElapsed" },
+              "Actions": [
+                { "Type": "LogDebug", "Message": "CollectingDrops: timer elapsed -> DeliveringItems.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
+                { "Type": "SetEcsJobState", "JobState": "DeliveringItems" }
               ]
             }
           ]
         },
         {
-          "$Comment": "DeliveringItems -- seek to delivery container. ECS writes NavTarget.",
+          "$Comment": "DeliveringItems -- find chest near workstation and deposit inventory.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".DeliveringItems", "IgnoreMissingSetState": true },
           "Instructions": [
             {
+              "Continue": true,
+              "Sensor": { "Type": "Any" },
+              "Actions": [
+                { "Type": "FindDeliveryContainer" }
+              ]
+            },
+            {
+              "Continue": true,
               "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
               "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
+            },
+            {
+              "$Comment": "Arrived at container -- deposit items then head home.",
+              "Sensor": { "Type": "JobTarget", "Range": 3.0 },
+              "Actions": [
+                { "Type": "LogDebug", "Message": "DeliveringItems: depositing and heading home.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
+                { "Type": "DepositItems" },
+                { "Type": "SetEcsJobState", "JobState": "TravelingToHome" }
+              ]
             }
           ]
         },
@@ -160,33 +215,69 @@
       "Sensor": { "Type": "State", "State": "Idle", "IgnoreMissingSetState": true },
       "Instructions": [
         {
-          "$Comment": "TravelingToWorkstation -- seek to workstation/work area. ECS writes NavTarget.",
+          "$Comment": "TravelingToWorkstation -- seek to workstation. On arrival begin WaitingForWork.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".TravelingToWorkstation", "IgnoreMissingSetState": true },
           "Instructions": [
             {
+              "Continue": true,
+              "Sensor": { "Type": "Any" },
+              "Actions": [
+                { "Type": "NavigateToWorkstation" }
+              ]
+            },
+            {
+              "Continue": true,
               "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
               "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
+            },
+            {
+              "Sensor": { "Type": "AtWorkstation" },
+              "Actions": [
+                { "Type": "LogDebug", "Message": "TravelingToWorkstation: arrived -> WaitingForWork.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
+                { "Type": "SetEcsJobState", "JobState": "WaitingForWork" }
+              ]
             }
           ]
         },
         {
-          "$Comment": "TravelingToHome -- seek back home after shift. ECS writes NavTarget.",
+          "$Comment": "TravelingToHome -- return to workstation area after delivery.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".TravelingToHome", "IgnoreMissingSetState": true },
           "Instructions": [
             {
+              "Continue": true,
+              "Sensor": { "Type": "Any" },
+              "Actions": [
+                { "Type": "NavigateToWorkstation" }
+              ]
+            },
+            {
+              "Continue": true,
               "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
               "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
+            },
+            {
+              "Sensor": { "Type": "AtWorkstation" },
+              "Actions": [
+                { "Type": "LogDebug", "Message": "TravelingToHome: arrived -> Idle.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
+                { "Type": "SetEcsJobState", "JobState": "Idle" }
+              ]
             }
           ]
         },
         {
-          "$Comment": "Default -- transient pass-through. ECS idle() handler transitions to TravelingToWorkstation or WaitingForWork on the next tick.",
-          "Continue": true,
+          "$Comment": "Default -- transient pass-through. Set nav and immediately transition to TravelingToWorkstation.",
           "Sensor": { "Type": "State", "State": ".Default" },
           "Instructions": [
-            { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
+            {
+              "Sensor": { "Type": "Any" },
+              "Actions": [
+                { "Type": "LogDebug", "Message": "Default: navigating to workstation.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
+                { "Type": "NavigateToWorkstation" },
+                { "Type": "SetEcsJobState", "JobState": "TravelingToWorkstation" }
+              ]
+            }
           ]
         },
         { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }

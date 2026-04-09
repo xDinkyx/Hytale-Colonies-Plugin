@@ -16,7 +16,6 @@ import com.hypixel.hytale.server.core.util.Config;
 import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hytalecolonies.commands.HytaleColoniesPluginCommand;
 import com.hytalecolonies.components.jobs.JobComponent;
-import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
@@ -31,17 +30,22 @@ import com.hytalecolonies.interactions.SpawnColonistInteraction;
 import com.hytalecolonies.listeners.PlayerListener;
 import com.hytalecolonies.npc.actions.BuilderActionClaimNearestTree;
 import com.hytalecolonies.npc.actions.BuilderActionClaimNextMineBlock;
+import com.hytalecolonies.npc.actions.BuilderActionDepositItems;
 import com.hytalecolonies.npc.actions.BuilderActionEquipBestTool;
+import com.hytalecolonies.npc.actions.BuilderActionFindDeliveryContainer;
 import com.hytalecolonies.npc.actions.BuilderActionFindNextTrunkBlock;
 import com.hytalecolonies.npc.actions.BuilderActionHarvestBlock;
 import com.hytalecolonies.npc.actions.BuilderActionIncrementBlocksMined;
 import com.hytalecolonies.npc.actions.BuilderActionLogDebug;
+import com.hytalecolonies.npc.actions.BuilderActionNavigateToWorkstation;
 import com.hytalecolonies.npc.actions.BuilderActionNotifyBlockBroken;
 import com.hytalecolonies.npc.actions.BuilderActionReleaseJobTarget;
 import com.hytalecolonies.npc.actions.BuilderActionResetBlocksMined;
 import com.hytalecolonies.npc.actions.BuilderActionSeekNearestTree;
 import com.hytalecolonies.npc.actions.BuilderActionSeekNextMineBlock;
 import com.hytalecolonies.npc.actions.BuilderActionSetEcsJobState;
+import com.hytalecolonies.npc.sensors.BuilderSensorAtWorkstation;
+import com.hytalecolonies.npc.sensors.BuilderSensorCollectionTimerElapsed;
 import com.hytalecolonies.npc.sensors.BuilderSensorHarvestableTree;
 import com.hytalecolonies.npc.sensors.BuilderSensorJobTarget;
 import com.hytalecolonies.npc.sensors.BuilderSensorJobTargetBroken;
@@ -55,14 +59,10 @@ import com.hytalecolonies.systems.jobs.ColonistDeliverySystem;
 import com.hytalecolonies.systems.jobs.ColonistItemPickupSystem;
 import com.hytalecolonies.systems.jobs.ColonistJobSystem;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
-import com.hytalecolonies.systems.jobs.JobBehaviorRegistry;
 import com.hytalecolonies.systems.jobs.JobRegistry;
 import com.hytalecolonies.systems.jobs.MinerWorkingSystem;
 import com.hytalecolonies.systems.jobs.WoodsmanWorkingSystem;
 import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
-import com.hytalecolonies.systems.jobs.handlers.MinerHandlers;
-import com.hytalecolonies.systems.jobs.handlers.SharedHandlers;
-import com.hytalecolonies.systems.jobs.handlers.WoodsmanHandlers;
 import com.hytalecolonies.systems.npc.ColonistRemovalSystem;
 import com.hytalecolonies.systems.npc.PathFindingSystem;
 import com.hytalecolonies.systems.treescan.TreeBlockChangeEventSystem;
@@ -159,26 +159,13 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     }
 
     /**
-     * Registers the shared ECS job handlers and the per-job-type Idle/WaitingForWork handlers.
+     * Registers job component types so {@link JobAssignmentSystems#fireColonist} can strip them.
+     * All state transitions are now driven by NPC role JSON actions and sensors -- no Java handlers.
      */
     private void registerSharedJobHandlers() {
-        // Keep job types in JobRegistry so JobAssignmentSystems.fireColonist() can strip them.
         JobRegistry.register(WoodsmanJobComponent.getComponentType());
         JobRegistry.register(MinerJobComponent.getComponentType());
-        // Shared phases that apply to all colonists regardless of job type.
-        ColonistJobSystem.registerShared(JobState.CollectingDrops,      SharedHandlers.COLLECTING_DROPS);
-        // TravelingToWorkstation = going to the workstation building (on assignment or idling far away).
-        ColonistJobSystem.registerShared(JobState.TravelingToWorkstation, SharedHandlers.TRAVELING_TO_WORKSTATION);
-        // TravelingToWorkSite = going to a specific claimed work block within a work session.
-        ColonistJobSystem.registerShared(JobState.TravelingToWorkSite,    SharedHandlers.TRAVELING_TO_JOB);
-        ColonistJobSystem.registerShared(JobState.TravelingToHome,        SharedHandlers.TRAVELING_HOME);
-        // Job-specific handlers for Idle and WaitingForWork: scan for targets and claim.
-        // Registered as job-defaults so they only run for the correct colonist type.
-        JobBehaviorRegistry.registerDefault(MinerJobComponent.getComponentType(),    JobState.Idle,        MinerHandlers.IDLE);
-        JobBehaviorRegistry.registerDefault(WoodsmanJobComponent.getComponentType(), JobState.Idle,        WoodsmanHandlers.IDLE);
-        JobBehaviorRegistry.registerDefault(MinerJobComponent.getComponentType(),    JobState.WaitingForWork, MinerHandlers.IDLE);
-        JobBehaviorRegistry.registerDefault(WoodsmanJobComponent.getComponentType(), JobState.WaitingForWork, WoodsmanHandlers.IDLE);
-        LOGGER.at(Level.INFO).log("[HytaleColonies] Registered shared job handlers");
+        LOGGER.at(Level.INFO).log("[HytaleColonies] Registered job component types");
     }
 
     // Accessors for ECS component types
@@ -231,29 +218,33 @@ public class HytaleColoniesPlugin extends JavaPlugin {
      */
     private void registerNpcComponentTypes() {
         NPCPlugin.get()
-            // Existing types
-            .registerCoreComponentType("EquipBestTool",         BuilderActionEquipBestTool::new)
-            .registerCoreComponentType("HarvestableTree",       BuilderSensorHarvestableTree::new)
-            .registerCoreComponentType("HarvestBlock",          BuilderActionHarvestBlock::new)
-            .registerCoreComponentType("JobTarget",             BuilderSensorJobTarget::new)
-            // New sensors
-            .registerCoreComponentType("JobTargetExists",       BuilderSensorJobTargetExists::new)
-            .registerCoreComponentType("JobTargetBroken",       BuilderSensorJobTargetBroken::new)
-            .registerCoreComponentType("MineQuotaReached",      BuilderSensorMineQuotaReached::new)
-            .registerCoreComponentType("NoWorkAvailable",       BuilderSensorNoWorkAvailable::new)
-            // New actions
-            .registerCoreComponentType("SeekNearestTree",       BuilderActionSeekNearestTree::new)
-            .registerCoreComponentType("SeekNextMineBlock",     BuilderActionSeekNextMineBlock::new)
-            .registerCoreComponentType("ClaimNearestTree",      BuilderActionClaimNearestTree::new)
-            .registerCoreComponentType("FindNextTrunkBlock",    BuilderActionFindNextTrunkBlock::new)
-            .registerCoreComponentType("ClaimNextMineBlock",    BuilderActionClaimNextMineBlock::new)
-            .registerCoreComponentType("ReleaseJobTarget",      BuilderActionReleaseJobTarget::new)
-            .registerCoreComponentType("IncrementBlocksMined",  BuilderActionIncrementBlocksMined::new)
-            .registerCoreComponentType("ResetBlocksMined",      BuilderActionResetBlocksMined::new)
-            .registerCoreComponentType("SetEcsJobState",        BuilderActionSetEcsJobState::new)
-            .registerCoreComponentType("NotifyBlockBroken",      BuilderActionNotifyBlockBroken::new)
+            // Actions
+            .registerCoreComponentType("EquipBestTool",              BuilderActionEquipBestTool::new)
+            .registerCoreComponentType("HarvestBlock",               BuilderActionHarvestBlock::new)
+            .registerCoreComponentType("SeekNearestTree",            BuilderActionSeekNearestTree::new)
+            .registerCoreComponentType("SeekNextMineBlock",          BuilderActionSeekNextMineBlock::new)
+            .registerCoreComponentType("ClaimNearestTree",           BuilderActionClaimNearestTree::new)
+            .registerCoreComponentType("FindNextTrunkBlock",         BuilderActionFindNextTrunkBlock::new)
+            .registerCoreComponentType("ClaimNextMineBlock",         BuilderActionClaimNextMineBlock::new)
+            .registerCoreComponentType("ReleaseJobTarget",           BuilderActionReleaseJobTarget::new)
+            .registerCoreComponentType("IncrementBlocksMined",       BuilderActionIncrementBlocksMined::new)
+            .registerCoreComponentType("ResetBlocksMined",           BuilderActionResetBlocksMined::new)
+            .registerCoreComponentType("SetEcsJobState",             BuilderActionSetEcsJobState::new)
+            .registerCoreComponentType("NotifyBlockBroken",          BuilderActionNotifyBlockBroken::new)
+            .registerCoreComponentType("NavigateToWorkstation",      BuilderActionNavigateToWorkstation::new)
+            .registerCoreComponentType("FindDeliveryContainer",      BuilderActionFindDeliveryContainer::new)
+            .registerCoreComponentType("DepositItems",               BuilderActionDepositItems::new)
+            // Sensors
+            .registerCoreComponentType("HarvestableTree",            BuilderSensorHarvestableTree::new)
+            .registerCoreComponentType("JobTarget",                  BuilderSensorJobTarget::new)
+            .registerCoreComponentType("JobTargetExists",            BuilderSensorJobTargetExists::new)
+            .registerCoreComponentType("JobTargetBroken",            BuilderSensorJobTargetBroken::new)
+            .registerCoreComponentType("MineQuotaReached",           BuilderSensorMineQuotaReached::new)
+            .registerCoreComponentType("NoWorkAvailable",            BuilderSensorNoWorkAvailable::new)
+            .registerCoreComponentType("AtWorkstation",              BuilderSensorAtWorkstation::new)
+            .registerCoreComponentType("CollectionTimerElapsed",     BuilderSensorCollectionTimerElapsed::new)
             // Debug utilities
-            .registerCoreComponentType("LogDebug",              BuilderActionLogDebug::new);
+            .registerCoreComponentType("LogDebug",                   BuilderActionLogDebug::new);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered NPC component types");
     }
 

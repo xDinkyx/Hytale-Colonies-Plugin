@@ -1,8 +1,5 @@
 package com.hytalecolonies.systems.jobs;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -19,15 +16,8 @@ import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.server.core.entity.EntityUtils;
-import com.hypixel.hytale.server.core.entity.LivingEntity;
-import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
-import com.hypixel.hytale.server.core.inventory.transaction.ItemStackTransaction;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.block.components.ItemContainerBlock;
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -38,13 +28,22 @@ import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.ColonistStateUtil;
-import com.hytalecolonies.utils.WorkstationContainerUtil;
 
-/** Navigates colonists in {@link JobState#DeliveringItems} to a nearby chest and deposits their inventory. */
+/**
+ * Delivery-related systems for colonist NPCs.
+ *
+ * <p>The main delivery flow (finding containers, navigating, depositing) is now
+ * driven entirely by NPC role JSON via {@code FindDeliveryContainer} and
+ * {@code DepositItems} custom actions. The outer {@link DelayedEntitySystem}
+ * tick here is a no-op and kept only so that the {@link OnContainerRemoved}
+ * inner class can remain nested without structural changes to the plugin.
+ *
+ * <p>The {@link OnContainerRemoved} inner class MUST remain active: it listens
+ * for container block entities being removed from the world and clears any
+ * colonist's cached {@code deliveryContainerPosition} that pointed to the
+ * removed container, redirecting them home instead.
+ */
 public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
-
-    public static final int DELIVERY_RADIUS = 3;
-    private static final float DELIVERY_ARRIVAL_XZ = 3.0f;
 
     private final Query<EntityStore> query = Query.and(
             ColonistComponent.getComponentType(),
@@ -66,143 +65,8 @@ public class ColonistDeliverySystem extends DelayedEntitySystem<EntityStore> {
                      @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
                      @Nonnull Store<EntityStore> store,
                      @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-
-        JobComponent job = archetypeChunk.getComponent(index, JobComponent.getComponentType());
-        assert job != null;
-
-        if (job.getCurrentTask() != JobState.DeliveringItems) return;
-
-        Ref<EntityStore> ref = archetypeChunk.getReferenceTo(index);
-        handleDeliveringItems(ref, job, store, commandBuffer);
-    }
-
-    // ===== State handler =====
-
-    private void handleDeliveringItems(@Nonnull Ref<EntityStore> ref,
-                                       @Nonnull JobComponent job,
-                                       @Nonnull Store<EntityStore> store,
-                                       @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-        Vector3i workStationPos = job.getWorkStationBlockPosition();
-        if (workStationPos == null) {
-            ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToHome);
-            return;
-        }
-
-        World world = store.getExternalData().getWorld();
-
-        if (job.deliveryContainerPosition == null) {
-            Vector3i containerPos = WorkstationContainerUtil.findNearbyContainer(world, workStationPos, DELIVERY_RADIUS);
-            if (containerPos == null) {
-                DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] [%s] No chest within %d blocks of workstation %s -- skipping delivery.",
-                    DebugLog.npcId(ref, store), DELIVERY_RADIUS, workStationPos);
-                navigateToWorkstation(ref, commandBuffer, workStationPos);
-                ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToHome);
-                return;
-            }
-            job.deliveryContainerPosition = containerPos;
-            commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(),
-                    new MoveToTargetComponent(new Vector3d(containerPos.x + 0.5, containerPos.y, containerPos.z + 0.5)));
-            DebugLog.info(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] [%s] Heading to chest at %s.", DebugLog.npcId(ref, store), containerPos);
-            return;
-        }
-
-        // XZ-only arrival check - chest may be at a different Y than the colonist.
-        TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
-        if (transform == null) return;
-
-        Vector3i cp = job.deliveryContainerPosition;
-        Vector3d pos = transform.getPosition();
-        double dx = pos.getX() - (cp.x + 0.5);
-        double dz = pos.getZ() - (cp.z + 0.5);
-        double xzDist = Math.sqrt(dx * dx + dz * dz);
-
-        if (xzDist > DELIVERY_ARRIVAL_XZ) {
-            DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] [%s] Heading to chest at %s -- xzDist=%.2f.", DebugLog.npcId(ref, store), cp, xzDist);
-            return;
-        }
-
-        // Arrived -- deposit.
-        Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, cp.x, cp.y, cp.z);
-        if (blockRef == null || !blockRef.isValid()) {
-            DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] [%s] Chest at %s is no longer present -- resetting delivery container position.", DebugLog.npcId(ref, store), cp);
-            job.deliveryContainerPosition = null;
-            navigateToWorkstation(ref, commandBuffer, workStationPos);
-            ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToHome);
-            return;
-        }
-
-        ItemContainerBlock containerBlock = blockRef.getStore().getComponent(
-                blockRef, BlockModule.get().getItemContainerBlockComponentType());
-        if (containerBlock == null) {
-            DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[ColonistDelivery] [%s] Block at %s is no longer a container -- resetting delivery container position.", DebugLog.npcId(ref, store), cp);
-            job.deliveryContainerPosition = null;
-            navigateToWorkstation(ref, commandBuffer, workStationPos);
-            ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToHome);
-            return;
-        }
-
-        depositItems(ref, store, containerBlock.getItemContainer(), cp);
-        job.deliveryContainerPosition = null;
-        navigateToWorkstation(ref, commandBuffer, workStationPos);
-        ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToHome);
-    }
-
-    /** Tools stay on the colonist; everything else gets deposited. */
-    private static boolean shouldKeep(@Nonnull ItemStack stack) {
-        return stack.getItem() != null && stack.getItem().getTool() != null;
-    }
-
-    private void depositItems(@Nonnull Ref<EntityStore> ref,
-                              @Nonnull Store<EntityStore> store,
-                              @Nonnull ItemContainer chestContainer,
-                              @Nonnull Vector3i chestPos) {
-        LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ref, store);
-        if (colonist == null) return;
-
-        ItemContainer colonistStorage = colonist.getInventory().getStorage();
-        short capacity = colonistStorage.getCapacity();
-        Map<String, Integer> deposited = new LinkedHashMap<>();
-
-        for (short slot = 0; slot < capacity; slot++) {
-            ItemStack stack = colonistStorage.getItemStack(slot);
-            if (ItemStack.isEmpty(stack)) continue;
-            if (shouldKeep(stack)) continue;
-            // Remove from colonist first, then attempt deposit.
-            colonistStorage.removeItemStackFromSlot(slot);
-            ItemStackTransaction tx = chestContainer.addItemStack(stack);
-            ItemStack remainder = tx.getRemainder();
-            int depositedQty = stack.getQuantity() - (remainder != null ? remainder.getQuantity() : 0);
-            if (depositedQty > 0) deposited.merge(stack.getItemId(), depositedQty, Integer::sum);
-            if (remainder != null && !remainder.isEmpty()) {
-                colonistStorage.setItemStackForSlot(slot, remainder);
-            }
-        }
-
-        DebugLog.info(DebugCategory.COLONIST_DELIVERY,
-                "[ColonistDelivery] [%s] -> %s", DebugLog.npcId(ref, store), summarise(deposited));
-    }
-
-    /** Formats deposited items as {@code "id*qty, id*qty"}, or {@code "-"} if empty. */
-    private static String summarise(@Nonnull Map<String, Integer> counts) {
-        if (counts.isEmpty()) return "-";
-        StringBuilder sb = new StringBuilder();
-        counts.forEach((id, qty) -> {
-            if (!sb.isEmpty()) sb.append(", ");
-            sb.append(id).append('*').append(qty);
-        });
-        return sb.toString();
-    }
-
-    private static void navigateToWorkstation(@Nonnull Ref<EntityStore> ref,
-                                              @Nonnull CommandBuffer<EntityStore> commandBuffer,
-                                              @Nonnull Vector3i workStationPos) {
-        commandBuffer.addComponent(ref, MoveToTargetComponent.getComponentType(),
-                new MoveToTargetComponent(new Vector3d(workStationPos.x + 0.5, workStationPos.y, workStationPos.z + 0.5)));
+        // Delivery is now fully driven by the NPC role JSON (FindDeliveryContainer + DepositItems actions).
+        // This tick is intentionally empty.
     }
 
     // ===== Container removal =====
