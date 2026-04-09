@@ -5,7 +5,7 @@ import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.debug.DebugTiming;
-import com.hytalecolonies.systems.treescan.TreeScannerSystem;
+import com.hytalecolonies.systems.world.TreeScannerSystem;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ComponentType;

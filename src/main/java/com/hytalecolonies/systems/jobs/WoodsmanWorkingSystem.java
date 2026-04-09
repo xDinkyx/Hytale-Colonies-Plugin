@@ -25,7 +25,7 @@ import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.systems.jobs.handlers.WoodsmanHandlers;
+import com.hytalecolonies.utils.WoodsmanUtil;
 import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hytalecolonies.utils.ColonistLeashUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
@@ -91,7 +91,7 @@ public class WoodsmanWorkingSystem extends EntityTickingSystem<EntityStore> {
         }
 
         @Nullable Vector3i nextBase = allowedTreeTypes != null
-                ? WoodsmanHandlers.findNextBaseBlock(treeBase, allowedTreeTypes, world)
+                ? WoodsmanUtil.findNextBaseBlock(treeBase, allowedTreeTypes, world)
                 : null;
         final boolean goCollect = nextBase == null;
 

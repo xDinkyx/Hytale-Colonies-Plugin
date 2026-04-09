@@ -23,7 +23,7 @@ import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.systems.jobs.handlers.MinerHandlers;
+import com.hytalecolonies.utils.MinerUtil;
 import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hytalecolonies.utils.ColonistLeashUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
@@ -53,8 +53,10 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
                      @Nonnull CommandBuffer<EntityStore> commandBuffer) {
 
         JobComponent job = archetypeChunk.getComponent(index, JobComponent.getComponentType());
-        if (job == null || job.getCurrentTask() != JobState.Working) return;
-        if (!job.blockBrokenNotification) return;
+        if (job == null || job.getCurrentTask() != JobState.Working) 
+            return;
+        if (!job.blockBrokenNotification) 
+            return;
 
         // Clear immediately so a second notification in the same cycle is ignored until world.execute settles.
         job.blockBrokenNotification = false;
@@ -62,7 +64,8 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
         Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
 
         MinerJobComponent miner = archetypeChunk.getComponent(index, MinerJobComponent.getComponentType());
-        if (miner == null) return;
+        if (miner == null) 
+            return;
 
         miner.blocksMinedThisRun++;
 
@@ -85,7 +88,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
 
         boolean quotaReached = miner.blocksMinedThisRun >= workStation.blocksPerRun;
         // Optimistic scan on entity-tick thread; world.execute handles claim races.
-        @Nullable Vector3i nextBlock = quotaReached ? null : MinerHandlers.findNextMineBlock(workStation, world);
+        @Nullable Vector3i nextBlock = quotaReached ? null : MinerUtil.findNextMineBlock(workStation, world);
         final boolean goCollect = quotaReached || nextBlock == null;
 
         // Capture before crossing into world.execute.
@@ -142,7 +145,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
                 }
                 entityStore.getStore().tryRemoveComponent(colonistRef, MoveToTargetComponent.getComponentType());
                 entityStore.getStore().addComponent(colonistRef, MoveToTargetComponent.getComponentType(),
-                        new MoveToTargetComponent(MinerHandlers.blockCenter(nextBlock)));
+                        new MoveToTargetComponent(MinerUtil.blockCenter(nextBlock)));
                 ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToWorkSite);
                 DebugLog.info(DebugCategory.MINER_JOB,
                         "[MinerWorking] [%s] Claimed next block at %s -- transitioning to TravelingToWorkSite.", npcId, nextBlock);
