@@ -1,0 +1,48 @@
+{
+  "TranslationProperties": {
+    "Name": "items.Tool_Colony_Constructor_Assign.name",
+    "Description": "items.Tool_Colony_Constructor_Assign.description"
+  },
+  "Icon": "Icons/Items/EditorTools/Prefab.png",
+  "Categories": [
+    "Items.Tools"
+  ],
+  "Model": "Items/Tools/Brush/Brush.blockymodel",
+  "Texture": "Items/Tools/Brush/Brush_Texture.png",
+  "MaxStack": 1,
+  "PlayerAnimationsId": "Item",
+  "Tags": {
+    "Type": [
+      "Tool"
+    ],
+    "Family": [
+      "Colony"
+    ]
+  },
+  "Interactions": {
+    "Primary": {
+      "RequireNewClick": true,
+      "Interactions": [
+        {
+          "Type": "AssignBuildOrderInteraction"
+        }
+      ]
+    },
+    "Secondary": {
+      "RequireNewClick": true,
+      "Interactions": [
+        {
+          "Type": "AssignBuildOrderInteraction"
+        }
+      ]
+    }
+  },
+  "InteractionConfig": {
+    "UseDistance": {
+      "Adventure": 200,
+      "Creative": 200
+    },
+    "AllEntities": true
+  },
+  "Quality": "Tool"
+}

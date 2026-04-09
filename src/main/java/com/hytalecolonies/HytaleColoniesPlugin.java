@@ -29,6 +29,7 @@ import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.debug.DebugConfig;
+import com.hytalecolonies.interactions.AssignBuildOrderInteraction;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
 import com.hytalecolonies.listeners.PlayerListener;
 import com.hytalecolonies.npc.actions.common.BuilderActionDepositItems;
@@ -233,6 +234,11 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             "SpawnColonist",
             SpawnColonistInteraction.class,
             SpawnColonistInteraction.CODEC
+        );
+        Interaction.CODEC.register(
+            "AssignBuildOrderInteraction",
+            AssignBuildOrderInteraction.class,
+            AssignBuildOrderInteraction.CODEC
         );
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered plugin interactions");
     }
