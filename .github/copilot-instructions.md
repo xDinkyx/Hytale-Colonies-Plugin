@@ -21,6 +21,7 @@ This is a Hytale plugin project. Hytale plugins are used to extend the functiona
 - Any user-facing text must be localized via translation keys (e.g., `Message.translation(...)`) and added to language resources under `src/main/resources/Server/Languages/<locale>/*.lang` (filename becomes the key prefix). `src/main/resources/Server/Languages/fallback.lang` is only for locale fallback mappings (e.g., `en-GB = en-US`).
 - Never use non-basic (non-ASCII) characters in code, comments, or user-facing text. Only use standard ASCII characters (U+0000 to U+007F). 
 - All JSON files must be created and saved with UTF-8 encoding without BOM. Never use UTF-8 BOM or any other encoding variant.
+- Keep comments short and to the point. Code should be self-documenting. Avoid Javadoc paragraphs that restate the obvious -- one-liner `/** ... */` only when the name alone is not enough.
 
 ## .github/skills
 - Evaluate skills when given a task or problem to solve.

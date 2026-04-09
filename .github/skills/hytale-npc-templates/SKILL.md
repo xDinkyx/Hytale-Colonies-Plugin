@@ -1764,6 +1764,37 @@ These NPC template parameters are configurable:
 | WanderInCircle wanders away from workstation | WanderInCircle uses `getLeashPoint()` — set it from ECS or use `SetLeashPosition` before the state |
 | NPC not reaching target closely enough | `StopDistance` too large on `Seek`; add an inner `Seek` with tighter `StopDistance` in the Working state |
 | NPC finds wrong block / blocks fight over same block | Use `Block: Sensor` with `Reserve: true` so NPCs don't share target blocks |
+| `has defined a filter of type X more than once` at startup | Each filter type can appear at most once per flat `Filters` array. Use a single filter with multiple patterns in `Items` instead of duplicate filter entries. |
+
+---
+
+## Entity Filters
+
+Each filter type (`Inventory`, `ItemInHand`, `LineOfSight`, etc.) can appear **at most once** per flat `Filters` array on a sensor. To match against multiple item patterns, list them all in the `Items` array of a single filter entry:
+
+```json
+{
+  "Type": "Player",
+  "Range": 15,
+  "Filters": [
+    { "Type": "LineOfSight" },
+    { "Type": "ViewSector", "ViewSector": 180 },
+    { "Type": "ItemInHand", "Items": [ "*_Axe*", "*_Hatchet*" ] }
+  ]
+}
+```
+
+```json
+{
+  "Type": "Self",
+  "Filters": [
+    { "Type": "Inventory", "Items": [ "*_Axe*", "*_Hatchet*" ] }
+  ]
+}
+```
+
+The `Items` array uses glob patterns and matches if the entity has any item matching any of the listed patterns.
+```
 
 ---
 

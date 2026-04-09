@@ -65,13 +65,14 @@ DebugLog.info(DebugCategory.MINER_JOB,
         DebugLog.npcId(ctx.colonistRef, entityStore.getStore()), nextBlock);
 ```
 
-### When ref/store come from a JobContext
+### When ref/store come from an ECS system tick
 
-The `JobContext` (`ctx`) carries `ctx.colonistRef` and `ctx.store`:
+When iterating inside an `EntityTickingSystem` or `DelayedEntitySystem`, use the chunk ref and store directly:
 
 ```java
 DebugLog.fine(DebugCategory.WOODSMAN_JOB,
-        "[WoodsmanJob] [%s] Working -- blockId=%d.", DebugLog.npcId(ctx.colonistRef, ctx.store), blockId);
+        "[WoodsmanJob] [%s] Working -- blockId=%d.",
+        DebugLog.npcId(archetypeChunk.getReferenceTo(index), store), blockId);
 ```
 
 ---
