@@ -16,6 +16,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobRunCounterComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
@@ -37,6 +38,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
 
     private static final Query<EntityStore> QUERY = Query.and(
             MinerJobComponent.getComponentType(),
+            JobRunCounterComponent.getComponentType(),
             JobComponent.getComponentType()
     );
 
@@ -63,11 +65,11 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
 
         Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
 
-        MinerJobComponent miner = archetypeChunk.getComponent(index, MinerJobComponent.getComponentType());
-        if (miner == null) 
+        JobRunCounterComponent counter = archetypeChunk.getComponent(index, JobRunCounterComponent.getComponentType());
+        if (counter == null) 
             return;
 
-        miner.blocksMinedThisRun++;
+        counter.count++;
 
         Vector3i workStationPos = job.getWorkStationBlockPosition();
         if (workStationPos == null) {
@@ -86,7 +88,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
         }
         String npcId = DebugLog.npcId(colonistRef, store);
 
-        boolean quotaReached = miner.blocksMinedThisRun >= workStation.blocksPerRun;
+        boolean quotaReached = counter.count >= workStation.blocksPerRun;
         // Optimistic scan on entity-tick thread; world.execute handles claim races.
         @Nullable Vector3i nextBlock = quotaReached ? null : MinerUtil.findNextMineBlock(workStation, world);
         final boolean goCollect = quotaReached || nextBlock == null;
@@ -99,7 +101,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
 
         DebugLog.info(DebugCategory.MINER_JOB,
                 "[MinerWorking] [%s] Block broken (%d/%d this run). %s",
-                npcId, miner.blocksMinedThisRun, workStation.blocksPerRun,
+                npcId, counter.count, workStation.blocksPerRun,
                 goCollect ? "Collecting drops." : "Seeking next block at " + nextBlock + ".");
 
         world.execute(() -> {
