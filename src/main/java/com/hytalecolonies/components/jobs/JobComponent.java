@@ -43,6 +43,10 @@ public class JobComponent implements Component<EntityStore> {
     public boolean workAvailable = true;
     /** Set by {@code ActionNotifyBlockBroken}; read and cleared by {@link com.hytalecolonies.systems.jobs.MinerWorkingSystem}. Transient. */
     public boolean blockBrokenNotification = false;
+    /** Set by {@code ActionPlaceConstructionBlock}; read and cleared by the constructor working system. Transient. */
+    public boolean blockPlacedNotification = false;
+    /** Set by {@code ActionRetrieveConstructionBlocks}; read and cleared by the constructor working system. Transient. */
+    public boolean itemsRetrievedNotification = false;
 
     // ===== Constructors =====
     public JobComponent() {}

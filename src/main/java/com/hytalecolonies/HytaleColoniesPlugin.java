@@ -42,6 +42,9 @@ import com.hytalecolonies.npc.actions.common.BuilderActionNotifyBlockBroken;
 import com.hytalecolonies.npc.actions.common.BuilderActionResetJobCounter;
 import com.hytalecolonies.npc.actions.common.BuilderActionReleaseJobTarget;
 import com.hytalecolonies.npc.actions.common.BuilderActionSetEcsJobState;
+import com.hytalecolonies.npc.actions.constructor.BuilderActionPlaceConstructionBlock;
+import com.hytalecolonies.npc.actions.constructor.BuilderActionRetrieveConstructionBlocks;
+import com.hytalecolonies.npc.actions.constructor.BuilderActionSeekNextClearingBlock;
 import com.hytalecolonies.npc.actions.miner.BuilderActionClaimNextMineBlock;
 import com.hytalecolonies.npc.actions.miner.BuilderActionSeekNextMineBlock;
 import com.hytalecolonies.npc.actions.woodsman.BuilderActionClaimNearestTree;
@@ -63,6 +66,8 @@ import com.hytalecolonies.systems.jobs.ColonistItemPickupSystem;
 import com.hytalecolonies.systems.jobs.ColonistJobSystem;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
 import com.hytalecolonies.systems.jobs.JobRegistry;
+import com.hytalecolonies.systems.jobs.ConstructorJobCheckSystem;
+import com.hytalecolonies.systems.jobs.ConstructorWorkingSystem;
 import com.hytalecolonies.systems.jobs.MinerWorkingSystem;
 import com.hytalecolonies.systems.jobs.WoodsmanWorkingSystem;
 import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
@@ -251,6 +256,9 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             .registerCoreComponentType("ResetJobCounter",           BuilderActionResetJobCounter::new)
             .registerCoreComponentType("SetEcsJobState",             BuilderActionSetEcsJobState::new)
             .registerCoreComponentType("NotifyBlockBroken",          BuilderActionNotifyBlockBroken::new)
+            .registerCoreComponentType("PlaceConstructionBlock",     BuilderActionPlaceConstructionBlock::new)
+            .registerCoreComponentType("RetrieveConstructionBlocks", BuilderActionRetrieveConstructionBlocks::new)
+            .registerCoreComponentType("SeekNextClearingBlock",      BuilderActionSeekNextClearingBlock::new)
             .registerCoreComponentType("NavigateToWorkstation",      BuilderActionNavigateToWorkstation::new)
             .registerCoreComponentType("FindDeliveryContainer",      BuilderActionFindDeliveryContainer::new)
             .registerCoreComponentType("DepositItems",               BuilderActionDepositItems::new)
@@ -289,6 +297,8 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new ColonistRemovalSystem());
         getEntityStoreRegistry().registerSystem(new MinerWorkingSystem());
         getEntityStoreRegistry().registerSystem(new WoodsmanWorkingSystem());
+        getEntityStoreRegistry().registerSystem(new ConstructorWorkingSystem());
+        getEntityStoreRegistry().registerSystem(new ConstructorJobCheckSystem());
         getEntityStoreRegistry().registerSystem(new ColonistItemPickupSystem());
         getEntityStoreRegistry().registerSystem(new ColonistDeliverySystem());
         getChunkStoreRegistry().registerSystem(new ColonistDeliverySystem.OnContainerRemoved());
