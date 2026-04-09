@@ -64,6 +64,7 @@
               "Sensor": { "Type": "JobTarget", "Range": 2.5 },
               "ActionsBlocking": true,
               "Actions": [
+                { "Type": "LogDebug", "Message": "Harvesting: chopping block.", "Category": "WOODSMAN_JOB", "Level": "FINE" },
                 { "Type": "EquipBestTool" },
                 { "Type": "HarvestBlock", "DamageScale": 0.1 },
                 { "Type": "Timeout", "Delay": [0.5, 0.5] }
@@ -79,6 +80,7 @@
             {
               "Sensor": { "Type": "JobTargetBroken" },
               "Actions": [
+                { "Type": "LogDebug", "Message": "Harvesting: block broken -- notifying ECS.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
                 { "Type": "NotifyBlockBroken" }
               ]
             }
@@ -124,6 +126,7 @@
               "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Hatchet_*"], "CountRange": [1, 999] }] } },
               "ActionsBlocking": true,
               "Actions": [
+                { "Type": "LogDebug", "Message": "WaitingForWork: missing hatchet -- showing confused particle.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
                 { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
                 { "Type": "Timeout", "Delay": [3, 3] }
               ]
@@ -138,6 +141,7 @@
                 ]
               },
               "Actions": [
+                { "Type": "LogDebug", "Message": "WaitingForWork: scanning for nearest tree.", "Category": "WOODSMAN_JOB", "Level": "FINE" },
                 { "Type": "SeekNearestTree" }
               ]
             },
@@ -165,6 +169,7 @@
               "Continue": true,
               "Sensor": { "Type": "DroppedItem", "Range": 5.0 },
               "Actions": [
+                { "Type": "LogDebug", "Message": "CollectingDrops: picking up item.", "Category": "WOODSMAN_JOB", "Level": "FINE" },
                 { "Type": "PickUpItem", "Hoover": true }
               ]
             },
@@ -187,6 +192,7 @@
               "Continue": true,
               "Sensor": { "Type": "Any" },
               "Actions": [
+                { "Type": "LogDebug", "Message": "DeliveringItems: scanning for delivery container.", "Category": "WOODSMAN_JOB", "Level": "FINE" },
                 { "Type": "FindDeliveryContainer" }
               ]
             },
@@ -268,7 +274,7 @@
         },
         {
           "$Comment": "Default -- transient pass-through. Set nav and immediately transition to TravelingToWorkstation.",
-          "Sensor": { "Type": "State", "State": ".Default" },
+          "Sensor": { "Type": "State", "State": ".Default", "IgnoreMissingSetState": true },
           "Instructions": [
             {
               "Sensor": { "Type": "Any" },

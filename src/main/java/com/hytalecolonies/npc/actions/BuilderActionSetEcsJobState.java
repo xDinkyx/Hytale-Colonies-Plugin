@@ -10,15 +10,11 @@ import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
 
 /**
- * Builder for {@code "SetEcsJobState"} -- sets {@code JobComponent.getCurrentTask()}
- * to the configured {@link com.hytalecolonies.components.jobs.JobState} value.
+ * Builder for {@code "SetEcsJobState"} -- sets {@code JobComponent.getCurrentTask()}.
  *
- * <p>JSON usage:
- * <pre>{@code { "Type": "SetEcsJobState", "JobState": "CollectingDrops" }}</pre>
+ * <p>JSON: {@code { "Type": "SetEcsJobState", "JobState": "CollectingDrops" }}
  *
- * <p>When setting {@code CollectingDrops}, also initialises
- * {@code JobComponent.collectingDropsSince} to the current time so that
- * {@code SharedHandlers.COLLECTING_DROPS} can begin the 5-second countdown.
+ * <p>When setting {@code CollectingDrops}, also records {@code JobComponent.collectingDropsSince}.
  */
 public class BuilderActionSetEcsJobState extends BuilderActionBase {
 

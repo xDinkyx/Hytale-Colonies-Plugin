@@ -17,19 +17,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Sets the NavTarget stored-position slot (index 0) to the colonist's assigned workstation
- * and re-anchors the NPC leash to the same position.
- *
- * <p>Use this in {@code TravelingToHome} and {@code Default} instruction blocks so that
- * the {@code ReadPosition} sensor always has a valid destination even after a server restart,
- * and the {@code WanderInCircle} motion stays anchored at the workstation.
- *
- * <p>No-ops when the colonist has no {@link JobComponent} or workstation position.
- *
- * <p>Replaces the {@code world.execute(() -> JobNavigationUtil.dispatchNavigation(...))} calls
- * that were previously issued from
- * {@link com.hytalecolonies.systems.jobs.handlers.SharedHandlers#TRAVELING_TO_WORKSTATION}
- * and the idle factory.
+ * Sets NavTarget slot 0 and the leash anchor to the colonist's workstation.
+ * No-ops when there is no {@link JobComponent} or workstation position.
  *
  * <p>Constructed by {@link BuilderActionNavigateToWorkstation}.
  */

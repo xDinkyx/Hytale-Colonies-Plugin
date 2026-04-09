@@ -29,17 +29,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Scans for the nearest unclaimed harvestable tree within the workstation's search
- * radius, claims it atomically via {@code world.execute()}, sets it as the active
- * job target, and dispatches navigation toward it.
- *
- * <p>This action is designed to fire once per idle cycle. If no tree is available
- * the action completes without setting a target; {@code SensorJobTargetExists} will
- * remain false and the instruction evaluator will retry on the next cycle.
- *
- * <p>Race safety: the claim is performed inside {@code world.execute()} so that two
- * woodsmen finding the same tree in the same tick serialize here -- the first succeeds,
- * the second backs off.
+ * Scans for the nearest unclaimed harvestable tree within the workstation's search radius,
+ * claims it atomically via {@code world.execute()}, sets it as the job target, and dispatches navigation.
+ * If none is available the target is left unset and the instruction block retries next cycle.
  */
 public class ActionSeekNearestTree extends ActionBase {
 

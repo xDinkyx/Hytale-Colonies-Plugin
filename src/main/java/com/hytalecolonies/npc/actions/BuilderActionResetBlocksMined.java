@@ -10,7 +10,7 @@ import javax.annotation.Nonnull;
 
 /**
  * Builder for {@code "ResetBlocksMined"} -- resets
- * {@code MinerJobComponent.blocksMinedThisRun} to zero. No JSON configuration required.
+ * {@code MinerJobComponent.blocksMinedThisRun} to zero.
  */
 public class BuilderActionResetBlocksMined extends BuilderActionBase {
 

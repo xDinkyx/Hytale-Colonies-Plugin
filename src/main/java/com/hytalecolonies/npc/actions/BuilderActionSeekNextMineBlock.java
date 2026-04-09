@@ -8,15 +8,7 @@ import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
 import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
 
-/**
- * Builder for {@code "SeekNextMineBlock"}.
- *
- * <p>JSON usage: {@code { "Type": "SeekNextMineBlock" }}
- *
- * <p>Scans the mine shaft top-down for the first solid unclaimed block, claims it
- * atomically, sets it as the active job target, and dispatches navigation toward it.
- * No configuration required.
- */
+/** Builder for {@code "SeekNextMineBlock"}. */
 public class BuilderActionSeekNextMineBlock extends BuilderActionBase {
 
     @Nonnull

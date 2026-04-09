@@ -20,27 +20,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Locates the nearest item-container block (chest/crate) within
- * {@link #SEARCH_RADIUS} blocks of the colonist's workstation and sets it as
- * the active job target and NavTarget for the {@code DeliveringItems} delivery
- * run.
- *
- * <h3>Behaviour</h3>
- * <ol>
- *   <li>If {@link JobComponent#deliveryContainerPosition} is already set (persisted
- *       from an earlier tick in the same delivery run), the NavTarget slot is
- *       refreshed and the action returns immediately.</li>
- *   <li>Otherwise the spatial index is queried for the nearest container. If one
- *       is found, {@code deliveryContainerPosition} and {@link
- *       com.hytalecolonies.components.jobs.JobTargetComponent} are set and the
- *       NavTarget slot is updated so that {@code ReadPosition} and
- *       {@code JobTarget} sensors begin working next tick.</li>
- *   <li>If no container is found the colonist transitions directly to
- *       {@link JobState#TravelingToHome} so it skips the deposit step silently.</li>
- * </ol>
- *
- * <p>Replaces the container-finding logic previously in
- * {@link com.hytalecolonies.systems.jobs.ColonistDeliverySystem}.
+ * Locates the nearest item-container within {@link #SEARCH_RADIUS} blocks of the workstation,
+ * sets it as the active job target and NavTarget.
+ * Transitions to {@link JobState#TravelingToHome} if no container is found.
  *
  * <p>Constructed by {@link BuilderActionFindDeliveryContainer}.
  */

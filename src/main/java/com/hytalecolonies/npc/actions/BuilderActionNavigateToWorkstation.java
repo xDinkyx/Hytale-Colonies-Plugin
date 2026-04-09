@@ -8,18 +8,7 @@ import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
 import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
 
-/**
- * Builder for the {@code "NavigateToWorkstation"} custom NPC action.
- *
- * <p>Sets the NavTarget stored-position slot to the colonist's workstation and updates
- * the NPC leash. No configuration parameters are required.
- *
- * <p>JSON usage:
- * <pre>{@code { "Type": "NavigateToWorkstation" }}</pre>
- *
- * <p>Registered via {@code NPCPlugin.get().registerCoreComponentType("NavigateToWorkstation", ...)}
- * in {@link com.hytalecolonies.HytaleColoniesPlugin#setup()}.
- */
+/** Builder for the {@code "NavigateToWorkstation"} custom NPC action. */
 public class BuilderActionNavigateToWorkstation extends BuilderActionBase {
 
     @Nonnull

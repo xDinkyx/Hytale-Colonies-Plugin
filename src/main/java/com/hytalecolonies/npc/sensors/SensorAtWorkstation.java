@@ -17,11 +17,6 @@ import javax.annotation.Nonnull;
  * Runtime sensor that fires when the colonist is within {@link #THRESHOLD} blocks (XZ)
  * of their assigned workstation.
  *
- * <p>Replaces the arrival-check logic that was previously handled by
- * {@link com.hytalecolonies.systems.jobs.handlers.SharedHandlers#TRAVELING_TO_WORKSTATION}
- * and the idle factory. Now all state transitions on workstation arrival are driven
- * directly from the NPC role JSON.
- *
  * <p>Constructed by {@link BuilderSensorAtWorkstation}.
  */
 public class SensorAtWorkstation extends SensorBase {

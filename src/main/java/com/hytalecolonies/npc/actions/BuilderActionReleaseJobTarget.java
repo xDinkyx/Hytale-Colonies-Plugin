@@ -10,7 +10,7 @@ import javax.annotation.Nonnull;
 
 /**
  * Builder for {@code "ReleaseJobTarget"} -- unclaims and clears the current
- * {@code JobTargetComponent} position. No JSON configuration required.
+ * {@code JobTargetComponent} position.
  */
 public class BuilderActionReleaseJobTarget extends BuilderActionBase {
 

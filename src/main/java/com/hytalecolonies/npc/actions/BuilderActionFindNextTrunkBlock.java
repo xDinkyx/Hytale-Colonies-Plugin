@@ -8,14 +8,7 @@ import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
 import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
 
-/**
- * Builder for {@code "FindNextTrunkBlock"} -- after a tree base block is broken,
- * flood-fills horizontally to find the next adjacent standing wood block at the
- * same Y level as the workstation's allowed tree types. If found, unclaims the
- * broken block, claims the next, and navigates there. If not found, clears
- * {@code JobTargetComponent.targetPosition} so {@code SensorJobTargetExists} fires.
- * No JSON configuration required.
- */
+/** Builder for {@code "FindNextTrunkBlock"}. */
 public class BuilderActionFindNextTrunkBlock extends BuilderActionBase {
 
     @Nonnull @Override public String getShortDescription() { return "Finds the next adjacent trunk block after the current one is broken; clears target if none remain."; }

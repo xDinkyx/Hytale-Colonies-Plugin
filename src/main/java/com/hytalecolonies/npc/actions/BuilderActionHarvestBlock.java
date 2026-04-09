@@ -14,18 +14,7 @@ import javax.annotation.Nonnull;
 /**
  * Builder for the {@code "HarvestBlock"} custom NPC action.
  *
- * <p>Applies one swing of block damage per tick to the block position provided
- * by the active sensor. Block-breaking physics -- including spawn-in of drop
- * items -- are delegated to
- * {@link com.hypixel.hytale.server.core.modules.interaction.BlockHarvestUtils}.
- *
- * <p>JSON usage in an NPC role template:
- * <pre>{@code
- * { "Type": "HarvestBlock", "DamageScale": 1.0 }
- * }</pre>
- *
- * <p>Registered via {@code NPCPlugin.get().registerCoreComponentType("HarvestBlock", ...)}
- * in {@link com.hytalecolonies.HytaleColoniesPlugin#setup()}.
+ * <p>JSON: {@code { "Type": "HarvestBlock", "DamageScale": 1.0 }}
  */
 public class BuilderActionHarvestBlock extends BuilderActionBase {
 

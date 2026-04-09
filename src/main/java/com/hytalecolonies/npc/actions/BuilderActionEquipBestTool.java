@@ -14,15 +14,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Builder for the custom {@code "EquipBestTool"} NPC action.
+ * Builder for the {@code "EquipBestTool"} custom NPC action.
  *
- * <p>JSON usage in an NPC role template:
- * <pre>{@code
- * { "Type": "EquipBestTool", "GatherType": "Woodcutting", "MinQuality": 0 }
- * }</pre>
- *
- * <p>Registered via {@code NPCPlugin.get().registerCoreComponentType("EquipBestTool", ...)}
- * in {@link com.hytalecolonies.HytaleColoniesPlugin#setup()}.
+ * <p>JSON: {@code { "Type": "EquipBestTool", "GatherType": "Woodcutting", "MinQuality": 0 }}
  */
 public class BuilderActionEquipBestTool extends BuilderActionBase {
 

@@ -15,17 +15,7 @@ import java.util.logging.Level;
 /**
  * Builder for the {@code "LogDebug"} NPC action.
  *
- * <p>JSON usage in a role template (Instructions or StateTransitions.Actions):
- * <pre>{@code
- * {
- *   "Type": "LogDebug",
- *   "Message": "StateTransition -> Working",
- *   "Category": "WOODSMAN_JOB",
- *   "Level": "INFO"
- * }
- * }</pre>
- *
- * <p>{@code Category} defaults to {@code "JOB_SYSTEM"}, {@code Level} defaults to {@code "INFO"}.
+ * <p>JSON: {@code { "Type": "LogDebug", "Message": "...", "Category": "JOB_SYSTEM", "Level": "INFO" }}
  */
 public class BuilderActionLogDebug extends BuilderActionBase {
 

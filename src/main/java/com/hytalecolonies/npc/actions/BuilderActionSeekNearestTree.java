@@ -8,15 +8,7 @@ import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
 import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
 
-/**
- * Builder for {@code "SeekNearestTree"}.
- *
- * <p>JSON usage: {@code { "Type": "SeekNearestTree" }}
- *
- * <p>Finds the nearest unclaimed harvestable tree within the workstation's search
- * radius, claims it atomically, sets it as the active job target, and dispatches
- * navigation toward it. No configuration required.
- */
+/** Builder for {@code "SeekNearestTree"}. */
 public class BuilderActionSeekNearestTree extends BuilderActionBase {
 
     @Nonnull

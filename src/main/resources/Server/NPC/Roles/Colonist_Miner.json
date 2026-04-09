@@ -63,6 +63,7 @@
               "Sensor": { "Type": "JobTarget", "Range": 2.5 },
               "ActionsBlocking": true,
               "Actions": [
+                { "Type": "LogDebug", "Message": "Harvesting: mining block.", "Category": "MINER_JOB", "Level": "FINE" },
                 { "Type": "EquipBestTool" },
                 { "Type": "HarvestBlock", "DamageScale": 0.1 },
                 { "Type": "Timeout", "Delay": [0.5, 0.5] }
@@ -78,6 +79,7 @@
             {
               "Sensor": { "Type": "JobTargetBroken" },
               "Actions": [
+                { "Type": "LogDebug", "Message": "Harvesting: block broken -- notifying ECS.", "Category": "MINER_JOB", "Level": "INFO" },
                 { "Type": "NotifyBlockBroken" }
               ]
             }
@@ -123,6 +125,7 @@
               "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Pickaxe_*"], "CountRange": [1, 999] }] } },
               "ActionsBlocking": true,
               "Actions": [
+                { "Type": "LogDebug", "Message": "WaitingForWork: missing pickaxe -- showing confused particle.", "Category": "MINER_JOB", "Level": "INFO" },
                 { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
                 { "Type": "Timeout", "Delay": [3, 3] }
               ]
@@ -132,6 +135,7 @@
               "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Shovel_*"], "CountRange": [1, 999] }] } },
               "ActionsBlocking": true,
               "Actions": [
+                { "Type": "LogDebug", "Message": "WaitingForWork: missing shovel -- showing confused particle.", "Category": "MINER_JOB", "Level": "INFO" },
                 { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
                 { "Type": "Timeout", "Delay": [3, 3] }
               ]
@@ -142,11 +146,16 @@
               "Sensor": {
                 "Type": "Self",
                 "Filters": [
-                  { "Type": "Inventory", "Items": ["Tool_Pickaxe_*"], "CountRange": [1, 999] },
-                  { "Type": "Inventory", "Items": ["Tool_Shovel_*"], "CountRange": [1, 999] }
+                  {
+                    "Type": "And",
+                    "Filters": [
+                      { "Type": "Inventory", "Items": [ "*_Shovel*", "*_Pickaxe*" ] }
+                    ]
+                  }
                 ]
               },
               "Actions": [
+                { "Type": "LogDebug", "Message": "WaitingForWork: scanning for next mine block.", "Category": "MINER_JOB", "Level": "FINE" },
                 { "Type": "SeekNextMineBlock" }
               ]
             },
@@ -174,6 +183,7 @@
               "Continue": true,
               "Sensor": { "Type": "DroppedItem", "Range": 5.0 },
               "Actions": [
+                { "Type": "LogDebug", "Message": "CollectingDrops: picking up item.", "Category": "MINER_JOB", "Level": "FINE" },
                 { "Type": "PickUpItem", "Hoover": true }
               ]
             },
@@ -196,6 +206,7 @@
               "Continue": true,
               "Sensor": { "Type": "Any" },
               "Actions": [
+                { "Type": "LogDebug", "Message": "DeliveringItems: scanning for delivery container.", "Category": "MINER_JOB", "Level": "FINE" },
                 { "Type": "FindDeliveryContainer" }
               ]
             },
@@ -277,7 +288,7 @@
         },
         {
           "$Comment": "Default -- transient pass-through. Set nav and immediately transition to TravelingToWorkstation.",
-          "Sensor": { "Type": "State", "State": ".Default" },
+          "Sensor": { "Type": "State", "State": ".Default", "IgnoreMissingSetState": true },
           "Instructions": [
             {
               "Sensor": { "Type": "Any" },
@@ -291,7 +302,6 @@
         },
         { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
       ]
-    },
-    { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
+    }
   ]
 }

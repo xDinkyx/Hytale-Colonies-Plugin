@@ -8,19 +8,7 @@ import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
 import com.hypixel.hytale.server.npc.instructions.Action;
 import javax.annotation.Nonnull;
 
-/**
- * Builder for the {@code "FindDeliveryContainer"} custom NPC action.
- *
- * <p>Locates the nearest item-container block near the workstation and sets it as
- * the active job target and NavTarget. Transitions to {@code TravelingToHome} if
- * no container is found. No configuration parameters are required.
- *
- * <p>JSON usage:
- * <pre>{@code { "Type": "FindDeliveryContainer" }}</pre>
- *
- * <p>Registered via {@code NPCPlugin.get().registerCoreComponentType("FindDeliveryContainer", ...)}
- * in {@link com.hytalecolonies.HytaleColoniesPlugin#setup()}.
- */
+/** Builder for the {@code "FindDeliveryContainer"} custom NPC action. */
 public class BuilderActionFindDeliveryContainer extends BuilderActionBase {
 
     @Nonnull

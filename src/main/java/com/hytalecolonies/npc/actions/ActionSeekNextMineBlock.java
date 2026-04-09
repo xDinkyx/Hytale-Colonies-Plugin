@@ -28,30 +28,12 @@ import java.util.UUID;
 
 /**
  * Scans the mine shaft top-down for the first solid unclaimed block, claims it
- * atomically via {@code world.execute()}, sets it as the active job target, and
- * dispatches navigation toward it.
- *
- * <p>
- * If the shaft has no solid unclaimed blocks the action completes without
- * setting
- * a target. {@code SensorJobTargetExists} will remain false and the instruction
- * evaluator will retry this action on the next cycle until a block is
- * available.
- *
- * <p>
- * Race safety: the claim is performed inside {@code world.execute()} so that
- * two
- * miners finding the same block in the same tick serialize here -- the first
- * succeeds,
- * the second backs off.
+ * atomically via {@code world.execute()}, sets it as the job target, and dispatches navigation.
+ * If none is available the target is left unset and the instruction block retries next cycle.
  */
 public class ActionSeekNextMineBlock extends ActionBase {
 
-    /**
-     * Slot index for the "NavTarget" stored position in the colonist role JSON.
-     * Must match the slot allocated to "NavTarget" in the role builder -- it is the
-     * only position slot declared in Template_Colonist_Base, so it gets index 0.
-     */
+    /** Slot index for the "NavTarget" stored position in the colonist role JSON. */
     private static final int NAV_TARGET_SLOT = 0;
 
     public ActionSeekNextMineBlock(@Nonnull BuilderActionSeekNextMineBlock builder,

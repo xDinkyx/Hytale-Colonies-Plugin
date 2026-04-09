@@ -27,29 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Deposits all non-tool items from the colonist's inventory into the delivery
- * container identified by {@link JobComponent#deliveryContainerPosition} and
- * clears the delivery target so the next work cycle starts fresh.
- *
- * <h3>Behaviour</h3>
- * <ol>
- *   <li>Reads {@code job.deliveryContainerPosition}. If null or the block entity
- *       is invalid, clears the job target and returns silently.</li>
- *   <li>Iterates the colonist's storage slots; items whose {@code Item.getTool()}
- *       is non-null are kept, all others are moved to the chest. Remainder
- *       (chest full) stays in the colonist's slot.</li>
- *   <li>Clears {@code job.deliveryContainerPosition} and nulls
- *       {@link JobTargetComponent#targetPosition} so that subsequent
- *       {@code SeekNextMineBlock}/{@code SeekNearestTree} scans do not mistake
- *       the chest position for a valid work target.</li>
- * </ol>
- *
- * <p>This action does NOT transition state -- the JSON instruction block should
- * follow this with {@code { "Type": "SetEcsJobState", "JobState": "TravelingToHome" }}
- * so the decision is visible in the role file.
- *
- * <p>Replaces the {@code depositItems} logic previously in
- * {@link com.hytalecolonies.systems.jobs.ColonistDeliverySystem}.
+ * Deposits all non-tool items into the delivery container at
+ * {@link JobComponent#deliveryContainerPosition}, then clears the delivery target.
  *
  * <p>Constructed by {@link BuilderActionDepositItems}.
  */

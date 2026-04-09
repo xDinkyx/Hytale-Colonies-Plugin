@@ -31,13 +31,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Runtime action that applies block damage to the block at the position
- * provided by the active sensor.
- *
- * <p>On each tick the entity's held tool and the target block position (from
- * {@link InfoProvider#getPositionProvider()}) are passed to
- * {@link BlockHarvestUtils#performBlockDamage} with a configurable damage scale.
- * Returns {@code true} when the block finally breaks.
+ * Applies block damage each tick to the block at the sensor position using a configurable scale.
+ * Returns {@code true} when the block breaks.
  *
  * <p>Constructed by {@link BuilderActionHarvestBlock}.
  */

@@ -10,7 +10,7 @@ import javax.annotation.Nonnull;
 
 /**
  * Builder for {@code "IncrementBlocksMined"} -- increments
- * {@code MinerJobComponent.blocksMinedThisRun} by one. No JSON configuration required.
+ * {@code MinerJobComponent.blocksMinedThisRun} by one.
  */
 public class BuilderActionIncrementBlocksMined extends BuilderActionBase {
 

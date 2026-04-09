@@ -25,14 +25,10 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Runtime action that equips the best available tool from the NPC's inventory.
+ * Equips the best available tool from the NPC's inventory.
+ * Uses the configured {@code GatherType}, or auto-detects from the sensor block position.
  *
- * <p>When {@code GatherType} is configured in the builder, that type is used directly.
- * When omitted, the required tool is auto-detected from the block at the position
- * provided by the active sensor -- matching the same behaviour as
- * {@link ActionHarvestBlock}.
- *
- * <p>Constructed by {@link BuilderActionEquipBestTool} when an NPC role is built.
+ * <p>Constructed by {@link BuilderActionEquipBestTool}.
  */
 public class ActionEquipBestTool extends ActionBase {
 

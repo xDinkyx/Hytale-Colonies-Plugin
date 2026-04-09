@@ -11,14 +11,7 @@ import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import javax.annotation.Nonnull;
 
 /**
- * Runtime sensor that fires when 5 seconds have elapsed since the colonist entered the
- * {@link com.hytalecolonies.components.jobs.JobState#CollectingDrops} state.
- *
- * <p>The timestamp is recorded by {@link com.hytalecolonies.npc.actions.ActionSetEcsJobState}
- * when transitioning to {@code CollectingDrops} ({@code job.collectingDropsSince}).
- *
- * <p>Replaces the timer-check logic previously in
- * {@link com.hytalecolonies.systems.jobs.handlers.SharedHandlers#COLLECTING_DROPS}.
+ * Fires when {@code COLLECTION_DURATION_MS} has elapsed since {@code JobComponent.collectingDropsSince} was set.
  *
  * <p>Constructed by {@link BuilderSensorCollectionTimerElapsed}.
  */

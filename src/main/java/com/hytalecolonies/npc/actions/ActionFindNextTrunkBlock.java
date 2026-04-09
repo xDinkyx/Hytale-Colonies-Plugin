@@ -28,15 +28,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Called after the current trunk block is broken. Flood-fills horizontally at the
- * same Y level looking for an adjacent standing wood block (wide multi-block tree base).
- *
- * <p>If a next trunk is found: unclaims the broken block, claims the next one, and
- * dispatches navigation so the colonist can immediately continue harvesting.
- *
- * <p>If no adjacent trunk remains: unclaims the broken block and sets
- * {@link JobTargetComponent#targetPosition} to {@code null}. {@code SensorJobTargetExists}
- * will then return false, letting the instruction evaluator transition to Collecting.
+ * After a trunk block breaks, flood-fills horizontally at the same Y for the next adjacent
+ * wood block. Unclaims the broken block, then either claims and navigates to the next,
+ * or clears {@link JobTargetComponent#targetPosition} if none remains.
  */
 public class ActionFindNextTrunkBlock extends ActionBase {
 
