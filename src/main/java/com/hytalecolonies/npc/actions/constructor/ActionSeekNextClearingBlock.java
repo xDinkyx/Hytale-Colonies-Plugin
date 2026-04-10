@@ -1,11 +1,17 @@
 package com.hytalecolonies.npc.actions.constructor;
 
-import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.jobs.ConstructionOrderComponent;
+import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
+import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.npc.actions.common.ActionSeekNextBlockBase;
 import com.hytalecolonies.utils.ConstructorUtil;
+import com.hytalecolonies.utils.WorkStationUtil;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
 import javax.annotation.Nonnull;
@@ -27,12 +33,16 @@ public class ActionSeekNextClearingBlock extends ActionSeekNextBlockBase {
 
     @Override
     @Nullable
-    protected Vector3i findNextBlock(@Nonnull WorkStationComponent ws,
-                                     @Nonnull World world,
-                                     @Nonnull String npcId) {
-        BlockSelection prefab = ConstructorUtil.loadPrefab(ws, world);
+    protected Vector3i findNextBlock(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref,
+                                     @Nonnull World world, @Nonnull String npcId) {
+        if (WorkStationUtil.getConstructorWorkStation(store, ref) == null) return null;
+        JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
+        ConstructionOrderComponent order = job != null
+                ? WorkStationUtil.getConstructionOrderForWorkstation(world, job.getWorkStationBlockPosition())
+                : null;
+        BlockSelection prefab = ConstructorUtil.loadPrefab(order);
         if (prefab == null) return null;
-        return ConstructorUtil.findNextClearingTarget(ws, world, prefab);
+        return ConstructorUtil.findNextClearingTarget(order, world, prefab);
     }
 
     @Override

@@ -35,7 +35,7 @@ public class SensorRunQuotaReached extends SensorBase {
         if (counter == null) 
             return false;
 
-        WorkStationComponent workStation = WorkStationUtil.resolve(store, ref);
+        WorkStationComponent workStation = WorkStationUtil.getWorkStation(store, ref);
         if (workStation == null) 
             return false;
 

@@ -20,6 +20,7 @@ import com.hytalecolonies.components.jobs.JobRunCounterComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
+import com.hytalecolonies.components.jobs.MinerWorkStationComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.debug.DebugCategory;
@@ -86,11 +87,16 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
             ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
             return;
         }
+        MinerWorkStationComponent minerConfig = wsRef.getStore().getComponent(wsRef, MinerWorkStationComponent.getComponentType());
+        if (minerConfig == null) {
+            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
+            return;
+        }
         String npcId = DebugLog.npcId(colonistRef, store);
 
         boolean quotaReached = counter.count >= workStation.blocksPerRun;
         // Optimistic scan on entity-tick thread; world.execute handles claim races.
-        @Nullable Vector3i nextBlock = quotaReached ? null : MinerUtil.findNextMineBlock(workStation, world);
+        @Nullable Vector3i nextBlock = quotaReached ? null : MinerUtil.findNextMineBlock(minerConfig, world);
         final boolean goCollect = quotaReached || nextBlock == null;
 
         // Capture before crossing into world.execute.

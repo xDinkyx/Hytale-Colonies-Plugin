@@ -453,7 +453,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
             // Switch to the job-specific NPC role.
             World world = store.getExternalData().getWorld();
-            WorkStationComponent workStation = WorkStationUtil.resolve(store, ref);
+            WorkStationComponent workStation = WorkStationUtil.getWorkStation(store, ref);
             if (workStation == null) {
                 DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
                         "[RoleSwitch] No workstation found for colonist %s -- keeping generic role.",

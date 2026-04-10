@@ -49,18 +49,16 @@ public abstract class ActionSeekNextBlockBase extends ActionBase {
      * workstation-side initialization (e.g., mine origin computation).
      * Default is a no-op.
      */
-    protected void preProcess(@Nonnull WorkStationComponent ws,
-                              @Nonnull JobComponent job,
-                              @Nonnull String npcId) {}
+    protected void preProcess(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref,
+                              @Nonnull JobComponent job, @Nonnull String npcId) {}
 
     /**
      * Scans for the next eligible target block. Return {@code null} when none
      * is available (signals exhaustion).
      */
     @Nullable
-    protected abstract Vector3i findNextBlock(@Nonnull WorkStationComponent ws,
-                                              @Nonnull World world,
-                                              @Nonnull String npcId);
+    protected abstract Vector3i findNextBlock(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref,
+                                              @Nonnull World world, @Nonnull String npcId);
 
     /** Label passed to {@link ClaimBlockUtil} for debug identification. */
     protected String getClaimLabel() {
@@ -74,7 +72,7 @@ public abstract class ActionSeekNextBlockBase extends ActionBase {
         super.execute(ref, role, sensorInfo, dt, store);
         String npcId = DebugLog.npcId(ref, store);
 
-        WorkStationComponent workStation = WorkStationUtil.resolve(store, ref);
+        WorkStationComponent workStation = WorkStationUtil.getWorkStation(store, ref);
         if (workStation == null) {
             DebugLog.fine(DebugCategory.PERFORMANCE, "[SeekNextBlock] [%s] Workstation not found -- skipping.", npcId);
             return true;
@@ -86,7 +84,7 @@ public abstract class ActionSeekNextBlockBase extends ActionBase {
             return true;
         }
 
-        preProcess(workStation, job, npcId);
+        preProcess(store, ref, job, npcId);
 
         UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
         if (uuidComponent == null) {
@@ -114,7 +112,7 @@ public abstract class ActionSeekNextBlockBase extends ActionBase {
             }
         }
 
-        Vector3i nextBlock = findNextBlock(workStation, world, npcId);
+        Vector3i nextBlock = findNextBlock(store, ref, world, npcId);
         if (nextBlock == null) {
             job.workAvailable = false;
             return true;

@@ -1,8 +1,9 @@
 package com.hytalecolonies.npc.actions.constructor;
 
+import com.hytalecolonies.components.jobs.ConstructionOrderComponent;
+import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.ConstructorUtil;
@@ -50,7 +51,7 @@ public class ActionPlaceConstructionBlock extends ActionBase {
             return true;
         }
 
-        WorkStationComponent ws = WorkStationUtil.resolve(store, ref);
+        ConstructorWorkStationComponent ws = WorkStationUtil.getConstructorWorkStation(store, ref);
         if (ws == null) {
             DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
                     "[PlaceConstructionBlock] [%s] No workstation -- skipping.", npcId);
@@ -65,19 +66,21 @@ public class ActionPlaceConstructionBlock extends ActionBase {
         }
 
         World world = store.getExternalData().getWorld();
+        Vector3i wsPos = job.getWorkStationBlockPosition();
+        ConstructionOrderComponent order = wsPos != null ? WorkStationUtil.getConstructionOrderForWorkstation(world, wsPos) : null;
         Vector3i pos = target.targetPosition;
         final int wx = pos.x;
         final int wy = pos.y;
         final int wz = pos.z;
 
-        BlockSelection prefab = ConstructorUtil.loadPrefab(ws, world);
+        BlockSelection prefab = ConstructorUtil.loadPrefab(order);
         if (prefab == null) {
             DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
                     "[PlaceConstructionBlock] [%s] Could not load prefab -- skipping.", npcId);
             return true;
         }
 
-        String blockKey = ConstructorUtil.getDesiredBlockKey(ws, prefab, wx, wy, wz);
+        String blockKey = ConstructorUtil.getDesiredBlockKey(order, prefab, wx, wy, wz);
         if (blockKey == null || blockKey.isEmpty() || EMPTY_BLOCK_KEY.equals(blockKey)) {
             DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB,
                     "[PlaceConstructionBlock] [%s] Desired block at %d,%d,%d is air/empty -- skipping place.",

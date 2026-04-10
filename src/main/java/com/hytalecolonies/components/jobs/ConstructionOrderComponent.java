@@ -12,8 +12,8 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 /**
- * Block-entity component placed on the prefab origin block when a build order
- * is created. Tracks which prefab to build and the current build status.
+ * Block-entity component placed on the Constructor workstation block when a build order
+ * is created. Tracks which prefab to build, where to build it, and current status.
  *
  * <p>Status values: {@code "Pending"}, {@code "InProgress"}, {@code "Complete"}.
  */
@@ -30,27 +30,27 @@ public class ConstructionOrderComponent implements Component<ChunkStore> {
                     (o, v) -> o.status = v,
                     o -> o.status)
             .add()
-            .append(new KeyedCodec<>("WorkstationPosition", Vector3i.CODEC),
-                    (o, v) -> o.workstationPosition = v,
-                    o -> o.workstationPosition)
+            .append(new KeyedCodec<>("BuildOrigin", Vector3i.CODEC),
+                    (o, v) -> o.buildOrigin = v,
+                    o -> o.buildOrigin)
             .add()
             .build();
 
-    /** ID of the prefab to build at this origin. */
+    /** ID of the prefab to build. */
     public String prefabId = "";
 
     /** Build status: "Pending", "InProgress", or "Complete". */
     public String status = "Pending";
 
-    /** World position of the workstation that owns this order. Null if unassigned. */
-    public @Nullable Vector3i workstationPosition = null;
+    /** World position where the prefab anchor should be placed (the paste position). */
+    public @Nullable Vector3i buildOrigin = null;
 
     // ===== Constructors =====
     public ConstructionOrderComponent() {}
 
-    public ConstructionOrderComponent(String prefabId, Vector3i workstationPosition) {
+    public ConstructionOrderComponent(String prefabId, Vector3i buildOrigin) {
         this.prefabId = prefabId;
-        this.workstationPosition = workstationPosition;
+        this.buildOrigin = buildOrigin;
     }
 
     // ===== Component Type =====
@@ -64,7 +64,7 @@ public class ConstructionOrderComponent implements Component<ChunkStore> {
         ConstructionOrderComponent copy = new ConstructionOrderComponent();
         copy.prefabId = this.prefabId;
         copy.status = this.status;
-        copy.workstationPosition = this.workstationPosition;
+        copy.buildOrigin = this.buildOrigin;
         return copy;
     }
 }

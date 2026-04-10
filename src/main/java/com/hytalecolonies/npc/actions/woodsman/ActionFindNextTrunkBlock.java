@@ -1,7 +1,7 @@
 package com.hytalecolonies.npc.actions.woodsman;
 
 import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.jobs.WoodsmanWorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.systems.world.TreeDetector;
@@ -64,7 +64,7 @@ public class ActionFindNextTrunkBlock extends ActionBase {
         DebugLog.info(DebugCategory.WOODSMAN_JOB,
                 "[FindNextTrunkBlock] [%s] Block at %s broken -- flood-filling for adjacent trunk.", npcId, brokenPosition);
 
-        WorkStationComponent workStation = WorkStationUtil.resolve(store, ref);
+        WoodsmanWorkStationComponent workStation = WorkStationUtil.getWoodsmanWorkStation(store, ref);
         Set<String> allowedWoodTypes = workStation != null ? workStation.getAllowedTreeTypes() : null;
         if (allowedWoodTypes == null) {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,

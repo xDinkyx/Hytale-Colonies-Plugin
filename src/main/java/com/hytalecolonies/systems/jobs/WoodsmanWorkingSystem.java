@@ -21,7 +21,7 @@ import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.jobs.WoodsmanWorkStationComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
@@ -83,8 +83,8 @@ public class WoodsmanWorkingSystem extends EntityTickingSystem<EntityStore> {
         Vector3i workStationPos = job.getWorkStationBlockPosition();
         if (workStationPos != null) {
             Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
-            WorkStationComponent workStation = wsRef != null
-                    ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
+            WoodsmanWorkStationComponent workStation = wsRef != null
+                    ? wsRef.getStore().getComponent(wsRef, WoodsmanWorkStationComponent.getComponentType())
                     : null;
             if (workStation != null)
                 allowedTreeTypes = workStation.getAllowedTreeTypes();

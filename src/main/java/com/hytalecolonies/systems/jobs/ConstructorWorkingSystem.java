@@ -16,7 +16,9 @@ import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hytalecolonies.components.jobs.ConstructionOrderComponent;
 import com.hytalecolonies.components.jobs.ConstructorJobComponent;
+import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobRunCounterComponent;
 import com.hytalecolonies.components.jobs.JobState;
@@ -107,18 +109,23 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore> {
         }
 
         World world = store.getExternalData().getWorld();
-        WorkStationComponent ws = WorkStationUtil.resolveAt(world, wsPos);
-        if (ws == null) {
+        WorkStationComponent wsBase = WorkStationUtil.getWorkStationAt(world, wsPos);
+        if (wsBase == null) {
             ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
             return;
         }
+        if (WorkStationUtil.getConstructorWorkStationAt(world, wsPos) == null) {
+            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
+            return;
+        }
+        ConstructionOrderComponent order = WorkStationUtil.getConstructionOrderForWorkstation(world, wsPos);
 
         String npcId = DebugLog.npcId(colonistRef, store);
-        boolean quotaReached = counter.count >= ws.blocksPerRun;
+        boolean quotaReached = counter.count >= wsBase.blocksPerRun;
 
-        BlockSelection prefab = ConstructorUtil.loadPrefab(ws, world);
+        BlockSelection prefab = ConstructorUtil.loadPrefab(order);
         @Nullable Vector3i nextClear = (!quotaReached && prefab != null)
-                ? ConstructorUtil.findNextClearingTarget(ws, world, prefab)
+                ? ConstructorUtil.findNextClearingTarget(order, world, prefab)
                 : null;
         final boolean clearingDone = !quotaReached && nextClear == null;
 
@@ -130,7 +137,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore> {
 
         DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
                 "[ConstructorWorking] [%s] Block cleared (%d/%d). %s",
-                npcId, counter.count, ws.blocksPerRun,
+                npcId, counter.count, wsBase.blocksPerRun,
                 clearingDone ? "Phase complete -- start constructing." :
                 quotaReached  ? "Quota reached -- collecting drops." :
                                 "Next clearing target: " + nextClear + ".");
@@ -183,15 +190,20 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore> {
         }
 
         World world = store.getExternalData().getWorld();
-        WorkStationComponent ws = WorkStationUtil.resolveAt(world, wsPos);
-        if (ws == null) {
+        WorkStationComponent wsBase = WorkStationUtil.getWorkStationAt(world, wsPos);
+        if (wsBase == null) {
             ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
             return;
         }
+        if (WorkStationUtil.getConstructorWorkStationAt(world, wsPos) == null) {
+            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
+            return;
+        }
+        ConstructionOrderComponent order = WorkStationUtil.getConstructionOrderForWorkstation(world, wsPos);
 
         String npcId = DebugLog.npcId(colonistRef, store);
-        BlockSelection prefab = ConstructorUtil.loadPrefab(ws, world);
-        @Nullable Vector3i nextBuild = prefab != null ? ConstructorUtil.findNextBuildTarget(ws, world, prefab) : null;
+        BlockSelection prefab = ConstructorUtil.loadPrefab(order);
+        @Nullable Vector3i nextBuild = prefab != null ? ConstructorUtil.findNextBuildTarget(order, world, prefab) : null;
         UUIDComponent uuid = store.getComponent(colonistRef, UUIDComponent.getComponentType());
         final UUID colonistUuid = uuid != null ? uuid.getUuid() : null;
         EntityStore entityStore = world.getEntityStore();
@@ -237,15 +249,20 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore> {
         }
 
         World world = store.getExternalData().getWorld();
-        WorkStationComponent ws = WorkStationUtil.resolveAt(world, wsPos);
-        if (ws == null) {
+        WorkStationComponent wsBase = WorkStationUtil.getWorkStationAt(world, wsPos);
+        if (wsBase == null) {
             ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
             return;
         }
+        if (WorkStationUtil.getConstructorWorkStationAt(world, wsPos) == null) {
+            ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
+            return;
+        }
+        ConstructionOrderComponent order = WorkStationUtil.getConstructionOrderForWorkstation(world, wsPos);
 
         String npcId = DebugLog.npcId(colonistRef, store);
-        BlockSelection prefab = ConstructorUtil.loadPrefab(ws, world);
-        @Nullable Vector3i nextBuild = prefab != null ? ConstructorUtil.findNextBuildTarget(ws, world, prefab) : null;
+        BlockSelection prefab = ConstructorUtil.loadPrefab(order);
+        @Nullable Vector3i nextBuild = prefab != null ? ConstructorUtil.findNextBuildTarget(order, world, prefab) : null;
 
         // Construction complete.
         if (nextBuild == null) {
@@ -267,7 +284,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore> {
         }
 
         counter.count++;
-        boolean quotaReached = counter.count >= ws.blocksPerRun;
+        boolean quotaReached = counter.count >= wsBase.blocksPerRun;
         JobTargetComponent jt = store.getComponent(colonistRef, JobTargetComponent.getComponentType());
         @Nullable final Vector3i currentPos = jt != null ? jt.targetPosition : null;
         UUIDComponent uuid = store.getComponent(colonistRef, UUIDComponent.getComponentType());
@@ -276,7 +293,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore> {
 
         DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
                 "[ConstructorWorking] [%s] Block placed (%d/%d). %s",
-                npcId, counter.count, ws.blocksPerRun,
+                npcId, counter.count, wsBase.blocksPerRun,
                 quotaReached ? "Quota -- retrieving materials." : "Next build block: " + nextBuild + ".");
 
         world.execute(() -> {

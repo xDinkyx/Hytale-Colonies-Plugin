@@ -7,6 +7,7 @@ import javax.annotation.Nonnull;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.io.adapter.PacketAdapters;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -15,40 +16,41 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hytalecolonies.commands.HytaleColoniesPluginCommand;
-import com.hytalecolonies.components.jobs.JobComponent;
-import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.JobRunCounterComponent;
-import com.hytalecolonies.components.jobs.MinerJobComponent;
 import com.hytalecolonies.components.jobs.ConstructionOrderComponent;
 import com.hytalecolonies.components.jobs.ConstructorJobComponent;
+import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
+import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobRunCounterComponent;
+import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.components.jobs.MinerJobComponent;
+import com.hytalecolonies.components.jobs.MinerWorkStationComponent;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
 import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
+import com.hytalecolonies.components.jobs.WoodsmanWorkStationComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.debug.DebugConfig;
-import com.hytalecolonies.interactions.AssignBuildOrderInteraction;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
+import com.hytalecolonies.listeners.ConstructorBuildOrderFilter;
 import com.hytalecolonies.listeners.PlayerListener;
 import com.hytalecolonies.npc.actions.common.BuilderActionDepositItems;
 import com.hytalecolonies.npc.actions.common.BuilderActionEquipBestTool;
 import com.hytalecolonies.npc.actions.common.BuilderActionFindDeliveryContainer;
 import com.hytalecolonies.npc.actions.common.BuilderActionHarvestBlock;
-import com.hytalecolonies.npc.actions.common.BuilderActionLogDebug;
 import com.hytalecolonies.npc.actions.common.BuilderActionIncrementJobCounter;
+import com.hytalecolonies.npc.actions.common.BuilderActionLogDebug;
 import com.hytalecolonies.npc.actions.common.BuilderActionNavigateToWorkstation;
 import com.hytalecolonies.npc.actions.common.BuilderActionNotifyBlockBroken;
-import com.hytalecolonies.npc.actions.common.BuilderActionResetJobCounter;
 import com.hytalecolonies.npc.actions.common.BuilderActionReleaseJobTarget;
+import com.hytalecolonies.npc.actions.common.BuilderActionResetJobCounter;
 import com.hytalecolonies.npc.actions.common.BuilderActionSetEcsJobState;
 import com.hytalecolonies.npc.actions.constructor.BuilderActionPlaceConstructionBlock;
 import com.hytalecolonies.npc.actions.constructor.BuilderActionRetrieveConstructionBlocks;
 import com.hytalecolonies.npc.actions.constructor.BuilderActionSeekNextClearingBlock;
-import com.hytalecolonies.npc.actions.miner.BuilderActionClaimNextMineBlock;
 import com.hytalecolonies.npc.actions.miner.BuilderActionSeekNextMineBlock;
-import com.hytalecolonies.npc.actions.woodsman.BuilderActionClaimNearestTree;
 import com.hytalecolonies.npc.actions.woodsman.BuilderActionFindNextTrunkBlock;
 import com.hytalecolonies.npc.actions.woodsman.BuilderActionSeekNearestTree;
 import com.hytalecolonies.npc.sensors.common.BuilderSensorAtWorkstation;
@@ -65,10 +67,11 @@ import com.hytalecolonies.systems.jobs.ColonistCleanupSystem;
 import com.hytalecolonies.systems.jobs.ColonistDeliverySystem;
 import com.hytalecolonies.systems.jobs.ColonistItemPickupSystem;
 import com.hytalecolonies.systems.jobs.ColonistJobSystem;
-import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
-import com.hytalecolonies.systems.jobs.JobRegistry;
+import com.hytalecolonies.systems.jobs.ConstructionOrderDispatchSystem;
 import com.hytalecolonies.systems.jobs.ConstructorJobCheckSystem;
 import com.hytalecolonies.systems.jobs.ConstructorWorkingSystem;
+import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
+import com.hytalecolonies.systems.jobs.JobRegistry;
 import com.hytalecolonies.systems.jobs.MinerWorkingSystem;
 import com.hytalecolonies.systems.jobs.WoodsmanWorkingSystem;
 import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
@@ -97,6 +100,9 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     private ComponentType<ChunkStore, ConstructionOrderComponent> constructionOrderComponentType;
     private ComponentType<EntityStore, ConstructorJobComponent> constructorJobComponentType;
     private ComponentType<ChunkStore, WorkStationComponent> workStationComponentType;
+    private ComponentType<ChunkStore, WoodsmanWorkStationComponent> woodsmanWorkStationComponentType;
+    private ComponentType<ChunkStore, MinerWorkStationComponent> minerWorkStationComponentType;
+    private ComponentType<ChunkStore, ConstructorWorkStationComponent> constructorWorkStationComponentType;
     private ComponentType<EntityStore, MoveToTargetComponent> moveToTargetComponentType;
     private ComponentType<ChunkStore, HarvestableTreeComponent> harvestableTreeComponentType;
     private ComponentType<EntityStore, JobTargetComponent> jobTargetComponentType;
@@ -166,6 +172,9 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         constructionOrderComponentType = getChunkStoreRegistry().registerComponent(ConstructionOrderComponent.class, "ConstructionOrder", ConstructionOrderComponent.CODEC);
         constructorJobComponentType = getEntityStoreRegistry().registerComponent(ConstructorJobComponent.class, "ConstructorJob", ConstructorJobComponent.CODEC);
         workStationComponentType = getChunkStoreRegistry().registerComponent(WorkStationComponent.class, "WorkStation", WorkStationComponent.CODEC);
+        woodsmanWorkStationComponentType = getChunkStoreRegistry().registerComponent(WoodsmanWorkStationComponent.class, "WoodsmanWorkStation", WoodsmanWorkStationComponent.CODEC);
+        minerWorkStationComponentType = getChunkStoreRegistry().registerComponent(MinerWorkStationComponent.class, "MinerWorkStation", MinerWorkStationComponent.CODEC);
+        constructorWorkStationComponentType = getChunkStoreRegistry().registerComponent(ConstructorWorkStationComponent.class, "ConstructorWorkStation", ConstructorWorkStationComponent.CODEC);
         moveToTargetComponentType = getEntityStoreRegistry().registerComponent(MoveToTargetComponent.class, MoveToTargetComponent::new);
         harvestableTreeComponentType = getChunkStoreRegistry().registerComponent(HarvestableTreeComponent.class, "HarvestableTree", HarvestableTreeComponent.CODEC);
         jobTargetComponentType = getEntityStoreRegistry().registerComponent(JobTargetComponent.class, "JobTarget", JobTargetComponent.CODEC);
@@ -194,6 +203,15 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     }
     public ComponentType<ChunkStore, WorkStationComponent> getWorkStationComponentType() {
         return workStationComponentType;
+    }
+    public ComponentType<ChunkStore, WoodsmanWorkStationComponent> getWoodsmanWorkStationComponentType() {
+        return woodsmanWorkStationComponentType;
+    }
+    public ComponentType<ChunkStore, MinerWorkStationComponent> getMinerWorkStationComponentType() {
+        return minerWorkStationComponentType;
+    }
+    public ComponentType<ChunkStore, ConstructorWorkStationComponent> getConstructorWorkStationComponentType() {
+        return constructorWorkStationComponentType;
     }
     public ComponentType<EntityStore, JobComponent> getJobComponentType() {
         return colonistJobComponentType;
@@ -235,11 +253,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             SpawnColonistInteraction.class,
             SpawnColonistInteraction.CODEC
         );
-        Interaction.CODEC.register(
-            "AssignBuildOrderInteraction",
-            AssignBuildOrderInteraction.class,
-            AssignBuildOrderInteraction.CODEC
-        );
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered plugin interactions");
     }
 
@@ -254,9 +267,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             .registerCoreComponentType("HarvestBlock",               BuilderActionHarvestBlock::new)
             .registerCoreComponentType("SeekNearestTree",            BuilderActionSeekNearestTree::new)
             .registerCoreComponentType("SeekNextMineBlock",          BuilderActionSeekNextMineBlock::new)
-            .registerCoreComponentType("ClaimNearestTree",           BuilderActionClaimNearestTree::new)
             .registerCoreComponentType("FindNextTrunkBlock",         BuilderActionFindNextTrunkBlock::new)
-            .registerCoreComponentType("ClaimNextMineBlock",         BuilderActionClaimNextMineBlock::new)
             .registerCoreComponentType("ReleaseJobTarget",           BuilderActionReleaseJobTarget::new)
             .registerCoreComponentType("IncrementJobCounter",       BuilderActionIncrementJobCounter::new)
             .registerCoreComponentType("ResetJobCounter",           BuilderActionResetJobCounter::new)
@@ -295,6 +306,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getChunkStoreRegistry().registerSystem(new ColonistCleanupSystem());
         getChunkStoreRegistry().registerSystem(treeScannerSystem);
         getChunkStoreRegistry().registerSystem(new WorkstationInitSystem(treeScannerSystem));
+        getChunkStoreRegistry().registerSystem(new ConstructionOrderDispatchSystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.ColonistEntitySystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.JobAssignedSystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());
@@ -324,6 +336,13 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             LOGGER.at(Level.INFO).log("[HytaleColonies] Registered player event listeners");
         } catch (Exception e) {
             LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register listeners");
+        }
+
+        try {
+            PacketAdapters.registerInbound(new ConstructorBuildOrderFilter());
+            LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ConstructorBuildOrderFilter");
+        } catch (Exception e) {
+            LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register ConstructorBuildOrderFilter");
         }
     }
 

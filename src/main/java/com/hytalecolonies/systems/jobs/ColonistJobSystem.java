@@ -73,7 +73,7 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
         Role currentRole = npcEntity.getRole();
         if (currentRole == null || currentRole.isRoleChangeRequested()) return;
 
-        WorkStationComponent workStation = WorkStationUtil.resolve(store, colonistRef);
+        WorkStationComponent workStation = WorkStationUtil.getWorkStation(store, colonistRef);
         if (workStation == null) return;
 
         String expectedRole = ColonistRoleMap.roleFor(workStation.getJobType());

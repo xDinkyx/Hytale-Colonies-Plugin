@@ -16,7 +16,9 @@ import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hytalecolonies.components.jobs.ConstructionOrderComponent;
 import com.hytalecolonies.components.jobs.ConstructorJobComponent;
+import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobRunCounterComponent;
 import com.hytalecolonies.components.jobs.JobState;
@@ -31,12 +33,14 @@ import com.hytalecolonies.utils.WorkStationUtil;
 
 /**
  * Periodic check (every 2 s) for constructor colonists in {@link JobState#WaitingForWork}.
- * Dispatches them to the correct work phase:
+ * Dispatches them to the correct work phase given the active construction order:
  * <ul>
  *   <li>Clearing targets exist → claim first target → {@link JobState#WorkingClearing}</li>
  *   <li>Clearing done, build targets exist → {@link JobState#WorkingRetrievingBlocks}</li>
- *   <li>No targets at all → stay in {@link JobState#WaitingForWork} (no active order)</li>
+ *   <li>No targets at all → mark order complete, clear workstation pointer</li>
  * </ul>
+ *
+ * <p>Order assignment is handled separately by {@link ConstructionOrderDispatchSystem}.
  */
 public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore> {
 
@@ -66,18 +70,27 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore> 
         if (wsPos == null) return;
 
         World world = store.getExternalData().getWorld();
-        WorkStationComponent ws = WorkStationUtil.resolveAt(world, wsPos);
+        WorkStationComponent wsBase = WorkStationUtil.getWorkStationAt(world, wsPos);
+        if (wsBase == null) return;
+        ConstructorWorkStationComponent ws = WorkStationUtil.getConstructorWorkStationAt(world, wsPos);
         if (ws == null) return;
 
-        BlockSelection prefab = ConstructorUtil.loadPrefab(ws, world);
+        if (ws.activeOrderPosition == null) {
+            DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB,
+                    "[ConstructorJob] [%s] Idle -- no order assigned yet.", npcId);
+            return;
+        }
+
+        ConstructionOrderComponent order = WorkStationUtil.getConstructionOrderForWorkstation(world, wsPos);
+        BlockSelection prefab = ConstructorUtil.loadPrefab(order);
         if (prefab == null) {
             DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB,
-                    "[ConstructorJob] [%s] WaitingForWork but no active construction order.", npcId);
+                    "[ConstructorJob] [%s] Cannot load prefab for active order.", npcId);
             return;
         }
 
         // 1. Check for clearing targets first.
-        Vector3i nextClear = ConstructorUtil.findNextClearingTarget(ws, world, prefab);
+        Vector3i nextClear = ConstructorUtil.findNextClearingTarget(order, world, prefab);
         if (nextClear != null) {
             UUIDComponent uuid = store.getComponent(colonistRef, UUIDComponent.getComponentType());
             if (uuid == null) return;
@@ -103,11 +116,23 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore> 
         }
 
         // 2. Clearing done -- check if build targets exist.
-        Vector3i nextBuild = ConstructorUtil.findNextBuildTarget(ws, world, prefab);
+        Vector3i nextBuild = ConstructorUtil.findNextBuildTarget(order, world, prefab);
         if (nextBuild == null) {
-            DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB,
-                    "[ConstructorJob] [%s] No targets remaining -- construction order complete.", npcId);
-            return; // Stay in WaitingForWork; a new order may be assigned later.
+            // Order complete -- clear workstation pointer so it can accept the next queued order.
+            DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
+                    "[ConstructorJob] [%s] Construction order complete -- freeing workstation.", npcId);
+            final Vector3i orderPos = ws.activeOrderPosition;
+            EntityStore entityStore = world.getEntityStore();
+            world.execute(() -> {
+                ConstructorWorkStationComponent liveWs = WorkStationUtil.getConstructorWorkStationAt(world, wsPos);
+                if (liveWs != null) liveWs.activeOrderPosition = null;
+                ConstructionOrderComponent liveOrder = orderPos != null
+                        ? WorkStationUtil.getConstructionOrderAt(world, orderPos) : null;
+                if (liveOrder != null) liveOrder.status = "Complete";
+                JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
+                if (liveJob != null) liveJob.workAvailable = true;
+            });
+            return;
         }
 
         // 3. Build targets exist but materials need collecting first.

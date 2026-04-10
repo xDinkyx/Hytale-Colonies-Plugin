@@ -1,0 +1,55 @@
+{
+  "TranslationProperties": {
+    "Name": "items.Tool_Colony_Constructor_PlacePrefab.name",
+    "Description": "items.Tool_Colony_Constructor_PlacePrefab.description"
+  },
+  "Icon": "Icons/Items/EditorTools/Prefab.png",
+  "Categories": [
+    "Tool.BuilderTool"
+  ],
+  "Model": "Items/Tools/Brush/Brush.blockymodel",
+  "Texture": "Items/Tools/Brush/Brush_Texture.png",
+  "MaxStack": 1,
+  "PlayerAnimationsId": "Item",
+  "HudUI": [
+    { "Path": "Hud/ToolsLegends/PasteToolLegend.ui", "Type": "Legend" }
+  ],
+  "Tags": {
+    "Type": [
+      "Tool"
+    ],
+    "Family": [
+      "Colony"
+    ]
+  },
+  "BuilderTool": {
+    "Id": "Paste",
+    "IsBrush": false,
+    "Args": [
+      {
+        "Type": "Option",
+        "Id": "Origin",
+        "Default": "Anchor",
+        "Options": [
+          "Anchor",
+          "Bottom",
+          "Center",
+          "Top"
+        ]
+      }
+    ]
+  },
+  "Interactions": {
+    "Primary": "Builder_Tool",
+    "Secondary": "Builder_Tool"
+  },
+  "InteractionConfig": {
+    "DebugOutlines": true,
+    "UseDistance": {
+      "Adventure": 128,
+      "Creative": 128
+    },
+    "AllEntities": true
+  },
+  "Quality": "Tool"
+}

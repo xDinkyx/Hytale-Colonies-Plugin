@@ -2,7 +2,7 @@ package com.hytalecolonies.npc.actions.woodsman;
 
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.jobs.WoodsmanWorkStationComponent;
 import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.debug.DebugCategory;
@@ -51,7 +51,7 @@ public class ActionSeekNearestTree extends ActionBase {
 
         DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] Action started.", npcId);
 
-        WorkStationComponent workStation = WorkStationUtil.resolve(store, ref);
+        WoodsmanWorkStationComponent workStation = WorkStationUtil.getWoodsmanWorkStation(store, ref);
         if (workStation == null) {
             DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] Workstation not found -- skipping.", npcId);
             return true;
@@ -106,7 +106,7 @@ public class ActionSeekNearestTree extends ActionBase {
     }
 
     @Nullable
-    private static Vector3i findNearestAvailableTree(@Nonnull WorkStationComponent workStation,
+    private static Vector3i findNearestAvailableTree(@Nonnull WoodsmanWorkStationComponent workStation,
                                                       @Nullable Vector3i workStationPosition,
                                                       @Nonnull World world,
                                                       @Nonnull String npcId) {

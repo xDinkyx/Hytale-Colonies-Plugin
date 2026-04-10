@@ -3,56 +3,29 @@ package com.hytalecolonies.utils;
 import javax.annotation.Nullable;
 
 import com.hytalecolonies.components.jobs.ConstructionOrderComponent;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.debug.DebugTiming;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
-import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.prefab.PrefabLoadException;
 import com.hypixel.hytale.server.core.prefab.PrefabStore;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 /** Utility methods for the Constructor colonist job. */
 public final class ConstructorUtil {
 
-    /** The block type key used in prefabs to mark a position that should be cleared to air. */
     private static final String EMPTY_BLOCK_KEY = "Empty";
 
     private ConstructorUtil() {}
 
-    /**
-     * Loads the prefab for the active construction order on the workstation.
-     * The prefab key is retrieved from the {@link ConstructionOrderComponent} attached to the
-     * block entity at {@code ws.activeConstructionOrderOrigin}.
-     * Returns {@code null} when there is no active order, the block entity cannot be found,
-     * or the prefab cannot be loaded.
-     */
+    /** Loads the prefab named in {@code order}. Returns {@code null} if the order is absent or the prefab cannot be loaded. */
     @Nullable
-    public static BlockSelection loadPrefab(WorkStationComponent ws, World world) {
-        Vector3i origin = ws.activeConstructionOrderOrigin;
-        if (origin == null) return null;
-
-        Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
-        Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, origin.x, origin.y, origin.z);
-        if (blockRef == null || !blockRef.isValid()) {
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                    "[ConstructorUtil] No block entity at active construction order origin %s.", origin);
-            return null;
-        }
-
-        ConstructionOrderComponent order = chunkStore.getComponent(blockRef, ConstructionOrderComponent.getComponentType());
+    public static BlockSelection loadPrefab(@Nullable ConstructionOrderComponent order) {
         if (order == null || order.prefabId == null || order.prefabId.isEmpty()) {
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                    "[ConstructorUtil] No ConstructionOrderComponent (or empty prefabId) at origin %s.", origin);
             return null;
         }
-
         try {
             return PrefabStore.get().getServerPrefab(order.prefabId);
         } catch (PrefabLoadException e) {
@@ -62,16 +35,11 @@ public final class ConstructorUtil {
         }
     }
 
-    /**
-     * Finds the next world position inside the prefab footprint that needs to be cleared:
-     * the prefab expects air ("Empty") but the world has a solid block.
-     *
-     * <p>Returns {@code null} when the clearing phase is complete (no mismatches remain).
-     */
+    /** Returns the next world position inside the prefab footprint that needs to be cleared, or {@code null} when clearing is complete. */
     @Nullable
-    public static Vector3i findNextClearingTarget(WorkStationComponent ws, World world, BlockSelection prefab) {
-        Vector3i origin = ws.activeConstructionOrderOrigin;
-        if (origin == null) return null;
+    public static Vector3i findNextClearingTarget(@Nullable ConstructionOrderComponent order, World world, BlockSelection prefab) {
+        if (order == null || order.buildOrigin == null) return null;
+        Vector3i origin = order.buildOrigin;
 
         int emptyId = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
         Vector3i[] result = {null};
@@ -97,16 +65,11 @@ public final class ConstructorUtil {
         return result[0];
     }
 
-    /**
-     * Finds the next world position inside the prefab footprint that needs to be built:
-     * the prefab expects a solid block but the world has the wrong block (or air).
-     *
-     * <p>Returns {@code null} when the build phase is complete (all blocks match).
-     */
+    /** Returns the next world position inside the prefab footprint that needs to be built, or {@code null} when the build phase is complete. */
     @Nullable
-    public static Vector3i findNextBuildTarget(WorkStationComponent ws, World world, BlockSelection prefab) {
-        Vector3i origin = ws.activeConstructionOrderOrigin;
-        if (origin == null) return null;
+    public static Vector3i findNextBuildTarget(@Nullable ConstructionOrderComponent order, World world, BlockSelection prefab) {
+        if (order == null || order.buildOrigin == null) return null;
+        Vector3i origin = order.buildOrigin;
 
         int emptyId = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
         Vector3i[] result = {null};
@@ -133,26 +96,20 @@ public final class ConstructorUtil {
     }
 
     /**
-     * Returns the block type key the prefab expects at the given world position.
-     * Returns {@code "Empty"} for positions the prefab wants cleared to air.
-     * Returns {@code null} if the position is outside the prefab footprint or has
-     * an unknown block type.
-     *
-     * <p>Coordinate formula: {@code lx = wx - origin.x + prefab.getAnchorX()}
+     * Returns the block type key the prefab expects at the given world position,
+     * {@code "Empty"} for air positions, or {@code null} if outside the prefab footprint.
      */
     @Nullable
-    public static String getDesiredBlockKey(WorkStationComponent ws, BlockSelection prefab, int wx, int wy, int wz) {
-        Vector3i origin = ws.activeConstructionOrderOrigin;
-        if (origin == null) return null;
+    public static String getDesiredBlockKey(@Nullable ConstructionOrderComponent order, BlockSelection prefab, int wx, int wy, int wz) {
+        if (order == null || order.buildOrigin == null) return null;
+        Vector3i origin = order.buildOrigin;
 
         int lx = wx - origin.x + prefab.getAnchorX();
         int ly = wy - origin.y + prefab.getAnchorY();
         int lz = wz - origin.z + prefab.getAnchorZ();
 
-        // prefab.getX() == 0 for freshly loaded prefabs, so getBlockAtWorldPos(lx,ly,lz)
-        // is equivalent to getBlockAtLocalPos(lx, ly, lz).
         int blockId = prefab.getBlockAtWorldPos(lx, ly, lz);
-        if (blockId == Integer.MIN_VALUE) return null; // outside footprint
+        if (blockId == Integer.MIN_VALUE) return null;
 
         BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
         return blockType != null ? blockType.getId() : null;

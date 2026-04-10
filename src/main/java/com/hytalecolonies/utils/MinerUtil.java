@@ -9,7 +9,7 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.jobs.MinerWorkStationComponent;
 import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
@@ -23,7 +23,7 @@ public final class MinerUtil {
 
     /** Scans the mine shaft top-down and returns the first solid unclaimed block, or {@code null}. */
     @Nullable
-    public static Vector3i findNextMineBlock(WorkStationComponent workStation, World world) {
+    public static Vector3i findNextMineBlock(MinerWorkStationComponent workStation, World world) {
         Vector3i origin = workStation.mineOrigin;
         if (origin == null) return null;
         int size = workStation.mineSize;
