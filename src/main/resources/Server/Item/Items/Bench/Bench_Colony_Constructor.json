@@ -69,7 +69,8 @@
         "WorkStation": {
           "JobType": "Constructor",
           "MaxWorkers": 2
-        }
+        },
+        "ConstructorWorkStation": {}
       }
     }
   },

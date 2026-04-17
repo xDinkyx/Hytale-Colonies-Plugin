@@ -1,5 +1,7 @@
 package com.hytalecolonies.ui;
 
+import javax.annotation.Nonnull;
+
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -16,8 +18,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugConfig;
-
-import javax.annotation.Nonnull;
 
 /**
  * Interactive UI page for adjusting per-category debug log levels and
@@ -68,7 +68,8 @@ public class DebugConfigUI extends InteractiveCustomUIPage<DebugConfigUI.UIEvent
 
         // Set initial draw toggle button texts
         cmd.set("#DrawColonistPathsButton.Text", config.isDrawColonistPaths() ? "ON" : "OFF");
-        cmd.set("#DrawTreeDetectionButton.Text", config.isDrawTreeDetection()  ? "ON" : "OFF");
+        cmd.set("#DrawTreeDetectionButton.Text",  config.isDrawTreeDetection()  ? "ON" : "OFF");
+        cmd.set("#DrawConstructorOrdersButton.Text", config.isDrawConstructorOrders() ? "ON" : "OFF");
 
         // Bind draw toggle events
         evt.addEventBinding(
@@ -85,6 +86,14 @@ public class DebugConfigUI extends InteractiveCustomUIPage<DebugConfigUI.UIEvent
             new EventData()
                 .append("Action", "toggle_draw")
                 .append("DrawTarget", "tree_detection"),
+            false
+        );
+        evt.addEventBinding(
+            CustomUIEventBindingType.Activating,
+            "#DrawConstructorOrdersButton",
+            new EventData()
+                .append("Action", "toggle_draw")
+                .append("DrawTarget", "constructor_orders"),
             false
         );
 
@@ -135,6 +144,10 @@ public class DebugConfigUI extends InteractiveCustomUIPage<DebugConfigUI.UIEvent
                     boolean newValue = !config.isDrawTreeDetection();
                     config.setDrawTreeDetection(newValue);
                     update.set("#DrawTreeDetectionButton.Text", newValue ? "ON" : "OFF");
+                } else if ("constructor_orders".equals(data.drawTarget)) {
+                    boolean newValue = !config.isDrawConstructorOrders();
+                    config.setDrawConstructorOrders(newValue);
+                    update.set("#DrawConstructorOrdersButton.Text", newValue ? "ON" : "OFF");
                 }
                 debugConfig.save();
                 this.sendUpdate(update, false);

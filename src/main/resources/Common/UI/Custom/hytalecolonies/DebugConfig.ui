@@ -1,7 +1,7 @@
 $Common = "../Common.ui";
 
 Group {
-    Anchor: (Width: 420, Height: 612);
+    Anchor: (Width: 420, Height: 650);
     Background: #141c26;
     LayoutMode: Top;
     Padding: (Full: 20);
@@ -198,6 +198,18 @@ Group {
         Anchor: (Height: 32);
         Label { Text: "Tree Detection"; Anchor: (Width: 200, Height: 32); Style: (FontSize: 13, TextColor: #c8d0dc, VerticalAlignment: Center); }
         TextButton #DrawTreeDetectionButton {
+            Text: "OFF";
+            Anchor: (Width: 160, Height: 32);
+            Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 13, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 13, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+        }
+    }
+    Group { Anchor: (Height: 6); }
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 32);
+        Label { Text: "Constructor Orders"; Anchor: (Width: 200, Height: 32); Style: (FontSize: 13, TextColor: #c8d0dc, VerticalAlignment: Center); }
+        TextButton #DrawConstructorOrdersButton {
             Text: "OFF";
             Anchor: (Width: 160, Height: 32);
             Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 13, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 13, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));

@@ -35,6 +35,7 @@ import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.debug.DebugConfig;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
 import com.hytalecolonies.listeners.ConstructorBuildOrderFilter;
+import com.hytalecolonies.listeners.ConstructorPrefabPageFilter;
 import com.hytalecolonies.listeners.PlayerListener;
 import com.hytalecolonies.npc.actions.common.BuilderActionDepositItems;
 import com.hytalecolonies.npc.actions.common.BuilderActionEquipBestTool;
@@ -68,6 +69,8 @@ import com.hytalecolonies.systems.jobs.ColonistDeliverySystem;
 import com.hytalecolonies.systems.jobs.ColonistItemPickupSystem;
 import com.hytalecolonies.systems.jobs.ColonistJobSystem;
 import com.hytalecolonies.systems.jobs.ConstructionOrderDispatchSystem;
+import com.hytalecolonies.systems.jobs.ConstructionOrderQueueSystem;
+import com.hytalecolonies.systems.jobs.ConstructionOrderRestoreSystem;
 import com.hytalecolonies.systems.jobs.ConstructorJobCheckSystem;
 import com.hytalecolonies.systems.jobs.ConstructorWorkingSystem;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
@@ -306,7 +309,10 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getChunkStoreRegistry().registerSystem(new ColonistCleanupSystem());
         getChunkStoreRegistry().registerSystem(treeScannerSystem);
         getChunkStoreRegistry().registerSystem(new WorkstationInitSystem(treeScannerSystem));
+        getChunkStoreRegistry().registerSystem(new ConstructionOrderQueueSystem());
+        getChunkStoreRegistry().registerSystem(new ConstructionOrderRestoreSystem());
         getChunkStoreRegistry().registerSystem(new ConstructionOrderDispatchSystem());
+
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.ColonistEntitySystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.JobAssignedSystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());
@@ -343,6 +349,13 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ConstructorBuildOrderFilter");
         } catch (Exception e) {
             LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register ConstructorBuildOrderFilter");
+        }
+
+        try {
+            PacketAdapters.registerInbound(new ConstructorPrefabPageFilter());
+            LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ConstructorPrefabPageFilter");
+        } catch (Exception e) {
+            LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register ConstructorPrefabPageFilter");
         }
     }
 
