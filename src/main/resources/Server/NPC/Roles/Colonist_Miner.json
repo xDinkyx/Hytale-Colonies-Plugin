@@ -67,7 +67,7 @@
             },
             {
               "$Comment": "No pickaxe -- confused particle + wait.",
-              "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Pickaxe_*"], "CountRange": [1, 999] }] } },
+              "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["*_Pickaxe*"], "CountRange": [1, 999] }] } },
               "ActionsBlocking": true,
               "Actions": [
                 { "Type": "LogDebug", "Message": "WaitingForWork: missing pickaxe -- showing confused particle.", "Category": "MINER_JOB", "Level": "INFO" },
@@ -77,7 +77,7 @@
             },
             {
               "$Comment": "No shovel -- confused particle + wait.",
-              "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Shovel_*"], "CountRange": [1, 999] }] } },
+              "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["*_Shovel*"], "CountRange": [1, 999] }] } },
               "ActionsBlocking": true,
               "Actions": [
                 { "Type": "LogDebug", "Message": "WaitingForWork: missing shovel -- showing confused particle.", "Category": "MINER_JOB", "Level": "INFO" },
@@ -86,19 +86,9 @@
               ]
             },
             {
-              "$Comment": "Has both tools -- scan for the next mine block and claim it.",
+              "$Comment": "Has all tools -- scan for the next mine block and claim it.",
               "Continue": true,
-              "Sensor": {
-                "Type": "Self",
-                "Filters": [
-                  {
-                    "Type": "And",
-                    "Filters": [
-                      { "Type": "Inventory", "Items": [ "*_Shovel*", "*_Pickaxe*" ] }
-                    ]
-                  }
-                ]
-              },
+              "Sensor": { "Type": "Any" },
               "Actions": [
                 { "Type": "LogDebug", "Message": "WaitingForWork: scanning for next mine block.", "Category": "MINER_JOB", "Level": "FINE" },
                 { "Type": "SeekNextMineBlock" }

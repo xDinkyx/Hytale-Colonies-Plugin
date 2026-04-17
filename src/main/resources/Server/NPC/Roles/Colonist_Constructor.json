@@ -57,6 +57,36 @@
               }
             },
             {
+              "$Comment": "No pickaxe -- confused particle + wait.",
+              "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["*_Pickaxe*"], "CountRange": [1, 999] }] } },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "LogDebug", "Message": "WaitingForWork: missing pickaxe -- showing confused particle.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
+                { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
+                { "Type": "Timeout", "Delay": [3, 3] }
+              ]
+            },
+            {
+              "$Comment": "No shovel -- confused particle + wait.",
+              "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["*_Shovel*"], "CountRange": [1, 999] }] } },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "LogDebug", "Message": "WaitingForWork: missing shovel -- showing confused particle.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
+                { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
+                { "Type": "Timeout", "Delay": [3, 3] }
+              ]
+            },
+            {
+              "$Comment": "No hatchet -- confused particle + wait.",
+              "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["*_Hatchet*"], "CountRange": [1, 999] }] } },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "LogDebug", "Message": "WaitingForWork: missing hatchet -- showing confused particle.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
+                { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
+                { "Type": "Timeout", "Delay": [3, 3] }
+              ]
+            },
+            {
               "$Comment": "Target found -- travel to the claimed block.",
               "Sensor": { "Type": "JobTargetExists" },
               "Actions": [
