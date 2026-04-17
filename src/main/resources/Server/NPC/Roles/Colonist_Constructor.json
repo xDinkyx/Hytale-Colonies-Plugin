@@ -41,6 +41,51 @@
       "Sensor": { "Type": "State", "State": "Working", "IgnoreMissingSetState": true },
       "Instructions": [
         {
+          "$Comment": "WaitingForWork -- wander at workstation until ECS assigns the next target block.",
+          "Sensor": { "Type": "State", "State": ".WaitingForWork", "IgnoreMissingSetState": true },
+          "Instructions": [
+            {
+              "Continue": true,
+              "Sensor": { "Type": "Any" },
+              "BodyMotion": {
+                "Type": "Sequence",
+                "Looped": true,
+                "Motions": [
+                  { "Type": "Timer", "Time": [4, 6], "Motion": { "Type": "WanderInCircle", "Radius": 5, "MaxHeadingChange": 0.4 } },
+                  { "Type": "Timer", "Time": [1, 2], "Motion": { "Type": "Nothing" } }
+                ]
+              }
+            },
+            {
+              "$Comment": "Target found -- travel to the claimed block.",
+              "Sensor": { "Type": "JobTargetExists" },
+              "Actions": [
+                { "Type": "LogDebug", "Message": "WaitingForWork: target found -> TravelingToWorkSite.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
+                { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
+              ]
+            }
+          ]
+        },
+        {
+          "$Comment": "TravelingToWorkSite -- seek to claimed block. On arrival transition to Working.",
+          "Continue": true,
+          "Sensor": { "Type": "State", "State": ".TravelingToWorkSite", "IgnoreMissingSetState": true },
+          "Instructions": [
+            {
+              "Continue": true,
+              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
+              "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
+            },
+            {
+              "Sensor": { "Type": "JobTarget", "Range": 2.5 },
+              "Actions": [
+                { "Type": "LogDebug", "Message": "TravelingToWorkSite: arrived -> WorkingClearing.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
+                { "Type": "SetEcsJobState", "JobState": "WorkingClearing" }
+              ]
+            }
+          ]
+        },
+        {
           "$Comment": "Clearing -- approach block and break it.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".Clearing", "IgnoreMissingSetState": true },
@@ -90,51 +135,6 @@
           "Sensor": { "Type": "State", "State": ".RetrievingBlocks", "IgnoreMissingSetState": true },
           "Instructions": [
             { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
-          ]
-        },
-        {
-          "$Comment": "TravelingToWorkSite -- seek to claimed block. On arrival transition to Working.",
-          "Continue": true,
-          "Sensor": { "Type": "State", "State": ".TravelingToWorkSite", "IgnoreMissingSetState": true },
-          "Instructions": [
-            {
-              "Continue": true,
-              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
-              "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
-            },
-            {
-              "Sensor": { "Type": "JobTarget", "Range": 2.5 },
-              "Actions": [
-                { "Type": "LogDebug", "Message": "TravelingToWorkSite: arrived -> WorkingClearing.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
-                { "Type": "SetEcsJobState", "JobState": "WorkingClearing" }
-              ]
-            }
-          ]
-        },
-        {
-          "$Comment": "WaitingForWork -- wander at workstation until ECS assigns the next target block.",
-          "Sensor": { "Type": "State", "State": ".WaitingForWork", "IgnoreMissingSetState": true },
-          "Instructions": [
-            {
-              "Continue": true,
-              "Sensor": { "Type": "Any" },
-              "BodyMotion": {
-                "Type": "Sequence",
-                "Looped": true,
-                "Motions": [
-                  { "Type": "Timer", "Time": [4, 6], "Motion": { "Type": "WanderInCircle", "Radius": 5, "MaxHeadingChange": 0.4 } },
-                  { "Type": "Timer", "Time": [1, 2], "Motion": { "Type": "Nothing" } }
-                ]
-              }
-            },
-            {
-              "$Comment": "Target found -- travel to the claimed block.",
-              "Sensor": { "Type": "JobTargetExists" },
-              "Actions": [
-                { "Type": "LogDebug", "Message": "WaitingForWork: target found -> TravelingToWorkSite.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
-                { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
-              ]
-            }
           ]
         },
         {
@@ -203,6 +203,20 @@
       "Sensor": { "Type": "State", "State": "Idle", "IgnoreMissingSetState": true },
       "Instructions": [
         {
+          "$Comment": "Default -- transient pass-through. Set nav and immediately transition to TravelingToWorkstation.",
+          "Sensor": { "Type": "State", "State": ".Default", "IgnoreMissingSetState": true },
+          "Instructions": [
+            {
+              "Sensor": { "Type": "Any" },
+              "Actions": [
+                { "Type": "LogDebug", "Message": "Default: navigating to workstation.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
+                { "Type": "NavigateToWorkstation" },
+                { "Type": "SetEcsJobState", "JobState": "TravelingToWorkstation" }
+              ]
+            }
+          ]
+        },
+        {
           "$Comment": "TravelingToWorkstation -- seek to workstation. On arrival begin WaitingForWork.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".TravelingToWorkstation", "IgnoreMissingSetState": true },
@@ -250,20 +264,6 @@
               "Actions": [
                 { "Type": "LogDebug", "Message": "TravelingToHome: arrived -> Idle.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
                 { "Type": "SetEcsJobState", "JobState": "Idle" }
-              ]
-            }
-          ]
-        },
-        {
-          "$Comment": "Default -- transient pass-through. Set nav and immediately transition to TravelingToWorkstation.",
-          "Sensor": { "Type": "State", "State": ".Default", "IgnoreMissingSetState": true },
-          "Instructions": [
-            {
-              "Sensor": { "Type": "Any" },
-              "Actions": [
-                { "Type": "LogDebug", "Message": "Default: navigating to workstation.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
-                { "Type": "NavigateToWorkstation" },
-                { "Type": "SetEcsJobState", "JobState": "TravelingToWorkstation" }
               ]
             }
           ]
