@@ -1793,8 +1793,14 @@ Each filter type (`Inventory`, `ItemInHand`, `LineOfSight`, etc.) can appear **a
 }
 ```
 
-The `Items` array uses glob patterns and matches if the entity has any item matching any of the listed patterns.
+The `Items` array uses glob patterns and matches if the entity has **any** item matching **any** of the listed patterns (OR logic). To require all tools be present (AND logic), use separate `Not`-sensor instruction blocks — one per tool:
+
+```json
+{ "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["*_Pickaxe*"], "CountRange": [1, 999] }] } }, "ActionsBlocking": true, "Actions": [ ... ] },
+{ "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["*_Shovel*"], "CountRange": [1, 999] }] } }, "ActionsBlocking": true, "Actions": [ ... ] }
 ```
+
+Each block only passes through once its own `Not` sensor is false (tool is present), giving sequential AND enforcement.
 
 ---
 
