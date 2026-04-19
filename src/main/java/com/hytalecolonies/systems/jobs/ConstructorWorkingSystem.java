@@ -245,6 +245,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
             ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Idle);
             return;
         }
+        
         Vector3i claimed = ConstructorUtil.claimNextClearingTarget(order, world, prefab, colonistUuid);
         if (claimed != null)
         {
@@ -255,6 +256,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
         }
 
         clearTarget(entityStore, colonistRef);
+
         boolean trulyDone = ConstructorUtil.findNextClearingTarget(order, world, prefab) == null;
         if (trulyDone)
         {

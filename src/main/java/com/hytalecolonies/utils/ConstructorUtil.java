@@ -40,13 +40,18 @@ public final class ConstructorUtil
     }
 
     /**
-     * Collects all non-empty prefab blocks and returns them sorted by Y ascending so colonists build floor-first.
-     * Each entry is {@code {lx, ly, lz, blockId}}.
+     * Collects all non-empty prefab base blocks and returns them sorted by Y ascending so colonists build floor-first.
+     * Each entry is {@code {lx, ly, lz, blockId, rotation}}. Filler slave cells are excluded -- they are
+     * auto-created (and auto-removed) by the engine when the base block is placed or cleared.
      */
     private static List<int[]> sortedPrefabBlocks(BlockSelection prefab)
     {
         List<int[]> blocks = new ArrayList<>();
-        prefab.forEachBlock((lx, ly, lz, block) -> blocks.add(new int[] {lx, ly, lz, block.blockId()}));
+        prefab.forEachBlock((lx, ly, lz, block) -> {
+            if (block.filler() != 0)
+                return; // slave cell -- auto-managed by the engine via the base block
+            blocks.add(new int[] {lx, ly, lz, block.blockId(), block.rotation()});
+        });
         blocks.sort(Comparator.comparingInt((int[] b) -> b[1]).thenComparingInt(b -> b[0]).thenComparingInt(b -> b[2]));
         return blocks;
     }
@@ -267,6 +272,19 @@ public final class ConstructorUtil
             //     color = DebugUtils.COLOR_LIME;
             // }
         });
+    }
+
+    /** Returns the {@code RotationTuple} index for the prefab block at the given world position, or {@code 0} if absent. */
+    public static int getDesiredBlockRotation(@Nullable ConstructionOrderStore.Entry order, BlockSelection prefab, int wx, int wy, int wz)
+    {
+        if (order == null || order.buildOrigin == null)
+            return 0;
+        Vector3i origin = order.buildOrigin;
+        int lx = wx - origin.x + prefab.getAnchorX();
+        int ly = wy - origin.y + prefab.getAnchorY();
+        int lz = wz - origin.z + prefab.getAnchorZ();
+        BlockSelection.BlockHolder bh = prefab.getBlockHolderAtWorldPos(lx, ly, lz);
+        return bh != null ? bh.rotation() : 0;
     }
 
     /** Returns the block type key for the prefab position, or {@code null} if outside the footprint. */

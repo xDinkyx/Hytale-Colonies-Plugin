@@ -1,13 +1,8 @@
 package com.hytalecolonies.npc.actions.constructor;
 
-import com.hytalecolonies.ConstructionOrderStore;
-import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
-import com.hytalecolonies.components.jobs.JobComponent;
-import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.utils.ConstructorUtil;
-import com.hytalecolonies.utils.WorkStationUtil;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
@@ -21,47 +16,53 @@ import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
 import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import com.hytalecolonies.ConstructionOrderStore;
+import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
+import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.ConstructorUtil;
+import com.hytalecolonies.utils.WorkStationUtil;
 
 /**
- * Places the correct prefab block at the colonist's job-target position (currently a stub -- block is spawned from thin air).
+ * Places the correct prefab block at the colonist's job-target position.
  * Sets {@link JobComponent#blockPlacedNotification} so the constructor working system can advance.
  */
-public class ActionPlaceConstructionBlock extends ActionBase {
+public class ActionPlaceConstructionBlock extends ActionBase
+{
 
     private static final String EMPTY_BLOCK_KEY = "Empty";
 
-    public ActionPlaceConstructionBlock(@Nonnull BuilderActionPlaceConstructionBlock builder,
-                                        @Nonnull BuilderSupport support) {
+    public ActionPlaceConstructionBlock(@Nonnull BuilderActionPlaceConstructionBlock builder, @Nonnull BuilderSupport support)
+    {
         super(builder);
     }
 
     @Override
-    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role,
-                           @Nullable InfoProvider sensorInfo, double dt,
-                           @Nonnull Store<EntityStore> store) {
+    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
+    {
         super.execute(ref, role, sensorInfo, dt, store);
         String npcId = DebugLog.npcId(ref, store);
 
         JobTargetComponent target = store.getComponent(ref, JobTargetComponent.getComponentType());
-        if (target == null || target.targetPosition == null) {
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                    "[PlaceConstructionBlock] [%s] No job target -- skipping.", npcId);
+        if (target == null || target.targetPosition == null)
+        {
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] [%s] No job target -- skipping.", npcId);
             return true;
         }
 
         ConstructorWorkStationComponent ws = WorkStationUtil.getConstructorWorkStation(store, ref);
-        if (ws == null) {
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                    "[PlaceConstructionBlock] [%s] No workstation -- skipping.", npcId);
+        if (ws == null)
+        {
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] [%s] No workstation -- skipping.", npcId);
             return true;
         }
 
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
-        if (job == null) {
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                    "[PlaceConstructionBlock] [%s] No JobComponent -- skipping.", npcId);
+        if (job == null)
+        {
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] [%s] No JobComponent -- skipping.", npcId);
             return true;
         }
 
@@ -74,46 +75,50 @@ public class ActionPlaceConstructionBlock extends ActionBase {
         final int wz = pos.z;
 
         BlockSelection prefab = ConstructorUtil.loadPrefab(order);
-        if (prefab == null) {
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                    "[PlaceConstructionBlock] [%s] Could not load prefab -- skipping.", npcId);
+        if (prefab == null)
+        {
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] [%s] Could not load prefab -- skipping.", npcId);
             return true;
         }
 
         String blockKey = ConstructorUtil.getDesiredBlockKey(order, prefab, wx, wy, wz);
-        if (blockKey == null || blockKey.isEmpty() || EMPTY_BLOCK_KEY.equals(blockKey)) {
+        if (blockKey == null || blockKey.isEmpty() || EMPTY_BLOCK_KEY.equals(blockKey))
+        {
             DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB,
-                    "[PlaceConstructionBlock] [%s] Desired block at %d,%d,%d is air/empty -- skipping place.",
-                    npcId, wx, wy, wz);
+                          "[PlaceConstructionBlock] [%s] Desired block at %d,%d,%d is air/empty -- skipping place.",
+                          npcId,
+                          wx,
+                          wy,
+                          wz);
             // Still notify so ECS can advance past this position.
             job.blockPlacedNotification = true;
             return true;
         }
 
         final int blockId = BlockType.getAssetMap().getIndex(blockKey);
+        final int blockRotation = ConstructorUtil.getDesiredBlockRotation(order, prefab, wx, wy, wz);
 
         world.execute(() -> {
             WorldChunk chunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(wx, wz));
-            if (chunk == null) {
-                DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                        "[PlaceConstructionBlock] Chunk not in memory at %d,%d -- cannot place.", wx, wz);
+            if (chunk == null)
+            {
+                DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] Chunk not in memory at %d,%d -- cannot place.", wx, wz);
                 return;
             }
             BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
-            if (blockType == null) {
-                DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                        "[PlaceConstructionBlock] Unknown block id %d for key '%s'.", blockId, blockKey);
+            if (blockType == null)
+            {
+                DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] Unknown block id %d for key '%s'.", blockId, blockKey);
                 return;
             }
-            chunk.setBlock(wx, wy, wz, blockId, blockType, 0, 0, 0);
-            DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
-                    "[PlaceConstructionBlock] Placed '%s' at %d,%d,%d.", blockKey, wx, wy, wz);
+            chunk.setBlock(wx, wy, wz, blockId, blockType, blockRotation, 0, 0);
+            DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] Placed '%s' (rot=%d) at %d,%d,%d.", blockKey, blockRotation, wx, wy, wz);
         });
 
-        if (!job.blockPlacedNotification) {
+        if (!job.blockPlacedNotification)
+        {
             job.blockPlacedNotification = true;
-            DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB,
-                    "[PlaceConstructionBlock] [%s] Notification flag set.", npcId);
+            DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] [%s] Notification flag set.", npcId);
         }
 
         return true;
