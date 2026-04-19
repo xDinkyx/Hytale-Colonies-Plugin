@@ -53,7 +53,6 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         if (job == null)
             return;
 
-        // Draw order footprint when debug overlay is enabled.
         if (HytaleColoniesPlugin.getInstance().getDebugConfig().get().isDrawConstructorOrders())
         {
             Vector3i drawWsPos = job.getWorkStationBlockPosition();
@@ -103,16 +102,7 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
                              npcId,
                              ws.activeOrderId);
             final Vector3i staleWsPos = wsPos;
-            world.execute(() -> {
-                Ref<ChunkStore> wsRef2 = BlockModule.getBlockEntity(world, staleWsPos.x, staleWsPos.y, staleWsPos.z);
-                if (wsRef2 == null || !wsRef2.isValid())
-                    return;
-                var cs2 = world.getChunkStore().getStore();
-                ConstructorWorkStationComponent staleWs = cs2.getComponent(wsRef2, ConstructorWorkStationComponent.getComponentType());
-                if (staleWs == null)
-                    return;
-                staleWs.activeOrderId = null;
-            });
+            world.execute(() -> clearStaleOrderFromWorkstation(world, staleWsPos));
             return;
         }
 
@@ -120,7 +110,6 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         if (prefab == null)
             return;
 
-        // Clearing phase.
         Vector3i nextClear = ConstructorUtil.findNextClearingTarget(order, world, prefab);
         if (nextClear != null)
         {
@@ -130,65 +119,97 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
             final UUID colonistUuid = uuid.getUuid();
             EntityStore entityStore = world.getEntityStore();
             DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Clearing needed -- dispatching.", npcId);
-            world.execute(() -> {
-                JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
-                if (liveJob == null || liveJob.getCurrentTask() != JobState.WaitingForWork)
-                    return;
-                // Find and claim atomically on the world thread to avoid two colonists racing to grab the same block.
-                Vector3i claimed = ConstructorUtil.claimNextClearingTarget(order, world, prefab, colonistUuid);
-                if (claimed == null)
-                {
-                    DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] No claimable clearing block (all taken) -- will retry.", npcId);
-                    return;
-                }
-                JobNavigationUtil.setJobTarget(entityStore.getStore(), colonistRef, claimed);
-                JobNavigationUtil.dispatchNavigation(entityStore.getStore(), colonistRef, claimed);
-                liveJob.workAvailable = true;
-                // Reset counter so quota is not immediately exceeded on re-dispatch.
-                JobRunCounterComponent liveCounter = entityStore.getStore().getComponent(colonistRef, JobRunCounterComponent.getComponentType());
-                if (liveCounter != null)
-                    liveCounter.count = 0;
-                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingClearing);
-                DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Dispatched to clearing block at %s.", npcId, claimed);
-            });
+            world.execute(() -> claimAndStartClearing(colonistRef, npcId, order, world, prefab, colonistUuid, entityStore));
 
             return;
         }
 
-        // All clearing done -- check if anything still needs to be built.
         Vector3i nextBuild = ConstructorUtil.findNextBuildTarget(order, world, prefab);
         if (nextBuild == null)
         {
             DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Construction order %s complete -- freeing workstation.", npcId, order.id);
             final UUID orderId = order.id;
             EntityStore entityStore = world.getEntityStore();
-            world.execute(() -> {
-                Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, wsPos.x, wsPos.y, wsPos.z);
-                if (wsRef != null && wsRef.isValid())
-                {
-                    var cs = world.getChunkStore().getStore();
-                    ConstructorWorkStationComponent liveWs = cs.getComponent(wsRef, ConstructorWorkStationComponent.getComponentType());
-                    if (liveWs != null)
-                        liveWs.activeOrderId = null;
-                }
-                ConstructionOrderStore.get().remove(orderId);
-                JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
-                if (liveJob != null)
-                    liveJob.workAvailable = true;
-            });
+            world.execute(() -> completeOrderAndFreeWorkstation(world, wsPos, orderId, colonistRef, entityStore));
             return;
         }
 
-        // Clearing done, build targets exist -- retrieve materials.
         DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Clearing done, build targets exist -- WorkingRetrievingBlocks.", npcId);
         EntityStore entityStore = world.getEntityStore();
-        world.execute(() -> {
-            JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
-            if (liveJob == null || liveJob.getCurrentTask() != JobState.WaitingForWork)
-                return;
+        world.execute(() -> startRetrievingBlocks(colonistRef, entityStore));
+    }
+
+    private static void claimAndStartClearing(
+            @Nonnull Ref<EntityStore> colonistRef,
+            @Nonnull String npcId,
+            @Nonnull ConstructionOrderStore.Entry order,
+            @Nonnull World world,
+            @Nonnull BlockSelection prefab,
+            @Nonnull UUID colonistUuid,
+            @Nonnull EntityStore entityStore)
+    {
+        JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
+        if (liveJob == null || liveJob.getCurrentTask() != JobState.WaitingForWork)
+            return;
+        // Claim on world thread to prevent two colonists racing to the same block.
+        Vector3i claimed = ConstructorUtil.claimNextClearingTarget(order, world, prefab, colonistUuid);
+        if (claimed == null)
+        {
+            DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] No claimable clearing block (all taken) -- will retry.", npcId);
+            return;
+        }
+        JobNavigationUtil.setJobTarget(entityStore.getStore(), colonistRef, claimed);
+        JobNavigationUtil.dispatchNavigation(entityStore.getStore(), colonistRef, claimed);
+        liveJob.workAvailable = true;
+        JobRunCounterComponent liveCounter = entityStore.getStore().getComponent(colonistRef, JobRunCounterComponent.getComponentType());
+        if (liveCounter != null)
+            liveCounter.count = 0;
+        ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingClearing);
+        DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Dispatched to clearing block at %s.", npcId, claimed);
+    }
+
+    private static void completeOrderAndFreeWorkstation(
+            @Nonnull World world,
+            @Nonnull Vector3i wsPos,
+            @Nonnull UUID orderId,
+            @Nonnull Ref<EntityStore> colonistRef,
+            @Nonnull EntityStore entityStore)
+    {
+        Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, wsPos.x, wsPos.y, wsPos.z);
+        if (wsRef != null && wsRef.isValid())
+        {
+            var cs = world.getChunkStore().getStore();
+            ConstructorWorkStationComponent liveWs = cs.getComponent(wsRef, ConstructorWorkStationComponent.getComponentType());
+            if (liveWs != null)
+                liveWs.activeOrderId = null;
+        }
+        ConstructionOrderStore.get().remove(orderId);
+        JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
+        if (liveJob != null)
             liveJob.workAvailable = true;
-            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingRetrievingBlocks);
-        });
+    }
+
+    private static void clearStaleOrderFromWorkstation(@Nonnull World world, @Nonnull Vector3i staleWsPos)
+    {
+        Ref<ChunkStore> wsRef2 = BlockModule.getBlockEntity(world, staleWsPos.x, staleWsPos.y, staleWsPos.z);
+        if (wsRef2 == null || !wsRef2.isValid())
+            return;
+        var cs2 = world.getChunkStore().getStore();
+        ConstructorWorkStationComponent staleWs = cs2.getComponent(wsRef2, ConstructorWorkStationComponent.getComponentType());
+        if (staleWs == null)
+            return;
+        staleWs.activeOrderId = null;
+    }
+
+    private static void startRetrievingBlocks(
+            @Nonnull Ref<EntityStore> colonistRef,
+            @Nonnull EntityStore entityStore)
+    {
+        JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
+        if (liveJob == null || liveJob.getCurrentTask() != JobState.WaitingForWork)
+            return;
+        liveJob.workAvailable = true;
+        ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingRetrievingBlocks);
     }
 
     @Override public @Nullable Query<EntityStore> getQuery()

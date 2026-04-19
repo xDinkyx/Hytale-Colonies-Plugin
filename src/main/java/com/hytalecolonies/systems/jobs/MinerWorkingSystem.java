@@ -25,10 +25,10 @@ import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.utils.MinerUtil;
 import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hytalecolonies.utils.ColonistLeashUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
+import com.hytalecolonies.utils.MinerUtil;
 
 /**
  * Reacts to {@link JobComponent#blockBrokenNotification} for miners in {@link JobState#Working}.
@@ -61,7 +61,7 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
         if (!job.blockBrokenNotification) 
             return;
 
-        // Clear immediately so a second notification in the same cycle is ignored until world.execute settles.
+        // Clear before world.execute to prevent double-processing.
         job.blockBrokenNotification = false;
 
         Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
@@ -99,7 +99,6 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
         @Nullable Vector3i nextBlock = quotaReached ? null : MinerUtil.findNextMineBlock(minerConfig, world);
         final boolean goCollect = quotaReached || nextBlock == null;
 
-        // Capture before crossing into world.execute.
         JobTargetComponent jobTarget = store.getComponent(colonistRef, JobTargetComponent.getComponentType());
         @Nullable final Vector3i currentTargetPos = jobTarget != null ? jobTarget.targetPosition : null;
 
@@ -110,54 +109,64 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
                 npcId, counter.count, workStation.blocksPerRun,
                 goCollect ? "Collecting drops." : "Seeking next block at " + nextBlock + ".");
 
-        world.execute(() -> {
-            // Guard against duplicate callbacks queued in the same cycle.
-            JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
-            if (liveJob == null || liveJob.getCurrentTask() != JobState.Working) return;
+        world.execute(() -> advanceMining(colonistRef, entityStore, world, currentTargetPos, goCollect, quotaReached, nextBlock, npcId));
+    }
 
+    private static void advanceMining(
+            @Nonnull Ref<EntityStore> colonistRef,
+            @Nonnull EntityStore entityStore,
+            @Nonnull World world,
+            @Nullable Vector3i currentTargetPos,
+            boolean goCollect,
+            boolean quotaReached,
+            @Nullable Vector3i nextBlock,
+            @Nonnull String npcId)
+    {
+        JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
+        if (liveJob == null || liveJob.getCurrentTask() != JobState.Working) return;
+
+        if (currentTargetPos != null) {
+            ClaimBlockUtil.unclaimBlock(world, currentTargetPos);
+        }
+
+        if (goCollect) {
+            JobTargetComponent jt = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());
+            if (jt != null) jt.setTargetPosition(null);
+            // Set leash to the last mined block so WanderInCircle constrains drop-pickup to that area.
             if (currentTargetPos != null) {
-                ClaimBlockUtil.unclaimBlock(world, currentTargetPos);
+                ColonistLeashUtil.setLeashToBlockCenter(colonistRef, entityStore.getStore(), currentTargetPos);
             }
-
-            if (goCollect) {
-                JobTargetComponent jt = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());
-                if (jt != null) jt.setTargetPosition(null);
-                // Set leash to the last mined block so WanderInCircle constrains drop-pickup to that area.
-                if (currentTargetPos != null) {
-                    ColonistLeashUtil.setLeashToBlockCenter(colonistRef, entityStore.getStore(), currentTargetPos);
-                }
-                liveJob.collectingDropsSince = System.currentTimeMillis();
-                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.CollectingDrops);
-                DebugLog.info(DebugCategory.MINER_JOB,
-                        "[MinerWorking] [%s] %s -- transitioning to CollectingDrops.",
-                        npcId, quotaReached ? "Quota reached" : "Shaft exhausted mid-run");
+            liveJob.collectingDropsSince = System.currentTimeMillis();
+            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.CollectingDrops);
+            DebugLog.info(DebugCategory.MINER_JOB,
+                    "[MinerWorking] [%s] %s -- transitioning to CollectingDrops.",
+                    npcId, quotaReached ? "Quota reached" : "Shaft exhausted mid-run");
+        } else {
+            UUIDComponent uuidComp = entityStore.getStore().getComponent(colonistRef, UUIDComponent.getComponentType());
+            if (uuidComp == null) {
+                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Idle);
+                return;
+            }
+            if (!ClaimBlockUtil.claimBlock(world, nextBlock, uuidComp.getUuid(), "Mine")) {
+                // Race loss -- retry via Idle.
+                DebugLog.fine(DebugCategory.MINER_JOB,
+                        "[MinerWorking] [%s] Could not claim next block %s -- going Idle.", npcId, nextBlock);
+                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Idle);
+                return;
+            }
+            JobTargetComponent jt = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());
+            if (jt != null) {
+                jt.setTargetPosition(nextBlock);
             } else {
-                UUIDComponent uuidComp = entityStore.getStore().getComponent(colonistRef, UUIDComponent.getComponentType());
-                if (uuidComp == null) {
-                    ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Idle);
-                    return;
-                }
-                if (!ClaimBlockUtil.claimBlock(world, nextBlock, uuidComp.getUuid(), "Mine")) {
-                    // Race loss -- retry via Idle.
-                    DebugLog.fine(DebugCategory.MINER_JOB,
-                            "[MinerWorking] [%s] Could not claim next block %s -- going Idle.", npcId, nextBlock);
-                    ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Idle);
-                    return;
-                }
-                JobTargetComponent jt = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());
-                if (jt != null) {
-                    jt.setTargetPosition(nextBlock);
-                } else {
-                    entityStore.getStore().addComponent(colonistRef, JobTargetComponent.getComponentType(),
-                            new JobTargetComponent(nextBlock));
-                }
-                entityStore.getStore().tryRemoveComponent(colonistRef, MoveToTargetComponent.getComponentType());
-                entityStore.getStore().addComponent(colonistRef, MoveToTargetComponent.getComponentType(),
-                        new MoveToTargetComponent(MinerUtil.blockCenter(nextBlock)));
-                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToWorkSite);
-                DebugLog.info(DebugCategory.MINER_JOB,
-                        "[MinerWorking] [%s] Claimed next block at %s -- transitioning to TravelingToWorkSite.", npcId, nextBlock);
+                entityStore.getStore().addComponent(colonistRef, JobTargetComponent.getComponentType(),
+                        new JobTargetComponent(nextBlock));
             }
-        });
+            entityStore.getStore().tryRemoveComponent(colonistRef, MoveToTargetComponent.getComponentType());
+            entityStore.getStore().addComponent(colonistRef, MoveToTargetComponent.getComponentType(),
+                    new MoveToTargetComponent(MinerUtil.blockCenter(nextBlock)));
+            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToWorkSite);
+            DebugLog.info(DebugCategory.MINER_JOB,
+                    "[MinerWorking] [%s] Claimed next block at %s -- transitioning to TravelingToWorkSite.", npcId, nextBlock);
+        }
     }
 }

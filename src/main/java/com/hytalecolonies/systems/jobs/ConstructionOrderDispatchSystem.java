@@ -6,6 +6,7 @@ import javax.annotation.Nonnull;
 
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
@@ -65,36 +66,38 @@ public class ConstructionOrderDispatchSystem extends DelayedEntitySystem<ChunkSt
         Vector3i wsPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
         World world = chunkStore.getExternalData().getWorld();
 
-        world.execute(() -> {
-            com.hypixel.hytale.component.Ref<ChunkStore> wsRef =
-                    com.hypixel.hytale.server.core.modules.block.BlockModule.getBlockEntity(world, wsPos.x, wsPos.y, wsPos.z);
-            if (wsRef == null || !wsRef.isValid())
-                return;
-            Store<ChunkStore> cs = world.getChunkStore().getStore();
-            ConstructorWorkStationComponent liveWs = cs.getComponent(wsRef, ConstructorWorkStationComponent.getComponentType());
-            if (liveWs == null || liveWs.activeOrderId != null)
-                return;
+        world.execute(() -> executeAssignOrderToWorkstationOnWorldThread(world, wsPos));
+    }
 
-            UUID nextId = ConstructionOrderQueue.get().poll();
-            if (nextId == null)
-                return;
+    private static void executeAssignOrderToWorkstationOnWorldThread(@Nonnull World world, @Nonnull Vector3i wsPos)
+    {
+        Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, wsPos.x, wsPos.y, wsPos.z);
+        if (wsRef == null || !wsRef.isValid())
+            return;
+        Store<ChunkStore> cs = world.getChunkStore().getStore();
+        ConstructorWorkStationComponent liveWs = cs.getComponent(wsRef, ConstructorWorkStationComponent.getComponentType());
+        if (liveWs == null || liveWs.activeOrderId != null)
+            return;
 
-            ConstructionOrderStore.Entry entry = ConstructionOrderStore.get().get(nextId);
-            if (entry == null)
-            {
-                DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructionOrderDispatch] Order %s not found in store -- discarding.", nextId);
-                return;
-            }
+        UUID nextId = ConstructionOrderQueue.get().poll();
+        if (nextId == null)
+            return;
 
-            liveWs.activeOrderId = nextId;
-            ConstructionOrderStore.get().markInProgress(nextId);
-            DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
-                          "[ConstructionOrderDispatch] Assigned order %s (prefab: %s) to workstation %s (queue remaining: %d).",
-                          nextId,
-                          entry.prefabId,
-                          wsPos,
-                          ConstructionOrderQueue.get().size());
-        });
+        ConstructionOrderStore.Entry entry = ConstructionOrderStore.get().get(nextId);
+        if (entry == null)
+        {
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructionOrderDispatch] Order %s not found in store -- discarding.", nextId);
+            return;
+        }
+
+        liveWs.activeOrderId = nextId;
+        ConstructionOrderStore.get().markInProgress(nextId);
+        DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
+                      "[ConstructionOrderDispatch] Assigned order %s (prefab: %s) to workstation %s (queue remaining: %d).",
+                      nextId,
+                      entry.prefabId,
+                      wsPos,
+                      ConstructionOrderQueue.get().size());
     }
 
     @Override public Query<ChunkStore> getQuery()
