@@ -1,12 +1,18 @@
 package com.hytalecolonies.utils;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.annotation.Nonnull;
 
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.npc.role.Role;
+import com.hytalecolonies.components.jobs.ConstructorJobComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.debug.DebugCategory;
@@ -32,6 +38,23 @@ public final class ColonistStateUtil
     public static void setJobState(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull JobComponent job, @Nonnull JobState state)
     {
         JobState previousState = job.getCurrentTask();
+
+        // When leaving WorkingConstructing, release any remaining pre-claimed build blocks.
+        if (previousState == JobState.WorkingConstructing && state != JobState.WorkingConstructing)
+        {
+            ConstructorJobComponent constructorJob = store.getComponent(ref, ConstructorJobComponent.getComponentType());
+            if (constructorJob != null && !constructorJob.pendingBuildQueue.isEmpty())
+            {
+                List<Vector3i> toUnclaim = new ArrayList<>(constructorJob.pendingBuildQueue);
+                constructorJob.pendingBuildQueue.clear();
+                World world = store.getExternalData().getWorld();
+                world.execute(() -> {
+                    for (Vector3i pos : toUnclaim)
+                        ClaimBlockUtil.unclaimBlock(world, pos);
+                });
+            }
+        }
+
         job.setCurrentTask(INSTANCE, state);
 
         DebugLog.fine(DebugCategory.JOB_SYSTEM,

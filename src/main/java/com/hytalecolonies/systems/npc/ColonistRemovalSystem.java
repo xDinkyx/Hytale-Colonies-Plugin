@@ -16,16 +16,21 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entity.item.ItemComponent;
+import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
+import com.hytalecolonies.components.jobs.ConstructorJobComponent;
+import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.ClaimBlockUtil;
 
 /**
  * Fires when a colonist entity is removed from the world (death, despawn, etc.)
@@ -51,8 +56,12 @@ public class ColonistRemovalSystem extends RefSystem<EntityStore>
                                @Nonnull Store<EntityStore> store,
                                @Nonnull CommandBuffer<EntityStore> commandBuffer)
     {
+        // Always release any block claims held by this colonist (clearing target + pending build queue),
+        // regardless of whether the removal is a permanent death or a chunk unload.
+        releaseBlockClaims(ref, store);
+
         if (reason == RemoveReason.UNLOAD)
-            return; // Ignore chunk unloads -- colonist is not gone, just unloaded.
+            return; // Chunk unload -- colonist is not gone, just unloaded. Don't drop inventory.
 
         ColonistComponent colonist = store.getComponent(ref, ColonistComponent.getComponentType());
         if (colonist == null)
@@ -68,6 +77,38 @@ public class ColonistRemovalSystem extends RefSystem<EntityStore>
                       reason);
 
         dropInventory(ref, store, commandBuffer);
+    }
+
+    /**
+     * Releases any block claims held by this colonist:
+     * the current job-target claim (clearing) and all pre-claimed build-queue positions.
+     * Captured positions are snapshotted before the removal, then unclaimed on the world thread.
+     */
+    private void releaseBlockClaims(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store)
+    {
+        ConstructorJobComponent constructorJob = store.getComponent(ref, ConstructorJobComponent.getComponentType());
+        List<Vector3i> buildQueue = (constructorJob != null && !constructorJob.pendingBuildQueue.isEmpty())
+                ? new ArrayList<>(constructorJob.pendingBuildQueue)
+                : null;
+        if (constructorJob != null)
+            constructorJob.pendingBuildQueue.clear();
+
+        JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
+        Vector3i clearingTarget = jobTarget != null ? jobTarget.targetPosition : null;
+
+        if (buildQueue == null && clearingTarget == null)
+            return;
+
+        World world = store.getExternalData().getWorld();
+        world.execute(() -> {
+            if (clearingTarget != null)
+                ClaimBlockUtil.unclaimBlock(world, clearingTarget);
+            if (buildQueue != null)
+            {
+                for (Vector3i pos : buildQueue)
+                    ClaimBlockUtil.unclaimBlock(world, pos);
+            }
+        });
     }
 
     /**

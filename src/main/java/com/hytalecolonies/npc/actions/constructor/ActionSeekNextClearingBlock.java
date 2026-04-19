@@ -1,6 +1,6 @@
 package com.hytalecolonies.npc.actions.constructor;
 
-import com.hytalecolonies.components.jobs.ConstructionOrderComponent;
+import com.hytalecolonies.ConstructionOrderStore;
 import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.npc.actions.common.ActionSeekNextBlockBase;
@@ -37,7 +37,7 @@ public class ActionSeekNextClearingBlock extends ActionSeekNextBlockBase {
                                      @Nonnull World world, @Nonnull String npcId) {
         if (WorkStationUtil.getConstructorWorkStation(store, ref) == null) return null;
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
-        ConstructionOrderComponent order = job != null
+        ConstructionOrderStore.Entry order = job != null
                 ? WorkStationUtil.getConstructionOrderForWorkstation(world, job.getWorkStationBlockPosition())
                 : null;
         BlockSelection prefab = ConstructorUtil.loadPrefab(order);

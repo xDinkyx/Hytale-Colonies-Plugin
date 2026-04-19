@@ -7,32 +7,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 
 import com.hypixel.hytale.builtin.buildertools.BuilderToolsPlugin;
-import com.hypixel.hytale.component.AddReason;
-import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.Packet;
 import com.hypixel.hytale.protocol.packets.buildertools.BuilderToolPasteClipboard;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.io.adapter.PlayerPacketFilter;
-import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
-import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hytalecolonies.components.jobs.ConstructionOrderComponent;
+import com.hytalecolonies.ConstructionOrderQueue;
+import com.hytalecolonies.ConstructionOrderStore;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 
-
-/** Intercepts paste packets for the constructor tool and creates a {@link ConstructionOrderComponent} at the paste site. */
+/** Intercepts paste packets for the constructor tool and creates a {@link ConstructionOrderStore.Entry} for the paste site. */
 public class ConstructorBuildOrderFilter implements PlayerPacketFilter
 {
 
@@ -47,7 +39,10 @@ public class ConstructorBuildOrderFilter implements PlayerPacketFilter
     /** Players locked from pasting until they select a new prefab via {@link com.hytalecolonies.ui.ConstructorPrefabPage}. */
     public static final Set<UUID> pasteLocked = ConcurrentHashMap.newKeySet();
 
-    public static void clearPasteLock(UUID uuid) { pasteLocked.remove(uuid); }
+    public static void clearPasteLock(UUID uuid)
+    {
+        pasteLocked.remove(uuid);
+    }
 
     private static final Message MSG_ORDER_QUEUED = Message.translation("items.Tool_Colony_Constructor_PlacePrefab.orderQueued");
 
@@ -61,7 +56,8 @@ public class ConstructorBuildOrderFilter implements PlayerPacketFilter
         if (pasteLocked.contains(uuid))
         {
             DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
-                    "[ConstructorFilter] Paste from '%s' blocked -- order already active (select a new prefab to place another).", playerRef.getUsername());
+                          "[ConstructorFilter] Paste from '%s' blocked -- order already active (select a new prefab to place another).",
+                          playerRef.getUsername());
             return true;
         }
 
@@ -106,14 +102,18 @@ public class ConstructorBuildOrderFilter implements PlayerPacketFilter
 
         world.execute(() -> {
             Ref<EntityStore> entityRef = playerRef.getReference();
-            if (entityRef == null || !entityRef.isValid()) {
+            if (entityRef == null || !entityRef.isValid())
+            {
                 pasteLocked.remove(uuid);
-                DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorFilter] Entity ref null or invalid for '%s' on world thread.", playerRef.getUsername());
+                DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
+                                 "[ConstructorFilter] Entity ref null or invalid for '%s' on world thread.",
+                                 playerRef.getUsername());
                 return;
             }
 
             Player player = entityRef.getStore().getComponent(entityRef, Player.getComponentType());
-            if (player == null) {
+            if (player == null)
+            {
                 pasteLocked.remove(uuid);
                 DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorFilter] Player component null on world thread for '%s'.", playerRef.getUsername());
                 return;
@@ -125,73 +125,26 @@ public class ConstructorBuildOrderFilter implements PlayerPacketFilter
                 {
                     pendingSelections.put(buildSite, selection.cloneSelection());
                     DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
-                            "[ConstructorFilter] Captured rotated selection (%d blocks) for site %s.",
-                            selection.getBlockCount(), buildSite);
+                                  "[ConstructorFilter] Captured rotated selection (%d blocks) for site %s.",
+                                  selection.getBlockCount(),
+                                  buildSite);
                 }
                 else
                 {
                     DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                            "[ConstructorFilter] BuilderState has no selection for '%s' -- order will load from disk.",
-                            playerRef.getUsername());
+                                     "[ConstructorFilter] BuilderState has no selection for '%s' -- order will load from disk.",
+                                     playerRef.getUsername());
                 }
 
-                Store<ChunkStore> chunkStore = componentAccessor.getExternalData().getWorld().getChunkStore().getStore();
-                World builderWorld = componentAccessor.getExternalData().getWorld();
-
-                WorldChunk buildChunk = builderWorld.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(buildSite.x, buildSite.z));
-                if (buildChunk == null)
-                {
-                    pasteLocked.remove(uuid);
-                    DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorFilter] Chunk not in memory at build site %s.", buildSite);
-                    return;
-                }
-
-                Ref<ChunkStore> chunkRef = buildChunk.getReference();
-                BlockComponentChunk blockComponentChunk = chunkStore.getComponent(chunkRef, BlockComponentChunk.getComponentType());
-                if (blockComponentChunk == null)
-                {
-                    pasteLocked.remove(uuid);
-                    DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorFilter] No BlockComponentChunk at build site %s.", buildSite);
-                    return;
-                }
-
-                int blockIndex = ChunkUtil.indexBlockInColumn(buildSite.x, buildSite.y, buildSite.z);
-                Ref<ChunkStore> orderRef = blockComponentChunk.getEntityReference(blockIndex);
-                ConstructionOrderComponent orderComp = new ConstructionOrderComponent(prefabAbsPath, buildSite);
-
-                if (orderRef != null && orderRef.isValid())
-                {
-                    chunkStore.putComponent(orderRef, ConstructionOrderComponent.getComponentType(), orderComp);
-                    DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
-                            "[ConstructorFilter] Set order on existing block entity at %s.", buildSite);
-                }
-                else
-                {
-                    // Two-step: addEntity with BlockStateInfo only, then putComponent separately.
-                    // putComponent triggers RefChangeSystem.onComponentAdded; bundling into Holder does not.
-                    Holder<ChunkStore> holder = ChunkStore.REGISTRY.newHolder();
-                    holder.putComponent(BlockModule.BlockStateInfo.getComponentType(),
-                            new BlockModule.BlockStateInfo(blockIndex, chunkRef));
-                    chunkStore.addEntity(holder, AddReason.SPAWN);
-
-                    Ref<ChunkStore> newRef = blockComponentChunk.getEntityReference(blockIndex);
-                    if (newRef == null || !newRef.isValid())
-                    {
-                        pasteLocked.remove(uuid);
-                        DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                                "[ConstructorFilter] Ref not available after addEntity at %s.", buildSite);
-                        return;
-                    }
-                    chunkStore.putComponent(newRef, ConstructionOrderComponent.getComponentType(), orderComp);
-                    DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
-                            "[ConstructorFilter] Created block entity with order at %s.", buildSite);
-                }
-                // pasteLocked cleared only when a new prefab is selected in ConstructorPrefabPage.
+                ConstructionOrderStore.Entry entry = new ConstructionOrderStore.Entry(UUID.randomUUID(), prefabAbsPath, buildSite);
+                ConstructionOrderStore.get().add(entry);
+                ConstructionOrderQueue.get().enqueue(entry.id);
+                DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorFilter] Queued order %s for site %s.", entry.id, buildSite);
+                // pasteLocked remains set until a new prefab is selected in ConstructorPrefabPage.
             });
         });
 
         playerRef.sendMessage(MSG_ORDER_QUEUED);
         return true;
     }
-
 }

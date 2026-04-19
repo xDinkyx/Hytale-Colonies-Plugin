@@ -152,19 +152,52 @@
           ]
         },
         {
-          "$Comment": "Constructing -- stripped (build phase not implemented yet).",
+          "$Comment": "Constructing -- approach target block and place it with a short delay.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".Constructing", "IgnoreMissingSetState": true },
           "Instructions": [
-            { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
+            {
+              "Continue": true,
+              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
+              "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
+            },
+            {
+              "Sensor": { "Type": "JobTarget", "Range": 2.5 },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "LogDebug", "Message": "Constructing: placing block.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
+                { "Type": "PlaceConstructionBlock" },
+                { "Type": "Timeout", "Delay": [0.6, 0.8] }
+              ]
+            }
           ]
         },
         {
-          "$Comment": "RetrievingBlocks -- stripped (build phase not implemented yet).",
+          "$Comment": "RetrievingBlocks -- walk to workstation container, then signal materials retrieved.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".RetrievingBlocks", "IgnoreMissingSetState": true },
           "Instructions": [
-            { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
+            {
+              "Continue": true,
+              "Sensor": { "Type": "Any" },
+              "Actions": [
+                { "Type": "LogDebug", "Message": "RetrievingBlocks: scanning for container.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
+                { "Type": "FindDeliveryContainer" }
+              ]
+            },
+            {
+              "Continue": true,
+              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
+              "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
+            },
+            {
+              "Sensor": { "Type": "JobTarget", "Range": 3.0 },
+              "ActionsBlocking": true,
+              "Actions": [
+                { "Type": "LogDebug", "Message": "RetrievingBlocks: at container -- retrieving materials.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
+                { "Type": "RetrieveConstructionBlocks" }
+              ]
+            }
           ]
         },
         {

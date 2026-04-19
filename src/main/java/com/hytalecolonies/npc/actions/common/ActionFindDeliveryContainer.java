@@ -1,12 +1,8 @@
 package com.hytalecolonies.npc.actions.common;
 
-import com.hytalecolonies.components.jobs.JobComponent;
-import com.hytalecolonies.components.jobs.JobState;
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.utils.ColonistStateUtil;
-import com.hytalecolonies.utils.JobNavigationUtil;
-import com.hytalecolonies.utils.WorkstationContainerUtil;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -16,13 +12,21 @@ import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
 import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobState;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.ColonistStateUtil;
+import com.hytalecolonies.utils.JobNavigationUtil;
+import com.hytalecolonies.utils.WorkstationContainerUtil;
 
 /**
  * Locates the nearest item-container within {@link #SEARCH_RADIUS} blocks of the workstation,
  * sets it as the active job target and NavTarget.
  * Transitions to {@link JobState#TravelingToHome} if no container is found.
+ *
+ * <p>Runs every tick while in RetrievingBlocks. The spatial-index scan is cheap (radius=3),
+ * so no caching is needed -- scanning fresh each tick avoids stale-state bugs.
  *
  * <p>Constructed by {@link BuilderActionFindDeliveryContainer}.
  */
@@ -54,17 +58,6 @@ public class ActionFindDeliveryContainer extends ActionBase {
             return true;
         }
 
-        // If already heading to a container this delivery run, just keep nav current.
-        if (job.deliveryContainerPosition != null) {
-            Vector3i cp = job.deliveryContainerPosition;
-            role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT)
-                    .assign(cp.x + 0.5, (double) cp.y, cp.z + 0.5);
-            DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
-                    "[FindDeliveryContainer] [%s] Already heading to container at %s.", npcId, cp);
-            return true;
-        }
-
-        // Need the workstation position to search near.
         Vector3i wsPos = job.getWorkStationBlockPosition();
         if (wsPos == null) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
@@ -74,6 +67,7 @@ public class ActionFindDeliveryContainer extends ActionBase {
         }
 
         // Scan the spatial index for the nearest container near the workstation.
+        // Cheap (radius=3, indexed) -- no caching needed.
         World world = store.getExternalData().getWorld();
         Vector3i containerPos = WorkstationContainerUtil.findNearbyContainer(world, wsPos, SEARCH_RADIUS);
 
@@ -85,14 +79,14 @@ public class ActionFindDeliveryContainer extends ActionBase {
             return true;
         }
 
-        // Found a container -- set target and update navigation.
+        // Set on JobComponent so ActionDepositItems knows where to deposit.
         job.deliveryContainerPosition = containerPos;
         JobNavigationUtil.setJobTarget(store, ref, containerPos);
         role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT)
                 .assign(containerPos.x + 0.5, (double) containerPos.y, containerPos.z + 0.5);
 
-        DebugLog.info(DebugCategory.COLONIST_DELIVERY,
-                "[FindDeliveryContainer] [%s] Found container at %s -- navigating.", npcId, containerPos);
+        DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
+                "[FindDeliveryContainer] [%s] Container at %s -- navigating.", npcId, containerPos);
 
         return true;
     }
