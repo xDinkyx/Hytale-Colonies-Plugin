@@ -1,9 +1,11 @@
 package com.hytalecolonies.utils;
 
-import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.world.ClaimedBlockComponent;
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
@@ -20,9 +22,10 @@ import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.FillerBlockUtil;
-
-import javax.annotation.Nullable;
-import java.util.UUID;
+import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.components.world.ClaimedBlockComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 
 /**
  * Utility for managing block claims across all colonist job types.
@@ -234,5 +237,64 @@ public final class ClaimBlockUtil {
                 "[Claim] [%s] unclaimByColonist -- releasing claim at %s.",
                 DebugLog.npcId(colonistRef, entityStore), jobTarget.targetPosition);
         unclaimBlock(world, jobTarget.targetPosition);
+    }
+
+    // ===== Multi-cell (filler block) helpers =====
+
+    /**
+     * Claims the base position <em>and</em> all filler cells the block occupies at the given rotation.
+     * If any cell is already claimed or unavailable, all claims made in this call are rolled back
+     * and {@code false} is returned.
+     * Must be called on the world thread.
+     */
+    public static boolean claimBlockAndFillers(World world, int wx, int wy, int wz,
+                                               BlockType blockType, int rotation,
+                                               UUID claimedByUuid, String claimType) {
+        if (!claimBlock(world, new Vector3i(wx, wy, wz), claimedByUuid, claimType))
+            return false;
+        BlockBoundingBoxes hitbox = BlockBoundingBoxes.getAssetMap().getAsset(blockType.getHitboxTypeIndex());
+        if (hitbox == null || !hitbox.protrudesUnitBox())
+            return true;
+
+        List<Vector3i> claimedFillers = new ArrayList<>();
+        boolean[] success = {true};
+        FillerBlockUtil.forEachFillerBlock(hitbox.get(rotation), (fx, fy, fz) -> {
+            if (!success[0] || (fx == 0 && fy == 0 && fz == 0))
+                return;
+            Vector3i fillerPos = new Vector3i(wx + fx, wy + fy, wz + fz);
+            if (claimBlock(world, fillerPos, claimedByUuid, claimType)) {
+                claimedFillers.add(fillerPos);
+            } else {
+                success[0] = false;
+            }
+        });
+
+        if (!success[0]) {
+            unclaimBlock(world, new Vector3i(wx, wy, wz));
+            for (Vector3i pos : claimedFillers)
+                unclaimBlock(world, pos);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Unlaims the base position and all filler cells the block occupies.
+     * If {@code blockType} or {@code rotation} are unavailable, only the base position is unclaimed.
+     * Must be called on the world thread.
+     */
+    public static void unclaimBlockAndFillers(World world, Vector3i basePos,
+                                              @Nullable BlockType blockType, int rotation) {
+        unclaimBlock(world, basePos);
+        if (blockType == null)
+            return;
+        BlockBoundingBoxes hitbox = BlockBoundingBoxes.getAssetMap().getAsset(blockType.getHitboxTypeIndex());
+        if (hitbox == null || !hitbox.protrudesUnitBox())
+            return;
+        FillerBlockUtil.forEachFillerBlock(hitbox.get(rotation), (fx, fy, fz) -> {
+            if (fx == 0 && fy == 0 && fz == 0)
+                return;
+            unclaimBlock(world, new Vector3i(basePos.x + fx, basePos.y + fy, basePos.z + fz));
+        });
     }
 }

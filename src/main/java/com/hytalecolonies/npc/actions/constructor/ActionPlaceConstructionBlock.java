@@ -111,6 +111,13 @@ public class ActionPlaceConstructionBlock extends ActionBase
                 DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] Unknown block id %d for key '%s'.", blockId, blockKey);
                 return;
             }
+            if (!ConstructorUtil.areAllCellsClear(blockType, blockRotation, wx, wy, wz, world))
+            {
+                DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
+                                 "[PlaceConstructionBlock] Cell(s) blocked at %d,%d,%d (rot=%d, block='%s') -- skipping place.",
+                                 wx, wy, wz, blockRotation, blockKey);
+                return;
+            }
             chunk.setBlock(wx, wy, wz, blockId, blockType, blockRotation, 0, 0);
             DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] Placed '%s' (rot=%d) at %d,%d,%d.", blockKey, blockRotation, wx, wy, wz);
         });

@@ -13,6 +13,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
@@ -358,7 +359,11 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
 
         if (placedPos != null)
         {
-            ClaimBlockUtil.unclaimBlock(world, placedPos);
+            BlockSelection prefabForUnclaim = ConstructorUtil.loadPrefab(order);
+            String placedKey = prefabForUnclaim != null ? ConstructorUtil.getDesiredBlockKey(order, prefabForUnclaim, placedPos.x, placedPos.y, placedPos.z) : null;
+            BlockType placedType = placedKey != null ? BlockType.getAssetMap().getAsset(placedKey) : null;
+            int placedRotation = prefabForUnclaim != null ? ConstructorUtil.getDesiredBlockRotation(order, prefabForUnclaim, placedPos.x, placedPos.y, placedPos.z) : 0;
+            ClaimBlockUtil.unclaimBlockAndFillers(world, placedPos, placedType, placedRotation);
             if (placedPos.equals(liveConstructorJob.pendingBuildQueue.peekFirst()))
             {
                 liveConstructorJob.pendingBuildQueue.pollFirst();

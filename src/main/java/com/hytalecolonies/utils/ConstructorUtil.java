@@ -15,6 +15,7 @@ import javax.annotation.Nullable;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.AssetModule;
+import com.hypixel.hytale.server.core.asset.type.blockhitbox.BlockBoundingBoxes;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -23,6 +24,7 @@ import com.hypixel.hytale.server.core.prefab.PrefabLoadException;
 import com.hypixel.hytale.server.core.prefab.PrefabStore;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.util.FillerBlockUtil;
 import com.hytalecolonies.ConstructionOrderStore;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
@@ -287,6 +289,16 @@ public final class ConstructorUtil
         return bh != null ? bh.rotation() : 0;
     }
 
+    /** Returns true if the base cell and every filler cell the block occupies (at the given rotation) are all air. Must be called on the world thread. */
+    public static boolean areAllCellsClear(BlockType blockType, int rotation, int wx, int wy, int wz, World world)
+    {
+        BlockBoundingBoxes hitbox = BlockBoundingBoxes.getAssetMap().getAsset(blockType.getHitboxTypeIndex());
+        if (hitbox == null)
+            return world.getBlock(wx, wy, wz) == 0;
+        return FillerBlockUtil.testFillerBlocks(hitbox.get(rotation),
+                (fx, fy, fz) -> world.getBlock(wx + fx, wy + fy, wz + fz) == 0);
+    }
+
     /** Returns the block type key for the prefab position, or {@code null} if outside the footprint. */
     @Nullable public static String getDesiredBlockKey(@Nullable ConstructionOrderStore.Entry order, BlockSelection prefab, int wx, int wy, int wz)
     {
@@ -390,8 +402,13 @@ public final class ConstructorUtil
             if (worldBlock != 0)
                 continue; // block in the way -- needs to be cleared first
 
+            BlockType blockType = BlockType.getAssetMap().getAsset(prefabBlockId);
+            if (blockType == null)
+                continue;
+            int rotation = b[4];
+
             Vector3i pos = new Vector3i(wx, wy, wz);
-            if (ClaimBlockUtil.claimBlock(world, pos, colonistUuid, "Build"))
+            if (ClaimBlockUtil.claimBlockAndFillers(world, wx, wy, wz, blockType, rotation, colonistUuid, "Build"))
             {
                 result.add(pos);
             }
