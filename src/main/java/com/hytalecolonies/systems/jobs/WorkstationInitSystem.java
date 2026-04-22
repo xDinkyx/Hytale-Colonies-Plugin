@@ -1,7 +1,10 @@
 package com.hytalecolonies.systems.jobs;
 
+import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
 import com.hytalecolonies.components.jobs.JobType;
+import com.hytalecolonies.components.jobs.MinerWorkStationComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.jobs.WoodsmanWorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.debug.DebugTiming;
@@ -22,12 +25,10 @@ import javax.annotation.Nullable;
 
 /**
  * Performs initial setup for any workstation the moment its
- * {@link WorkStationComponent}
- * is loaded or created. Dispatches to per-{@link JobType} initialization logic
+ * {@link WorkStationComponent} is loaded or created. Dispatches to
+ * per-{@link JobType} initialization logic
  * so each job type can seed whatever state it needs.
- * <p>
- * Woodsman: triggers an immediate tree scan via {@link TreeScannerSystem}.
- * Other job types: no-op for now; add cases as needed.
+ * 
  */
 public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStationComponent> {
 
@@ -55,10 +56,10 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
             @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
         switch (workStation.getJobType()) {
             case Woodsman -> initWoodsman(ref, workStation, store, commandBuffer);
-            case Miner -> DebugLog.info(DebugCategory.MINER_JOB,
-                    "[WorkstationInit] Miner workstation placed -- no initial scan needed for phase 1.");
-            case Farmer, Constructor -> {
-                /* no-op: initialization not yet implemented */ }
+            case Miner -> initMiner(ref, store, commandBuffer);
+            case Constructor -> initConstructor(ref, store, commandBuffer);
+            case Farmer -> {
+                /* no-op */ }
         }
     }
 
@@ -81,13 +82,42 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
         // No action needed on removal.
     }
 
-    // ===== Per-type initialization =====
+    private void initMiner(
+            Ref<ChunkStore> ref,
+            Store<ChunkStore> store,
+            CommandBuffer<ChunkStore> commandBuffer) {
+        if (store.getComponent(ref, MinerWorkStationComponent.getComponentType()) == null) {
+            DebugLog.info(DebugCategory.MINER_JOB,
+                    "[WorkstationInit] Adding MinerWorkStationComponent with defaults.");
+            commandBuffer.putComponent(ref, MinerWorkStationComponent.getComponentType(),
+                    new MinerWorkStationComponent());
+        }
+    }
+
+    private void initConstructor(
+            Ref<ChunkStore> ref,
+            Store<ChunkStore> store,
+            CommandBuffer<ChunkStore> commandBuffer) {
+        if (store.getComponent(ref, ConstructorWorkStationComponent.getComponentType()) == null) {
+            DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
+                    "[WorkstationInit] Adding ConstructorWorkStationComponent with defaults.");
+            commandBuffer.putComponent(ref, ConstructorWorkStationComponent.getComponentType(),
+                    new ConstructorWorkStationComponent());
+        }
+    }
 
     private void initWoodsman(
             Ref<ChunkStore> ref,
             WorkStationComponent workStation,
             Store<ChunkStore> store,
             CommandBuffer<ChunkStore> commandBuffer) {
+
+        if (store.getComponent(ref, WoodsmanWorkStationComponent.getComponentType()) == null) {
+            DebugLog.info(DebugCategory.TREE_SCANNER,
+                    "[WorkstationInit] Adding WoodsmanWorkStationComponent with defaults.");
+            commandBuffer.putComponent(ref, WoodsmanWorkStationComponent.getComponentType(),
+                    new WoodsmanWorkStationComponent());
+        }
 
         BlockModule.BlockStateInfo blockStateInfo = store.getComponent(
                 ref, BlockModule.BlockStateInfo.getComponentType());
