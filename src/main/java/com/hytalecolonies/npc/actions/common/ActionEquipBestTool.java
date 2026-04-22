@@ -39,7 +39,7 @@ public class ActionEquipBestTool extends ActionBase {
 
     public ActionEquipBestTool(@Nonnull BuilderActionEquipBestTool builder, @Nonnull BuilderSupport support) {
         super(builder);
-        this.gatherType = builder.getGatherType();
+        this.gatherType = builder.getGatherType(support);
         this.minQuality = builder.getMinQuality(support);
     }
 
@@ -61,12 +61,13 @@ public class ActionEquipBestTool extends ActionBase {
 
         Inventory inventory = entity.getInventory();
         if (inventory == null) return false;
+        
 
         if (gatherType != null) {
             // Explicit mode -- use the configured gather type.
             boolean equipped = ColonistToolUtil.equipBestToolForGatherType(inventory, gatherType, minQuality, ref, store);
             DebugLog.fine(DebugCategory.JOB_SYSTEM, "[EquipBestTool] [%s] Action finished (explicit type=%s, equipped=%b).", npcId, gatherType, equipped);
-            return equipped;
+            return true;
         }
 
         // Auto-detect mode -- resolve block gather type from the sensor position.
@@ -92,6 +93,6 @@ public class ActionEquipBestTool extends ActionBase {
 
         boolean equipped = ColonistToolUtil.equipBestToolForBlock(inventory, breaking, ref, store);
         DebugLog.fine(DebugCategory.JOB_SYSTEM, "[EquipBestTool] [%s] Action finished (auto-detect, equipped=%b).", npcId, equipped);
-        return equipped;
+        return true;
     }
 }
