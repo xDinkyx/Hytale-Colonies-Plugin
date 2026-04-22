@@ -1,6 +1,6 @@
 ---
 name: hytalecolonies-npc-design
-version: 4
+version: 7
 description: >
   Defines the canonical NPC design architecture for the HytaleColonies plugin.
   Covers the ECS/JSON contract, state machine, notification channel, system responsibilities,
@@ -349,9 +349,68 @@ ColonistLeashUtil.setLeashToBlockCenter(ref, store, lastHarvestedBlockPos);
 4. **Add a notification action class** in `npc/actions/common/` (sets the flag to `true` only — no logic)
 5. **Add a job-specific component** in `components/jobs/` for persisted-only per-worker state
 6. **Add utility methods** to a new `utils/XxxUtil.java` for complex job-specific searches
-7. **Write the role JSON** in `src/main/resources/Server/NPC/Roles/` with native `"Type": "State"` sensors, all with `"IgnoreMissingSetState": true`
+7. **Write the role JSON** in `src/main/resources/Server/NPC/Roles/` as a `Variant` of `Template_Colonist_Base` (see Role JSON file structure below). Custom sensors, actions, and `StateTransitions` go in the template; only job-specific `WaitingForWork` blocks go in per-job `Component_Instruction` files.
 8. **Add subpackages** under `npc/actions/` and `npc/sensors/` for the new job's custom building blocks
 9. **Register** all components, actions, and sensors in `HytaleColoniesPlugin.java`
+
+---
+
+## Role JSON file structure
+
+All harvester-type colonist roles use a **three-layer hierarchy**:
+
+```
+Templates/Template_Colonist_Base.json    (Abstract -- all shared state logic)
+  └── Templates/Component_Instruction_Colonist_WaitingForWork_<Job>.json
+        (Class:Instruction -- job-specific tool checks + target scanning)
+  └── Colonist_<Job>.json                (Variant -- 4 parameter overrides only)
+```
+
+### Template_Colonist_Base.json (Abstract)
+
+Parameters exposed to variants:
+
+| Parameter | Default | Purpose |
+|---|---|---|
+| `NameTranslationKey` | `server.npcRoles.Colonist.name` | NPC display name |
+| `Appearance` | `Mannequin` | Model |
+| `MaxHealth` | `20` | HP |
+| `MaxSpeed` | `3` | Walk speed |
+| `GatherType` | `Rocks` | Passed to `EquipBestTool` on entering Working |
+| `DebugCategory` | `COLONIST_JOB` | Category string for all `LogDebug` actions |
+| `WaitingForWorkComponent` | `Component_Instruction_Colonist_WaitingForWork_Miner` | Per-job WaitingForWork block |
+
+The template owns all state machine instructions **except** `WaitingForWork`, which it delegates via `{ "Reference": { "Compute": "WaitingForWorkComponent" } }`.
+
+### Component_Instruction_Colonist_WaitingForWork_<Job>.json (Class: Instruction)
+
+Located in `Templates/`. Contains the **full** `WaitingForWork` instruction node (outer sensor + inner instructions = tool checks, tool-specific scan action, `JobTargetExists` check). Each job has its own file with hardcoded `Category` strings.
+
+### Colonist_<Job>.json (Variant)
+
+Only four parameter overrides needed:
+```json
+{
+  "Type": "Variant",
+  "Reference": "Template_Colonist_Base",
+  "Parameters": {
+    "NameTranslationKey": { "Value": "...", "Description": "..." },
+    "GatherType":          { "Value": "Rocks|Woods|...", "Description": "..." },
+    "DebugCategory":       { "Value": "MINER_JOB|WOODSMAN_JOB|...", "Description": "..." },
+    "WaitingForWorkComponent": { "Value": "Component_Instruction_Colonist_WaitingForWork_<Job>", "Description": "..." }
+  }
+}
+```
+
+`Colonist_Constructor.json` remains a flat `Generic` because its Working sub-states (Clearing, Constructing, RetrievingBlocks) do not match the harvester template pattern.
+
+`Colonist_Dummy.json` is a standalone `Generic` with simple idle wander — it is not a variant and does not reference the template.
+
+### Adding a new harvester job (JSON checklist)
+
+1. Create `Templates/Component_Instruction_Colonist_WaitingForWork_<Job>.json` with the job-specific `WaitingForWork` block (wander, tool checks, scan action, `JobTargetExists` → `TravelingToWorkSite`).
+2. Create `Colonist_<Job>.json` as a `Variant` of `Template_Colonist_Base` with the four parameter overrides.
+3. The template handles all other states automatically.
 
 ---
 
@@ -369,5 +428,9 @@ ColonistLeashUtil.setLeashToBlockCenter(ref, store, lastHarvestedBlockPos);
 | Global `Continue: true` Seek at top of instruction list | The global Seek fires every tick regardless of state, preventing state-local wander motions from being reached before it | Put Seek inside each travel-state block; use the NPC leash point for wander anchoring |
 | Using `"Type": "State"` sensor without `"IgnoreMissingSetState": true` when ECS drives the state | NPC validator throws SEVERE at startup: "State sensor or State setter action/motion exists without accompanying state/setter" — role is rejected entirely and `Unknown NPC role` errors repeat every tick | Always add `"IgnoreMissingSetState": true` to every externally-driven state sensor |
 | Adding `StateTransitions` `From`/`To` states hoping they satisfy the validator | `StateTransitions` only calls `registerStateRequirer()`, never `registerStateSensor()` or `registerStateSetter()` — it cannot satisfy the XOR check | Use `"IgnoreMissingSetState": true` on the sensor instead |
+| Custom action in `StateTransitions` returns `false` | Transition never completes; `rootInstruction.execute()` is skipped every tick — NPC instruction body never runs. | Actions in `StateTransitions` must always return `true`. Conditional logic belongs in the instruction body. |
 | `WanderInCircle` wandering to wrong location | `WanderInCircle` wanders around `NPCEntity.getLeashPoint()`, not the NPC's current position. Defaults to spawn point. | Set leash via `ColonistLeashUtil` when entering each state that uses wander |
+| Computable `Reference` missing `Interfaces` | NPC validator rejects the template at startup: "Computable references must define a list of 'Interfaces' to control which components can be attached." — all Variants of the template also fail with "Reference to unknown builder". | Always add `"Interfaces": ["YourNamespace.InterfaceName"]` to every `{ "Reference": { "Compute": "..." } }` node. The component file must also declare `"Interface": "YourNamespace.InterfaceName"`. Interface names are **pure string equality** — any custom namespace (e.g. `HytaleColonies.*`) works. **Do NOT add `"Nullable": true`** — see warning below. |
+| `"Nullable": true` on a computable `Reference` node | Instructions inside the resolved component silently skip for the first ~60 seconds after the NPC enters that state. The Reference appears to resolve lazily; `Nullable: true` treats the not-yet-resolved reference as absent and silently skips it on every tick until something (e.g., an inventory change event) forces resolution. Symptom: `ActionsBlocking` instructions with sensors (especially `Inventory` sensors) never fire during the initial period; only start firing after the first inventory event. | **Omit `"Nullable": true` entirely.** If the component can't be resolved, a visible error is preferable to silent behavioral failures. |
+| Missing `"Type": "Component"` on a component file | Log: `Unknown JSON attribute 'Content' found in Instruction|???` — the `Instruction` factory defaults to `BuilderInstruction` which ignores `Content`. The component loads as an empty builder; interface validation on the referencing template then fails, cascading to all Variants. | Component files that use a `Content` wrapper **must** have `"Type": "Component"` at the root (alongside `"Class"` and `"Interface"`). Without it, `Content` is silently ignored. |
 | Multiple `BodyMotion` entries in sibling instructions with `Continue: true` | Interaction between multiple `BodyMotion` definitions and `Continue` is not fully verified — behaviour may be unexpected | Keep at most one `BodyMotion` per instruction block; use `Continue: true` only for passing through to actions in subsequent siblings |

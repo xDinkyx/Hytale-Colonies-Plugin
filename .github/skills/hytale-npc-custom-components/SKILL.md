@@ -1,6 +1,6 @@
 ---
 name: hytale-npc-custom-components
-version: 1
+version: 2
 tags: [hytale, npc, custom, sensor, action, extension, registerCoreComponentType, BuilderActionBase, BuilderSensorBase, holder, data-driven]
 ---
 
@@ -177,7 +177,10 @@ public class ActionEquipBestTool extends ActionBase {
         Inventory inventory = entity.getInventory();
         if (inventory == null) return false;
 
-        return ColonistToolUtil.equipBestToolForGatherType(inventory, gatherType, minQuality, ref, store);
+        boolean equipped = ColonistToolUtil.equipBestToolForGatherType(inventory, gatherType, minQuality, ref, store);
+        // Always return true: the action is done regardless of whether a tool was found.
+        // Callers that need a tool present should check via a sensor, not the action return value.
+        return true;
     }
 }
 ```
@@ -354,7 +357,23 @@ IntSingleValidator.greater0()       // value > 0
 | `IntSingleValidator.range(0, 100)` | Method does not exist — use `greaterEqual0()` or `greater0()` |
 | Registering in `start()` | Must register in `setup()` — NPC roles are parsed before `start()` |
 | Calling `super.execute()` and ignoring return value | Call `super.execute(...)` for once-logic bookkeeping, then proceed with custom logic regardless of its return value |
+| Custom action in `StateTransitions` returning `false` | Transition never completes; the NPC instruction body is skipped every tick until the transition finishes. | Actions in `StateTransitions` must always return `true`. |
 | Mutating entity state directly inside `execute()` | Prefer `CommandBuffer` for ECS component changes; direct `Inventory` mutations are safe |
+
+---
+
+## `execute()` return value contract
+
+The `boolean` return value of `Action.execute()` only matters in **`ActionsBlocking: true`** sequences (`ActionList` with `blocking=true`):
+
+| Return | Meaning in blocking mode |
+|---|---|
+| `true` | Action is **done** — advance to the next action in the sequence |
+| `false` | Action is **still in progress** — retry this same action next tick |
+
+In **non-blocking** mode (the default when `ActionsBlocking` is absent), the return value is **completely ignored** — all eligible actions run every tick.
+
+**Design rule:** if an action's logical success is uncertain (e.g. equipping a tool when none may exist), return `true` unconditionally. Success checks belong in sensors, not action return values. Returning `false` in a blocking context means "retry me" — only do that for genuinely in-progress work (e.g. pathfinding, timed waits).
 
 ---
 
