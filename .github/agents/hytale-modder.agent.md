@@ -125,6 +125,18 @@ These are **non-negotiable** when writing code for this project:
 - Follow existing project code style and patterns.
 - Keep systems generic — leverage tags and JSON data wherever possible.
 
+### Comments
+- Code must be self-documenting. Do not write comments that restate what the code already says.
+- Only comment when explaining **why** something is done — non-obvious API constraints, race-condition reasoning, deferred execution requirements, etc.
+- No multi-line Javadoc paragraphs that restate the obvious. Use concise `/** ... */` only when the method name alone is not enough to understand the purpose.
+
+### Naming
+- Method names must describe **what the method does**, not what triggered it or who called it.
+  - Bad: `onBlockBroken`, `executeDispatchToClearingOnWorldThread`, `handleItemsRetrieved`
+  - Good: `claimAndStartClearing`, `startBuilding`
+- If a method is too large to name clearly, split it into smaller methods each with a focused, descriptive name.
+- `world.execute()` callbacks that contain meaningful multi-line logic must be extracted into named methods.
+
 ### Building & Testing
 - Use the **build plugin** task to compile.
 - Use the **build and deploy** task to compile and copy to the local Hytale server for testing.

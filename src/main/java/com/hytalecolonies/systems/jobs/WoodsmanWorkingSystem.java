@@ -25,10 +25,10 @@ import com.hytalecolonies.components.jobs.WoodsmanWorkStationComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.utils.WoodsmanUtil;
 import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hytalecolonies.utils.ColonistLeashUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
+import com.hytalecolonies.utils.WoodsmanUtil;
 
 /**
  * Reacts to {@link JobComponent#blockBrokenNotification} for woodsmen in
@@ -105,28 +105,36 @@ public class WoodsmanWorkingSystem extends EntityTickingSystem<EntityStore> {
                 goCollect ? "No adjacent base blocks -- collecting drops."
                           : "Next base at " + nextBase + " -- traveling there.");
 
-        world.execute(() -> {
-            // Guard against duplicate callbacks queued in the same cycle.
-            JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
-            if (liveJob == null || liveJob.getCurrentTask() != JobState.Working) return;
+        world.execute(() -> advanceTreeHarvest(colonistRef, entityStore, world, finalTreeBase, goCollect, finalNextBase));
+    }
 
-            ClaimBlockUtil.unclaimBlock(world, finalTreeBase);
+    private static void advanceTreeHarvest(
+            @Nonnull Ref<EntityStore> colonistRef,
+            @Nonnull EntityStore entityStore,
+            @Nonnull World world,
+            @Nonnull Vector3i finalTreeBase,
+            boolean goCollect,
+            @Nullable Vector3i finalNextBase)
+    {
+        JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
+        if (liveJob == null || liveJob.getCurrentTask() != JobState.Working) return;
 
-            JobTargetComponent liveTarget = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());
-            if (liveTarget == null) return;
+        ClaimBlockUtil.unclaimBlock(world, finalTreeBase);
 
-            if (goCollect) {
-                ColonistLeashUtil.setLeashToBlockCenter(colonistRef, entityStore.getStore(), finalTreeBase);
-                liveTarget.setTargetPosition(null);
-                liveJob.collectingDropsSince = System.currentTimeMillis();
-                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.CollectingDrops);
-            } else {
-                liveTarget.setTargetPosition(finalNextBase);
-                entityStore.getStore().tryRemoveComponent(colonistRef, MoveToTargetComponent.getComponentType());
-                entityStore.getStore().addComponent(colonistRef, MoveToTargetComponent.getComponentType(),
-                        new MoveToTargetComponent(new Vector3d(finalNextBase.x + 0.5, finalNextBase.y, finalNextBase.z + 0.5)));
-                ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToWorkSite);
-            }
-        });
+        JobTargetComponent liveTarget = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());
+        if (liveTarget == null) return;
+
+        if (goCollect) {
+            ColonistLeashUtil.setLeashToBlockCenter(colonistRef, entityStore.getStore(), finalTreeBase);
+            liveTarget.setTargetPosition(null);
+            liveJob.collectingDropsSince = System.currentTimeMillis();
+            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.CollectingDrops);
+        } else {
+            liveTarget.setTargetPosition(finalNextBase);
+            entityStore.getStore().tryRemoveComponent(colonistRef, MoveToTargetComponent.getComponentType());
+            entityStore.getStore().addComponent(colonistRef, MoveToTargetComponent.getComponentType(),
+                    new MoveToTargetComponent(new Vector3d(finalNextBase.x + 0.5, finalNextBase.y, finalNextBase.z + 0.5)));
+            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToWorkSite);
+        }
     }
 }

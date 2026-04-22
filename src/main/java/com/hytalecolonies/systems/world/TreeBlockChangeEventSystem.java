@@ -1,11 +1,11 @@
 package com.hytalecolonies.systems.world;
 
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
+import javax.annotation.Nonnull;
+
+import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -15,8 +15,8 @@ import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
-import javax.annotation.Nonnull;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 
 /**
  * Reacts to players breaking or placing tree-wood blocks and immediately
@@ -39,10 +39,6 @@ import javax.annotation.Nonnull;
  * handled by the slow periodic scan in {@link TreeScannerSystem}.
  */
 public class TreeBlockChangeEventSystem {
-
-    // -------------------------------------------------------------------------
-    // Block-break handler
-    // -------------------------------------------------------------------------
 
     public static class OnBreak extends EntityEventSystem<EntityStore, BreakBlockEvent> {
 
@@ -67,7 +63,6 @@ public class TreeBlockChangeEventSystem {
             Vector3i pos = event.getTargetBlock();
             World world = store.getExternalData().getWorld();
 
-            // Schedule post-break processing so the block is actually removed when we run.
             world.execute(() -> {
                 Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
                 scanner.onTreeWoodBlockRemoved(pos, world, chunkStore);
@@ -80,10 +75,6 @@ public class TreeBlockChangeEventSystem {
             return Archetype.empty();
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Block-place handler
-    // -------------------------------------------------------------------------
 
     public static class OnPlace extends EntityEventSystem<EntityStore, PlaceBlockEvent> {
 
@@ -107,19 +98,24 @@ public class TreeBlockChangeEventSystem {
             Vector3i pos = event.getTargetBlock();
             World world = store.getExternalData().getWorld();
 
-            world.execute(() -> {
-                // Verify the placed block is actually a tree-wood type before running BFS.
-                int blockId = world.getBlock(pos);
-                BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
-                if (blockType == null) return;
-                if (!scanner.getTreeWoodBlockKeys().contains(blockType.getId())) return;
+            world.execute(() -> tryRegisterNewTree(world, pos, scanner));
+        }
 
-                DebugLog.fine(DebugCategory.TREE_SCANNER,
-                        "[TreeScanner] Tree-wood block placed at %s -- checking for new tree.", pos);
-                Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
-                scanner.onTreeWoodBlockAdded(pos, world, chunkStore);
-                scanner.invalidateChunkCacheAt(pos.x, pos.z);
-            });
+        private static void tryRegisterNewTree(
+                @Nonnull World world,
+                @Nonnull Vector3i pos,
+                @Nonnull TreeScannerSystem scanner)
+        {
+            int blockId = world.getBlock(pos);
+            BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
+            if (blockType == null) return;
+            if (!scanner.getTreeWoodBlockKeys().contains(blockType.getId())) return;
+
+            DebugLog.fine(DebugCategory.TREE_SCANNER,
+                    "[TreeScanner] Tree-wood block placed at %s -- checking for new tree.", pos);
+            Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
+            scanner.onTreeWoodBlockAdded(pos, world, chunkStore);
+            scanner.invalidateChunkCacheAt(pos.x, pos.z);
         }
 
         @Override

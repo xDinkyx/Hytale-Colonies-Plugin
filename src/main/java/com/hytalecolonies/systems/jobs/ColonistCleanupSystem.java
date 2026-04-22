@@ -1,11 +1,11 @@
 package com.hytalecolonies.systems.jobs;
 
-import com.hytalecolonies.components.jobs.JobComponent;
-import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
-import com.hytalecolonies.components.world.ClaimedBlockComponent;
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import javax.annotation.Nonnull;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
@@ -15,11 +15,12 @@ import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.components.world.ClaimedBlockComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 
 /**
  * Periodic safety-net system that runs every 30 seconds to repair two classes
@@ -53,11 +54,7 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore> {
         fireOrphanedColonists(world, entityStore);
     }
 
-    // ===== Pass 1: release orphaned block claims =====
-
     private static void sweepOrphanedClaimMarks(Store<ChunkStore> store, EntityStore entityStore) {
-        // Find all ClaimedBlockComponent block entities whose colonist is gone or no longer
-        // holds a job target (meaning the claim was not cleanly released).
         Query<ChunkStore> claimQuery = Query.and(ClaimedBlockComponent.getComponentType());
         List<Ref<ChunkStore>> orphanedRefs = new ArrayList<>();
 
@@ -80,24 +77,9 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore> {
 
         if (!orphanedRefs.isEmpty()) {
             World world = store.getExternalData().getWorld();
-            world.execute(() -> {
-                int cleared = 0;
-                for (Ref<ChunkStore> ref : orphanedRefs) {
-                    if (!ref.isValid()) continue;
-                    // Just remove the claim component -- ClaimedBlockCleanupSystem will
-                    // automatically destroy the entity if it was created solely for the claim.
-                    ref.getStore().tryRemoveComponent(ref, ClaimedBlockComponent.getComponentType());
-                    cleared++;
-                }
-                if (cleared > 0) {
-                    DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
-                            "[ColonistCleanup] Released %d orphaned block claim(s).", cleared);
-                }
-            });
+            world.execute(() -> releaseOrphanedClaims(orphanedRefs));
         }
     }
-
-    // ===== Pass 2: fire colonists whose workstation is gone =====
 
     private static void fireOrphanedColonists(World world, EntityStore entityStore) {
         Query<EntityStore> jobQuery = Query.and(JobComponent.getComponentType());
@@ -119,16 +101,37 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore> {
         });
 
         if (!orphans.isEmpty()) {
-            world.execute(() -> {
-                for (Ref<EntityStore> ref : orphans) {
-                    if (ref.isValid()) {
-                        JobAssignmentSystems.fireColonist(ref, entityStore.getStore());
-                        DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
-                                "[ColonistCleanup] [%s] Fired colonist with missing workstation (safety net).",
-                                DebugLog.npcId(ref, entityStore.getStore()));
-                    }
-                }
-            });
+            world.execute(() -> fireColonistsWithMissingWorkstation(orphans, entityStore));
+        }
+    }
+
+    private static void releaseOrphanedClaims(@Nonnull List<Ref<ChunkStore>> orphanedRefs)
+    {
+        int cleared = 0;
+        for (Ref<ChunkStore> ref : orphanedRefs) {
+            if (!ref.isValid()) continue;
+            // Just remove the claim component -- ClaimedBlockCleanupSystem will
+            // automatically destroy the entity if it was created solely for the claim.
+            ref.getStore().tryRemoveComponent(ref, ClaimedBlockComponent.getComponentType());
+            cleared++;
+        }
+        if (cleared > 0) {
+            DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
+                    "[ColonistCleanup] Released %d orphaned block claim(s).", cleared);
+        }
+    }
+
+    private static void fireColonistsWithMissingWorkstation(
+            @Nonnull List<Ref<EntityStore>> orphans,
+            @Nonnull EntityStore entityStore)
+    {
+        for (Ref<EntityStore> ref : orphans) {
+            if (ref.isValid()) {
+                JobAssignmentSystems.fireColonist(ref, entityStore.getStore());
+                DebugLog.warning(DebugCategory.JOB_ASSIGNMENT,
+                        "[ColonistCleanup] [%s] Fired colonist with missing workstation (safety net).",
+                        DebugLog.npcId(ref, entityStore.getStore()));
+            }
         }
     }
 }

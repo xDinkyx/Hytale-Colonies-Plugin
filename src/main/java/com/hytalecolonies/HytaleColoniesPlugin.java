@@ -16,7 +16,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hytalecolonies.commands.HytaleColoniesPluginCommand;
-import com.hytalecolonies.components.jobs.ConstructionOrderComponent;
 import com.hytalecolonies.components.jobs.ConstructorJobComponent;
 import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
@@ -35,6 +34,7 @@ import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.debug.DebugConfig;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
 import com.hytalecolonies.listeners.ConstructorBuildOrderFilter;
+import com.hytalecolonies.listeners.ConstructorPrefabPageFilter;
 import com.hytalecolonies.listeners.PlayerListener;
 import com.hytalecolonies.npc.actions.common.BuilderActionDepositItems;
 import com.hytalecolonies.npc.actions.common.BuilderActionEquipBestTool;
@@ -89,6 +89,8 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     private static HytaleColoniesPlugin instance;
 
     private final Config<DebugConfig> debugConfig = this.withConfig("DebugConfig", DebugConfig.CODEC);
+    private final Config<ConstructionOrderStore.StoreData> constructionOrderConfig =
+            this.withConfig("ConstructionOrders", ConstructionOrderStore.StoreData.CODEC);
 
     // ECS Component Types
     private ComponentType<EntityStore, ColonistComponent> colonistComponentType;
@@ -97,7 +99,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     private ComponentType<EntityStore, WoodsmanJobComponent> woodsmanJobComponentType;
     private ComponentType<EntityStore, MinerJobComponent> minerJobComponentType;
     private ComponentType<EntityStore, JobRunCounterComponent> jobRunCounterComponentType;
-    private ComponentType<ChunkStore, ConstructionOrderComponent> constructionOrderComponentType;
     private ComponentType<EntityStore, ConstructorJobComponent> constructorJobComponentType;
     private ComponentType<ChunkStore, WorkStationComponent> workStationComponentType;
     private ComponentType<ChunkStore, WoodsmanWorkStationComponent> woodsmanWorkStationComponentType;
@@ -136,6 +137,18 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         debugConfig.save();
         debugConfig.get().applyToCategories();
 
+        constructionOrderConfig.save();
+        ConstructionOrderStore.get().init(constructionOrderConfig);
+        for (ConstructionOrderStore.Entry e : ConstructionOrderStore.get().all()) {
+            if (ConstructionOrderStore.STATUS_IN_PROGRESS.equals(e.status)) {
+                // InProgress orders are already assigned to a persisted workstation component --
+                // ConstructorJobCheckSystem will resume them once the chunk loads.
+                continue;
+            }
+            e.status = ConstructionOrderStore.STATUS_PENDING;
+            ConstructionOrderQueue.get().enqueue(e.id);
+        }
+
         registerCommands();
         registerListeners();
         registerComponents();
@@ -169,7 +182,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         woodsmanJobComponentType = getEntityStoreRegistry().registerComponent(WoodsmanJobComponent.class, "WoodsmanJob", WoodsmanJobComponent.CODEC);
         minerJobComponentType = getEntityStoreRegistry().registerComponent(MinerJobComponent.class, "MinerJob", MinerJobComponent.CODEC);
         jobRunCounterComponentType = getEntityStoreRegistry().registerComponent(JobRunCounterComponent.class, "JobRunCounter", JobRunCounterComponent.CODEC);
-        constructionOrderComponentType = getChunkStoreRegistry().registerComponent(ConstructionOrderComponent.class, "ConstructionOrder", ConstructionOrderComponent.CODEC);
         constructorJobComponentType = getEntityStoreRegistry().registerComponent(ConstructorJobComponent.class, "ConstructorJob", ConstructorJobComponent.CODEC);
         workStationComponentType = getChunkStoreRegistry().registerComponent(WorkStationComponent.class, "WorkStation", WorkStationComponent.CODEC);
         woodsmanWorkStationComponentType = getChunkStoreRegistry().registerComponent(WoodsmanWorkStationComponent.class, "WoodsmanWorkStation", WoodsmanWorkStationComponent.CODEC);
@@ -224,9 +236,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     }
     public ComponentType<EntityStore, JobRunCounterComponent> getJobRunCounterComponentType() {
         return jobRunCounterComponentType;
-    }
-    public ComponentType<ChunkStore, ConstructionOrderComponent> getConstructionOrderComponentType() {
-        return constructionOrderComponentType;
     }
     public ComponentType<EntityStore, ConstructorJobComponent> getConstructorJobComponentType() {
         return constructorJobComponentType;
@@ -307,6 +316,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         getChunkStoreRegistry().registerSystem(treeScannerSystem);
         getChunkStoreRegistry().registerSystem(new WorkstationInitSystem(treeScannerSystem));
         getChunkStoreRegistry().registerSystem(new ConstructionOrderDispatchSystem());
+
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.ColonistEntitySystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.JobAssignedSystem());
         getEntityStoreRegistry().registerSystem(new JobAssignmentSystems.UnemployedAssignedSystem());
@@ -344,6 +354,13 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         } catch (Exception e) {
             LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register ConstructorBuildOrderFilter");
         }
+
+        try {
+            PacketAdapters.registerInbound(new ConstructorPrefabPageFilter());
+            LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ConstructorPrefabPageFilter");
+        } catch (Exception e) {
+            LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register ConstructorPrefabPageFilter");
+        }
     }
 
     @Override
@@ -355,6 +372,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     @Override
     protected void shutdown() {
         LOGGER.at(Level.INFO).log("[HytaleColonies] Shutting down...");
+        ConstructionOrderStore.reset();
         instance = null;
     }
 }

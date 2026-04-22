@@ -1,6 +1,6 @@
 package com.hytalecolonies.npc.actions.constructor;
 
-import com.hytalecolonies.components.jobs.ConstructionOrderComponent;
+import com.hytalecolonies.ConstructionOrderStore;
 import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
@@ -67,7 +67,7 @@ public class ActionPlaceConstructionBlock extends ActionBase {
 
         World world = store.getExternalData().getWorld();
         Vector3i wsPos = job.getWorkStationBlockPosition();
-        ConstructionOrderComponent order = wsPos != null ? WorkStationUtil.getConstructionOrderForWorkstation(world, wsPos) : null;
+        ConstructionOrderStore.Entry order = wsPos != null ? WorkStationUtil.getConstructionOrderForWorkstation(world, wsPos) : null;
         Vector3i pos = target.targetPosition;
         final int wx = pos.x;
         final int wy = pos.y;
