@@ -1,4 +1,31 @@
 {
-  "Type": "Variant",
-  "Reference": "Template_Colonist_Base"
+  "$Comment": "Dummy colonist -- simple idle wander, used for placement testing and as a development stand-in.",
+  "Type": "Generic",
+  "StartState": "Idle",
+  "Appearance": "Mannequin",
+  "NameTranslationKey": "server.npcRoles.Colonist_Clockwork_Dummy.name",
+  "MaxHealth": 20,
+  "InventorySize": 12,
+  "MotionControllerList": [
+    { "Type": "Walk", "MaxWalkSpeed": 4 }
+  ],
+  "Instructions": [
+    {
+      "Sensor": { "Type": "State", "State": "Idle" },
+      "Instructions": [
+        {
+          "Continue": true,
+          "Sensor": { "Type": "Any" },
+          "BodyMotion": {
+            "Type": "Sequence",
+            "Looped": true,
+            "Motions": [
+              { "Type": "Timer", "Time": [3, 6], "Motion": { "Type": "WanderInRect", "Width": 8, "Depth": 8, "MaxHeadingChange": 135, "RelativeSpeed": 0.5 } },
+              { "Type": "Timer", "Time": [2, 4], "Motion": { "Type": "Nothing" } }
+            ]
+          }
+        }
+      ]
+    }
+  ]
 }

@@ -1,11 +1,11 @@
 package com.hytalecolonies.npc.actions.common;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderDescriptorState;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.asset.builder.holder.IntHolder;
+import com.hypixel.hytale.server.npc.asset.builder.holder.StringHolder;
 import com.hypixel.hytale.server.npc.asset.builder.validators.IntSingleValidator;
 import com.hypixel.hytale.server.npc.util.expression.ExecutionContext;
 import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
@@ -20,9 +20,8 @@ import javax.annotation.Nullable;
  */
 public class BuilderActionEquipBestTool extends BuilderActionBase {
 
-    /** Configured gather type, or {@code null} to auto-detect from the sensor block position. */
-    @Nullable
-    private String gatherType = null;
+    /** Configured gather type (may be a computable expression), or {@code null} to auto-detect. */
+    private final StringHolder gatherType = new StringHolder();
     private final IntHolder minQuality = new IntHolder();
 
     @Nonnull
@@ -49,12 +48,9 @@ public class BuilderActionEquipBestTool extends BuilderActionBase {
     @Nonnull
     @Override
     public Builder<Action> readConfig(@Nonnull JsonElement data) {
-        if (data != null && data.isJsonObject()) {
-            JsonObject obj = data.getAsJsonObject();
-            if (obj.has("GatherType")) {
-                this.gatherType = obj.get("GatherType").getAsString();
-            }
-        }
+        this.getString(data, "GatherType", this.gatherType, null,
+                null, BuilderDescriptorState.Experimental,
+                "Gather type to look up the best tool for (e.g. Woodcutting, Mining). Omit to auto-detect from sensor block.", null);
         this.getInt(
             data, "MinQuality", this.minQuality, 0, IntSingleValidator.greaterEqual0(),
             BuilderDescriptorState.Experimental,
@@ -70,8 +66,9 @@ public class BuilderActionEquipBestTool extends BuilderActionBase {
     }
 
     @Nullable
-    public String getGatherType() {
-        return this.gatherType;
+    public String getGatherType(@Nonnull BuilderSupport support) {
+        String val = this.gatherType.get(support.getExecutionContext());
+        return (val == null || val.isEmpty()) ? null : val;
     }
 
     public int getMinQuality(@Nonnull BuilderSupport support) {

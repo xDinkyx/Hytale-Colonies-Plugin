@@ -69,7 +69,8 @@
         "WorkStation": {
           "JobType": "Woodsman",
           "MaxWorkers": 3
-        }
+        },
+        "WoodsmanWorkStation": {}
       }
     }
   },

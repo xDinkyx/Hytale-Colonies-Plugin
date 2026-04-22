@@ -1,0 +1,55 @@
+{
+  "Type": "Component",
+  "Class": "Instruction",
+  "Interface": "HytaleColonies.Instruction.Colonist.WaitingForWork",
+  "Content": {
+    "$Comment": "WaitingForWork -- woodsman: wander at workstation, check for hatchet, scan for tree.",
+    "Sensor": { "Type": "Any" },
+    "Instructions": [
+      {
+        "Continue": true,
+        "Sensor": { "Type": "Any" },
+        "BodyMotion": {
+          "Type": "Sequence",
+          "Looped": true,
+          "Motions": [
+            { "Type": "Timer", "Time": [4, 6], "Motion": { "Type": "WanderInCircle", "Radius": 3, "MaxHeadingChange": 45, "RelativeSpeed": 0.35 } },
+            { "Type": "Timer", "Time": [1, 2], "Motion": { "Type": "Nothing" } }
+          ]
+        }
+      },
+      {
+        "$Comment": "No hatchet -- confused particle + wait.",
+        "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Hatchet_*"], "CountRange": [1, 999] }] } },
+        "ActionsBlocking": true,
+        "Actions": [
+          { "Type": "LogDebug", "Message": "WaitingForWork: missing hatchet -- showing confused particle.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
+          { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
+          { "Type": "Timeout", "Delay": [3, 3] }
+        ]
+      },
+      {
+        "$Comment": "Has hatchet -- scan for the nearest available tree and claim it.",
+        "Continue": true,
+        "Sensor": {
+          "Type": "Self",
+          "Filters": [
+            { "Type": "Inventory", "Items": ["Tool_Hatchet_*"], "CountRange": [1, 999] }
+          ]
+        },
+        "Actions": [
+          { "Type": "LogDebug", "Message": "WaitingForWork: scanning for nearest tree.", "Category": "WOODSMAN_JOB", "Level": "FINE" },
+          { "Type": "SeekNearestTree" }
+        ]
+      },
+      {
+        "$Comment": "Target found -- travel to the claimed tree.",
+        "Sensor": { "Type": "JobTargetExists" },
+        "Actions": [
+          { "Type": "LogDebug", "Message": "WaitingForWork: tree found -> TravelingToWorkSite.", "Category": "WOODSMAN_JOB", "Level": "INFO" },
+          { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
+        ]
+      }
+    ]
+  }
+}

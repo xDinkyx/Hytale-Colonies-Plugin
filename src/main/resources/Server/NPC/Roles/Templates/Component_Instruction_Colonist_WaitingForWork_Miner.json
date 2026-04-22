@@ -1,0 +1,60 @@
+{
+  "Type": "Component",
+  "Class": "Instruction",
+  "Interface": "HytaleColonies.Instruction.Colonist.WaitingForWork",
+  "Content": {
+    "$Comment": "WaitingForWork -- miner: wander at workstation, check for tools, scan for mine block.",
+    "Sensor": { "Type": "Any" },
+    "Instructions": [
+      {
+        "Continue": true,
+        "Sensor": { "Type": "Any" },
+        "BodyMotion": {
+          "Type": "Sequence",
+          "Looped": true,
+          "Motions": [
+            { "Type": "Timer", "Time": [4, 6], "Motion": { "Type": "WanderInCircle", "Radius": 5, "MaxHeadingChange": 0.4 } },
+            { "Type": "Timer", "Time": [1, 2], "Motion": { "Type": "Nothing" } }
+          ]
+        }
+      },
+      {
+        "$Comment": "No pickaxe -- confused particle + wait.",
+        "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Pickaxe_*"], "CountRange": [1, 999] }] } },
+        "ActionsBlocking": true,
+        "Actions": [
+          { "Type": "LogDebug", "Message": "WaitingForWork: missing pickaxe -- showing confused particle.", "Category": "MINER_JOB", "Level": "INFO" },
+          { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
+          { "Type": "Timeout", "Delay": [3, 3] }
+        ]
+      },
+      {
+        "$Comment": "No shovel -- confused particle + wait.",
+        "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Shovel_*"], "CountRange": [1, 999] }] } },
+        "ActionsBlocking": true,
+        "Actions": [
+          { "Type": "LogDebug", "Message": "WaitingForWork: missing shovel -- showing confused particle.", "Category": "MINER_JOB", "Level": "INFO" },
+          { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
+          { "Type": "Timeout", "Delay": [3, 3] }
+        ]
+      },
+      {
+        "$Comment": "Has both tools (passed Not-checks above) -- scan for the next mine block and claim it.",
+        "Continue": true,
+        "Sensor": { "Type": "Any" },
+        "Actions": [
+          { "Type": "LogDebug", "Message": "WaitingForWork: scanning for next mine block.", "Category": "MINER_JOB", "Level": "FINE" },
+          { "Type": "SeekNextMineBlock" }
+        ]
+      },
+      {
+        "$Comment": "Target found -- travel to the claimed mine block.",
+        "Sensor": { "Type": "JobTargetExists" },
+        "Actions": [
+          { "Type": "LogDebug", "Message": "WaitingForWork: target found -> TravelingToWorkSite.", "Category": "MINER_JOB", "Level": "INFO" },
+          { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
+        ]
+      }
+    ]
+  }
+}
