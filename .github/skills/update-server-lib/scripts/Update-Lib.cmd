@@ -126,15 +126,6 @@ if errorlevel 1 (
     echo [OK] Java found
 )
 
-REM Check Maven
-where mvn >nul 2>nul
-if errorlevel 1 (
-    echo [FAIL] Maven not found
-    set "PREREQ_FAIL=1"
-) else (
-    echo [OK] Maven found
-)
-
 REM Check Git
 where git >nul 2>nul
 if errorlevel 1 (
