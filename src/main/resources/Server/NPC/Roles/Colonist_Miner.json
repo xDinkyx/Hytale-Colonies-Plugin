@@ -2,22 +2,10 @@
   "$Comment": "Miner colonist -- mines rock blocks and ores. Extends Template_Colonist_Base with pickaxe/shovel tool checks and mine-block scanning.",
   "Type": "Variant",
   "Reference": "Template_Colonist_Base",
-  "Parameters": {
-    "NameTranslationKey": {
-      "Value": "server.npcRoles.Colonist_Miner.name",
-      "Description": "Display name for the Miner colonist."
-    },
-    "GatherType": {
-      "Value": "Rocks",
-      "Description": "Miner uses mining tools (pickaxe, shovel) for rock gathering."
-    },
-    "DebugCategory": {
-      "Value": "MINER_JOB",
-      "Description": "Debug log category for miner-specific log entries."
-    },
-    "WaitingForWorkComponent": {
-      "Value": "Component_Instruction_Colonist_WaitingForWork_Miner",
-      "Description": "WaitingForWork behavior: pickaxe+shovel checks and mine-block scanning."
-    }
+  "Modify": {
+    "NameTranslationKey": "server.npcRoles.Colonist_Miner.name",
+    "GatherType": "Rocks",
+    "DebugCategory": "MINER_JOB",
+    "WaitingForWorkComponent": "Component_Instruction_Colonist_WaitingForWork_Miner"
   }
 }

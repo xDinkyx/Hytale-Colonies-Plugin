@@ -1,23 +1,11 @@
-﻿{
+{
   "$Comment": "Woodsman colonist -- chops trees for wood. Extends Template_Colonist_Base with hatchet tool check and tree scanning.",
   "Type": "Variant",
   "Reference": "Template_Colonist_Base",
-  "Parameters": {
-    "NameTranslationKey": {
-      "Value": "server.npcRoles.Colonist_Woodsman.name",
-      "Description": "Display name for the Woodsman colonist."
-    },
-    "GatherType": {
-      "Value": "Woods",
-      "Description": "Woodsman uses cutting tools (hatchet) for tree harvesting."
-    },
-    "DebugCategory": {
-      "Value": "WOODSMAN_JOB",
-      "Description": "Debug log category for woodsman-specific log entries."
-    },
-    "WaitingForWorkComponent": {
-      "Value": "Component_Instruction_Colonist_WaitingForWork_Woodsman",
-      "Description": "WaitingForWork behavior: hatchet check and tree scanning."
-    }
+  "Modify": {
+    "NameTranslationKey": "server.npcRoles.Colonist_Woodsman.name",
+    "GatherType": "Woods",
+    "DebugCategory": "WOODSMAN_JOB",
+    "WaitingForWorkComponent": "Component_Instruction_Colonist_WaitingForWork_Woodsman"
   }
 }
