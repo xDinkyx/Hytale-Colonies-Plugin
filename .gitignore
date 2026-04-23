@@ -12,6 +12,7 @@ pom.xml.versionsBackup
 .idea/*
 !.idea/runConfigurations/
 *.iml
+.vscode/settings.json
 
 # Hytale
 server/*
@@ -24,4 +25,3 @@ dev-config/*
 
 # Build
 bin/
-
