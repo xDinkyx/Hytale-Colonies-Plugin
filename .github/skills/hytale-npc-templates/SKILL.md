@@ -1,6 +1,6 @@
 ---
 name: hytale-npc-templates
-version: 3
+version: 4
 source: https://hytalemodding.com/official-documentation/npc/
 authors:
   - name: "HytaleModding"
@@ -219,7 +219,32 @@ store.addComponent(npcRef, MoveToTargetComponent.getComponentType(), new MoveToT
 
 ## Parameters
 
-Parameters are defined in the `"Parameters"` block and referenced via `{ "Compute": "ParamName" }`. They support computed expressions like `"Compute": "ViewRange / DistractedPenalty"`.
+### `"Parameters"` vs `"Modify"`
+
+These two blocks are **not interchangeable**:
+
+| Block | Used in | Effect |
+|---|---|---|
+| `"Parameters"` | `Abstract` / `Generic` templates | Declares accepted parameters and their defaults for the template itself |
+| `"Modify"` | `Variant` files | Overrides parameter values in the referenced base template |
+
+Using `"Parameters"` in a `Variant` silently has no effect on the base template — all base template parameters remain at their defaults. Always use `"Modify"` in Variant files.
+
+**Correct Variant override:**
+```json
+{
+  "Type": "Variant",
+  "Reference": "Template_My_Base",
+  "Modify": {
+    "MaxHealth": 50,
+    "Appearance": "Kweebec"
+  }
+}
+```
+
+### Parameter declaration (Abstract/Generic)
+
+Parameters are declared in `"Parameters"` and referenced via `{ "Compute": "ParamName" }`. They support computed expressions like `"Compute": "ViewRange / DistractedPenalty"`.
 
 ```json
 "Parameters": {

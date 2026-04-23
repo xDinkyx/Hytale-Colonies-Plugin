@@ -1,6 +1,6 @@
 ---
 name: hytalecolonies-npc-design
-version: 7
+version: 8
 description: >
   Defines the canonical NPC design architecture for the HytaleColonies plugin.
   Covers the ECS/JSON contract, state machine, notification channel, system responsibilities,
@@ -388,19 +388,21 @@ Located in `Templates/`. Contains the **full** `WaitingForWork` instruction node
 
 ### Colonist_<Job>.json (Variant)
 
-Only four parameter overrides needed:
+Only four parameter overrides needed. Use `"Modify"` — **not** `"Parameters"`:
 ```json
 {
   "Type": "Variant",
   "Reference": "Template_Colonist_Base",
-  "Parameters": {
-    "NameTranslationKey": { "Value": "...", "Description": "..." },
-    "GatherType":          { "Value": "Rocks|Woods|...", "Description": "..." },
-    "DebugCategory":       { "Value": "MINER_JOB|WOODSMAN_JOB|...", "Description": "..." },
-    "WaitingForWorkComponent": { "Value": "Component_Instruction_Colonist_WaitingForWork_<Job>", "Description": "..." }
+  "Modify": {
+    "NameTranslationKey": "...",
+    "GatherType": "Rocks|Woods|...",
+    "DebugCategory": "MINER_JOB|WOODSMAN_JOB|...",
+    "WaitingForWorkComponent": "Component_Instruction_Colonist_WaitingForWork_<Job>"
   }
 }
 ```
+
+> **`"Modify"` vs `"Parameters"`**: `"Modify"` is the correct section for a `Variant` to override values in its base template. `"Parameters"` only populates the variant's *own* scope and is the correct section for `"Type": "Abstract"` templates to declare accepted parameters. Using `"Parameters"` in a `Variant` silently has no effect on the base template — all base template parameters remain at their defaults.
 
 `Colonist_Constructor.json` remains a flat `Generic` because its Working sub-states (Clearing, Constructing, RetrievingBlocks) do not match the harvester template pattern.
 
@@ -409,7 +411,7 @@ Only four parameter overrides needed:
 ### Adding a new harvester job (JSON checklist)
 
 1. Create `Templates/Component_Instruction_Colonist_WaitingForWork_<Job>.json` with the job-specific `WaitingForWork` block (wander, tool checks, scan action, `JobTargetExists` → `TravelingToWorkSite`).
-2. Create `Colonist_<Job>.json` as a `Variant` of `Template_Colonist_Base` with the four parameter overrides.
+2. Create `Colonist_<Job>.json` as a `Variant` of `Template_Colonist_Base` with the four parameter overrides in a `"Modify"` block (not `"Parameters"`).
 3. The template handles all other states automatically.
 
 ---
@@ -424,6 +426,8 @@ Only four parameter overrides needed:
 | Storing runtime flags in per-job component instead of `JobComponent` | Extra component, harder to access from sensors | Keep all transient job flags on `JobComponent` |
 | Using the 2s job system for reactive working-state detection | 2-second lag before events are processed | Use `EntityTickingSystem` filtered to `Working` state |
 | Comparing server log timestamps to local file timestamps | Hytale server logs are in **UTC**. Local system time may differ by hours. Always convert before comparing. | Use `(Get-Date).ToUniversalTime()` or compare log UTC timestamps to UTC build times |
+| Using `"Parameters"` in a `Variant` file to override base template values | `"Parameters"` only fills the variant's own scope — never the base template's. The base template silently uses all its defaults. For example, `WaitingForWorkComponent` stays `...Miner` even for a Woodsman variant. | Use `"Modify"` in `Variant` files. `"Parameters"` is only for `Abstract` template declarations. |
+| Building to validate JSON changes | Build/deploy output shows `BUILD SUCCESSFUL` even when JSON has runtime errors — the server only logs NPC role parse failures at startup and there is no compile-time check for JSON correctness. | Test JSON changes by reloading them via the **asset editor** in-game (no server restart needed), then watch the server log for SEVERE/WARNING role-load errors. |
 | Wrapping each state in a separate outer `{ "Instructions": [...] }` (no sensor, no `Continue`) | First wrapper always matches (no sensor = always true), stops all subsequent siblings — only the first state's sensor is ever evaluated | Put `Continue: true` and the `State` sensor directly on each top-level instruction; no outer wrappers |
 | Global `Continue: true` Seek at top of instruction list | The global Seek fires every tick regardless of state, preventing state-local wander motions from being reached before it | Put Seek inside each travel-state block; use the NPC leash point for wander anchoring |
 | Using `"Type": "State"` sensor without `"IgnoreMissingSetState": true` when ECS drives the state | NPC validator throws SEVERE at startup: "State sensor or State setter action/motion exists without accompanying state/setter" — role is rejected entirely and `Unknown NPC role` errors repeat every tick | Always add `"IgnoreMissingSetState": true` to every externally-driven state sensor |
