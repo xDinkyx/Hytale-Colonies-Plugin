@@ -93,7 +93,7 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction {
                                                                                                        // initially.
 
         DebugLog.info(DebugCategory.COLONIST_LIFECYCLE,
-                "[ColonistRemoval] Spawning new colonist '%s' (UUID: %s) at %s.",
+                "[SpawnColonist] Spawning new colonist '%s' (UUID: %s) at %s.",
                 colonistComponent.getColonistName(), DebugLog.npcId(npcRef, store), spawnData.position());
     }
 
