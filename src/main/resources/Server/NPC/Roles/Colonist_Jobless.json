@@ -1,0 +1,9 @@
+{
+  "$Comment": "Jobless colonist -- no work assignment. Wanders the colony until given a job.",
+  "Type": "Variant",
+  "Reference": "Template_Colonist",
+  "Modify": {
+    "NameTranslationKey": "server.npcRoles.Colonist_Jobless.name",
+    "DefaultIdleComponent": "Component_Instruction_Idle_Default_Jobless"
+  }
+}

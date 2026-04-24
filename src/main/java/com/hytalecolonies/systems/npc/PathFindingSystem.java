@@ -32,7 +32,7 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
 
     /**
      * Slot index for the "NavTarget" stored position in the colonist role JSON.
-     * Corresponds to the first named position slot used in Template_Colonist_Base.json.
+     * Corresponds to the first named position slot used in Template_Colonist.json.
      */
     private static final int NAV_TARGET_SLOT = 0;
 
@@ -66,7 +66,7 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
         }
 
         // Write the target to the "NavTarget" stored position slot (slot 0).
-        // The ReadPosition sensor in Template_Colonist_Base.json checks this slot
+        // The ReadPosition sensor in Template_Colonist.json checks this slot
         // every tick and activates the Seek body motion while the NPC is outside MinRange.
         try {
             role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(component.target);

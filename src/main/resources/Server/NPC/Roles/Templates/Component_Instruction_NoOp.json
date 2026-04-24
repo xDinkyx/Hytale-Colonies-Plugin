@@ -1,0 +1,9 @@
+{
+  "$Comment": "No-op state body -- used as default for sub-states that do not apply to a job type.",
+  "Type": "Component",
+  "Class": "Instruction",
+  "Interface": "HytaleColonies.Instruction.Colonist.StateBody",
+  "Content": {
+    "Sensor": { "Type": "Any" }
+  }
+}

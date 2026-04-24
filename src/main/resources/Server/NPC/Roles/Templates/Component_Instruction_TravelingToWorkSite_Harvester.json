@@ -1,0 +1,22 @@
+{
+  "$Comment": "TravelingToWorkSite body for harvester jobs (Woodsman, Miner) -- seek and transition to Working (Harvesting) on arrival.",
+  "Type": "Component",
+  "Class": "Instruction",
+  "Interface": "HytaleColonies.Instruction.Colonist.StateBody",
+  "Content": {
+    "Sensor": { "Type": "Any" },
+    "Instructions": [
+      {
+        "Continue": true,
+        "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
+        "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
+      },
+      {
+        "Sensor": { "Type": "JobTarget", "Range": 2.5 },
+        "Actions": [
+          { "Type": "SetEcsJobState", "JobState": "Working" }
+        ]
+      }
+    ]
+  }
+}

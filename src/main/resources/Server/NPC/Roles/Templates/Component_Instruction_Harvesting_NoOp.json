@@ -1,0 +1,9 @@
+{
+  "$Comment": "Harvesting no-op body -- for job types that do not use the Harvesting sub-state.",
+  "Type": "Component",
+  "Class": "Instruction",
+  "Interface": "HytaleColonies.Instruction.Colonist.StateBody",
+  "Content": {
+    "Sensor": { "Type": "Any" }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$Comment": "Default idle body for worker colonists -- navigates to workstation and begins TravelingToWorkstation.",
+  "Type": "Component",
+  "Class": "Instruction",
+  "Interface": "HytaleColonies.Instruction.Colonist.StateBody",
+  "Content": {
+    "Sensor": { "Type": "Any" },
+    "Instructions": [
+      {
+        "Sensor": { "Type": "Any" },
+        "Actions": [
+          { "Type": "NavigateToWorkstation" },
+          { "Type": "SetEcsJobState", "JobState": "TravelingToWorkstation" }
+        ]
+      }
+    ]
+  }
+}

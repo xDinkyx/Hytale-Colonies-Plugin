@@ -51,7 +51,7 @@
                 "Interactions": [
                   {
                     "Type": "SpawnColonist",
-                    "EntityId": "Colonist_Dummy"
+                    "EntityId": "Colonist_Jobless"
                   },
                   {
                     "Type": "DestroyBlock"

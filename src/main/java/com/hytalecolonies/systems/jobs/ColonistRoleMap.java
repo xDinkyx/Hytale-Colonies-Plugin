@@ -23,7 +23,7 @@ import javax.annotation.Nonnull;
 public final class ColonistRoleMap {
 
     /** The NPC role used by unassigned (unemployed) colonists. */
-    public static final String ROLE_GENERIC = "Colonist_Dummy";
+    public static final String ROLE_GENERIC = "Colonist_Jobless";
 
     private ColonistRoleMap() {}
 

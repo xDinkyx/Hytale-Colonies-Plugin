@@ -427,7 +427,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
      * <ul>
      *   <li>On assignment: looks up the workstation's {@link JobType} and switches
      *       to the matching role (e.g. {@code Colonist_Miner}, {@code Colonist_Woodsman}).</li>
-     *   <li>On removal: reverts to {@code Colonist_Dummy} so the colonist wanders
+     *   <li>On removal: reverts to {@code Colonist_Jobless} so the colonist wanders
      *       while waiting for a new job.</li>
      * </ul>
      */

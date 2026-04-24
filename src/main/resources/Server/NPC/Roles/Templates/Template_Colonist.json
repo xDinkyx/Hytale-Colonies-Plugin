@@ -1,5 +1,5 @@
-{
-  "$Comment": "Shared base for harvester-type colonist roles (Miner, Woodsman, and future harvesters). All states except WaitingForWork are defined here; job-specific tool checks and scanning go in WaitingForWorkComponent.",
+﻿{
+  "$Comment": "Abstract base for all colonist roles. All state/sub-state sensors are defined here so ECS can reach them via role.getStateSupport().setState(). Components plug in leaf instruction bodies per sub-state.",
   "Type": "Abstract",
   "StartState": "Idle",
   "Parameters": {
@@ -19,17 +19,37 @@
       "Value": 3,
       "Description": "Maximum walk speed."
     },
-    "GatherType": {
-      "Value": "Rocks",
-      "Description": "Gather type passed to EquipBestTool on entering the Working main state."
-    },
     "DebugCategory": {
       "Value": "COLONIST_JOB",
-      "Description": "Debug log category name used in all LogDebug actions for this role."
+      "Description": "Debug log category used in inline state log messages and StateTransitions."
+    },
+    "HarvestingComponent": {
+      "Value": "Component_Instruction_Harvesting_NoOp",
+      "Description": "Seek-to-block and break-loop body for the Harvesting sub-state. Override for harvester jobs."
     },
     "WaitingForWorkComponent": {
-      "Value": "Component_Instruction_Colonist_WaitingForWork_Miner",
-      "Description": "Component_Instruction that provides the WaitingForWork block (tool checks + target scanning). Required: override in each variant."
+      "Value": "Component_Instruction_WaitingForWork_Miner",
+      "Description": "Tool-check and target-scan body for WaitingForWork. Override per job."
+    },
+    "TravelingToWorkSiteComponent": {
+      "Value": "Component_Instruction_TravelingToWorkSite_Harvester",
+      "Description": "Seek and arrival transition for TravelingToWorkSite. Override for jobs with a different arrival state."
+    },
+    "ClearingComponent": {
+      "Value": "Component_Instruction_NoOp",
+      "Description": "Seek-to-block and break-loop body for the Clearing sub-state (constructor). NoOp for other jobs."
+    },
+    "ConstructingComponent": {
+      "Value": "Component_Instruction_NoOp",
+      "Description": "Seek-to-block and place-block body for the Constructing sub-state (constructor). NoOp for other jobs."
+    },
+    "RetrievingBlocksComponent": {
+      "Value": "Component_Instruction_NoOp",
+      "Description": "Walk to container and retrieve materials for the RetrievingBlocks sub-state (constructor). NoOp for other jobs."
+    },
+    "DefaultIdleComponent": {
+      "Value": "Component_Instruction_Idle_Default_Worker",
+      "Description": "Behavior for the Default (entry) idle sub-state. Override for jobless wander."
     }
   },
   "Appearance": { "Compute": "Appearance" },
@@ -40,14 +60,6 @@
     { "Type": "Walk", "MaxWalkSpeed": { "Compute": "MaxSpeed" } }
   ],
   "StateTransitions": [
-    {
-      "$Comment": "Equip best tool when entering Working main state.",
-      "States": [{ "From": [], "To": ["Working"] }],
-      "Actions": [
-        { "Type": "LogDebug", "Message": "StateTransition -> Working.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
-        { "Type": "EquipBestTool", "GatherType": { "Compute": "GatherType" } }
-      ]
-    },
     {
       "$Comment": "Put tool away when leaving Working main state.",
       "States": [{ "From": ["Working"], "To": [] }],
@@ -67,34 +79,23 @@
   ],
   "Instructions": [
     {
-      "$Comment": "Working -- gates all working-shift behavior. Fires for any Working substate.",
+      "$Comment": "Working -- gates all working-shift behavior.",
       "Continue": true,
       "Sensor": { "Type": "State", "State": "Working", "IgnoreMissingSetState": true },
       "Instructions": [
         {
-          "$Comment": "Harvesting -- approach block and break it.",
+          "$Comment": "Harvesting #1 -- seek to block and break it (job-specific loop).",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".Harvesting", "IgnoreMissingSetState": true },
           "Instructions": [
             {
-              "Continue": true,
-              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 5.0, "MinRange": 1.5 },
-              "BodyMotion": { "Type": "Seek", "StopDistance": 1.0, "SlowDownDistance": 2.0, "RelativeSpeed": 0.8 }
-            },
-            {
-              "Sensor": { "Type": "JobTarget", "Range": 2.5 },
-              "ActionsBlocking": true,
-              "Actions": [
-                { "Type": "LogDebug", "Message": "Harvesting: breaking block.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
-                { "Type": "EquipBestTool" },
-                { "Type": "HarvestBlock", "DamageScale": 0.1 },
-                { "Type": "Timeout", "Delay": [0.5, 0.5] }
-              ]
+              "Reference": { "Compute": "HarvestingComponent" },
+              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
             }
           ]
         },
         {
-          "$Comment": "Harvesting -- when job-target block is air, notify ECS working system.",
+          "$Comment": "Harvesting #2 -- when block is air, notify ECS. Runs alongside #1 via Continue.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".Harvesting", "IgnoreMissingSetState": true },
           "Instructions": [
@@ -108,31 +109,60 @@
           ]
         },
         {
-          "$Comment": "TravelingToWorkSite -- seek to claimed block. On arrival transition to Working.",
+          "$Comment": "Clearing #1 -- seek to block and break it (constructor loop).",
           "Continue": true,
-          "Sensor": { "Type": "State", "State": ".TravelingToWorkSite", "IgnoreMissingSetState": true },
+          "Sensor": { "Type": "State", "State": ".Clearing", "IgnoreMissingSetState": true },
           "Instructions": [
             {
-              "Continue": true,
-              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
-              "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
-            },
+              "Reference": { "Compute": "ClearingComponent" },
+              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
+            }
+          ]
+        },
+        {
+          "$Comment": "Clearing #2 -- when block is air, notify ECS. Runs alongside #1 via Continue.",
+          "Continue": true,
+          "Sensor": { "Type": "State", "State": ".Clearing", "IgnoreMissingSetState": true },
+          "Instructions": [
             {
-              "Sensor": { "Type": "JobTarget", "Range": 2.5 },
+              "Sensor": { "Type": "JobTargetBroken" },
               "Actions": [
-                { "Type": "LogDebug", "Message": "TravelingToWorkSite: arrived -> Working.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
-                { "Type": "SetEcsJobState", "JobState": "Working" }
+                { "Type": "LogDebug", "Message": "Clearing: block broken -- notifying ECS.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
+                { "Type": "NotifyBlockBroken" }
               ]
             }
           ]
         },
         {
-          "$Comment": "WaitingForWork -- job-specific tool checks and work scanning (delegated to variant component).",
-          "Sensor": { "Type": "State", "State": ".WaitingForWork", "IgnoreMissingSetState": true },
+          "$Comment": "TravelingToWorkSite -- seek to claimed block and transition on arrival.",
+          "Continue": true,
+          "Sensor": { "Type": "State", "State": ".TravelingToWorkSite", "IgnoreMissingSetState": true },
           "Instructions": [
             {
-              "Reference": { "Compute": "WaitingForWorkComponent" },
-              "Interfaces": [ "HytaleColonies.Instruction.Colonist.WaitingForWork" ]
+              "Reference": { "Compute": "TravelingToWorkSiteComponent" },
+              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
+            }
+          ]
+        },
+        {
+          "$Comment": "Constructing -- seek to block and place it.",
+          "Continue": true,
+          "Sensor": { "Type": "State", "State": ".Constructing", "IgnoreMissingSetState": true },
+          "Instructions": [
+            {
+              "Reference": { "Compute": "ConstructingComponent" },
+              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
+            }
+          ]
+        },
+        {
+          "$Comment": "RetrievingBlocks -- walk to container and pull materials.",
+          "Continue": true,
+          "Sensor": { "Type": "State", "State": ".RetrievingBlocks", "IgnoreMissingSetState": true },
+          "Instructions": [
+            {
+              "Reference": { "Compute": "RetrievingBlocksComponent" },
+              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
             }
           ]
         },
@@ -155,7 +185,6 @@
               ]
             },
             {
-              "$Comment": "Timer elapsed -- transition to DeliveringItems.",
               "Sensor": { "Type": "CollectionTimerElapsed" },
               "Actions": [
                 { "Type": "LogDebug", "Message": "CollectingDrops: timer elapsed -> DeliveringItems.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
@@ -165,7 +194,7 @@
           ]
         },
         {
-          "$Comment": "DeliveringItems -- find chest near workstation and deposit inventory.",
+          "$Comment": "DeliveringItems -- find container, seek to it, deposit and head home.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".DeliveringItems", "IgnoreMissingSetState": true },
           "Instructions": [
@@ -183,7 +212,6 @@
               "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
             },
             {
-              "$Comment": "Arrived at container -- deposit items then head home.",
               "Sensor": { "Type": "JobTarget", "Range": 3.0 },
               "Actions": [
                 { "Type": "LogDebug", "Message": "DeliveringItems: depositing and heading home.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
@@ -193,16 +221,26 @@
             }
           ]
         },
+        {
+          "$Comment": "WaitingForWork -- job-specific tool checks and target scan.",
+          "Sensor": { "Type": "State", "State": ".WaitingForWork", "IgnoreMissingSetState": true },
+          "Instructions": [
+            {
+              "Reference": { "Compute": "WaitingForWorkComponent" },
+              "Interfaces": [ "HytaleColonies.Instruction.Colonist.WaitingForWork" ]
+            }
+          ]
+        },
         { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
       ]
     },
     {
-      "$Comment": "Idle -- gates all off-shift behavior. Fires for any Idle substate.",
+      "$Comment": "Idle -- gates all off-shift behavior.",
       "Continue": true,
       "Sensor": { "Type": "State", "State": "Idle", "IgnoreMissingSetState": true },
       "Instructions": [
         {
-          "$Comment": "TravelingToWorkstation -- seek to workstation. On arrival begin WaitingForWork.",
+          "$Comment": "TravelingToWorkstation -- seek to workstation, arrive -> WaitingForWork.",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".TravelingToWorkstation", "IgnoreMissingSetState": true },
           "Instructions": [
@@ -250,16 +288,12 @@
           ]
         },
         {
-          "$Comment": "Default -- transient pass-through. Navigate to workstation and begin travel.",
+          "$Comment": "Default -- entry state, navigate to workstation and begin travel.",
           "Sensor": { "Type": "State", "State": ".Default", "IgnoreMissingSetState": true },
           "Instructions": [
             {
-              "Sensor": { "Type": "Any" },
-              "Actions": [
-                { "Type": "LogDebug", "Message": "Default: navigating to workstation.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
-                { "Type": "NavigateToWorkstation" },
-                { "Type": "SetEcsJobState", "JobState": "TravelingToWorkstation" }
-              ]
+              "Reference": { "Compute": "DefaultIdleComponent" },
+              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
             }
           ]
         },
