@@ -33,7 +33,6 @@ import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.debug.DebugConfig;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
-import com.hytalecolonies.listeners.ColonistInspectListener;
 import com.hytalecolonies.listeners.ConstructorBuildOrderFilter;
 import com.hytalecolonies.listeners.ConstructorPrefabPageFilter;
 import com.hytalecolonies.listeners.PlayerListener;
@@ -45,6 +44,7 @@ import com.hytalecolonies.npc.actions.common.BuilderActionIncrementJobCounter;
 import com.hytalecolonies.npc.actions.common.BuilderActionLogDebug;
 import com.hytalecolonies.npc.actions.common.BuilderActionNavigateToWorkstation;
 import com.hytalecolonies.npc.actions.common.BuilderActionNotifyBlockBroken;
+import com.hytalecolonies.npc.actions.common.BuilderActionOpenColonistInspectPage;
 import com.hytalecolonies.npc.actions.common.BuilderActionReleaseJobTarget;
 import com.hytalecolonies.npc.actions.common.BuilderActionResetJobCounter;
 import com.hytalecolonies.npc.actions.common.BuilderActionSetEcsJobState;
@@ -289,6 +289,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             .registerCoreComponentType("NavigateToWorkstation",      BuilderActionNavigateToWorkstation::new)
             .registerCoreComponentType("FindDeliveryContainer",      BuilderActionFindDeliveryContainer::new)
             .registerCoreComponentType("DepositItems",               BuilderActionDepositItems::new)
+            .registerCoreComponentType("OpenColonistInspectPage",      BuilderActionOpenColonistInspectPage::new)
             // Sensors
             .registerCoreComponentType("HarvestableTree",            BuilderSensorHarvestableTree::new)
             .registerCoreComponentType("JobTarget",                  BuilderSensorJobTarget::new)
@@ -347,13 +348,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             LOGGER.at(Level.INFO).log("[HytaleColonies] Registered player event listeners");
         } catch (Exception e) {
             LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register listeners");
-        }
-
-        try {
-            new ColonistInspectListener().register(eventBus);
-            LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ColonistInspectListener");
-        } catch (Exception e) {
-            LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register ColonistInspectListener");
         }
 
         try {

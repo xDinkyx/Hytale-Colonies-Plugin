@@ -310,6 +310,17 @@
         "Actions": [
           { "Type": "SetInteractable", "Interactable": true, "Hint": "server.interactionHints.generic" }
         ]
+      },
+      {
+        "Sensor": { "Type": "HasInteracted" },
+        "Instructions": [
+          {
+            "Sensor": { "Type": "Any" },
+            "Actions": [
+              { "Type": "OpenColonistInspectPage" }
+            ]
+          }
+        ]
       }
     ]
   }
