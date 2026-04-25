@@ -1,0 +1,285 @@
+// Colonist Inspect Page
+// Two-panel layout: left = NPC info, right = tabbed inventory/stats
+$C = "../Common.ui";
+
+@SlotSize = 52;
+@SlotSpacing = 2;
+@GridPad = 4;
+
+@InvGridStyle = ItemGridStyle(
+    SlotSpacing: @SlotSpacing,
+    SlotSize: @SlotSize,
+    SlotIconSize: 44
+);
+
+@SectionLabel = LabelStyle(
+    FontSize: 12,
+    TextColor: #7a8fa8,
+    RenderBold: true,
+    HorizontalAlignment: Start
+);
+
+@ColonistNameStyle = LabelStyle(
+    FontSize: 18,
+    TextColor: #e8eef5,
+    RenderBold: true,
+    HorizontalAlignment: Center
+);
+
+@ColonistSubStyle = LabelStyle(
+    FontSize: 13,
+    TextColor: #7a8fa8,
+    HorizontalAlignment: Center
+);
+
+@TabActive = TextButtonStyle(
+    Default: (
+        Background: #1e3050,
+        LabelStyle: (FontSize: 13, TextColor: #e8eef5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    ),
+    Hovered: (
+        Background: #253a5e,
+        LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    )
+);
+
+@TabInactive = TextButtonStyle(
+    Default: (
+        Background: #111b28,
+        LabelStyle: (FontSize: 13, TextColor: #5a6e84, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    ),
+    Hovered: (
+        Background: #1a2638,
+        LabelStyle: (FontSize: 13, TextColor: #8a9ebc, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    )
+);
+
+// Full-screen overlay
+Group {
+    Anchor: (Full: 0);
+    Background: #000000(0.5);
+    LayoutMode: CenterMiddle;
+
+    // Main panel
+    Group #MainPanel {
+        Anchor: (Width: 880, Height: 680);
+        Background: #0d1620(0.98);
+        LayoutMode: Left;
+
+        // ---- Left: NPC Info Panel ----
+        Group #NpcInfoPanel {
+            Anchor: (Width: 220);
+            LayoutMode: Top;
+            Background: #101e30;
+            Padding: (Full: 14);
+
+            // Model preview placeholder
+            Group #ModelPreview {
+                Anchor: (Height: 200);
+                Background: #0a1520;
+                LayoutMode: CenterMiddle;
+
+                Label #ModelLabel {
+                    Text: "?";
+                    Style: (FontSize: 48, TextColor: #1e3050, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center);
+                }
+            }
+
+            Group { Anchor: (Height: 12); }
+
+            // Colonist name
+            Label #ColonistName {
+                Text: %ui.colonist.inspect.defaultName;
+                Anchor: (Height: 28);
+                Style: @ColonistNameStyle;
+            }
+
+            Group { Anchor: (Height: 4); }
+
+            // Job label
+            Label #ColonistJob {
+                Text: %ui.colonist.inspect.unemployed;
+                Anchor: (Height: 20);
+                Style: @ColonistSubStyle;
+            }
+
+            Group { Anchor: (Height: 4); }
+
+            // Level label
+            Label #ColonistLevel {
+                Text: %ui.colonist.inspect.level;
+                Anchor: (Height: 20);
+                Style: @ColonistSubStyle;
+            }
+
+            Group { Anchor: (Height: 14); }
+
+            // Separator
+            Group { Anchor: (Height: 1); Background: #1e3050; }
+
+            Group { Anchor: (Height: 14); }
+
+            // Colony label
+            Label #ColonyId {
+                Text: "";
+                Anchor: (Height: 18);
+                Style: (FontSize: 12, TextColor: #4a5e72, HorizontalAlignment: Center);
+            }
+
+            // Spacer
+            Group { FlexWeight: 1; }
+
+            // Close button
+            TextButton #CloseButton {
+                Text: %ui.colonist.inspect.close;
+                Anchor: (Height: 36);
+                Style: @TabInactive;
+            }
+        }
+
+        // Vertical separator
+        Group { Anchor: (Width: 1); Background: #1a2a3e; }
+
+        // ---- Right: Content Panel ----
+        Group #ContentPanel {
+            FlexWeight: 1;
+            LayoutMode: Top;
+            Padding: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+
+            // Tab bar
+            Group #TabBar {
+                Anchor: (Height: 40);
+                LayoutMode: Left;
+                Background: #0a1520;
+
+                TextButton #TabInventory {
+                    Text: %ui.colonist.inspect.tab.inventory;
+                    Anchor: (Width: 130, Height: 40);
+                    Style: @TabActive;
+                }
+
+                TextButton #TabStats {
+                    Text: %ui.colonist.inspect.tab.stats;
+                    Anchor: (Width: 130, Height: 40);
+                    Style: @TabInactive;
+                }
+            }
+
+            // Tab separator
+            Group { Anchor: (Height: 1); Background: #1a2a3e; }
+
+            // ---- Inventory Tab ----
+            Group #TabInventoryContent {
+                FlexWeight: 1;
+                LayoutMode: Top;
+                Padding: (Full: 14);
+                ContentHeight: 700;
+
+                // NPC Tools section
+                Group {
+                    Anchor: (Height: 22);
+                    Label {
+                        Text: %ui.colonist.inspect.section.tools;
+                        Style: @SectionLabel;
+                    }
+                }
+                Group { Anchor: (Height: 6); }
+                ItemGrid #NpcToolsGrid {
+                    SlotsPerRow: 3;
+                    Style: @InvGridStyle;
+                    Background: #0a1520(0);
+                    Padding: @GridPad;
+                    Anchor: (
+                        Height: @SlotSize + (@GridPad * 2),
+                        Width: (@SlotSize * 3) + (@SlotSpacing * 2) + (@GridPad * 2)
+                    );
+                }
+
+                Group { Anchor: (Height: 14); }
+                Group { Anchor: (Height: 1); Background: #1a2a3e; }
+                Group { Anchor: (Height: 14); }
+
+                // NPC Storage section
+                Group {
+                    Anchor: (Height: 22);
+                    Label {
+                        Text: %ui.colonist.inspect.section.storage;
+                        Style: @SectionLabel;
+                    }
+                }
+                Group { Anchor: (Height: 6); }
+                ItemGrid #NpcStorageGrid {
+                    SlotsPerRow: 4;
+                    Style: @InvGridStyle;
+                    Background: #0a1520(0);
+                    Padding: @GridPad;
+                }
+
+                Group { Anchor: (Height: 20); }
+                Group { Anchor: (Height: 1); Background: #1a2a3e; }
+                Group { Anchor: (Height: 14); }
+
+                // Your inventory section
+                Group {
+                    Anchor: (Height: 22);
+                    Label {
+                        Text: %ui.colonist.inspect.section.yourInventory;
+                        Style: @SectionLabel;
+                    }
+                }
+                Group { Anchor: (Height: 6); }
+                ItemGrid #PlayerStorageGrid {
+                    SlotsPerRow: 9;
+                    Style: @InvGridStyle;
+                    Background: #0a1520(0);
+                    Padding: @GridPad;
+                }
+
+                Group { Anchor: (Height: 8); }
+
+                Group {
+                    Anchor: (Height: 22);
+                    Label {
+                        Text: %ui.colonist.inspect.section.hotbar;
+                        Style: @SectionLabel;
+                    }
+                }
+                Group { Anchor: (Height: 6); }
+                ItemGrid #PlayerHotbarGrid {
+                    SlotsPerRow: 9;
+                    Style: @InvGridStyle;
+                    Background: #0a1520(0);
+                    Padding: @GridPad;
+                }
+            }
+
+            // ---- Stats Tab ----
+            Group #TabStatsContent {
+                Visible: false;
+                FlexWeight: 1;
+                LayoutMode: Top;
+                Padding: (Full: 20);
+
+                Label {
+                    Text: %ui.colonist.inspect.stats.placeholder;
+                    Style: (FontSize: 16, TextColor: #4a5e72, HorizontalAlignment: Center);
+                    Anchor: (Height: 40);
+                }
+
+                Group { Anchor: (Height: 20); }
+
+                Label #StatsLevelDetail {
+                    Text: "";
+                    Style: (FontSize: 14, TextColor: #7a8fa8, HorizontalAlignment: Center);
+                    Anchor: (Height: 28);
+                }
+
+                Label #StatsJobDetail {
+                    Text: "";
+                    Style: (FontSize: 14, TextColor: #7a8fa8, HorizontalAlignment: Center);
+                    Anchor: (Height: 28);
+                }
+            }
+        }
+    }
+}

@@ -64,7 +64,7 @@
       "$Comment": "Put tool away when leaving Working main state.",
       "States": [{ "From": ["Working"], "To": [] }],
       "Actions": [
-        { "Type": "LogDebug", "Message": "StateTransition Working ->.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
+        { "Type": "LogDebug", "Message": "StateTransition Working ->.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
         { "Type": "Inventory", "Operation": "ClearHeldItem", "UseTarget": false }
       ]
     },
@@ -72,7 +72,7 @@
       "$Comment": "Reset any stuck blocking instruction chain when entering Idle main state.",
       "States": [{ "From": [], "To": ["Idle"] }],
       "Actions": [
-        { "Type": "LogDebug", "Message": "StateTransition -> Idle.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
+        { "Type": "LogDebug", "Message": "StateTransition -> Idle.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
         { "Type": "ResetInstructions" }
       ]
     }
@@ -102,7 +102,7 @@
             {
               "Sensor": { "Type": "JobTargetBroken" },
               "Actions": [
-                { "Type": "LogDebug", "Message": "Harvesting: block broken -- notifying ECS.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
+                { "Type": "LogDebug", "Message": "Harvesting: block broken -- notifying ECS.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
                 { "Type": "NotifyBlockBroken" }
               ]
             }
@@ -127,7 +127,7 @@
             {
               "Sensor": { "Type": "JobTargetBroken" },
               "Actions": [
-                { "Type": "LogDebug", "Message": "Clearing: block broken -- notifying ECS.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
+                { "Type": "LogDebug", "Message": "Clearing: block broken -- notifying ECS.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
                 { "Type": "NotifyBlockBroken" }
               ]
             }
@@ -187,7 +187,7 @@
             {
               "Sensor": { "Type": "CollectionTimerElapsed" },
               "Actions": [
-                { "Type": "LogDebug", "Message": "CollectingDrops: timer elapsed -> DeliveringItems.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
+                { "Type": "LogDebug", "Message": "CollectingDrops: timer elapsed -> DeliveringItems.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
                 { "Type": "SetEcsJobState", "JobState": "DeliveringItems" }
               ]
             }
@@ -214,7 +214,7 @@
             {
               "Sensor": { "Type": "JobTarget", "Range": 3.0 },
               "Actions": [
-                { "Type": "LogDebug", "Message": "DeliveringItems: depositing and heading home.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
+                { "Type": "LogDebug", "Message": "DeliveringItems: depositing and heading home.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
                 { "Type": "DepositItems" },
                 { "Type": "SetEcsJobState", "JobState": "TravelingToHome" }
               ]
@@ -257,7 +257,7 @@
             {
               "Sensor": { "Type": "AtWorkstation" },
               "Actions": [
-                { "Type": "LogDebug", "Message": "TravelingToWorkstation: arrived -> WaitingForWork.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
+                { "Type": "LogDebug", "Message": "TravelingToWorkstation: arrived -> WaitingForWork.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
                 { "Type": "SetEcsJobState", "JobState": "WaitingForWork" }
               ]
             }
@@ -281,7 +281,7 @@
             {
               "Sensor": { "Type": "AtWorkstation" },
               "Actions": [
-                { "Type": "LogDebug", "Message": "TravelingToHome: arrived -> Idle.", "Category": { "Compute": "DebugCategory" }, "Level": "INFO" },
+                { "Type": "LogDebug", "Message": "TravelingToHome: arrived -> Idle.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
                 { "Type": "SetEcsJobState", "JobState": "Idle" }
               ]
             }
@@ -301,5 +301,16 @@
       ]
     },
     { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
-  ]
+  ],
+  "InteractionInstruction": {
+    "Instructions": [
+      {
+        "Continue": true,
+        "Sensor": { "Type": "Any" },
+        "Actions": [
+          { "Type": "SetInteractable", "Interactable": true, "Hint": "server.interactionHints.generic" }
+        ]
+      }
+    ]
+  }
 }
