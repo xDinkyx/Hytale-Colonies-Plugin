@@ -1,6 +1,6 @@
 ---
 name: hytalecolonies-npc-design
-version: 8
+version: 11
 description: >
   Defines the canonical NPC design architecture for the HytaleColonies plugin.
   Covers the ECS/JSON contract, state machine, notification channel, system responsibilities,
@@ -46,31 +46,49 @@ These are `boolean` fields, default `false`, cleared by ECS after reading.
 
 ## ECS state machine
 
-`JobComponent.jobState` (`JobState` enum).  Each state belongs to a `JobState.Group` that maps 1-to-1 with the NPC role main-state name.
+`JobComponent.jobState` (`JobState` enum). Each state belongs to a `JobState.Group` that maps 1-to-1 with the NPC role main-state name. The sub-state set is **open-ended** — new job types add new sub-states by adding enum values and a corresponding sensor block in `Template_Colonist.json`.
 
 ```
-                  ┌── Sleeping
-    Idle ─────────┤── TravelingToWorkstation
-    (Group.Idle)  └── TravelingToHome
+    Idle (Group.Idle)
+      ├── .Default                    entry: navigate to workstation, set TravelingToWorkstation
+      ├── .TravelingToWorkstation    walk to workstation usually transitions to WaitingForWork
+      └── .TravelingToHome           travel to wherever colonist lives
 
-                  ┌── Working (substate: Harvesting)
-    Working ──────┤── WaitingForWork
-  (Group.Working) ├── TravelingToWorkSite
-                  ├── CollectingDrops
-                  └── DeliveringItems
+    Working (Group.Working)
+      │
+      ├── shared sub-states ──────────────────────────────────────────────────────
+      │   .TravelingToWorkSite        walk to location where the actual work happens (e.g. mine block, tree, construction site)
+      │   .WaitingForWork             colonist is at workstation but figuring out what to do; wander + scan for targets/wait for work assignment
+      │   .CollectingDrops            pick up drops after harvesting (e.g. mined block, chopped tree); 
+      │   .DeliveringItems            walk to container near workstation and deposit items
+      │
+      └── job-specific sub-states (examples; add more per new job type) ─────────
+          .Harvesting                 actively performing a resource-gathering task at the work site
+          .Clearing                   removing obstacles or blocks from a work area
+          .Constructing               actively placing or building something at the work site
+          .RetrievingBlocks           fetching required materials from a nearby storage point
+          ... future job types add sub-states here
 
-    Recharging   (Group.Recharging — reserved, not yet implemented)
+    Recharging (Group.Recharging — reserved)
 ```
 
-Typical working cycle:
+Example working cycle (exact transitions vary by job):
 
 ```
-Idle ──► TravelingToWorkSite ──► Working ──► CollectingDrops ──► DeliveringItems ──► TravelingHome ──► Idle
+Idle.Default → Idle.TravelingToWorkstation → Working.WaitingForWork
+  → Working.TravelingToWorkSite → Working.<job sub-state>
+  → Working.CollectingDrops → Working.DeliveringItems → Idle.TravelingToHome → Idle
 ```
+
+### Adding a new sub-state
+
+1. Add an enum value to `JobState` with the correct `group` (`Working` or `Idle`) and a `npcSubState` string matching the dot-prefix name in JSON (e.g. `npcSubState = "MyNewState"` → JSON sensor `".MyNewState"`).
+2. Add a sub-state sensor block inside the appropriate main-state gate in `Template_Colonist.json` — with `Continue: true` and `"IgnoreMissingSetState": true`.
+3. Add a `NoOp` default or a job-specific body component as needed.
 
 ### JobState structure
 
-`JobState` is a single flat enum for codec serialization. The `group` field carries the high-level phase; `npcSubState` is the NPC role sub-state name (`null` = use the group name as sub-state).
+`JobState` is a single flat enum for codec serialization. The `group` field carries the high-level phase; `npcSubState` is the NPC role sub-state name (`null` = use the group name as the sub-state).
 
 ```java
 // Check which phase a state belongs to:
@@ -85,19 +103,38 @@ Do NOT add switch/case on `JobState` values in new code — use `state.group` fo
 
 ### State semantics
 
-| State | Meaning | Who transitions away | Leash point set by ECS |
-|---|---|---|---|
-| `Idle` | At workstation, waiting or missing tools | ECS — claims target → `TravelingToWorkSite` | Workstation block centre |
-| `TravelingToWorkSite` | Walking to claimed work block/tree | ECS — arrived → `Working` | (unchanged) |
-| `Working` | Actively performing task (mining, chopping) | ECS — on notification → next state | (unchanged) |
-| `CollectingDrops` | Picking up drops at harvest site | ECS — timer → `DeliveringItems` | Last harvested block centre |
-| `DeliveringItems` | Walking to container and depositing | ECS — delivered → `TravelingHome` | (unchanged) |
-| `TravelingHome` | Returning to workstation | ECS — arrived → `Idle` | (unchanged) |
-| `WaitingForWork` | No eligible work block found; waiting within `Working` phase | ECS — block becomes available | (unchanged) |
-| `TravelingToWorkstation` | Walking from home to the workstation | ECS — arrived | (unchanged) |
-| `TravelingToHome` | Walking from workstation back to home | ECS — arrived | (unchanged) |
-| `Sleeping` | Reserved: sleeping at night | — | — |
-| `Recharging` | Reserved: energy/hunger system | — | — |
+**Shared Idle sub-states**
+
+| Sub-state | Purpose |
+|---|---|
+| `Idle.Default` | Entry point for the off-shift phase. Typically navigates toward the workstation to begin the shift cycle. |
+| `Idle.TravelingToWorkstation` | Colonist is en route to their workstation. |
+| `Idle.TravelingToHome` | Colonist is returning to a home or rest point after completing work. |
+
+**Shared Working sub-states**
+
+| Sub-state | Purpose |
+|---|---|
+| `Working.TravelingToWorkSite` | Colonist is travelling to the location where they will perform their job (block, tree, construction site, etc.). |
+| `Working.WaitingForWork` | Colonist is at their workstation but has no assigned work yet — scans for available targets and idles. |
+| `Working.CollectingDrops` | Colonist collects items dropped at the work site (e.g. harvested resources). |
+| `Working.DeliveringItems` | Colonist delivers collected items to a nearby container. |
+
+**Job-specific Working sub-states** (current examples; more will be added per job type)
+
+| Sub-state | General purpose |
+|---|---|
+| `Working.Harvesting` | Actively gathering resources at the work site (break blocks, interact with objects, etc.). |
+| `Working.Clearing` | Removing blocks or obstacles from a designated area before other work can begin. |
+| `Working.Constructing` | Placing blocks or structures at the work site. |
+| `Working.RetrievingBlocks` | Fetching required materials from a storage point before continuing construction. |
+
+**Reserved**
+
+| State | Purpose |
+|---|---|
+| `Sleeping` | Reserved: sleeping at night |
+| `Recharging` | Reserved: energy/hunger system |
 
 ---
 
@@ -105,18 +142,18 @@ Do NOT add switch/case on `JobState` values in new code — use `state.group` fo
 
 ### Main job system (`DelayedEntitySystem`, ~2s cadence)
 
-Handles low-latency-tolerant decisions:
-- `Idle`: scan for targets, claim, write navigation target, transition to `TravelingToWorkSite`. When no work is found sets `workAvailable = false` and stays in `Idle`.
-- Shared delivery pipeline: `CollectingDrops` → `DeliveringItems` → `TravelingHome`
+Handles decisions that do not need sub-second precision: scanning for available work, claiming targets, updating navigation and leash positions, managing shared pipeline transitions (delivery, off-shift travel), and advancing colonists that are waiting for conditions to change.
+
+> Do not use the 2s cadence system for events that must be detected mid-task (e.g. a block breaking, a quota being reached). The lag is unacceptable. Use a per-tick system instead.
 
 ### Per-job fast-tick system (`EntityTickingSystem`)
 
-**Required for any job type that needs reactive mid-task detection.**
-Query-filtered to colonists in `Working` state only.
+**Required for any job type that reacts to events that happen while in the `Working` state.**
+Query-filtered to colonists in the `Working` group only.
 
-- Read and clear notification flags from `JobComponent`
-- Apply game-logic decisions (quota check, next target selection, etc.)
-- Set `JobState` transition via `CommandBuffer`
+- Read and clear notification flags from `JobComponent` on every tick
+- Apply game-logic decisions and write `JobState` transitions via `CommandBuffer`
+- Job-specific logic (next target selection, quota checks, progress tracking) belongs here, not in the 2s system
 
 ---
 
@@ -189,101 +226,104 @@ com.hytalecolonies/
 
 ### Structure
 
-Every colonist role JSON must follow this structure:
-1. **Working cross-cut blocks** (one or more, each with `Continue: true`): gated on a native `"Type": "State"` sensor for `Working` — chop/mine loop and block-broken notification. These go at the top level so both fire every tick regardless of other state handling.
-2. **Remaining state blocks as direct top-level siblings** (each with `Continue: true` and its own state sensor): mutually exclusive since only one ECS state is active at a time. Include a final `Any` + `BodyMotion:Nothing` fallback.
-3. **No role-level `StateTransitions`** unless purely cosmetic (e.g. animation resets)
-4. **No bridge actions that make game-logic decisions** — JSON may only call notification flag setters
+All colonist roles are `Variant`s of `Template_Colonist`. The template owns the entire instruction tree. Every state/sub-state sensor lives **directly in the template** so that ECS `role.getStateSupport().setState()` can reach it. Components inject only leaf instruction bodies.
 
-> **Critical `Continue` rule**: A node without a sensor always "matches". Without `Continue: true`, a matching node consumes the evaluation and stops all subsequent siblings from running. Always set `Continue: true` on every state-gated instruction at the top level.
+The template structure:
+1. **`Working` main-state block** (`Continue: true`): gates all working-shift sub-states. Each sub-state is an inner child also with `Continue: true` and its own dot-prefix `State` sensor. Sub-states that need two tick-level concerns (action loop + event notification) use two consecutive inner blocks with the **same sub-state sensor**.
+2. **`Idle` main-state block** (`Continue: true`): gates all idle sub-states.
+3. **Final `Any` + `BodyMotion:Nothing` fallback** at the outermost level.
+4. **`StateTransitions`** for cosmetic/cleanup on main-state entry/exit (tool clear on leave `Working`, `ResetInstructions` on enter `Idle`).
+5. **No bridge actions that make game-logic decisions** — JSON may only set notification flags.
+
+**Sensor placement rule**: `Continue: true` and the `State` sensor go **directly on each instruction** — never wrap states in a sensorless outer `{ "Instructions": [...] }`. A sensorless node always matches and stops sibling evaluation, so only the first state's sensor would ever fire.
 
 ### State sensor pattern
 
-Colonist role JSONs use the **native `"Type": "State"` sensor** with `"IgnoreMissingSetState": true`. This flag registers a no-op dummy setter alongside the sensor, satisfying the NPC validator's XOR bidirectionality check without requiring actual `"Type": "State"` setter actions in the JSON. ECS drives all state changes externally via `ColonistStateUtil.setJobState()`.
+All state sensors in colonist roles use the **native `"Type": "State"` sensor** with `"IgnoreMissingSetState": true`. This flag registers a no-op dummy setter alongside the sensor, satisfying the NPC validator's XOR bidirectionality check (every sensor must have a paired setter and vice versa) without requiring actual setter actions in JSON. ECS drives all state changes externally via `ColonistStateUtil.setJobState()`.
 
-**Never use `"Type": "EcsJobState"` custom sensors** — that was a workaround for the validator and has been removed. The native sensor is cleaner and supports `StateTransitions`.
+```json
+{ "Type": "State", "State": "Working", "IgnoreMissingSetState": true }
+{ "Type": "State", "State": ".Harvesting", "IgnoreMissingSetState": true }
+```
+
+**Never omit `IgnoreMissingSetState`** on an externally-driven state sensor. The validator will reject the role at startup with `"State sensor or State setter action/motion exists without accompanying state/setter"`, and `Unknown NPC role` errors will repeat every tick.
+
+**`StateTransitions` does not satisfy the validator.** Its `From`/`To` entries call `registerStateRequirer()` only — they never register a sensor or setter pair. A role that relies on `StateTransitions` alone for a state will still fail validation.
+
+**Actions in `StateTransitions` must always return `true`.** An action that returns `false` causes the transition to never complete and `rootInstruction.execute()` is skipped every tick — the NPC's instruction body never runs.
+
+**Never use `"Type": "EcsJobState"` custom sensors** — that was an early workaround and has been removed.
 
 ### Role JSON skeleton
 
-Every state is its own top-level instruction with `Continue: true` and its native `State` sensor placed directly on it. Since only one ECS state is active at a time, each instruction fires or doesn't — `Continue: true` means evaluation proceeds to the next sibling regardless. No artificial grouping needed.
-
-Working states that need two separate tick-level concerns (chop loop AND block-broken notify) appear as two consecutive entries with the same `Working` sensor.
+The template uses two main-state gates (`Working`, `Idle`) at the top level, each with sub-state inner blocks. Sub-states that need two tick-level concerns (loop + notify) use two consecutive siblings with the same sub-state sensor and `Continue: true`. Each leaf instruction body is injected via a `{ "Reference": { "Compute": "ParamName" }, "Interfaces": ["..."] }` node.
 
 ```json
 "Instructions": [
   {
-    "Continue": true,
-    "Sensor": { "Type": "State", "State": "TravelingToWorkSite", "IgnoreMissingSetState": true },
-    "Instructions": [ ... Seek NavTarget ... ]
-  },
-  {
-    "$Comment": "Working: final approach + chop/mine loop.",
+    "$Comment": "Working -- gates all working-shift sub-states.",
     "Continue": true,
     "Sensor": { "Type": "State", "State": "Working", "IgnoreMissingSetState": true },
     "Instructions": [
-      { "Continue": true, "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 5.0, "MinRange": 1.5 }, "BodyMotion": { "Type": "Seek", "StopDistance": 1.0, "SlowDownDistance": 2.0, "RelativeSpeed": 0.8 } },
-      { "Sensor": { "Type": "JobTarget", "Range": 2.5 }, "ActionsBlocking": true, "Actions": [ ... equip, harvest, timeout ... ] }
+      {
+        "$Comment": "Harvesting #1 -- job-specific seek + break loop.",
+        "Continue": true,
+        "Sensor": { "Type": "State", "State": ".Harvesting", "IgnoreMissingSetState": true },
+        "Instructions": [
+          { "Reference": { "Compute": "HarvestingComponent" }, "Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"] }
+        ]
+      },
+      {
+        "$Comment": "Harvesting #2 -- block-broken notification to ECS.",
+        "Continue": true,
+        "Sensor": { "Type": "State", "State": ".Harvesting", "IgnoreMissingSetState": true },
+        "Instructions": [
+          { "Sensor": { "Type": "JobTargetBroken" }, "Actions": [ { "Type": "NotifyBlockBroken" } ] }
+        ]
+      },
+      {
+        "$Comment": "TravelingToWorkSite -- job-specific seek + arrival transition.",
+        "Continue": true,
+        "Sensor": { "Type": "State", "State": ".TravelingToWorkSite", "IgnoreMissingSetState": true },
+        "Instructions": [
+          { "Reference": { "Compute": "TravelingToWorkSiteComponent" }, "Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"] }
+        ]
+      },
+      { "$Comment": "... additional job-specific or shared Working sub-states follow the same pattern ..." },
+      { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
     ]
   },
   {
-    "$Comment": "Working: block-broken notification to ECS.",
-    "Continue": true,
-    "Sensor": { "Type": "State", "State": "Working", "IgnoreMissingSetState": true },
-    "Instructions": [
-      { "Sensor": { "Type": "JobTargetBroken" }, "Actions": [ { "Type": "NotifyBlockBroken" } ] }
-    ]
-  },
-  {
-    "$Comment": "CollectingDrops: wander around leash point (set by ECS to harvested block) + pick up items.",
-    "Continue": true,
-    "Sensor": { "Type": "State", "State": "CollectingDrops", "IgnoreMissingSetState": true },
-    "Instructions": [
-      { "Continue": true, "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "WanderInCircle", "Radius": 5, "MaxHeadingChange": 60, "RelativeSpeed": 0.5 } },
-      { "Sensor": { "Type": "DroppedItem", "Range": 5.0 }, "Actions": [ { "Type": "PickUpItem", "Hoover": true } ] }
-    ]
-  },
-  {
-    "Continue": true,
-    "Sensor": { "Type": "State", "State": "DeliveringItems", "IgnoreMissingSetState": true },
-    "Instructions": [ ... Seek NavTarget ... ]
-  },
-  {
-    "Continue": true,
-    "Sensor": { "Type": "State", "State": "TravelingHome", "IgnoreMissingSetState": true },
-    "Instructions": [ ... Seek NavTarget ... ]
-  },
-  {
-    "$Comment": "Idle: wander around leash point (set by ECS to workstation) + tool-check particle.",
+    "$Comment": "Idle -- gates all off-shift sub-states.",
     "Continue": true,
     "Sensor": { "Type": "State", "State": "Idle", "IgnoreMissingSetState": true },
     "Instructions": [
-      { "Continue": true, "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 5.0 }, "BodyMotion": { "Type": "Sequence", "Looped": true, "Motions": [ ... WanderInCircle ... ] } },
-      { "Sensor": { "Type": "Not", "Sensor": { "Type": "HasTool", "GatherType": "..." } }, "ActionsBlocking": true, "Actions": [ ... particle + timeout ... ] }
+      {
+        "$Comment": "TravelingToWorkstation -- seek + arrive -> WaitingForWork.",
+        "Continue": true,
+        "Sensor": { "Type": "State", "State": ".TravelingToWorkstation", "IgnoreMissingSetState": true },
+        "Instructions": [
+          { "Continue": true, "Sensor": { "Type": "Any" }, "Actions": [{ "Type": "NavigateToWorkstation" }] },
+          { "Continue": true, "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 }, "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 } },
+          { "Sensor": { "Type": "AtWorkstation" }, "Actions": [{ "Type": "SetEcsJobState", "JobState": "WaitingForWork" }] }
+        ]
+      },
+      {
+        "$Comment": "Default -- entry idle state body.",
+        "Sensor": { "Type": "State", "State": ".Default", "IgnoreMissingSetState": true },
+        "Instructions": [
+          { "Reference": { "Compute": "DefaultIdleComponent" }, "Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"] }
+        ]
+      },
+      { "$Comment": "... additional Idle sub-states follow the same pattern ..." },
+      { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
     ]
   },
   { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
 ]
 ```
 
-> **Working state approach**: Always include a `ReadPosition NavTarget` Seek with `Continue: true` as the first inner instruction inside the Working block, before the harvest action. This finishes closing the final gap to the target block after arriving from `TravelingToJob`. Without it the NPC stands still wherever the travel Seek stopped.
-
-### Permitted in JSON per state
-
-| ECS State | Permitted JSON behavior |
-|---|---|
-| `Idle` | `WanderInCircle` (leash → workstation, set by ECS); tool-check particle + wait |
-| `TravelingToWorkSite` | Seek NavTarget only |
-| `Working` | Final-approach Seek + tool equip → harvest → timeout loop; `NotifyBlockBroken` on broken block |
-| `CollectingDrops` | `WanderInCircle` (leash → harvest site, set by ECS) + `PickUpItem` |
-| `DeliveringItems` | Seek NavTarget only |
-| `TravelingHome` | Seek NavTarget only |
-
-### JSON sub-states
-
-Sub-states within an ECS state block are fine for rich behavior sequences. Rules:
-- Must be entered and exited within the same ECS state
-- Must not set `JobState` or call any bridge action other than notification flags
-- ECS must always be able to interrupt them by changing `JobState`
+> **Leaf body approach**: Each sub-state that does Seek + work has a `ReadPosition NavTarget` Seek with `Continue: true` as the first inner instruction, before the work action. This closes the final gap after arriving from `TravelingToWorkSite`. Without it the NPC stands still wherever the travel Seek stopped.
 
 ### What JSON must never do
 
@@ -302,6 +342,8 @@ Carries: current `JobState`, workstation position, delivery-pipeline state, `wor
 - Transient fields (not persisted): flags, runtime positions, counters that reset on restart
 - Persisted fields: `jobState`, `workStationBlockPosition`
 
+Keep all transient notification flags on `JobComponent` — not on per-job components. Sensors in the NPC role have direct access to `JobComponent` fields; scattering flags across job-specific components makes them harder to read and clear.
+
 ### Per-job component
 
 Carries only persisted per-worker state meaningful across restarts (e.g. progress counters that prevent over-work after restart).
@@ -312,61 +354,69 @@ Does not carry: flags, counters derivable from workstation config, or transient 
 
 Single source of truth for all job configuration. Never hard-code these values.
 
+### Instruction component authoring rules
+
+Components (`"Type": "Component", "Class": "Instruction"`) inject leaf instruction bodies into the template. Rules:
+
+- **No `"Type": "State"` sensors inside a component.** Component-owned `State` sensors create component-local states in a separate `componentLocalStateMachines` map. ECS `role.getStateSupport().setState(mainState, subState)` can only reach states in the role's main state machine — it cannot reach component-local states. Symptom: `"State 'Idle.TravelingToWorkstation' does not exist and was set by an external call"` repeating in logs; NPC never acts. The fix is always to move the sensor into the template.
+- **Always declare `"Interface"`** at the component root (e.g. `"Interface": "HytaleColonies.Instruction.Colonist.StateBody"`). Every `{ "Reference": { "Compute": "..." } }` node in the template must declare `"Interfaces": ["..."]` with the matching name. Interface names are pure string equality — any custom namespace works.
+- **Never add `"Nullable": true`** to a computable `Reference` node. It causes the component to be silently skipped for up to ~60 seconds after the NPC enters the state (lazy resolution treats the not-yet-resolved reference as absent). A visible error on startup is preferable to silent behavioral failures.
+- **Always include `"Type": "Component"`** at the component root alongside `"Class"` and `"Interface"`. Without it the `Instruction` factory ignores the `Content` wrapper and the component loads empty, cascading failures to all Variants that reference it.
+
 ---
 
 ## Leash point conventions
 
-`WanderInCircle` constrains wander to a circle around `NPCEntity.getLeashPoint()`. ECS is responsible for keeping this pointed at the correct anchor as state changes. Use `ColonistLeashUtil` for all leash updates:
+`WanderInCircle` constrains wander to a circle around `NPCEntity.getLeashPoint()` — **not** the NPC's current position. The leash point defaults to the NPC's spawn position. ECS is responsible for updating it whenever the wander anchor changes. Use `ColonistLeashUtil` for all leash writes:
 
 ```java
-// Set leash to workstation (call in idle handler every tick):
+// Set leash to workstation (call when entering an idle/waiting state):
 ColonistLeashUtil.setLeashToBlockCenter(ref, store, workStationPos);
 
-// Set leash to harvested block (call before transitioning to CollectingDrops):
-ColonistLeashUtil.setLeashToBlockCenter(ref, store, lastHarvestedBlockPos);
+// Set leash to work site (call before entering a wander-based collection state):
+ColonistLeashUtil.setLeashToBlockCenter(ref, store, workSitePos);
 ```
+
+Failing to update the leash causes the NPC to wander around its original spawn point rather than the expected location.
 
 | When | Leash set to |
 |---|---|
-| Entering `Idle` / every idle tick | Workstation block centre |
-| Entering `CollectingDrops` (woodsman) | Last harvested tree base block centre |
-| Entering `CollectingDrops` (miner) | Last mined block centre |
+| Entering an idle/waiting state near the workstation | Workstation block centre |
+| Entering a wander-based collection state at a work site | Work site block centre |
 
 ---
 
 ## Adding a new job type checklist
 
-1. **Create an `Idle` state handler** in the main job system (`ColonistJobSystem`):
-   - Call `ColonistLeashUtil.setLeashToBlockCenter(ref, store, workStationPos)` to anchor wander
-   - Scan for a target block, claim it, write `JobTargetComponent` + nav via `JobNavigationUtil`
-   - Transition to `TravelingToWorkSite`
-2. **Create a fast-tick `EntityTickingSystem`** for `Working` state reaction (if needed):
-   - Filter query to entities with both `JobComponent` (state == Working) and the job-specific component
-   - Read and clear notification flags from `JobComponent`
-   - Call job utility (`MinerUtil`, `WoodsmanUtil`, or new `XxxUtil` in `utils/`) for target logic
-   - Set leash to harvest location before transitioning to `CollectingDrops`
-3. **Add notification flag fields** to `JobComponent` (one `boolean` per event type)
-4. **Add a notification action class** in `npc/actions/common/` (sets the flag to `true` only — no logic)
-5. **Add a job-specific component** in `components/jobs/` for persisted-only per-worker state
-6. **Add utility methods** to a new `utils/XxxUtil.java` for complex job-specific searches
-7. **Write the role JSON** in `src/main/resources/Server/NPC/Roles/` as a `Variant` of `Template_Colonist_Base` (see Role JSON file structure below). Custom sensors, actions, and `StateTransitions` go in the template; only job-specific `WaitingForWork` blocks go in per-job `Component_Instruction` files.
-8. **Add subpackages** under `npc/actions/` and `npc/sensors/` for the new job's custom building blocks
-9. **Register** all components, actions, and sensors in `HytaleColoniesPlugin.java`
+1. **Extend the main job system** to handle the new job's idle-phase decisions: scanning for work targets, claiming them, setting navigation and leash positions.
+2. **Add a per-tick `EntityTickingSystem`** if the job produces mid-task events (block broken, quota hit, placement complete). Filter the query to entities in the `Working` group with the job's component. Read and clear flags each tick.
+3. **Add notification flag fields** to `JobComponent` (one `boolean` per distinct event type).
+4. **Add notification action classes** that set a flag to `true` only — no logic. Register them in `HytaleColoniesPlugin.java`.
+5. **Add a job-specific component** in `components/jobs/` for state that needs to survive server restarts. Transient runtime state stays on `JobComponent`.
+6. **Add utility classes** under `utils/` for complex job-specific logic (target search, progress tracking, etc.).
+7. **Write the role JSON** as a `Variant` of `Template_Colonist` in `src/main/resources/Server/NPC/Roles/`. Use `"Modify"` to override the relevant component parameters. All state/sub-state sensors are already declared in the template.
+8. **Add subpackages** under `npc/actions/` and `npc/sensors/` for any new custom building blocks.
+9. **Register** all new components, actions, and sensors in `HytaleColoniesPlugin.java`.
 
 ---
 
 ## Role JSON file structure
 
-All harvester-type colonist roles use a **three-layer hierarchy**:
+All colonist roles use a **two-layer hierarchy**:
 
 ```
-Templates/Template_Colonist_Base.json    (Abstract -- all shared state logic)
-  └── Templates/Component_Instruction_Colonist_WaitingForWork_<Job>.json
-        (Class:Instruction -- job-specific tool checks + target scanning)
-  └── Colonist_<Job>.json                (Variant -- 4 parameter overrides only)
+Templates/Template_Colonist.json         (Abstract -- owns ALL state/sub-state sensors)
+  ├── Templates/Component_Instruction_Harvesting_<Job>.json
+  ├── Templates/Component_Instruction_WaitingForWork_<Job>.json
+  ├── Templates/Component_Instruction_TravelingToWorkSite_<Variant>.json
+  ├── Templates/Component_Instruction_Idle_Default_<Variant>.json
+  └── ... (other sub-state body components as needed)
+  └── Colonist_<Job>.json                (Variant -- parameter overrides only)
 ```
 
-### Template_Colonist_Base.json (Abstract)
+### Template_Colonist.json (Abstract)
+
+The template owns **all** `State` sensors for both main states (`Working`, `Idle`) and all sub-states. Components are referenced for leaf instruction bodies only — no `State` sensors inside components.
 
 Parameters exposed to variants:
 
@@ -376,65 +426,63 @@ Parameters exposed to variants:
 | `Appearance` | `Mannequin` | Model |
 | `MaxHealth` | `20` | HP |
 | `MaxSpeed` | `3` | Walk speed |
-| `GatherType` | `Rocks` | Passed to `EquipBestTool` on entering Working |
-| `DebugCategory` | `COLONIST_JOB` | Category string for all `LogDebug` actions |
-| `WaitingForWorkComponent` | `Component_Instruction_Colonist_WaitingForWork_Miner` | Per-job WaitingForWork block |
+| `DebugCategory` | `COLONIST_JOB` | Category string for `LogDebug` in `StateTransitions` |
+| `HarvestingComponent` | `Component_Instruction_Harvesting_NoOp` | Body for `.Harvesting` sub-state |
+| `WaitingForWorkComponent` | `Component_Instruction_WaitingForWork_Miner` | Body for `.WaitingForWork` sub-state |
+| `TravelingToWorkSiteComponent` | `Component_Instruction_TravelingToWorkSite_Harvester` | Body for `.TravelingToWorkSite` sub-state |
+| `ClearingComponent` | `Component_Instruction_NoOp` | Body for `.Clearing` sub-state |
+| `ConstructingComponent` | `Component_Instruction_NoOp` | Body for `.Constructing` sub-state |
+| `RetrievingBlocksComponent` | `Component_Instruction_NoOp` | Body for `.RetrievingBlocks` sub-state |
+| `DefaultIdleComponent` | `Component_Instruction_Idle_Default_Worker` | Body for `.Default` idle sub-state |
 
-The template owns all state machine instructions **except** `WaitingForWork`, which it delegates via `{ "Reference": { "Compute": "WaitingForWorkComponent" } }`.
+### Component interfaces
 
-### Component_Instruction_Colonist_WaitingForWork_<Job>.json (Class: Instruction)
+| Interface | Used for |
+|---|---|
+| `HytaleColonies.Instruction.Colonist.StateBody` | All leaf body components (Harvesting, TravelingToWorkSite, Clearing, Constructing, RetrievingBlocks, Idle_Default, NoOp) |
+| `HytaleColonies.Instruction.Colonist.WaitingForWork` | WaitingForWork components (tool checks + scan) |
 
-Located in `Templates/`. Contains the **full** `WaitingForWork` instruction node (outer sensor + inner instructions = tool checks, tool-specific scan action, `JobTargetExists` check). Each job has its own file with hardcoded `Category` strings.
+Every `{ "Reference": { "Compute": "..." } }` node in the template **must** declare `"Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"]` (or `WaitingForWork` for that slot). Component files must declare the matching `"Interface": "..."` field.
 
 ### Colonist_<Job>.json (Variant)
 
-Only four parameter overrides needed. Use `"Modify"` — **not** `"Parameters"`:
+Only parameter overrides needed. Use `"Modify"` — **not** `"Parameters"`:
 ```json
 {
   "Type": "Variant",
-  "Reference": "Template_Colonist_Base",
+  "Reference": "Template_Colonist",
   "Modify": {
-    "NameTranslationKey": "...",
-    "GatherType": "Rocks|Woods|...",
-    "DebugCategory": "MINER_JOB|WOODSMAN_JOB|...",
-    "WaitingForWorkComponent": "Component_Instruction_Colonist_WaitingForWork_<Job>"
+    "NameTranslationKey": "server.npcRoles.Colonist_Miner.name",
+    "DebugCategory": "MINER_JOB",
+    "HarvestingComponent": "Component_Instruction_Harvesting_Miner",
+    "WaitingForWorkComponent": "Component_Instruction_WaitingForWork_Miner",
+    "TravelingToWorkSiteComponent": "Component_Instruction_TravelingToWorkSite_Harvester"
   }
 }
 ```
 
-> **`"Modify"` vs `"Parameters"`**: `"Modify"` is the correct section for a `Variant` to override values in its base template. `"Parameters"` only populates the variant's *own* scope and is the correct section for `"Type": "Abstract"` templates to declare accepted parameters. Using `"Parameters"` in a `Variant` silently has no effect on the base template — all base template parameters remain at their defaults.
+> **`"Modify"` vs `"Parameters"`**: `"Modify"` is the correct section for a `Variant` to override values in its base template. `"Parameters"` only populates the variant's *own* scope and has no effect on the base template. Using `"Parameters"` in a `Variant` silently has no effect — all base template parameters remain at their defaults.
 
-`Colonist_Constructor.json` remains a flat `Generic` because its Working sub-states (Clearing, Constructing, RetrievingBlocks) do not match the harvester template pattern.
-
-`Colonist_Dummy.json` is a standalone `Generic` with simple idle wander — it is not a variant and does not reference the template.
+All roles (Miner, Woodsman, Constructor, Jobless) are `Variant`s of `Template_Colonist`. `Colonist_Jobless.json` only overrides `NameTranslationKey` and `DefaultIdleComponent` (→ wander body).
 
 ### Adding a new harvester job (JSON checklist)
 
-1. Create `Templates/Component_Instruction_Colonist_WaitingForWork_<Job>.json` with the job-specific `WaitingForWork` block (wander, tool checks, scan action, `JobTargetExists` → `TravelingToWorkSite`).
-2. Create `Colonist_<Job>.json` as a `Variant` of `Template_Colonist_Base` with the four parameter overrides in a `"Modify"` block (not `"Parameters"`).
-3. The template handles all other states automatically.
+1. Create `Templates/Component_Instruction_WaitingForWork_<Job>.json` — interface `HytaleColonies.Instruction.Colonist.WaitingForWork`. Implements the idle scanning behavior (wander near workstation, check for valid targets, transition to `TravelingToWorkSite` when one is found).
+2. Create `Templates/Component_Instruction_Harvesting_<Job>.json` — interface `HytaleColonies.Instruction.Colonist.StateBody`. Implements the active work loop for this job (seek target, perform action, notify ECS of completion).
+3. Create or reuse a `TravelingToWorkSite` component appropriate for this job's arrival behavior.
+4. Create `Colonist_<Job>.json` as a `Variant` of `Template_Colonist` with `"Modify"` overriding the relevant component parameters.
+5. Sub-states the job does not use default to `NoOp` and are no-ops automatically.
 
 ---
 
 ## Known pitfalls
 
+The items below are non-obvious operational gotchas. Structural design rules (state sensors, component authoring, leash, system cadence) are covered in their respective sections above.
+
 | Pitfall | What goes wrong | Prevention |
 |---|---|---|
-| Setting `JobState` from JSON | Desync — JSON fires on different tick than ECS reads | Never call `SetEcsJobState` from JSON |
-| `Once: true` + same-tick ECS check | Flag fires, ECS reads before propagation or after clearOnce, silent no-op | Move state change to ECS handler, not JSON entry action |
-| `ActionsBlocking` containing bridge actions | Blocking pipeline freezes NPC when ECS state changes | Only use `ActionsBlocking` for pure behavior sequences |
-| Storing runtime flags in per-job component instead of `JobComponent` | Extra component, harder to access from sensors | Keep all transient job flags on `JobComponent` |
-| Using the 2s job system for reactive working-state detection | 2-second lag before events are processed | Use `EntityTickingSystem` filtered to `Working` state |
-| Comparing server log timestamps to local file timestamps | Hytale server logs are in **UTC**. Local system time may differ by hours. Always convert before comparing. | Use `(Get-Date).ToUniversalTime()` or compare log UTC timestamps to UTC build times |
-| Using `"Parameters"` in a `Variant` file to override base template values | `"Parameters"` only fills the variant's own scope — never the base template's. The base template silently uses all its defaults. For example, `WaitingForWorkComponent` stays `...Miner` even for a Woodsman variant. | Use `"Modify"` in `Variant` files. `"Parameters"` is only for `Abstract` template declarations. |
-| Building to validate JSON changes | Build/deploy output shows `BUILD SUCCESSFUL` even when JSON has runtime errors — the server only logs NPC role parse failures at startup and there is no compile-time check for JSON correctness. | Test JSON changes by reloading them via the **asset editor** in-game (no server restart needed), then watch the server log for SEVERE/WARNING role-load errors. |
-| Wrapping each state in a separate outer `{ "Instructions": [...] }` (no sensor, no `Continue`) | First wrapper always matches (no sensor = always true), stops all subsequent siblings — only the first state's sensor is ever evaluated | Put `Continue: true` and the `State` sensor directly on each top-level instruction; no outer wrappers |
-| Global `Continue: true` Seek at top of instruction list | The global Seek fires every tick regardless of state, preventing state-local wander motions from being reached before it | Put Seek inside each travel-state block; use the NPC leash point for wander anchoring |
-| Using `"Type": "State"` sensor without `"IgnoreMissingSetState": true` when ECS drives the state | NPC validator throws SEVERE at startup: "State sensor or State setter action/motion exists without accompanying state/setter" — role is rejected entirely and `Unknown NPC role` errors repeat every tick | Always add `"IgnoreMissingSetState": true` to every externally-driven state sensor |
-| Adding `StateTransitions` `From`/`To` states hoping they satisfy the validator | `StateTransitions` only calls `registerStateRequirer()`, never `registerStateSensor()` or `registerStateSetter()` — it cannot satisfy the XOR check | Use `"IgnoreMissingSetState": true` on the sensor instead |
-| Custom action in `StateTransitions` returns `false` | Transition never completes; `rootInstruction.execute()` is skipped every tick — NPC instruction body never runs. | Actions in `StateTransitions` must always return `true`. Conditional logic belongs in the instruction body. |
-| `WanderInCircle` wandering to wrong location | `WanderInCircle` wanders around `NPCEntity.getLeashPoint()`, not the NPC's current position. Defaults to spawn point. | Set leash via `ColonistLeashUtil` when entering each state that uses wander |
-| Computable `Reference` missing `Interfaces` | NPC validator rejects the template at startup: "Computable references must define a list of 'Interfaces' to control which components can be attached." — all Variants of the template also fail with "Reference to unknown builder". | Always add `"Interfaces": ["YourNamespace.InterfaceName"]` to every `{ "Reference": { "Compute": "..." } }` node. The component file must also declare `"Interface": "YourNamespace.InterfaceName"`. Interface names are **pure string equality** — any custom namespace (e.g. `HytaleColonies.*`) works. **Do NOT add `"Nullable": true`** — see warning below. |
-| `"Nullable": true` on a computable `Reference` node | Instructions inside the resolved component silently skip for the first ~60 seconds after the NPC enters that state. The Reference appears to resolve lazily; `Nullable: true` treats the not-yet-resolved reference as absent and silently skips it on every tick until something (e.g., an inventory change event) forces resolution. Symptom: `ActionsBlocking` instructions with sensors (especially `Inventory` sensors) never fire during the initial period; only start firing after the first inventory event. | **Omit `"Nullable": true` entirely.** If the component can't be resolved, a visible error is preferable to silent behavioral failures. |
-| Missing `"Type": "Component"` on a component file | Log: `Unknown JSON attribute 'Content' found in Instruction|???` — the `Instruction` factory defaults to `BuilderInstruction` which ignores `Content`. The component loads as an empty builder; interface validation on the referencing template then fails, cascading to all Variants. | Component files that use a `Content` wrapper **must** have `"Type": "Component"` at the root (alongside `"Class"` and `"Interface"`). Without it, `Content` is silently ignored. |
-| Multiple `BodyMotion` entries in sibling instructions with `Continue: true` | Interaction between multiple `BodyMotion` definitions and `Continue` is not fully verified — behaviour may be unexpected | Keep at most one `BodyMotion` per instruction block; use `Continue: true` only for passing through to actions in subsequent siblings |
+| Building to validate JSON changes | Build shows `BUILD SUCCESSFUL` even when JSON has runtime errors — the server only logs role parse failures at startup. | Reload JSON via the **asset editor** in-game (no restart needed) and watch the server log for SEVERE/WARNING errors. |
+| Comparing server log timestamps to local file timestamps | Server logs are in **UTC**; local system time may differ by hours. | Use `(Get-Date).ToUniversalTime()` or compare log timestamps to UTC build times. |
+| `Once: true` on a sensor + same-tick ECS read | Flag fires, ECS reads before propagation or after `clearOnce`, silent no-op. | Put state transitions in the ECS handler, not JSON entry actions. |
+| `ActionsBlocking` containing actions that call ECS or read game state | Blocking pipeline freezes the NPC when ECS changes state mid-sequence. | Use `ActionsBlocking` only for pure behavior sequences (equip → swing → timeout). |
+| Multiple `BodyMotion` on siblings with `Continue: true` | The last `setNextBodyMotionStep` call wins — the second `BodyMotion` silently overrides the first. | Keep at most one `BodyMotion` per logical instruction block. |

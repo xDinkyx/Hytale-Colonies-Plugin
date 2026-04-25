@@ -1,6 +1,6 @@
 ---
 name: hytale-npc-templates
-version: 4
+version: 5
 source: https://hytalemodding.com/official-documentation/npc/
 authors:
   - name: "HytaleModding"
@@ -81,7 +81,7 @@ A Variant that inherits all defaults from an Abstract template needs no `Modify`
 ```json
 {
   "Type": "Variant",
-  "Reference": "Template_Colonist_Base"
+  "Reference": "Template_My_Base"
 }
 ```
 
