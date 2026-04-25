@@ -1,8 +1,10 @@
 package com.hytalecolonies.systems.jobs;
 
-import com.hytalecolonies.components.npc.ColonistComponent;
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+
 import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -23,10 +25,10 @@ import com.hypixel.hytale.server.core.modules.entity.EntityModule;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entity.item.ItemComponent;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hytalecolonies.components.npc.ColonistComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Continuously picks up nearby dropped items for every colonist
@@ -45,35 +47,40 @@ import java.util.List;
  * By default an NPC has 3 hotbar slots and 0 storage slots. The colonist base
  * template overrides that expands their inventory size.
  */
-public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore> {
+public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore>
+{
 
     /** Radius (blocks) within which a colonist will collect dropped items. */
     public static final float PICKUP_RADIUS = 5.0f;
 
     private final Query<EntityStore> query = Query.and(ColonistComponent.getComponentType());
 
-    public ColonistItemPickupSystem() {
+    public ColonistItemPickupSystem()
+    {
         super(0.5f); // 0.5 s -- hopefully gives players a mild pickup priority over colonists.
     }
 
-    @Override
-    @Nonnull
-    public Query<EntityStore> getQuery() {
+    @Override @Nonnull public Query<EntityStore> getQuery()
+    {
         return query;
     }
 
     @Override
-    public void tick(float dt, int index,
+    public void tick(float dt,
+                     int index,
                      @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
                      @Nonnull Store<EntityStore> store,
-                     @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+                     @Nonnull CommandBuffer<EntityStore> commandBuffer)
+    {
 
         TransformComponent transform = archetypeChunk.getComponent(index, TransformComponent.getComponentType());
-        if (transform == null) return;
+        if (transform == null)
+            return;
 
         Ref<EntityStore> ref = archetypeChunk.getReferenceTo(index);
-        LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ref, store);
-        if (colonist == null) return;
+        LivingEntity colonist = (LivingEntity)EntityUtils.getEntity(ref, store);
+        if (colonist == null)
+            return;
 
         // Pass commandBuffer alongside store: reads go through store, the entity
         // removal is deferred via commandBuffer to avoid IllegalStateException.
@@ -92,49 +99,64 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore> {
                                           @Nonnull Vector3d colonistPos,
                                           @Nonnull ItemContainer container,
                                           @Nonnull Store<EntityStore> store,
-                                          @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-        SpatialResource<Ref<EntityStore>, EntityStore> spatialResource =
-                store.getResource(EntityModule.get().getItemSpatialResourceType());
+                                          @Nonnull CommandBuffer<EntityStore> commandBuffer)
+    {
+        SpatialResource<Ref<EntityStore>, EntityStore> spatialResource = store.getResource(EntityModule.get().getItemSpatialResourceType());
         List<Ref<EntityStore>> nearbyItems = new ArrayList<>();
         spatialResource.getSpatialStructure().ordered(colonistPos, PICKUP_RADIUS, nearbyItems);
 
-        for (Ref<EntityStore> itemRef : nearbyItems) {
-            if (!itemRef.isValid()) continue;
+        for (Ref<EntityStore> itemRef : nearbyItems)
+        {
+            if (!itemRef.isValid())
+                continue;
             ItemComponent itemComponent = store.getComponent(itemRef, ItemComponent.getComponentType());
-            if (itemComponent == null || !itemComponent.canPickUp()) continue;
+            if (itemComponent == null || !itemComponent.canPickUp())
+                continue;
 
             ItemStack itemStack = itemComponent.getItemStack();
-            if (itemStack == null) continue;
+            if (itemStack == null)
+                continue;
 
             // Capture item position before any mutation, needed for the fly-to animation.
             TransformComponent itemTransform = store.getComponent(itemRef, TransformComponent.getComponentType());
-            Vector3d itemPos =
-                    itemTransform != null ? itemTransform.getPosition() : colonistPos;
+            Vector3d itemPos = itemTransform != null ? itemTransform.getPosition() : colonistPos;
 
             ItemStackTransaction transaction = container.addItemStack(itemStack);
             ItemStack remainder = transaction.getRemainder();
-            if (remainder != null && !remainder.isEmpty()) {
+            if (remainder != null && !remainder.isEmpty())
+            {
                 // Partial pickup -- update the item entity with the remainder and throttle retries.
                 itemComponent.setPickupDelay(0.25f);
                 itemComponent.setItemStack(remainder);
                 int pickedQty = itemStack.getQuantity() - remainder.getQuantity();
-                if (pickedQty > 0) {
+                if (pickedQty > 0)
+                {
                     // Animate the partial amount flying to the colonist.
                     Holder<EntityStore> animHolder = ItemComponent.generatePickedUpItem(itemRef, commandBuffer, colonistRef, colonistPos);
-                    if (animHolder != null) commandBuffer.addEntity(animHolder, AddReason.SPAWN);
-                    DebugLog.info(DebugCategory.JOB_SYSTEM, "[ItemPickup] [%s] Partially picked up %dx %s.",
-                            DebugLog.npcId(colonistRef, store), pickedQty, itemStack.getItemId());
+                    if (animHolder != null)
+                        commandBuffer.addEntity(animHolder, AddReason.SPAWN);
+                    DebugLog.fine(DebugCategory.JOB_SYSTEM,
+                                  "[ItemPickup] [%s] Partially picked up %dx %s.",
+                                  DebugLog.npcId(colonistRef, store),
+                                  pickedQty,
+                                  itemStack.getItemId());
                 }
-            } else {
+            }
+            else
+            {
                 // Full pickup -- mark as claimed immediately so any other colonist scanning
                 // in the same tick sees canPickUp()==false and skips it, spawn the
                 // fly-to animation, then defer entity removal via CommandBuffer.
                 itemComponent.setPickupDelay(Float.MAX_VALUE);
                 Holder<EntityStore> animHolder = ItemComponent.generatePickedUpItem(itemRef, commandBuffer, colonistRef, colonistPos);
-                if (animHolder != null) commandBuffer.addEntity(animHolder, AddReason.SPAWN);
+                if (animHolder != null)
+                    commandBuffer.addEntity(animHolder, AddReason.SPAWN);
                 commandBuffer.removeEntity(itemRef, RemoveReason.REMOVE);
-                DebugLog.info(DebugCategory.JOB_SYSTEM, "[ItemPickup] [%s] Picked up %dx %s.",
-                        DebugLog.npcId(colonistRef, store), itemStack.getQuantity(), itemStack.getItemId());
+                DebugLog.fine(DebugCategory.JOB_SYSTEM,
+                              "[ItemPickup] [%s] Picked up %dx %s.",
+                              DebugLog.npcId(colonistRef, store),
+                              itemStack.getQuantity(),
+                              itemStack.getItemId());
             }
         }
     }

@@ -30,6 +30,7 @@ import com.hytalecolonies.utils.ColonistLeashUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
 import com.hytalecolonies.utils.WoodsmanUtil;
 
+
 /**
  * Reacts to {@link JobComponent#blockBrokenNotification} for woodsmen in
  * {@link JobState#Working}. Finds the next connected trunk block and dispatches
@@ -40,27 +41,29 @@ import com.hytalecolonies.utils.WoodsmanUtil;
  * ({@code Colonist_Woodsman.json} HarvestBlock action). This system only
  * handles state transitions after a block breaks.
  */
-public class WoodsmanWorkingSystem extends EntityTickingSystem<EntityStore> {
+public class WoodsmanWorkingSystem extends EntityTickingSystem<EntityStore>
+{
 
-    private static final Query<EntityStore> QUERY = Query.and(
-            WoodsmanJobComponent.getComponentType(),
-            JobComponent.getComponentType());
+    private static final Query<EntityStore> QUERY = Query.and(WoodsmanJobComponent.getComponentType(), JobComponent.getComponentType());
 
-    @Nonnull
-    @Override
-    public Query<EntityStore> getQuery() {
+    @Nonnull @Override public Query<EntityStore> getQuery()
+    {
         return QUERY;
     }
 
     @Override
-    public void tick(float dt, int index,
+    public void tick(float dt,
+                     int index,
                      @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
                      @Nonnull Store<EntityStore> store,
-                     @Nonnull CommandBuffer<EntityStore> commandBuffer) {
+                     @Nonnull CommandBuffer<EntityStore> commandBuffer)
+    {
 
         JobComponent job = archetypeChunk.getComponent(index, JobComponent.getComponentType());
-        if (job == null || job.getCurrentTask() != JobState.Working) return;
-        if (!job.blockBrokenNotification) return;
+        if (job == null || job.getCurrentTask() != JobState.Working)
+            return;
+        if (!job.blockBrokenNotification)
+            return;
 
         // Clear immediately so a second notification in the same cycle is ignored.
         job.blockBrokenNotification = false;
@@ -69,9 +72,9 @@ public class WoodsmanWorkingSystem extends EntityTickingSystem<EntityStore> {
         String npcId = DebugLog.npcId(colonistRef, store);
 
         JobTargetComponent jobTarget = store.getComponent(colonistRef, JobTargetComponent.getComponentType());
-        if (jobTarget == null || jobTarget.targetPosition == null) {
-            DebugLog.warning(DebugCategory.WOODSMAN_JOB,
-                    "[WoodsmanWorking] [%s] No JobTargetComponent or target is null -- resetting to Idle.", npcId);
+        if (jobTarget == null || jobTarget.targetPosition == null)
+        {
+            DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[WoodsmanWorking] [%s] No JobTargetComponent or target is null -- resetting to Idle.", npcId);
             ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
             return;
         }
@@ -81,59 +84,62 @@ public class WoodsmanWorkingSystem extends EntityTickingSystem<EntityStore> {
 
         Set<String> allowedTreeTypes = null;
         Vector3i workStationPos = job.getWorkStationBlockPosition();
-        if (workStationPos != null) {
+        if (workStationPos != null)
+        {
             Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y, workStationPos.z);
-            WoodsmanWorkStationComponent workStation = wsRef != null
-                    ? wsRef.getStore().getComponent(wsRef, WoodsmanWorkStationComponent.getComponentType())
-                    : null;
+            WoodsmanWorkStationComponent workStation =
+                    wsRef != null ? wsRef.getStore().getComponent(wsRef, WoodsmanWorkStationComponent.getComponentType()) : null;
             if (workStation != null)
                 allowedTreeTypes = workStation.getAllowedTreeTypes();
         }
 
-        @Nullable Vector3i nextBase = allowedTreeTypes != null
-                ? WoodsmanUtil.findNextBaseBlock(treeBase, allowedTreeTypes, world)
-                : null;
+        @Nullable Vector3i nextBase = allowedTreeTypes != null ? WoodsmanUtil.findNextBaseBlock(treeBase, allowedTreeTypes, world) : null;
         final boolean goCollect = nextBase == null;
 
         final Vector3i finalTreeBase = treeBase;
         final Vector3i finalNextBase = nextBase;
         EntityStore entityStore = world.getEntityStore();
 
-        DebugLog.info(DebugCategory.WOODSMAN_JOB,
-                "[WoodsmanWorking] [%s] Block broken at %s. %s",
-                npcId, treeBase,
-                goCollect ? "No adjacent base blocks -- collecting drops."
-                          : "Next base at " + nextBase + " -- traveling there.");
+        DebugLog.fine(DebugCategory.WOODSMAN_JOB,
+                      "[WoodsmanWorking] [%s] Block broken at %s. %s",
+                      npcId,
+                      treeBase,
+                      goCollect ? "No adjacent base blocks -- collecting drops." : "Next base at " + nextBase + " -- traveling there.");
 
         world.execute(() -> advanceTreeHarvest(colonistRef, entityStore, world, finalTreeBase, goCollect, finalNextBase));
     }
 
-    private static void advanceTreeHarvest(
-            @Nonnull Ref<EntityStore> colonistRef,
-            @Nonnull EntityStore entityStore,
-            @Nonnull World world,
-            @Nonnull Vector3i finalTreeBase,
-            boolean goCollect,
-            @Nullable Vector3i finalNextBase)
+    private static void advanceTreeHarvest(@Nonnull Ref<EntityStore> colonistRef,
+                                           @Nonnull EntityStore entityStore,
+                                           @Nonnull World world,
+                                           @Nonnull Vector3i finalTreeBase,
+                                           boolean goCollect,
+                                           @Nullable Vector3i finalNextBase)
     {
         JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
-        if (liveJob == null || liveJob.getCurrentTask() != JobState.Working) return;
+        if (liveJob == null || liveJob.getCurrentTask() != JobState.Working)
+            return;
 
         ClaimBlockUtil.unclaimBlock(world, finalTreeBase);
 
         JobTargetComponent liveTarget = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());
-        if (liveTarget == null) return;
+        if (liveTarget == null)
+            return;
 
-        if (goCollect) {
+        if (goCollect)
+        {
             ColonistLeashUtil.setLeashToBlockCenter(colonistRef, entityStore.getStore(), finalTreeBase);
             liveTarget.setTargetPosition(null);
             liveJob.collectingDropsSince = System.currentTimeMillis();
             ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.CollectingDrops);
-        } else {
+        }
+        else
+        {
             liveTarget.setTargetPosition(finalNextBase);
             entityStore.getStore().tryRemoveComponent(colonistRef, MoveToTargetComponent.getComponentType());
-            entityStore.getStore().addComponent(colonistRef, MoveToTargetComponent.getComponentType(),
-                    new MoveToTargetComponent(new Vector3d(finalNextBase.x + 0.5, finalNextBase.y, finalNextBase.z + 0.5)));
+            entityStore.getStore().addComponent(colonistRef,
+                                                MoveToTargetComponent.getComponentType(),
+                                                new MoveToTargetComponent(new Vector3d(finalNextBase.x + 0.5, finalNextBase.y, finalNextBase.z + 0.5)));
             ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.TravelingToWorkSite);
         }
     }
