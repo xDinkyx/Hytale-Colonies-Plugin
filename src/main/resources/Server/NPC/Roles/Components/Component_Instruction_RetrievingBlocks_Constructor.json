@@ -23,7 +23,7 @@
         "Sensor": { "Type": "JobTarget", "Range": 3.0 },
         "ActionsBlocking": true,
         "Actions": [
-          { "Type": "LogDebug", "Message": "RetrievingBlocks: at container -- retrieving materials.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
+          { "Type": "LogDebug", "Message": "RetrievingBlocks: at container -- retrieving materials.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
           { "Type": "RetrieveConstructionBlocks" }
         ]
       }

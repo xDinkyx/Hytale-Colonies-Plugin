@@ -14,7 +14,7 @@
       {
         "Sensor": { "Type": "JobTarget", "Range": 2.5 },
         "Actions": [
-          { "Type": "LogDebug", "Message": "TravelingToWorkSite: arrived -> WorkingClearing.", "Category": "CONSTRUCTOR_JOB", "Level": "INFO" },
+          { "Type": "LogDebug", "Message": "TravelingToWorkSite: arrived -> WorkingClearing.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
           { "Type": "SetEcsJobState", "JobState": "WorkingClearing" }
         ]
       }
