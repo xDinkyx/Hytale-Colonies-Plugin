@@ -44,7 +44,7 @@ public class ConstructorBuildOrderFilter implements PlayerPacketFilter
         pasteLocked.remove(uuid);
     }
 
-    private static final Message MSG_ORDER_QUEUED = Message.translation("items.Tool_Colony_Constructor_PlacePrefab.orderQueued");
+    private static final Message MSG_ORDER_QUEUED = Message.translation("server.items.Tool_Colony_Constructor_PlacePrefab.orderQueued");
 
     @Override public boolean test(@Nonnull PlayerRef playerRef, @Nonnull Packet packet)
     {

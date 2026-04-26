@@ -1,7 +1,7 @@
 {
   "TranslationProperties": {
-    "Name": "items.Tool_Colony_Clockwork_Kit.name",
-    "Description": "items.Tool_Colony_Clockwork_Kit.description"
+    "Name": "server.items.Tool_Colony_Clockwork_Kit.name",
+    "Description": "server.items.Tool_Colony_Clockwork_Kit.description"
   },
   "Categories": [
     "Items.Tools"

@@ -26,8 +26,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 public class ConstructSubCommand extends AbstractPlayerCommand
 {
 
-    private static final Message MSG_PREFAB_NOT_FOUND = Message.translation("commands.colonies.construct.prefabNotFound");
-    private static final Message MSG_PREFAB_LOADED = Message.translation("commands.colonies.construct.prefabLoaded");
+    private static final Message MSG_PREFAB_NOT_FOUND = Message.translation("server.commands.colonies.construct.prefabNotFound");
+    private static final Message MSG_PREFAB_LOADED = Message.translation("server.commands.colonies.construct.prefabLoaded");
 
     private final RequiredArg<String> prefabNameArg =
             this.withRequiredArg("prefabName", "Name of the server prefab to load into clipboard", ArgTypes.GREEDY_STRING);

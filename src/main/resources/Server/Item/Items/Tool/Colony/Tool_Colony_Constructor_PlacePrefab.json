@@ -1,7 +1,7 @@
 {
   "TranslationProperties": {
-    "Name": "items.Tool_Colony_Constructor_PlacePrefab.name",
-    "Description": "items.Tool_Colony_Constructor_PlacePrefab.description"
+    "Name": "server.items.Tool_Colony_Constructor_PlacePrefab.name",
+    "Description": "server.items.Tool_Colony_Constructor_PlacePrefab.description"
   },
   "Icon": "Icons/Items/EditorTools/Prefab.png",
   "Categories": [
