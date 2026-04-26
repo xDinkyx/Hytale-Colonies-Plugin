@@ -32,18 +32,7 @@ $C = "../Common.ui";
     HorizontalAlignment: Center
 );
 
-@TabActive = TextButtonStyle(
-    Default: (
-        Background: #1e3050,
-        LabelStyle: (FontSize: 13, TextColor: #e8eef5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
-    ),
-    Hovered: (
-        Background: #253a5e,
-        LabelStyle: (FontSize: 13, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
-    )
-);
-
-@TabInactive = TextButtonStyle(
+@TabButtonStyle = TextButtonStyle(
     Default: (
         Background: #111b28,
         LabelStyle: (FontSize: 13, TextColor: #5a6e84, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
@@ -51,6 +40,10 @@ $C = "../Common.ui";
     Hovered: (
         Background: #1a2638,
         LabelStyle: (FontSize: 13, TextColor: #8a9ebc, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
+    ),
+    Disabled: (
+        Background: #1e3050,
+        LabelStyle: (FontSize: 13, TextColor: #e8eef5, RenderBold: true, HorizontalAlignment: Center, VerticalAlignment: Center)
     )
 );
 
@@ -89,7 +82,7 @@ Group {
 
             // Colonist name
             Label #ColonistName {
-                Text: %ui.colonist.inspect.defaultName;
+                Text: %server.ui.colonist.inspect.defaultName;
                 Anchor: (Height: 28);
                 Style: @ColonistNameStyle;
             }
@@ -98,7 +91,7 @@ Group {
 
             // Job label
             Label #ColonistJob {
-                Text: %ui.colonist.inspect.unemployed;
+                Text: %server.ui.colonist.inspect.unemployed;
                 Anchor: (Height: 20);
                 Style: @ColonistSubStyle;
             }
@@ -107,7 +100,7 @@ Group {
 
             // Level label
             Label #ColonistLevel {
-                Text: %ui.colonist.inspect.level;
+                Text: %server.ui.colonist.inspect.level;
                 Anchor: (Height: 20);
                 Style: @ColonistSubStyle;
             }
@@ -131,9 +124,9 @@ Group {
 
             // Close button
             TextButton #CloseButton {
-                Text: %ui.colonist.inspect.close;
+                Text: %server.ui.colonist.inspect.close;
                 Anchor: (Height: 36);
-                Style: @TabInactive;
+                Style: @TabButtonStyle;
             }
         }
 
@@ -153,15 +146,16 @@ Group {
                 Background: #0a1520;
 
                 TextButton #TabInventory {
-                    Text: %ui.colonist.inspect.tab.inventory;
+                    Text: %server.ui.colonist.inspect.tab.inventory;
                     Anchor: (Width: 130, Height: 40);
-                    Style: @TabActive;
+                    Disabled: true;
+                    Style: @TabButtonStyle;
                 }
 
                 TextButton #TabStats {
-                    Text: %ui.colonist.inspect.tab.stats;
+                    Text: %server.ui.colonist.inspect.tab.stats;
                     Anchor: (Width: 130, Height: 40);
-                    Style: @TabInactive;
+                    Style: @TabButtonStyle;
                 }
             }
 
@@ -171,28 +165,26 @@ Group {
             // ---- Inventory Tab ----
             Group #TabInventoryContent {
                 FlexWeight: 1;
-                LayoutMode: Top;
+                LayoutMode: TopScrolling;
+                ScrollbarStyle: $C.@DefaultScrollbarStyle;
                 Padding: (Full: 14);
-                ContentHeight: 700;
 
                 // NPC Tools section
                 Group {
                     Anchor: (Height: 22);
                     Label {
-                        Text: %ui.colonist.inspect.section.tools;
+                        Text: %server.ui.colonist.inspect.section.tools;
                         Style: @SectionLabel;
                     }
                 }
                 Group { Anchor: (Height: 6); }
                 ItemGrid #NpcToolsGrid {
-                    SlotsPerRow: 3;
+                    SlotsPerRow: 4;
+                    InventorySectionId: 1;
+                    AreItemsDraggable: true;
                     Style: @InvGridStyle;
                     Background: #0a1520(0);
                     Padding: @GridPad;
-                    Anchor: (
-                        Height: @SlotSize + (@GridPad * 2),
-                        Width: (@SlotSize * 3) + (@SlotSpacing * 2) + (@GridPad * 2)
-                    );
                 }
 
                 Group { Anchor: (Height: 14); }
@@ -203,13 +195,15 @@ Group {
                 Group {
                     Anchor: (Height: 22);
                     Label {
-                        Text: %ui.colonist.inspect.section.storage;
+                        Text: %server.ui.colonist.inspect.section.storage;
                         Style: @SectionLabel;
                     }
                 }
                 Group { Anchor: (Height: 6); }
                 ItemGrid #NpcStorageGrid {
                     SlotsPerRow: 4;
+                    InventorySectionId: 2;
+                    AreItemsDraggable: true;
                     Style: @InvGridStyle;
                     Background: #0a1520(0);
                     Padding: @GridPad;
@@ -223,13 +217,15 @@ Group {
                 Group {
                     Anchor: (Height: 22);
                     Label {
-                        Text: %ui.colonist.inspect.section.yourInventory;
+                        Text: %server.ui.colonist.inspect.section.yourInventory;
                         Style: @SectionLabel;
                     }
                 }
                 Group { Anchor: (Height: 6); }
                 ItemGrid #PlayerStorageGrid {
                     SlotsPerRow: 9;
+                    InventorySectionId: -2;
+                    AreItemsDraggable: true;
                     Style: @InvGridStyle;
                     Background: #0a1520(0);
                     Padding: @GridPad;
@@ -240,13 +236,15 @@ Group {
                 Group {
                     Anchor: (Height: 22);
                     Label {
-                        Text: %ui.colonist.inspect.section.hotbar;
+                        Text: %server.ui.colonist.inspect.section.hotbar;
                         Style: @SectionLabel;
                     }
                 }
                 Group { Anchor: (Height: 6); }
                 ItemGrid #PlayerHotbarGrid {
                     SlotsPerRow: 9;
+                    InventorySectionId: -1;
+                    AreItemsDraggable: true;
                     Style: @InvGridStyle;
                     Background: #0a1520(0);
                     Padding: @GridPad;
@@ -261,7 +259,7 @@ Group {
                 Padding: (Full: 20);
 
                 Label {
-                    Text: %ui.colonist.inspect.stats.placeholder;
+                    Text: %server.ui.colonist.inspect.stats.placeholder;
                     Style: (FontSize: 16, TextColor: #4a5e72, HorizontalAlignment: Center);
                     Anchor: (Height: 40);
                 }

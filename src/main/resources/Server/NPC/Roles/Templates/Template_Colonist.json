@@ -55,6 +55,7 @@
   "Appearance": { "Compute": "Appearance" },
   "MaxHealth": { "Compute": "MaxHealth" },
   "NameTranslationKey": { "Compute": "NameTranslationKey" },
+  "HotbarSize": 4,
   "InventorySize": 12,
   "MotionControllerList": [
     { "Type": "Walk", "MaxWalkSpeed": { "Compute": "MaxSpeed" } }
