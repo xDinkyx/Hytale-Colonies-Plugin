@@ -1,0 +1,43 @@
+// Colonist info HUD overlay — shown while the native bench storage is open.
+// Anchored to the left side of the screen, aligned with the top of the bench panel.
+
+Group {
+    Anchor: (Width: 200, Top: 60, Left: 20);
+    LayoutMode: Top;
+    Background: #0d1620(0.94);
+    Padding: (Full: 12);
+
+    Label #ColonistName {
+        Text: "";
+        Anchor: (Height: 26);
+        Style: (FontSize: 16, TextColor: #e8eef5, RenderBold: true, HorizontalAlignment: Center);
+    }
+
+    Group { Anchor: (Height: 6); }
+
+    Label #ColonistJob {
+        Text: "";
+        Anchor: (Height: 18);
+        Style: (FontSize: 13, TextColor: #7a8fa8, HorizontalAlignment: Center);
+    }
+
+    Group { Anchor: (Height: 4); }
+
+    Label #ColonistLevel {
+        Text: "";
+        Anchor: (Height: 18);
+        Style: (FontSize: 13, TextColor: #7a8fa8, HorizontalAlignment: Center);
+    }
+
+    Group { Anchor: (Height: 8); }
+
+    Group { Anchor: (Height: 1); Background: #1e3050; }
+
+    Group { Anchor: (Height: 8); }
+
+    Label #ColonyId {
+        Text: "";
+        Anchor: (Height: 16);
+        Style: (FontSize: 11, TextColor: #4a5e72, HorizontalAlignment: Center);
+    }
+}

@@ -14,6 +14,8 @@ import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
+import com.hypixel.hytale.server.core.entity.entities.player.windows.ContainerWindow;
+import com.hypixel.hytale.server.core.entity.entities.player.windows.WindowManager;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.ui.ItemGridSlot;
@@ -49,10 +51,25 @@ public class ColonistInspectPage extends InteractiveCustomUIPage<ColonistInspect
 
     private final UUID colonistUuid;
     private boolean showInventoryTab = true;
+    @Nullable private final ContainerWindow npcToolsWindow;
+    @Nullable private final ContainerWindow npcStorageWindow;
 
-    public ColonistInspectPage(@Nonnull PlayerRef playerRef, @Nonnull UUID colonistUuid) {
+    /**
+     * @param npcToolsWindow  ContainerWindow for the colonist's tool/hotbar slots, or null if unavailable.
+     * @param npcStorageWindow ContainerWindow for the colonist's storage slots, or null if unavailable.
+     *                         Both windows must already be registered with the player's WindowManager
+     *                         when {@link #build} is called (use {@code openCustomPageWithWindows}).
+     */
+    public ColonistInspectPage(
+            @Nonnull PlayerRef playerRef,
+            @Nonnull UUID colonistUuid,
+            @Nullable ContainerWindow npcToolsWindow,
+            @Nullable ContainerWindow npcStorageWindow
+    ) {
         super(playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, UIEventData.CODEC);
         this.colonistUuid = colonistUuid;
+        this.npcToolsWindow = npcToolsWindow;
+        this.npcStorageWindow = npcStorageWindow;
     }
 
     // -------------------------------------------------------------------------
@@ -70,6 +87,17 @@ public class ColonistInspectPage extends InteractiveCustomUIPage<ColonistInspect
 
         populateNpcInfo(cmd, store);
         populateAllGrids(ref, cmd, store);
+
+        // Tell each NPC grid which registered window it belongs to so the engine
+        // routes MoveItemStack packets for drag-and-drop correctly.
+        // Window IDs are valid at this point because openCustomPageWithWindows
+        // calls openWindows (assigning IDs) before invoking build().
+        if (npcToolsWindow != null && npcToolsWindow.getId() > 0) {
+            cmd.set("#NpcToolsGrid.InventorySectionId", npcToolsWindow.getId());
+        }
+        if (npcStorageWindow != null && npcStorageWindow.getId() > 0) {
+            cmd.set("#NpcStorageGrid.InventorySectionId", npcStorageWindow.getId());
+        }
 
         cmd.set("#TabInventoryContent.Visible", true);
         cmd.set("#TabStatsContent.Visible", false);
@@ -326,6 +354,16 @@ public class ColonistInspectPage extends InteractiveCustomUIPage<ColonistInspect
 
     @Override
     public void onDismiss(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
+        Player player = store.getComponent(ref, Player.getComponentType());
+        if (player != null) {
+            WindowManager windowManager = player.getWindowManager();
+            if (npcToolsWindow != null && npcToolsWindow.getId() > 0) {
+                windowManager.closeWindow(ref, npcToolsWindow.getId(), store);
+            }
+            if (npcStorageWindow != null && npcStorageWindow.getId() > 0) {
+                windowManager.closeWindow(ref, npcStorageWindow.getId(), store);
+            }
+        }
         DebugLog.info(DebugCategory.COLONIST_LIFECYCLE,
                 "[ColonistInspectPage] Dismissed for colonist %s.", colonistUuid);
     }
