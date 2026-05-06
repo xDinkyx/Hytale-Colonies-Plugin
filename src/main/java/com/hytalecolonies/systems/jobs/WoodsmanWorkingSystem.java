@@ -26,7 +26,6 @@ import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.ClaimBlockUtil;
-import com.hytalecolonies.utils.ColonistLeashUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
 import com.hytalecolonies.utils.WoodsmanUtil;
 
@@ -34,7 +33,7 @@ import com.hytalecolonies.utils.WoodsmanUtil;
 /**
  * Reacts to {@link JobComponent#blockBrokenNotification} for woodsmen in
  * {@link JobState#Working}. Finds the next connected trunk block and dispatches
- * navigation, or transitions to {@link JobState#CollectingDrops} when all base
+ * navigation, or transitions to {@link JobState#DeliveringItems} when all base
  * trunks are felled.
  *
  * <p>Per-tick block damage is applied by the NPC role JSON pipeline
@@ -128,10 +127,8 @@ public class WoodsmanWorkingSystem extends EntityTickingSystem<EntityStore>
 
         if (goCollect)
         {
-            ColonistLeashUtil.setLeashToBlockCenter(colonistRef, entityStore.getStore(), finalTreeBase);
             liveTarget.setTargetPosition(null);
-            liveJob.collectingDropsSince = System.currentTimeMillis();
-            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.CollectingDrops);
+            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.DeliveringItems);
         }
         else
         {

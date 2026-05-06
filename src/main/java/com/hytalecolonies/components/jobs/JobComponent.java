@@ -32,8 +32,6 @@ public class JobComponent implements Component<EntityStore> {
     // ===== Fields =====
     protected @Nullable Vector3i workStationBlockPosition = null;
     protected @Nullable JobState jobState = null; // ToDo: Probably move state logic to separate component.
-    /** Epoch-ms timestamp set when the colonist enters {@link JobState#CollectingDrops}. Transient -- not persisted. */
-    public long collectingDropsSince = 0L;
     /** World position of the linked delivery container. Transient -- re-discovered each delivery run. */
     public @Nullable Vector3i deliveryContainerPosition = null;
     /**

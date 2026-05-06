@@ -12,9 +12,8 @@ import javax.annotation.Nonnull;
 /**
  * Builder for {@code "SetEcsJobState"} -- sets {@code JobComponent.getCurrentTask()}.
  *
- * <p>JSON: {@code { "Type": "SetEcsJobState", "JobState": "CollectingDrops" }}
+ * JSON: {@code { "Type": "SetEcsJobState", "JobState": "DeliveringItems" }}
  *
- * <p>When setting {@code CollectingDrops}, also records {@code JobComponent.collectingDropsSince}.
  */
 public class BuilderActionSetEcsJobState extends BuilderActionBase {
 
@@ -30,7 +29,7 @@ public class BuilderActionSetEcsJobState extends BuilderActionBase {
         this.getString(data, "JobState", this.stateName, "Idle",
                 null,
                 BuilderDescriptorState.Experimental,
-                "The ECS job state to set (e.g. CollectingDrops, Idle)", null);
+                "The ECS job state to set (e.g. DeliveringItems, Idle)", null);
         return this;
     }
 

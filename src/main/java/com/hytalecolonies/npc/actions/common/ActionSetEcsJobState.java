@@ -17,13 +17,7 @@ import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.ColonistStateUtil;
 
 
-/**
- * Sets {@link JobComponent#getCurrentTask()} to the state configured in
- * {@link BuilderActionSetEcsJobState}.
- *
- * <p>When transitioning to {@link JobState#CollectingDrops}, also records
- * {@code collectingDropsSince} so that the ECS delivery pipeline can begin.
- */
+/** Sets {@link JobComponent#getCurrentTask()} to the state configured in {@link BuilderActionSetEcsJobState}. */
 public class ActionSetEcsJobState extends ActionBase
 {
 
@@ -63,10 +57,6 @@ public class ActionSetEcsJobState extends ActionBase
             return true;
         }
 
-        if (targetState == JobState.CollectingDrops)
-        {
-            job.collectingDropsSince = System.currentTimeMillis();
-        }
         ColonistStateUtil.setJobState(ref, store, job, targetState);
 
         DebugLog.fine(DebugCategory.JOB_SYSTEM, "[SetEcsJobState] [%s] ECS job state set to %s.", npcId, targetState);

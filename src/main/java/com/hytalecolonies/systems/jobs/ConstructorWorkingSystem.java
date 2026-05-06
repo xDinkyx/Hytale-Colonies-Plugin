@@ -31,7 +31,6 @@ import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.ClaimBlockUtil;
-import com.hytalecolonies.utils.ColonistLeashUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
 import com.hytalecolonies.utils.ConstructorUtil;
 import com.hytalecolonies.utils.JobNavigationUtil;
@@ -233,10 +232,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
         if (quotaReached)
         {
             clearTarget(entityStore, colonistRef);
-            if (currentPos != null)
-                ColonistLeashUtil.setLeashToBlockCenter(colonistRef, entityStore.getStore(), currentPos);
-            liveJob.collectingDropsSince = System.currentTimeMillis();
-            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.CollectingDrops);
+            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.DeliveringItems);
             return;
         }
 

@@ -26,14 +26,13 @@ import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.ClaimBlockUtil;
-import com.hytalecolonies.utils.ColonistLeashUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
 import com.hytalecolonies.utils.MinerUtil;
 
 /**
  * Reacts to {@link JobComponent#blockBrokenNotification} for miners in {@link JobState#Working}.
  * Increments the run counter and transitions to the next block (TravelingToJob) or
- * CollectingDrops when the quota is reached or the shaft is exhausted.
+ * DeliveringItems when the quota is reached or the shaft is exhausted.
  */
 public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
 
@@ -132,14 +131,9 @@ public class MinerWorkingSystem extends EntityTickingSystem<EntityStore> {
         if (goCollect) {
             JobTargetComponent jt = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());
             if (jt != null) jt.setTargetPosition(null);
-            // Set leash to the last mined block so WanderInCircle constrains drop-pickup to that area.
-            if (currentTargetPos != null) {
-                ColonistLeashUtil.setLeashToBlockCenter(colonistRef, entityStore.getStore(), currentTargetPos);
-            }
-            liveJob.collectingDropsSince = System.currentTimeMillis();
-            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.CollectingDrops);
+            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.DeliveringItems);
             DebugLog.info(DebugCategory.MINER_JOB,
-                    "[MinerWorking] [%s] %s -- transitioning to CollectingDrops.",
+                    "[MinerWorking] [%s] %s -- transitioning to DeliveringItems.",
                     npcId, quotaReached ? "Quota reached" : "Shaft exhausted mid-run");
         } else {
             UUIDComponent uuidComp = entityStore.getStore().getComponent(colonistRef, UUIDComponent.getComponentType());

@@ -25,7 +25,7 @@ import com.hytalecolonies.utils.WorkStationUtil;
  * Periodic consistency-check system for colonist NPCs.
  *
  * <p>All state transitions (Idle, WaitingForWork, Working, TravelingToWorkSite,
- * TravelingToWorkstation, TravelingToHome, CollectingDrops, DeliveringItems) are
+ * TravelingToWorkstation, TravelingToHome, DeliveringItems) are
  * now fully driven by the NPC role JSON instruction engine via custom actions and
  * sensors. This system retains only two lightweight safety checks:
  *

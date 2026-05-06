@@ -54,8 +54,6 @@ import com.hytalecolonies.npc.actions.constructor.BuilderActionSeekNextClearingB
 import com.hytalecolonies.npc.actions.miner.BuilderActionSeekNextMineBlock;
 import com.hytalecolonies.npc.actions.woodsman.BuilderActionFindNextTrunkBlock;
 import com.hytalecolonies.npc.actions.woodsman.BuilderActionSeekNearestTree;
-import com.hytalecolonies.npc.sensors.common.BuilderSensorAtWorkstation;
-import com.hytalecolonies.npc.sensors.common.BuilderSensorCollectionTimerElapsed;
 import com.hytalecolonies.npc.sensors.common.BuilderSensorJobTarget;
 import com.hytalecolonies.npc.sensors.common.BuilderSensorJobTargetBroken;
 import com.hytalecolonies.npc.sensors.common.BuilderSensorJobTargetExists;
@@ -297,8 +295,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             .registerCoreComponentType("JobTargetBroken",            BuilderSensorJobTargetBroken::new)
             .registerCoreComponentType("RunQuotaReached",           BuilderSensorRunQuotaReached::new)
             .registerCoreComponentType("NoWorkAvailable",            BuilderSensorNoWorkAvailable::new)
-            .registerCoreComponentType("AtWorkstation",              BuilderSensorAtWorkstation::new)
-            .registerCoreComponentType("CollectionTimerElapsed",     BuilderSensorCollectionTimerElapsed::new)
             // Debug utilities
             .registerCoreComponentType("LogDebug",                   BuilderActionLogDebug::new);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered NPC component types");
