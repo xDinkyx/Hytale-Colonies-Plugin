@@ -8,201 +8,176 @@ This project uses the native Hytale UI Java API. This reference covers the core 
 
 ## Class Overview
 
-| Class | Purpose |
-|-------|---------|
-| `CustomUIHud` | Persistent overlay elements (always visible) |
-| `MultipleHUD` | Library enabling multiple simultaneous HUDs per player |
-| `CustomUIPage` | Static full-screen modal pages |
-| `InteractiveCustomUIPage<T>` | Interactive pages with event handling |
-| `UICommandBuilder` | Java API for building/modifying UI |
-| `UIEventBuilder` | Java API for binding events |
+| Class | Package | Purpose |
+|-------|---------|--------|
+| `CustomUIHud` | `...player.hud` | Persistent overlay elements (always visible) |
+| `HudManager` | `...player.hud` | Manages the player's HUD and built-in HUD components |
+| `CustomUIPage` | `...player.pages` | Full-screen modal pages (static, display-only) |
+| `BasicCustomUIPage` | `...player.pages` | Simplified `CustomUIPage` without `ref`/`store` in `build()` |
+| `InteractiveCustomUIPage<T>` | `...player.pages` | Full-screen modal pages with event handling |
+| `PageManager` | `...player.pages` | Opens and manages pages for a player |
+| `UICommandBuilder` | `...ui.builder` | Builds UI commands (append, set, clear, remove) |
+| `UIEventBuilder` | `...ui.builder` | Binds UI events to server-side handlers |
+| `EventData` | `...ui.builder` | Record holding event key-value pairs for event bindings |
+
+Full package prefix: `com.hypixel.hytale.server.core.entity.entities`
 
 ---
 
 ## CustomUIHud
 
-CustomUIHud is used for persistent overlay elements that remain visible while the player plays.
+`CustomUIHud` is used for persistent overlay elements (HUDs) that remain visible while the player plays.
 
-**Important:** Hytale only supports one CustomUIHud per player by default. Use MultipleHUD when you need more than one HUD.
+Hytale supports **one** `CustomUIHud` per player at a time via `HudManager`. To show multiple HUD elements simultaneously, include them all in a single `CustomUIHud.build()`.
 
-### Basic HUD Implementation
+### Implementation
 
 ```java
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import javax.annotation.Nonnull;
 
 public class MyHud extends CustomUIHud {
-    
-    public MyHud(PlayerRef playerRef) {
+
+    public MyHud(@Nonnull PlayerRef playerRef) {
         super(playerRef);
     }
 
     @Override
-    protected void build(UICommandBuilder commandBuilder) {
-        // Append a .ui file
+    protected void build(@Nonnull UICommandBuilder commandBuilder) {
         commandBuilder.append("Hud/MyHud.ui");
-        
-        // Or use inline UI:
-        commandBuilder.appendInline(null, "Label #Status { Text: \"Hello\"; }");
     }
 }
 ```
 
-### Showing a HUD
+### Showing and updating the HUD
 
 ```java
-MyHud hud = new MyHud(playerRef);
-hud.show();
+// Get the HudManager from the Player component
+Player playerComponent = store.getComponent(ref, Player.getComponentType());
+HudManager hudManager = playerComponent.getHudManager();
+
+// Show a custom HUD (replaces any existing custom HUD)
+hudManager.setCustomHud(playerRef, new MyHud(playerRef));
+
+// Clear the custom HUD
+hudManager.setCustomHud(playerRef, null);
+
+// Reset all HUD state to defaults (clears custom HUD + restores default built-in components)
+hudManager.resetHud(playerRef);
 ```
 
-### Updating a HUD
+### Sending incremental HUD updates
 
 ```java
-// After building, you can send updates
+// Full rebuild from scratch (calls build() and sends with clear=true)
+hud.show();
+
+// Send incremental changes without full rebuild
 UICommandBuilder commands = new UICommandBuilder();
 commands.set("#Status.Text", "Updated text");
-hud.sendUpdate(commands);
+hud.update(false, commands); // false = do not clear before applying
 ```
+
+`CustomUIHud` API:
+- `show()` — calls `build()` then sends with `clear=true`. Use to (re)display the HUD.
+- `update(boolean clear, UICommandBuilder commandBuilder)` — sends the commands directly.
 
 ---
 
-## MultipleHUD (MHUD)
+## HudManager
 
-By default, Hytale only allows **one** CustomUIHud per player. The MultipleHUD library (by Buuz135) provides a wrapper that allows multiple HUD elements simultaneously.
+`HudManager` controls the player's HUD — both the one allowed `CustomUIHud` and which built-in HUD components are visible. Access via `player.getHudManager()`.
 
-**Dependency:** Already included in project via CurseForge Maven (`com.buuz135:MultipleHUD:1.0.2`)
-
-### Basic Usage
+### Custom HUD methods
 
 ```java
-import com.buuz135.mhud.MultipleHUD;
-import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
-import com.hypixel.hytale.server.core.universe.PlayerRef;
+Player playerComponent = store.getComponent(ref, Player.getComponentType());
+HudManager hudManager = playerComponent.getHudManager();
 
-// Add/replace a HUD with a unique identifier
-MultipleHUD.getInstance().setCustomHud(player, playerRef, "MyHudId", new MyCustomHud(playerRef));
+// Set or replace the custom HUD (one per player)
+hudManager.setCustomHud(playerRef, new MyHud(playerRef));
 
-// Add multiple HUDs
-MultipleHUD.getInstance().setCustomHud(player, playerRef, "HealthBar", new HealthBarHud(playerRef));
-MultipleHUD.getInstance().setCustomHud(player, playerRef, "Buffs", new BuffDisplayHud(playerRef));
-MultipleHUD.getInstance().setCustomHud(player, playerRef, "Minimap", new MinimapHud(playerRef));
+// Clear the custom HUD
+hudManager.setCustomHud(playerRef, null);
 
-// Remove a specific HUD by identifier
-MultipleHUD.getInstance().hideCustomHud(player, playerRef, "MyHudId");
+// Reset all HUD state to defaults (clears custom HUD + restores default built-in components)
+hudManager.resetHud(playerRef);
 
-// Replace a HUD (same identifier replaces existing)
-MultipleHUD.getInstance().setCustomHud(player, playerRef, "HealthBar", new NewHealthBarHud(playerRef));
+// Full UI state reset (sends ResetUserInterfaceState packet)
+hudManager.resetUserInterface(playerRef);
+
+// Get the current custom HUD (returns null if none)
+CustomUIHud currentHud = hudManager.getCustomHud();
 ```
 
-### MHUD API Reference
-
-| Method | Description |
-|--------|-------------|
-| `MultipleHUD.getInstance()` | Get the singleton instance |
-| `setCustomHud(player, playerRef, id, hud)` | Add or replace a HUD by identifier |
-| `hideCustomHud(player, playerRef, id)` | Remove a HUD by identifier |
-
-### How MultipleHUD Works
-
-MHUD creates a wrapper `MultipleCustomUIHud` that contains a root group `#MultipleHUD`. Each individual HUD is added as a child group with ID `#<normalizedId>`. The library automatically:
-
-- Converts HUD identifiers to valid element IDs (strips non-alphanumeric chars)
-- Prefixes all selectors in your HUD with the container path
-- Handles build/update lifecycle for each HUD independently
-
-### Empty HUD Placeholder
-
-Use `EmptyHUD` as a placeholder when you need a HUD slot but no content:
+### Controlling built-in HUD components
 
 ```java
-import com.buuz135.mhud.EmptyHUD;
+import com.hypixel.hytale.protocol.packets.interface_.HudComponent;
 
-// Create an empty placeholder
-MultipleHUD.getInstance().setCustomHud(player, playerRef, "Placeholder", new EmptyHUD(playerRef));
+// Replace entire visible set
+hudManager.setVisibleHudComponents(playerRef,
+    HudComponent.Hotbar, HudComponent.Health, HudComponent.Chat);
+
+// Add components without clearing others
+hudManager.showHudComponents(playerRef, HudComponent.Compass);
+
+// Remove specific components
+hudManager.hideHudComponents(playerRef, HudComponent.Reticle, HudComponent.Speedometer);
+
+// Get current visible components
+Set<HudComponent> visible = hudManager.getVisibleHudComponents();
 ```
 
-### Recommended ECS Pattern for HUD Systems
+### HudComponent enum
 
-When creating HUD systems for Hyforged, follow this pattern (used by `CurrencyHudSystem`, `ResourceStatsHudSystem`, `CombatLogHudSystem`):
+All built-in HUD components:
 
-```java
-public class MyHudSystem extends DelayedEntitySystem<EntityStore> {
-    
-    /** Check for MHUD availability at class load */
-    private static final boolean MULTIPLE_HUD_AVAILABLE;
-    static {
-        boolean available = false;
-        try {
-            Class.forName("com.buuz135.mhud.MultipleHUD");
-            available = true;
-        } catch (ClassNotFoundException e) {
-            LOGGER.warning("MultipleHUD not available - HUD disabled");
-        }
-        MULTIPLE_HUD_AVAILABLE = available;
-    }
-    
-    /** Unique namespaced ID for this HUD */
-    public static final String HUD_ID = "hyforged:my_hud";
-    
-    /** Track HUD instances per player */
-    private static final Map<UUID, MyHud> playerHuds = new ConcurrentHashMap<>();
-    
-    @Override
-    public void tick(...) {
-        if (!MULTIPLE_HUD_AVAILABLE) return;
-        
-        UUID playerUuid = uuidComponent.getUuid();
-        boolean shouldShowHud = /* your logic */;
-        
-        com.buuz135.mhud.MultipleHUD multipleHUD = com.buuz135.mhud.MultipleHUD.getInstance();
-        MyHud existingHud = playerHuds.get(playerUuid);
-        
-        if (!shouldShowHud) {
-            if (existingHud != null) {
-                multipleHUD.hideCustomHud(player, playerRef, HUD_ID);
-                playerHuds.remove(playerUuid);
-            }
-            return;
-        }
-        
-        // Create HUD if not exists
-        if (existingHud == null) {
-            MyHud hud = new MyHud(playerRef);
-            multipleHUD.setCustomHud(player, playerRef, HUD_ID, hud);
-            playerHuds.put(playerUuid, hud);
-            existingHud = hud;
-        }
-        
-        // Update HUD with new values
-        existingHud.updateValues(...);
-    }
-}
-```
+| Value | Description |
+|-------|-------------|
+| `Hotbar` | Item hotbar |
+| `StatusIcons` | Status effect icons |
+| `Reticle` | Crosshair |
+| `Chat` | Chat area |
+| `Requests` | Friend/group request notifications |
+| `Notifications` | General notifications |
+| `KillFeed` | Kill feed messages |
+| `InputBindings` | Key binding hints |
+| `PlayerList` | Player list (tab) |
+| `EventTitle` | Event title display |
+| `Compass` | Direction compass |
+| `ObjectivePanel` | Objective tracker panel |
+| `PortalPanel` | Portal info panel |
+| `BuilderToolsLegend` | Builder tools legend |
+| `Speedometer` | Movement speed display |
+| `UtilitySlotSelector` | Utility slot selector UI |
+| `BlockVariantSelector` | Block variant picker |
+| `BuilderToolsMaterialSlotSelector` | Builder material slot |
+| `Stamina` | Stamina bar |
+| `AmmoIndicator` | Ammo count display |
+| `Health` | Health bar |
+| `Mana` | Mana bar |
+| `Oxygen` | Oxygen bar |
+| `Sleep` | Sleep indicator |
 
-**Key Points:**
-- Use `DelayedEntitySystem` to avoid updating every tick
-- Check `MULTIPLE_HUD_AVAILABLE` before any MHUD calls
-- Use namespaced HUD IDs like `"hyforged:my_hud"`
-- Track HUD instances per player UUID
-- Hide HUD before removing from tracking map
-- Only create new HUD if one doesn't exist for the player
+Default visible set (restored by `resetHud`): Hotbar, StatusIcons, Reticle, Chat, Notifications, KillFeed, InputBindings, EventTitle, Compass, ObjectivePanel, PortalPanel, BuilderToolsLegend, Speedometer, UtilitySlotSelector, BlockVariantSelector, Stamina, AmmoIndicator, Health, Mana, Oxygen, Sleep.
 
 ---
 
 ## CustomUIPage
 
-CustomUIPage is used for static full-screen modal pages.
+`CustomUIPage` is used for static full-screen modal pages (display-only, no event callbacks).
 
-### Basic Page Implementation
+### Implementation
 
 ```java
 import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 
 public class MyPage extends CustomUIPage {
-    
+
     public MyPage(PlayerRef playerRef) {
         super(playerRef, CustomPageLifetime.CanDismiss);
     }
@@ -215,130 +190,160 @@ public class MyPage extends CustomUIPage {
 }
 ```
 
-### Opening a Page
+### Opening and closing a page
 
 ```java
-Player player = store.getComponent(ref, Player.getComponentType());
-player.getPageManager().setPage(ref, store, new MyPage(playerRef));
+Player playerComponent = store.getComponent(ref, Player.getComponentType());
+// Use openCustomPage, NOT setPage (setPage takes a Page enum, not a CustomUIPage)
+playerComponent.getPageManager().openCustomPage(ref, store, new MyPage(playerRef));
+
+// Close the page
+playerComponent.getPageManager().setPage(ref, store, Page.None);
 ```
 
-### Page Lifetime Options
+### Page lifetime options
 
 ```java
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 
-CustomPageLifetime.CanDismiss   // Player can close with ESC
-CustomPageLifetime.Dismiss      // Closes immediately (not typically used)
+CustomPageLifetime.CantClose                      // Player cannot close the page
+CustomPageLifetime.CanDismiss                     // Player can close with ESC
+CustomPageLifetime.CanDismissOrCloseThroughInteraction  // ESC or specific interaction closes it
+```
+
+### Sending updates
+
+```java
+// Rebuild and resend the full page content
+rebuild();
+
+// Send partial changes (does not clear existing content)
+UICommandBuilder commands = new UICommandBuilder();
+commands.set("#Status.Text", "Processing...");
+sendUpdate(commands);
+
+// Send with explicit clear flag
+sendUpdate(commands, true);  // true = clear all existing content first
 ```
 
 ---
 
-## InteractiveCustomUIPage<T>
+## BasicCustomUIPage
 
-InteractiveCustomUIPage is used for pages with event handling. It uses a generic type parameter for the event data class.
+`BasicCustomUIPage` is a simpler variant of `CustomUIPage`. Override `build(UICommandBuilder)` instead of the full 4-argument form — useful when you don't need `ref` or `store` context at build time.
 
-### Complete Interactive Page Implementation
+```java
+import com.hypixel.hytale.server.core.entity.entities.player.pages.BasicCustomUIPage;
+import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+
+public class MySimplePage extends BasicCustomUIPage {
+
+    public MySimplePage(PlayerRef playerRef) {
+        super(playerRef, CustomPageLifetime.CanDismiss);
+    }
+
+    @Override
+    public void build(UICommandBuilder commandBuilder) {
+        commandBuilder.append("Pages/MySimplePage.ui");
+    }
+}
+```
+
+---
+
+## InteractiveCustomUIPage\<T\>
+
+`InteractiveCustomUIPage<T>` handles pages with event callbacks. The type parameter `T` is a user-defined class decoded from the event data sent by the client.
+
+### Implementation (real-world pattern from WarpListPage in server source)
 
 ```java
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.Codec;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.protocol.packets.interface_.Page;
+import com.hypixel.hytale.server.core.ui.builder.EventData;
 
-public class MyInteractivePage extends InteractiveCustomUIPage<MyInteractivePage.EventData> {
+public class MyPage extends InteractiveCustomUIPage<MyPage.PageEventData> {
 
-    public MyInteractivePage(PlayerRef playerRef) {
-        super(playerRef, CustomPageLifetime.CanDismiss, EventData.CODEC);
+    public MyPage(PlayerRef playerRef) {
+        super(playerRef, CustomPageLifetime.CanDismiss, PageEventData.CODEC);
     }
 
     @Override
     public void build(Ref<EntityStore> ref, UICommandBuilder commandBuilder,
                       UIEventBuilder eventBuilder, Store<EntityStore> store) {
         commandBuilder.append("Pages/MyPage.ui");
-        
-        // Bind button click event
+
+        // Bind a button click — sends "Action": "confirm" when clicked
         eventBuilder.addEventBinding(
-            CustomUIEventBindingType.Activating,
-            "#MyButton",
-            EventData.of("Action", "buttonClicked"),
-            false  // locksInterface - if true, locks UI during processing
-        );
-        
-        // Bind text input value change
+            CustomUIEventBindingType.Activating, "#ConfirmButton",
+            EventData.of("Action", "confirm"), false);
+
+        // Bind a text field value — "@" prefix reads the current UI element value
         eventBuilder.addEventBinding(
-            CustomUIEventBindingType.ValueChanged,
-            "#SearchInput",
-            EventData.of("@SearchValue", "#SearchInput.Value"),  // @ prefix = UI value reference
-            false
-        );
+            CustomUIEventBindingType.ValueChanged, "#SearchInput",
+            EventData.of("@Query", "#SearchInput.Value"), false);
     }
 
     @Override
-    public void handleDataEvent(Ref<EntityStore> ref, Store<EntityStore> store, EventData data) {
-        if ("buttonClicked".equals(data.action)) {
-            // Handle button click
+    public void handleDataEvent(Ref<EntityStore> ref, Store<EntityStore> store,
+                                PageEventData data) {
+        if ("confirm".equals(data.action)) {
+            // Handle confirm — close the page
+            // Do NOT call sendUpdate when closing
+            Player playerComponent = store.getComponent(ref, Player.getComponentType());
+            playerComponent.getPageManager().setPage(ref, store, Page.None);
+        } else if (data.query != null) {
+            // Handle search — rebuild the result list and send update
+            UICommandBuilder commands = new UICommandBuilder();
+            UIEventBuilder events = new UIEventBuilder();
+            commands.clear("#ResultList");
+            // ... populate results and rebind events ...
+            sendUpdate(commands, events, false);
         }
-        if (data.searchValue != null) {
-            // Handle search input change
-            updateSearchResults(data.searchValue);
-        }
-        // IMPORTANT: Always call sendUpdate after handling events
-        sendUpdate(null, false);
-    }
-    
-    private void updateSearchResults(String query) {
-        UICommandBuilder commands = new UICommandBuilder();
-        UIEventBuilder events = new UIEventBuilder();
-        commands.clear("#Results");
-        // Build updated content...
-        sendUpdate(commands, events, false);
     }
 
-    // Event data class with codec
-    public static class EventData {
-        public static final BuilderCodec<EventData> CODEC = BuilderCodec.builder(EventData.class, EventData::new)
-            .append(new KeyedCodec<>("Action", Codec.STRING), (e, s) -> e.action = s, e -> e.action)
+    // User-defined event data class — keys must match EventData keys used in build()
+    public static class PageEventData {
+        public static final BuilderCodec<PageEventData> CODEC = BuilderCodec
+            .builder(PageEventData.class, PageEventData::new)
+            .append(new KeyedCodec<>("Action", Codec.STRING),
+                    (e, s) -> e.action = s, e -> e.action)
             .add()
-            .append(new KeyedCodec<>("@SearchValue", Codec.STRING), (e, s) -> e.searchValue = s, e -> e.searchValue)
+            .append(new KeyedCodec<>("@Query", Codec.STRING),
+                    (e, s) -> e.query = s, e -> e.query)
             .add()
             .build();
 
         String action;
-        String searchValue;
-        
-        public static EventData of(String key, String value) {
-            EventData data = new EventData();
-            if (key.equals("Action")) data.action = value;
-            else if (key.equals("@SearchValue")) data.searchValue = value;
-            return data;
-        }
+        String query;
     }
 }
 ```
 
-### Critical: Always Call sendUpdate
+### Event data key rules
 
-After handling events in `handleDataEvent`, you **must** call `sendUpdate`:
+| Pattern | Meaning |
+|---------|---------|
+| `EventData.of("Action", "confirm")` | Sends constant `"Action": "confirm"` |
+| `EventData.of("@Query", "#SearchInput.Value")` | `@` prefix: reads `#SearchInput.Value` from the UI at event time |
+| Key in `KeyedCodec<>("Action", ...)` | Must match the key used in `EventData.of()` exactly |
 
-```java
-@Override
-public void handleDataEvent(Ref<EntityStore> ref, Store<EntityStore> store, EventData data) {
-    // Handle your logic here...
-    
-    // ALWAYS call sendUpdate at the end
-    sendUpdate(null, false);  // null for no UI changes, false for not closing
-}
-```
+### When to call `sendUpdate`
 
-If you forget `sendUpdate`, the page will get stuck on "Loading...".
+- Call `sendUpdate(commands, events, false)` when updating content on an **open** page.
+- Do **not** call `sendUpdate` when closing the page — just call `setPage(ref, store, Page.None)`.
 
 ### Closing a Page
 
 ```java
-private void close(Ref<EntityStore> ref, Store<EntityStore> store) {
-    Player player = store.getComponent(ref, Player.getComponentType());
-    player.getPageManager().setPage(ref, store, Page.None);
-}
+Player playerComponent = store.getComponent(ref, Player.getComponentType());
+playerComponent.getPageManager().setPage(ref, store, Page.None);
 ```
 
 ---
@@ -439,39 +444,32 @@ See [events.md](events.md) for the complete list of event types.
 
 ---
 
-## Threading (CRITICAL)
+## Threading
 
-**UI operations MUST run on the world thread** or the game will crash.
+**UI operations MUST run on the world thread.**
 
-### For Commands
-
-```java
-public class MyCommand extends AbstractAsyncCommand {
-    @Override
-    protected CompletableFuture<Void> executeAsync(CommandContext context) {
-        if (context.sender() instanceof Player player) {
-            Ref<EntityStore> ref = player.getReference();
-            Store<EntityStore> store = ref.getStore();
-            World world = store.getExternalData().getWorld();
-            
-            return CompletableFuture.runAsync(() -> {
-                PlayerRef playerRef = store.getComponent(ref, PlayerRef.getComponentType());
-                // Open page on world thread
-                player.getPageManager().setPage(ref, store, new MyPage(playerRef));
-            }, world);
-        }
-        return CompletableFuture.completedFuture(null);
-    }
-}
-```
-
-### For HUDs
+### In commands (use `world.execute`)
 
 ```java
 World world = store.getExternalData().getWorld();
 world.execute(() -> {
-    MyHud hud = new MyHud(playerRef);
-    hud.show();
+    Player playerComponent = store.getComponent(ref, Player.getComponentType());
+    // openCustomPage, not setPage — setPage takes a Page enum
+    playerComponent.getPageManager().openCustomPage(ref, store, new MyPage(playerRef));
+});
+```
+
+### In `handleDataEvent`
+
+`handleDataEvent` is already called on the world thread by the engine — no `world.execute` needed there.
+
+### HUD updates from async contexts
+
+```java
+World world = store.getExternalData().getWorld();
+world.execute(() -> {
+    Player playerComponent = store.getComponent(ref, Player.getComponentType());
+    playerComponent.getHudManager().setCustomHud(playerRef, new MyHud(playerRef));
 });
 ```
 
@@ -517,11 +515,13 @@ LocalizableString.fromMessageId("server.ui.greeting", Map.of("name", playerName)
 
 ## Checklist
 
-1. ✅ Place .ui files in `resources/Common/UI/Custom/`
-2. ✅ Add `"IncludesAssetPack": true` to `manifest.json`
-3. ✅ Image files must end with `@2x.png`
-4. ✅ Run UI operations on world thread
-5. ✅ Call `sendUpdate()` after handling events in InteractiveCustomUIPage
-6. ✅ Use proper selectors with `#` prefix
-7. ✅ Use MultipleHUD for multiple HUDs per player
-8. ✅ Use namespaced IDs for HUDs (e.g., `hyforged:my_hud`)
+1. Place `.ui` files in `resources/Common/UI/Custom/`
+2. Add `"IncludesAssetPack": true` to `manifest.json`
+3. Image files must end with `@2x.png`
+4. Run UI operations on the world thread
+5. Use `openCustomPage(ref, store, page)` to open custom pages — NOT `setPage(...)` (that takes a `Page` enum)
+6. Use `setPage(ref, store, Page.None)` to close pages
+7. Call `sendUpdate(commands, events, false)` when updating an open interactive page
+8. Do NOT call `sendUpdate` when closing — just call `setPage(Page.None)`
+9. Event data keys in `EventData.of(...)` must match `KeyedCodec` keys in the `BuilderCodec`
+10. `@` key prefix in `EventData` = live UI element value read at event time

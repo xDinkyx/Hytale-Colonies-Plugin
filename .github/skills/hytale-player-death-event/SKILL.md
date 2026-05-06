@@ -188,7 +188,21 @@ public class PlayerDeathHandler extends DeathSystems.OnDeathSystem {
 ## Key Classes
 
 | Class | Package | Purpose |
-|-------|---------|---------|
+|-------|---------|----------|
+| `DeathSystems.OnDeathSystem` | `...modules.entity.damage` | Base class for death-reaction systems |
+| `DeathComponent` | `...modules.entity.damage` | Component added on death; carries `Damage` info |
+| `Damage` | `...modules.entity.damage` | Death cause data (amount, source) |
+| `Player` | `...core.entity.entities` | Player component for identity/display name |
+| `Query` | `...component.query` | Entity filter for system targeting |
+| `Store` | `...component` | ECS data store for component lookups |
+| `CommandBuffer` | `...component` | Thread-safe mutation buffer |
+
+---
+
+## Official Javadoc References
+
+- [`DeathSystems.OnDeathSystem`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/entity/damage/DeathSystems.OnDeathSystem.html) — `RefChangeSystem` base for death handlers
+- Source: [Player Death Event Guide](https://hytalemodding.dev/en/docs/guides/plugin/player-death-event)
 | `DeathSystems.OnDeathSystem` | `...modules.entity.damage` | Base class for death-reaction systems |
 | `DeathComponent` | `...modules.entity.damage` | Component added on death; carries `Damage` info |
 | `Damage` | `...modules.entity.damage` | Death cause data (amount, source) |

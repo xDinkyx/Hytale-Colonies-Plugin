@@ -186,4 +186,10 @@ public class TeleportUtil {
     }
 }
 ```
-```
+
+---
+
+## Official Javadoc References
+
+- [`TeleportSystems`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/entity/teleport/TeleportSystems.html) — entity and player teleport move systems
+- Source: [Teleporting Players Guide](https://hytalemodding.dev/en/docs/guides/plugin/teleporting-players)

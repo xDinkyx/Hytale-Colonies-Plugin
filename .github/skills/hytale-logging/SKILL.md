@@ -189,3 +189,9 @@ public class MyPlugin extends JavaPlugin {
 - `HytaleLogger.init()` — Initializes the logging backend (called during server boot).
 - `HytaleLogger.replaceStd()` — Redirects `System.out` / `System.err` into logger streams.
 - Log files are written to `{Hytale install}/UserData/Saves/{World}/logs`.
+
+---
+
+## Official Javadoc References
+
+- [`com.hypixel.hytale.logger` package](https://release.server.docs.hytale.com/com/hypixel/hytale/logger/package-summary.html)

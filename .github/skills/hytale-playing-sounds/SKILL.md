@@ -338,4 +338,10 @@ Audio emitters support more precise control over **where sounds originate** from
 
 - [Official Documentation](https://hytalemodding.dev/en/docs/guides/plugin/playing-sounds)
 - [Available Sounds List](https://hytalemodding.dev/en/docs/server/sounds)
+
+## Official Javadoc References
+
+- [`SoundEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/protocol/SoundEvent.html) — protocol sound event packet
+- [`SoundEvent` (asset)](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/asset/type/soundevent/config/SoundEvent.html) — server-side sound event asset config
+- [`SoundCategory`](https://release.server.docs.hytale.com/com/hypixel/hytale/protocol/SoundCategory.html) — audio category (music, ambient, sfx, etc.)
 ```

@@ -467,3 +467,12 @@ context.sendMessage(Message.raw("Message"));
 - `com.hypixel.hytale.server.core.command.system.basecommands.AbstractCommandCollection`
 - `com.hypixel.hytale.codec.validation.Validator`
 - `com.hypixel.hytale.codec.validation.Validators`
+
+## Official Javadoc References
+
+- [`AbstractPlayerCommand`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/command/system/basecommands/AbstractPlayerCommand.html) — player-thread command base
+- [`AbstractTargetEntityCommand`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/command/system/basecommands/AbstractTargetEntityCommand.html) — raycast-target entity command base
+- [`CommandManager`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/command/system/CommandManager.html) — command registration and dispatch
+- [`CommandException`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/command/system/exceptions/CommandException.html) — throw to show usage error
+- [`com.hypixel.hytale.server.core.command.system` package](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/command/system/package-summary.html)
+- Source: [Creating Commands Guide](https://hytalemodding.dev/en/docs/guides/plugin/creating-commands)

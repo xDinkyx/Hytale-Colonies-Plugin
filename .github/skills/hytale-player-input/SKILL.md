@@ -627,3 +627,12 @@ playerRef.getPacketHandler().writeNoCache(
 2. **Thread safety:** When accessing ECS components from packet handlers, schedule work on the world thread via `world.execute(() -> { ... })`.
 3. **Packet IDs may change:** Always use `instanceof` checks or class references rather than hardcoded packet IDs when possible. The ID-based approach (`packet.getId() != 290`) is brittle across server versions.
 4. **Deregister on shutdown:** Always store filter/watcher references and deregister them in your plugin's `shutdown()` method.
+
+---
+
+## Official Javadoc References
+
+- [`PacketFilter`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/io/adapter/PacketFilter.html) — intercept and cancel inbound packets
+- [`PacketWatcher`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/io/adapter/PacketWatcher.html) — observe inbound packets (read-only)
+- [`InteractionType`](https://release.server.docs.hytale.com/com/hypixel/hytale/protocol/InteractionType.html) — player interaction type enum
+- Source: [Listening to Packets Guide](https://hytalemodding.dev/en/docs/guides/plugin/listening-to-packets)

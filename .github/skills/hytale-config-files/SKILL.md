@@ -305,3 +305,8 @@ public class WelcomePlugin extends JavaPlugin {
 | Changes not persisted | Forgot to call `save()` after modification | Call `config.save()` after changing values |
 | Wrong `Codec` import | Using a different library's `Codec` class | Use `com.hypixel.hytale.codec.Codec` |
 ```
+
+## Official Javadoc References
+
+- [`Config`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/util/Config.html) — load/save config files
+- Source: [Creating Configuration File Guide](https://hytalemodding.dev/en/docs/guides/plugin/creating-configuration-file)

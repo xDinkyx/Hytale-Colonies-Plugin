@@ -31,7 +31,7 @@ Group {
 ### Syntax Rules
 
 - **Elements**: `ElementType [#Id] { properties... children... }`
-- **IDs**: Prefix with `#` for Java/event access (e.g., `#MyLabel`)
+- **IDs**: Prefix with `#` for Java/event access (e.g., `#MyLabel`). **IDs must be alphanumeric camelCase only — underscores are NOT allowed.** Use `#Row0Name`, not `#Row_0_Name`. An invalid ID crashes all UI loading on player join.
 - **Properties**: `PropertyName: value;`
 - **Comments**: `// single line comment`
 - **Tuples/Objects**: `(Key1: value1, Key2: value2)`

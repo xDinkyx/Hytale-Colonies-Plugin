@@ -477,3 +477,8 @@ class AbilitySlotHandler implements PlayerPacketFilter {
 - [Customizing Hotbar Actions Guide](https://hytalemodding.dev/en/docs/guides/plugin/customizing-hotbar-actions)
 - [Listening to Packets Guide](https://hytalemodding.dev/en/docs/guides/plugin/listening-to-packets)
 - [Thread Safety: Using world.execute()](https://forum.hytalemodding.dev/d/21-thread-safety-using-worldexecute)
+
+## Official Javadoc References
+
+- [`PacketFilter`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/io/adapter/PacketFilter.html) — intercepts and optionally cancels inbound packets
+- [`PacketWatcher`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/io/adapter/PacketWatcher.html) — observe inbound packets without cancelling

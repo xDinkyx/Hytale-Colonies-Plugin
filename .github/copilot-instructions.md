@@ -25,6 +25,20 @@ This is a Hytale plugin project. Hytale plugins are used to extend the functiona
 - All JSON files must be created and saved with UTF-8 encoding without BOM. Never use UTF-8 BOM or any other encoding variant.
 - Keep comments short and to the point. Code should be self-documenting. Avoid Javadoc paragraphs that restate the obvious -- one-liner `/** ... */` only when the name alone is not enough.
 
+## Online Documentation
+
+When looking up Hytale API classes, methods, or packages, use these sources in order:
+
+1. **Decompiled server source** — `lib/hytale-server/src/main/java/com/hypixel/` (100% accurate — always check here first)
+2. **Official Javadocs** — `https://release.server.docs.hytale.com/`
+   - Full class list: `https://release.server.docs.hytale.com/allclasses-index.html`
+   - Class URL pattern: `https://release.server.docs.hytale.com/<package/ClassName>.html` (dots become slashes)
+   - Example: `com.hypixel.hytale.component.Store` → `https://release.server.docs.hytale.com/com/hypixel/hytale/component/Store.html`
+   - When a class is not found directly, use its package summary: append `/package-summary.html` to the package path
+3. **Community guides** — `https://hytalemodding.dev/en/docs/` (practical tutorials, may lag behind official API)
+
+When adding documentation links to skills or code comments, always prefer the official Javadoc URL over the community guide URL. Include both when they cover different things (API reference vs. tutorial walkthrough).
+
 ## .github/skills
 - Evaluate skills when given a task or problem to solve.
 - Multiple skills may be required to complete a task or solve a problem effectively.

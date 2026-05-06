@@ -243,3 +243,9 @@ Use these to cheaply detect whether a chunk's content has changed (e.g. compare 
 - Check `lib/Server/` for existing block definitions to see all available property values
 
 ```
+
+## Official Javadoc References
+
+- [`BlockHarvestUtils`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/interaction/BlockHarvestUtils.html) — utility for damaging, breaking and harvesting blocks
+- [`BreakBlockEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/event/events/ecs/BreakBlockEvent.html) — fired when a block is broken
+- Source: [Creating Blocks Guide](https://hytalemodding.dev/en/docs/guides/plugin/creating-block)

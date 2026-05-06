@@ -436,3 +436,9 @@ public class MyPlugin extends JavaPlugin {
 - [Entity Component System](https://hytalemodding.dev/en/docs/guides/ecs/entity-component-system)
 - [Systems Guide](https://hytalemodding.dev/en/docs/guides/ecs/systems)
 - Codec types: `lib/hytale-server/src/main/java/com/hypixel/hytale/codec/`
+
+## Official Javadoc References
+
+- [`Config`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/util/Config.html) — load/save configuration files
+- [`Store`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/Store.html) — access/mutate component data
+- [`CommandBuffer`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/CommandBuffer.html) — deferred component add/set/remove

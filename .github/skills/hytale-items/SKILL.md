@@ -242,6 +242,23 @@ This reference covers:
 
 > **Security note:** Ensure command strings are not player-controlled. Only use static, server-authored commands in `CommandInteraction`.
 
+### Interaction Trigger Keys (InteractionType)
+
+The key in the `"Interactions"` block maps to `InteractionType` enum values. For **items**:
+
+| JSON key | Player action |
+|---|---|
+| `"Primary"` | Left-click / attack |
+| `"Secondary"` | Right-click |
+| `"Use"` | F key (interact key) |
+| `"Ability1"` / `"Ability2"` / `"Ability3"` | Ability hotkeys |
+
+For **block** `"Interactions"` (inside `"BlockType"`), the same keys apply:
+- `"Use"` = F key — the "default interaction" prompt on a block (shown with `"InteractionHint"`)
+- `"Secondary"` = right-click
+
+**Block interaction Java class**: `SimpleBlockInteraction` (not `SimpleInstantInteraction`). Override `interactWithBlock(World, CommandBuffer, InteractionType, InteractionContext, ItemStack, Vector3i, CooldownHandler)`. Register via `Interaction.CODEC.register(...)`.
+
 ### Linking Interactions to Items
 
 To make an item do something, you link it to a `RootInteraction` in its JSON file. The key (`"Secondary"`, `"Primary"`, `"Ability1"`, etc.) determines which player action triggers the interaction chain.
@@ -451,3 +468,16 @@ public Item resolveItem(String itemId) {
 8. [ ] (Optional) For advanced use cases, create a Java interaction class extending `SimpleInstantInteraction`.
 9. [ ] (Optional) If using Java, register the interaction in plugin `setup()` via `getCodecRegistry(Interaction.CODEC).register(...)`.
 10. [ ] (Optional) If using Java, link the interaction in item JSON via its registered ID.
+
+---
+
+## Official Javadoc References
+
+- [`SimpleInstantInteraction`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/interaction/interaction/config/SimpleInstantInteraction.html) — base class for custom instant interactions
+- [`Interaction`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/interaction/interaction/config/Interaction.html) — base interaction class; `ABSTRACT_CODEC`, `CHILD_ASSET_CODEC`
+- [`RootInteraction`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/interaction/interaction/config/RootInteraction.html) — entry point for interaction chains
+- [`InteractionRules`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/interaction/interaction/config/InteractionRules.html) — rule conditions for when an interaction can run
+- [`InteractionPriority`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/interaction/interaction/config/InteractionPriority.html) — priority per interaction type (MainHand, OffHand, etc.)
+- [`Interactions`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/interaction/Interactions.html) — component holding interaction IDs on an entity
+- [`InteractionModule`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/interaction/InteractionModule.html)
+- [`com.hypixel.hytale.server.core.modules.interaction.interaction.config` package](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/interaction/interaction/config/package-summary.html) — all built-in interaction types

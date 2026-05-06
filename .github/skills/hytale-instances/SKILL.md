@@ -348,3 +348,12 @@ This is useful when you want return portals to appear at a specific lobby positi
 4. **Clean up instances** — Call `safeRemoveInstance` when an instance is no longer needed to free resources.
 5. **Null return point override** — Pass `null` for the override parameter when you want to use the return point set during `spawnInstance`.
 6. **Instance templates** — Place templates under `Server/Instances/[Name]` with an `instance.bson` configuration file.
+
+---
+
+## Official Javadoc References
+
+- [`InstancesPlugin`](https://release.server.docs.hytale.com/com/hypixel/hytale/builtin/instances/InstancesPlugin.html) — manages running instances and instance assets
+- [`InstanceWorldConfig`](https://release.server.docs.hytale.com/com/hypixel/hytale/builtin/instances/config/InstanceWorldConfig.html) — configuration for instance worlds
+- [`ExitInstance`](https://release.server.docs.hytale.com/com/hypixel/hytale/builtin/instances/config/ExitInstance.html) — respawn controller that exits player from current instance
+- Source: [Instances Guide](https://hytalemodding.dev/en/docs/guides/plugin/instances)

@@ -231,3 +231,11 @@ playerRef.getPacketHandler().writeNoCache(
 
 ### ApplyLookType
 - `ApplyLookType.Rotation` — Server controls the camera rotation.
+
+---
+
+## Official Javadoc References
+
+- [`CameraManager`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/entity/entities/player/CameraManager.html) — manages camera configuration per player
+- [`ClientCameraView`](https://release.server.docs.hytale.com/com/hypixel/hytale/protocol/ClientCameraView.html) — camera view packet
+- Source: [Customizing Camera Controls Guide](https://hytalemodding.dev/en/docs/guides/plugin/customizing-camera-controls)

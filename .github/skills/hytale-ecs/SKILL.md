@@ -803,3 +803,17 @@ Without these, you'll get `NullPointerException: Cannot invoke "Query.validateRe
 - [Example ECS Plugin](https://hytalemodding.dev/en/docs/guides/ecs/example-ecs-plugin)
 - [Block Components](https://hytalemodding.dev/en/docs/guides/ecs/block-components)
 ```
+
+## Official Javadoc References
+
+- [`Store`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/Store.html) — component/entity store
+- [`ChunkStore`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/universe/world/storage/ChunkStore.html) — block/chunk ECS store
+- [`CommandBuffer`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/CommandBuffer.html) — always use for store mutations (thread safety)
+- [`EntityTickingSystem`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/system/tick/EntityTickingSystem.html) — per-entity tick logic
+- [`DelayedEntitySystem`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/system/tick/DelayedEntitySystem.html) — interval-based per-entity logic
+- [`RefSystem`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/system/RefSystem.html) — react to entity add/remove
+- [`EcsEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/system/EcsEvent.html) — ECS event base class
+- [`SystemGroup`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/SystemGroup.html) — system execution ordering
+- [`AddReason`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/AddReason.html) — why an entity was added to the store
+- [`RemoveReason`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/RemoveReason.html) — why an entity was removed from the store
+- [`com.hypixel.hytale.component` package](https://release.server.docs.hytale.com/com/hypixel/hytale/component/package-summary.html) — all core ECS types

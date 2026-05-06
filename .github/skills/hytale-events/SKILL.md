@@ -1,6 +1,6 @@
 ---
 name: hytale-events
-description: Documents Hytale's event system for handling game events in plugins. Covers IEvent (global events), IAsyncEvent (async events), and EcsEvent (ECS entity/block events). Use when listening to player join/disconnect, chat, crafting, damage, block break/place, entity death, player leaving world, or any server event. Triggers - event, IEvent, IAsyncEvent, EcsEvent, CancellableEcsEvent, EntityEventSystem, EventRegistry, registerGlobal, registerAsync, PlayerReadyEvent, PlayerDisconnectEvent, PlayerChatEvent, BreakBlockEvent, PlaceBlockEvent, Damage, CraftRecipeEvent, DropItemEvent, DeathSystems, OnDeathSystem, PlayerRemovedFromWorldEvent, player leave world, event handler, event listener.
+description: Documents Hytale's event system for handling game events in plugins. Covers IEvent (global events), IAsyncEvent (async events), EcsEvent (ECS entity/block events), and custom plugin events (IEvent<KeyType>, EventBus dispatch, EventRegistration unsubscribe). Use when listening to player join/disconnect, chat, crafting, damage, block break/place, entity death, player leaving world, or any server event. Also use when creating your own plugin events to decouple systems. Triggers - event, IEvent, IAsyncEvent, EcsEvent, CancellableEcsEvent, EntityEventSystem, EventRegistry, registerGlobal, registerAsync, PlayerReadyEvent, PlayerDisconnectEvent, PlayerChatEvent, BreakBlockEvent, PlaceBlockEvent, Damage, CraftRecipeEvent, DropItemEvent, DeathSystems, OnDeathSystem, PlayerRemovedFromWorldEvent, player leave world, event handler, event listener, custom event, plugin event, EventBus, EventRegistration, dispatchFor, IEvent<Vector3i>, keyed event, unregister.
 ---
 
 # Hytale Events Skill
@@ -27,6 +27,10 @@ Use this skill when working with events in Hytale plugins. This covers the three
 | Register global event | `this.getEventRegistry().registerGlobal(EventClass.class, Handler::method)` |
 | Register async event | `this.getEventRegistry().registerAsync(EventClass.class, Handler::method)` |
 | Register ECS event system | `this.getEntityStoreRegistry().registerSystem(new MyEventSystem())` in `start()` |
+| Create custom plugin event | Implement `IEvent<KeyType>` (or `IEvent<Void>` for global) |
+| Dispatch custom event (keyed) | `HytaleServer.get().getEventBus().dispatchFor(MyEvent.class, key).dispatch(event)` |
+| Subscribe to custom event (keyed) | `HytaleServer.get().getEventBus().register(MyEvent.class, key, handler)` → `EventRegistration` |
+| Unsubscribe | `eventRegistration.unregister()` |
 
 ---
 
@@ -500,6 +504,137 @@ public void handle(int index,
 
 ---
 
+## Custom Plugin Events
+
+Use `IEvent<KeyType>` to define your own plugin events and dispatch them via the global `EventBus`. This replaces any need for custom observer/callback registries.
+
+### When to Use Custom Plugin Events
+- Decoupling systems that need to react to plugin-internal state changes (e.g. a UI page refreshing when a colonist is hired/fired)
+- Any time you'd otherwise reach for a static map of callbacks
+
+### Two Key Patterns
+
+| Pattern | Key Type | Dispatch key | Use when |
+|---------|----------|--------------|----------|
+| Global (no key) | `Void` | `null` | Server-wide event, no scoping needed |
+| Keyed | e.g. `Vector3i`, `UUID` | a position, UUID, etc. | Only interested listeners receive it |
+
+**Prefer the keyed pattern** — it avoids broadcasting to all listeners and lets each subscriber scope to exactly what they care about (e.g. a specific block position).
+
+### Step 1 — Define the Event
+
+```java
+package com.yourplugin.events;
+
+import java.util.UUID;
+import javax.annotation.Nonnull;
+import com.hypixel.hytale.event.IEvent;
+import com.hypixel.hytale.math.vector.Vector3i;
+
+/** Keyed by workstation block position so only the relevant UI page reacts. */
+public class ColonistHiredEvent implements IEvent<Vector3i> {
+
+    private final UUID colonistUuid;
+    private final Vector3i workstationPos;
+
+    public ColonistHiredEvent(@Nonnull UUID colonistUuid, @Nonnull Vector3i workstationPos) {
+        this.colonistUuid = colonistUuid;
+        this.workstationPos = workstationPos;
+    }
+
+    public UUID getColonistUuid() { return colonistUuid; }
+    public Vector3i getWorkstationPos() { return workstationPos; }
+}
+```
+
+- `IEvent<Vector3i>` — keyed by block position; only listeners registered with that key receive the event
+- `IEvent<Void>` — for global (un-keyed) events; dispatch with key `null`
+- No registration in plugin `setup()` needed — the `EventBus` auto-creates registries on first use
+
+### Step 2 — Dispatch
+
+```java
+import com.hypixel.hytale.server.core.HytaleServer;
+
+// Keyed dispatch (pos is the key, only listeners registered for this pos receive it)
+HytaleServer.get().getEventBus()
+        .dispatchFor(ColonistHiredEvent.class, workstationPos)
+        .dispatch(new ColonistHiredEvent(uuid, workstationPos));
+
+// Global dispatch (Void key)
+HytaleServer.get().getEventBus()
+        .dispatchFor(MyGlobalEvent.class, null)
+        .dispatch(new MyGlobalEvent(...));
+```
+
+> **Note:** `dispatchFor` returns an `IEventDispatcher`. Call `hasListener()` first only if dispatch is expensive and there are no listeners most of the time.
+
+### Step 3 — Subscribe and Unsubscribe
+
+```java
+import com.hypixel.hytale.event.EventRegistration;
+import com.hypixel.hytale.server.core.HytaleServer;
+
+// Subscribe (keyed — only events for this exact blockPos arrive here)
+EventRegistration<?, ?> hiredReg = HytaleServer.get().getEventBus()
+        .register(ColonistHiredEvent.class, blockPos, event -> {
+            // handle event
+        });
+
+// Unsubscribe (call when the listener's lifetime ends, e.g. UI page dismissed)
+hiredReg.unregister();
+```
+
+For global (`Void`-keyed) events, use `registerGlobal()`:
+
+```java
+EventRegistration<?, ?> reg = HytaleServer.get().getEventBus()
+        .registerGlobal(MyGlobalEvent.class, event -> handle(event));
+reg.unregister(); // when done
+```
+
+### Lifecycle Pattern — UI Page / Short-Lived Subscriber
+
+Hold `EventRegistration` fields and clean up on dismiss:
+
+```java
+private EventRegistration<?, ?> hiredReg;
+private EventRegistration<?, ?> firedReg;
+
+@Override
+public void build(...) {
+    unregisterEventListeners(); // re-register safely if build() called twice
+    hiredReg = HytaleServer.get().getEventBus()
+            .register(ColonistHiredEvent.class, blockPos, e -> scheduleRefresh());
+    firedReg = HytaleServer.get().getEventBus()
+            .register(ColonistFiredEvent.class, blockPos, e -> scheduleRefresh());
+}
+
+@Override
+public void onDismiss(...) {
+    unregisterEventListeners();
+}
+
+private void unregisterEventListeners() {
+    if (hiredReg != null) { hiredReg.unregister(); hiredReg = null; }
+    if (firedReg != null) { firedReg.unregister(); firedReg = null; }
+}
+```
+
+### Key Types
+
+`Vector3i` has `equals`/`hashCode` and works correctly as an event key. Other good key types: `UUID`, `String` (world name — used by built-in events), `Integer`.
+
+### Required Imports
+
+```java
+import com.hypixel.hytale.event.EventRegistration;
+import com.hypixel.hytale.event.IEvent;
+import com.hypixel.hytale.server.core.HytaleServer;
+```
+
+---
+
 ## Choosing the Right Event Type
 
 | Need | Event Category | Registration |
@@ -513,6 +648,7 @@ public void handle(int index,
 | Entity death | Special (DeathSystems) | `registerSystem()` in `start()` |
 | Server shutdown | IEvent | `registerGlobal()` in `setup()` |
 | World lifecycle | IEvent | `registerGlobal()` in `setup()` |
+| Plugin-internal state change | Custom `IEvent<KeyType>` | `dispatchFor().dispatch()` + `register()` on `HytaleServer.get().getEventBus()` |
 
 ---
 
@@ -528,6 +664,7 @@ public void handle(int index,
 8. **Access entity data via `Store` and `Ref`** in EcsEvent handlers — never cache entity references
 9. **Use `CommandBuffer`** for mutations inside EcsEvent handlers (add/remove components)
 10. **Death handling** uses `DeathSystems.OnDeathSystem` (a `RefChangeSystem`), not `EntityEventSystem`
+11. **Custom plugin events** — prefer `IEvent<KeyType>` on the global `EventBus` over static observer maps or callback registries. Use a keyed type (e.g. `Vector3i`, `UUID`) to scope delivery to only interested listeners. Store the returned `EventRegistration` and call `unregister()` when the subscriber's lifetime ends.
 
 ---
 
@@ -537,3 +674,14 @@ public void handle(int index,
 - [Events List](https://hytalemodding.dev/en/docs/server/events)
 - [Player Death Event Guide](https://hytalemodding.dev/en/docs/guides/plugin/player-death-event)
 - [ECS Systems Guide](https://hytalemodding.dev/en/docs/guides/ecs/systems)
+
+## Official Javadoc References
+
+- [`IAsyncEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/event/IAsyncEvent.html) — async event interface
+- [`EcsEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/system/EcsEvent.html) — ECS-scoped event base
+- [`EventPriority`](https://release.server.docs.hytale.com/com/hypixel/hytale/event/EventPriority.html) — listener priority levels
+- [`PlayerReadyEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/event/events/player/PlayerReadyEvent.html) — player fully ready in world
+- [`PlayerDisconnectEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/event/events/player/PlayerDisconnectEvent.html)
+- [`AddPlayerToWorldEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/event/events/player/AddPlayerToWorldEvent.html) — player added to world entity store
+- [`BreakBlockEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/event/events/ecs/BreakBlockEvent.html)
+- [`DeathSystems.OnDeathSystem`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/entity/damage/DeathSystems.OnDeathSystem.html) — death hook (`RefChangeSystem` pattern)

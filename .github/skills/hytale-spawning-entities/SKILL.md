@@ -328,3 +328,9 @@ holder.addComponent(PropComponent.getComponentType(), new PropComponent());
 - Source: [Hytale Modding — Spawning Entities Guide](https://hytalemodding.dev/en/docs/guides/plugin/spawning-entities)
 - Related: [Spawning NPCs](https://hytalemodding.dev/en/docs/guides/plugin/spawning-npcs)
 - Related: [Entity List](https://hytalemodding.dev/en/docs/server/entities)
+
+## Official Javadoc References
+
+- [`AddReason`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/AddReason.html) — reason an entity was added (use `SPAWN` for new entities)
+- [`PropComponent`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/entity/component/PropComponent.html) — marker component for network-replicated prop entities
+- [`EntityScaleComponent`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/entity/component/EntityScaleComponent.html) — scales an entity by a factor

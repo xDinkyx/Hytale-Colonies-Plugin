@@ -307,3 +307,7 @@ public class Notifications {
 ## References
 
 - [Official Documentation](https://hytalemodding.dev/en/docs/guides/plugin/send-notifications)
+
+## Official Javadoc References
+
+- [`Notification`](https://release.server.docs.hytale.com/com/hypixel/hytale/protocol/packets/interface_/Notification.html) — packet sent to display a notification to a player

@@ -981,3 +981,10 @@ NPC sensors and actions can now filter based on whether a target is currently bu
 Similarly, `{ "Type": "Buffed" }` matches targets currently under a buff effect.
 
 > **Related skills:** For NPC template sensor/action patterns, see `hytale-npc-templates`.
+
+---
+
+## Official Javadoc References
+
+- [`EffectControllerComponent`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/entity/effect/EffectControllerComponent.html) — component that holds and ticks active effects on an entity
+- [`ActiveEntityEffect`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/entity/effect/ActiveEntityEffect.html) — a single active effect instance

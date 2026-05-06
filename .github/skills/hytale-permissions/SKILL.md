@@ -493,3 +493,7 @@ If you create a custom provider, ensure it's thread-safe. Permission checks can 
 - `com.hypixel.hytale.server.core.permissions.PlayerPermissionChangeEvent`
 - `com.hypixel.hytale.server.core.permissions.PlayerGroupEvent`
 - `com.hypixel.hytale.server.core.permissions.GroupPermissionChangeEvent`
+
+## Official Javadoc References
+
+- [`com.hypixel.hytale.server.core.permissions` package](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/permissions/package-summary.html)

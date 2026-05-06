@@ -1,6 +1,6 @@
 ---
 name: hytale-npc-templates
-version: 5
+version: 6
 source: https://hytalemodding.com/official-documentation/npc/
 authors:
   - name: "HytaleModding"
@@ -334,28 +334,107 @@ For substates:
 
 ## Sensors
 
-Sensors are conditions that gate instruction execution.
+Sensors are conditions that gate instruction execution. All names are the exact JSON `"Type"` strings registered in the engine.
+
+### Logic / Composition
 
 | Sensor Type | Description | Key Fields |
 |------------|-------------|------------|
-| `State` | Matches current NPC state | `State` |
-| `Any` | Always matches | `Once` (execute only once) |
-| `Target` | Detects locked/nearby target | `Range`, `TargetSlot`, `Filters` |
-| `Mob` | Detects nearby NPCs | `Range`, `Filters` ([`NPCGroup`, `LineOfSight`]) |
-| `Beacon` | Listens for inter-NPC messages | `Message`, `Range`, `TargetSlot` |
-| `Damage` | Reacts to incoming damage | `Combat`, `TargetSlot` |
-| `Leash` | Checks distance from spawn | `Range` |
-| `And` | Combines multiple sensors | `Sensors` (array) |
-| `Reference` | Uses a reusable sensor component | Component name |
+| `State` | Matches current NPC state | `State`, `IgnoreMissingSetState` |
+| `Any` | Always matches | — |
+| `And` | All sub-sensors must match | `Sensors` (array) |
+| `Or` | Any sub-sensor must match | `Sensors` (array) |
+| `Not` | Negate a sub-sensor | `Sensor` |
+| `Eval` | Expression-based evaluation | — |
+| `Switch` | Switch on a value | — |
+| `Random` | Random probability trigger | `Chance` |
 
-### Target Filters (including Update 4 additions)
+### Entity Detection
+
+| Sensor Type | Description | Key Fields |
+|------------|-------------|------------|
+| `Player` | Detect nearby players; provides position | `Range`, `Filters[]` |
+| `Mob` | Detect nearby NPCs/mobs; provides position | `Range`, `Tag`, `Filters[]` |
+| `Self` | Reference the NPC itself as target | — |
+| `Target` | Check if NPC has a marked target; provides position | `Range`, `TargetSlot`, `Filters[]` |
+| `Beacon` | Listen for inter-NPC broadcasts | `Message`, `Range`, `TargetSlot` |
+| `Kill` | Detect when NPC kills an entity | — |
+| `Damage` | Detect incoming damage | `Min`, `Max`, `TargetSlot` |
+| `Count` | Count entities matching a sub-sensor | `Sensor`, `Min`, `Max` |
+
+### World / Block
+
+| Sensor Type | Description | Key Fields |
+|------------|-------------|------------|
+| `Block` | Detect block at offset; provides block position | `Offset`, `Tag` / `BlockType` |
+| `BlockType` | Check block type at position | `Offset`, `BlockType` |
+| `BlockChange` | Detect nearby block breaks/placements | `Range` |
+| `CanPlaceBlock` | Check if NPC can place at offset | `Direction`, `Offset` |
+| `SearchRay` | Raycast for blocks or entities | `Range`, `Direction` |
+| `Light` | Check light level at NPC position | `Min`, `Max` |
+| `Time` | Check in-game time of day | `Min`, `Max` |
+| `ReadPosition` | Retrieve a stored position slot; provides position | `Slot`, `Range`, `MinRange` |
+| `Path` | Check pathfinding status | `PathType` (`Found`, `Failed`, `None`) |
+
+### Items
+
+| Sensor Type | Description | Key Fields |
+|------------|-------------|------------|
+| `DroppedItem` | Detect nearby dropped items; provides position | `Range`, `Items[]` (glob patterns) |
+
+### State Machine
+
+| Sensor Type | Description | Key Fields |
+|------------|-------------|------------|
+| `IsBusy` | Check if NPC is currently executing an action | — |
+| `Flag` | Check a named boolean flag | `Flag` |
+| `Timer` | Check if a named timer has elapsed | `Timer` |
+| `Alarm` | Check alarm state | — |
+| `Animation` | Check if a specific animation is playing | — |
+| `Age` | Check entity age | — |
+
+### Interaction
+
+| Sensor Type | Description |
+|------------|-------------|
+| `HasInteracted` | Detect that a player has interacted with this NPC |
+| `CanInteract` | Check if interaction is possible |
+| `InteractionContext` | Access data from the current interaction |
+
+### Environment / Movement
+
+| Sensor Type | Description | Key Fields |
+|------------|-------------|------------|
+| `Leash` | Check distance from leash point | `Range` |
+| `InAir` | NPC is airborne | — |
+| `OnGround` | NPC is on the ground | — |
+| `InWater` | NPC is in water | — |
+| `Weather` | Check current weather | — |
+| `Nav` | Check navigation/pathfinding state | — |
+| `MotionController` | Check active motion controller type | — |
+
+### Entity Filters (used in `Filters[]` on `Player`, `Mob`, `Target` sensors)
 
 | Filter Type | Description |
 |-------------|-------------|
-| `LineOfSight` | Requires unobstructed line of sight |
-| `NPCGroup` | Filters by NPC group membership |
-| `Buffed` | Target currently has an active buff (Update 4) |
-| `Debuffed` | Target currently has an active debuff (Update 4) |
+| `Attitude` | Filter by attitude (Hostile/Friendly/Neutral/Ignore) |
+| `LineOfSight` | Only entities in unobstructed line of sight |
+| `HeightDifference` | Filter by vertical height difference |
+| `ViewSector` | Filter to entities within a view cone |
+| `Combat` | Filter to entities currently in combat |
+| `ItemInHand` | Filter by item the entity is holding |
+| `NPCGroup` | Filter to same or specified NPC group |
+| `MovementState` | Filter by movement state (walking, running, crouching, etc.) |
+| `SpotsMe` | Filter to entities that can see the NPC |
+| `StandingOnBlock` | Filter by the block type the entity stands on |
+| `Stat` | Filter by stat value (e.g. health below threshold) |
+| `Inventory` | Filter by inventory contents |
+| `EntityEffect` | Filter by active entity effect (buff/debuff) |
+| `Altitude` | Filter by altitude / Y position |
+| `InsideBlock` | Filter to entities inside a specific block |
+| `Not` | Negate a filter |
+| `And` | All filters must match |
+| `Or` | Any filter must match |
 
 ### Sensor with Filters
 
@@ -391,23 +470,100 @@ Sensors are conditions that gate instruction execution.
 
 ## Actions
 
-Actions are operations executed when sensor conditions are met.
+Actions are operations executed when sensor conditions are met. All names are the exact JSON `"Type"` strings registered in the engine.
+
+### State / Lifecycle
 
 | Action Type | Description | Key Fields |
 |------------|-------------|------------|
-| `State` | Switch to a different state | `State` |
-| `ParentState` | Switch using imported state name | `State` (from `_ImportStates`) |
-| `Random` | Randomly pick a weighted action | `Actions` (array with `Weight` + `Action`) |
-| `Timeout` | Wait for a duration | `Delay` (`[min, max]` or fixed) |
-| `PlayAnimation` | Play an animation | `Slot`, `Animation` |
-| `Attack` | Execute an attack interaction | `Attack`, `AttackPauseRange` |
-| `Inventory` | Manipulate NPC inventory | `Operation`, `Item`, `Slot`, `UseTarget` |
-| `Beacon` | Send message to nearby NPCs | `Message`, `TargetGroups`, `SendTargetSlot`, `Range` (supports template variables) |
-| `TriggerSpawnBeacon` | Trigger a manual spawn beacon | `BeaconSpawn`, `Range` |
-| `SetStat` | Set an entity stat | `Stat`, `Value` |
-| `Remove` | Remove the target entity | — |
+| `State` | Switch NPC to a different state or sub-state | `State` |
+| `ParentState` | Switch using an imported state slot | `State` (from `_ImportStates`) |
+| `Role` | **Switch the NPC's entire role** (job type) | `Role` |
+| `Spawn` | Spawn a new NPC | — |
+| `Die` | Trigger NPC death | — |
 | `Despawn` | Despawn this NPC | — |
-| `Sequence` | Execute multiple actions in same tick | `Actions` (array) |
+| `DelayDespawn` | Despawn after a delay | `Delay` |
+| `Remove` | Remove entity from world immediately | — |
+
+### Control Flow
+
+| Action Type | Description | Key Fields |
+|------------|-------------|------------|
+| `Sequence` | Execute multiple actions in the same tick | `Actions` (array) |
+| `Random` | Randomly pick a weighted action | `Actions` (array with `Weight` + `Action`) |
+| `Test` | Conditional — if sensor matches, run action | `Sensor`, `Action` |
+| `Timeout` | Wait for a duration | `Delay` (`[min, max]` or fixed) |
+| `Nothing` | No-op | — |
+| `Log` | Debug log a message | `Message` |
+| `SetFlag` | Set a named boolean flag | `Flag`, `Value` |
+
+### Timers
+
+| Action Type | Description | Key Fields |
+|------------|-------------|------------|
+| `TimerStart` | Start a named timer | `Timer`, `Duration` |
+| `TimerContinue` | Resume a paused timer | `Timer` |
+| `TimerPause` | Pause a running timer | `Timer` |
+| `TimerModify` | Change a timer's remaining duration | `Timer`, `Delta` |
+| `TimerStop` | Stop and reset a timer | `Timer` |
+| `TimerRestart` | Restart a timer from zero | `Timer` |
+| `SetAlarm` | Trigger an alarm | — |
+
+### Entity / Communication
+
+| Action Type | Description | Key Fields |
+|------------|-------------|------------|
+| `Beacon` | Broadcast a message to nearby NPCs | `Message`, `TargetGroups`, `SendTargetSlot`, `Range` |
+| `Notify` | Send a notification to a specific entity | — |
+| `SetMarkedTarget` | Mark an entity as the role's target | — |
+| `ReleaseTarget` | Release the current marked target | — |
+| `OverrideAttitude` | Override attitude toward another entity | `Attitude` |
+| `IgnoreForAvoidance` | Stop avoiding a specific entity in pathfinding | — |
+| `ApplyEntityEffect` | Apply a status effect to the target | `Effect` |
+| `SetStat` | Set a stat value on the target entity | `Stat`, `Value` |
+| `Attack` | Execute an attack interaction | `Attack`, `AttackPauseRange` |
+| `TriggerSpawners` | Trigger NPC spawners | — |
+
+### World Interaction
+
+| Action Type | Description | Key Fields |
+|------------|-------------|------------|
+| `MakePath` | Pathfind to a sensor-provided location | — |
+| `StorePosition` | Save the current sensor position to a named slot | `Slot` |
+| `PlaceBlock` | Place a block (requires `SetBlockToPlace` first) | — |
+| `SetBlockToPlace` | Configure which block type to place | `Block` |
+| `ResetBlockSensors` | Clear block sensor state | — |
+| `ResetPath` | Clear pathfinding state | — |
+| `ResetSearchRays` | Clear search ray state | — |
+| `RecomputePath` | Force pathfinding to recompute the current path | — |
+| `SetLeashPosition` | Set the NPC wander leash point | `ToCurrent`, `ToTarget` |
+
+### Items
+
+| Action Type | Description | Key Fields |
+|------------|-------------|------------|
+| `Inventory` | Add, remove, or equip items | `Operation`, `Item`, `Count`, `Slot`, `UseTarget` |
+| `PickUpItem` | Pick up a nearby dropped item | `Range`, `StorageTarget`, `Hoover`, `Items[]` |
+| `DropItem` | Drop an item from inventory | — |
+
+### Visual / Audio
+
+| Action Type | Description | Key Fields |
+|------------|-------------|------------|
+| `PlayAnimation` | Play an animation | `Slot`, `Animation` |
+| `PlaySound` | Play a sound to nearby players | `Sound`, `Range` |
+| `Appearance` | Change NPC model/appearance | — |
+| `DisplayName` | Set or update NPC nameplate text | `Name` |
+| `SpawnParticles` | Spawn a particle effect | — |
+| `ModelAttachment` | Attach a model to a slot | `Slot` |
+| `Crouch` | Instruct NPC to crouch | — |
+
+### Interaction
+
+| Action Type | Description |
+|------------|-------------|
+| `SetInteractable` | Toggle whether players can interact with the NPC |
+| `LockOnInteractionTarget` | Lock target to the player who initiated the interaction |
 
 Action elements can be **selectively disabled** using the `Enabled` flag. Useful for disabling actions conditionally without removing them from the template:
 >
@@ -462,24 +618,56 @@ The `Beacon` action's `Range` field can be computed from template variables:
 }
 ```
 
-### Inventory Actions
+### Inventory Action
+
+Full set of `Inventory` operations (confirmed from decompiled source):
 
 | Operation | Description |
 |-----------|-------------|
-| `SetHotbar` | Place an item in a hotbar slot |
-| `EquipHotbar` | Switch active hotbar slot |
+| `Add` | Add items to the NPC's inventory |
+| `Remove` | Remove items from the NPC's inventory |
+| `Equip` | Equip item as weapon or armour |
+| `ClearHeldItem` | Clear the currently held item |
+| `RemoveHeldItem` | Destroy the currently held item |
+| `SetHotbar` | Place an item in a specific hotbar slot |
+| `EquipHotbar` | Place item in hotbar slot AND activate that slot |
+| `SetOffHand` | Place an item in a specific off-hand slot |
+| `EquipOffHand` | Place item in off-hand slot AND activate it |
+
+> **`UseTarget: false`** is required to act on the NPC itself, not its sensor target.
 
 ```json
 {
   "Type": "Inventory",
-  "Operation": "SetHotbar",
-  "Item": { "Compute": "EatItem" },
-  "Slot": 2,
+  "Operation": "EquipHotbar",
+  "Item": { "Compute": "WeaponItem" },
+  "Slot": 0,
   "UseTarget": false
 }
 ```
 
-> **`UseTarget: false`** is required to act on the NPC itself, not its target.
+### PickUpItem Action
+
+Picks up a dropped item entity. Two modes:
+- **Sensor-driven (default)**: requires a `DroppedItem` sensor to provide the item target.
+- **Hoover mode** (`Hoover: true`): sucks up all items in range matching `Items[]` patterns; no sensor needed.
+
+| Field | Default | Description |
+|---|---|---|
+| `Range` | `1.0` | Pickup radius |
+| `StorageTarget` | `Hotbar` | Where to put the item: `Hotbar`, `Inventory`, or `Destroy` |
+| `Hoover` | `false` | If `true`, pick up all items in range (no sensor needed) |
+| `Items[]` | all | Glob item patterns to filter in hoover mode |
+
+```json
+{
+  "Type": "PickUpItem",
+  "Hoover": true,
+  "Range": 3.0,
+  "StorageTarget": "Inventory",
+  "Items": ["Hyforged:*Wood*", "Hyforged:*Log*"]
+}
+```
 
 ---
 
@@ -508,8 +696,8 @@ The engine iterates siblings and for each matching instruction calls `execute()`
 **Consequence for state-gated blocks**: if each ECS state is wrapped in a sensorless outer `{ "Instructions": [...] }`, the first wrapper always matches and stops the loop. The correct pattern is `Continue: true` + sensor placed directly on each instruction:
 
 ```json
-{ "Continue": true, "Sensor": { "Type": "EcsJobState", "JobState": "StateA" }, "Instructions": [ ... ] },
-{ "Continue": true, "Sensor": { "Type": "EcsJobState", "JobState": "StateB" }, "Instructions": [ ... ] }
+{ "Continue": true, "Sensor": { "Type": "State", "State": "Idle" }, "Instructions": [ ... ] },
+{ "Continue": true, "Sensor": { "Type": "State", "State": "Combat" }, "Instructions": [ ... ] }
 ```
 
 ### ActionsBlocking — sequential action execution (source-verified)
@@ -556,22 +744,37 @@ This maps to a behavior-tree **Selector (fallback) node**: keep trying siblings 
 
 Motions control NPC movement. Set via `BodyMotion` or `HeadMotion` on instructions.
 
+### Body Motion
+
 | Motion Type | Description | Key Fields |
 |------------|-------------|------------|
 | `Nothing` | Stand still | — |
-| `Seek` | Move toward target/position | `SlowDownDistance`, `StopDistance`, `AbortDistance` (default 96), `RelativeSpeed`, `UsePathfinder`; constraint: `SlowDownDistance >= StopDistance` |
+| `Seek` | Move toward target/position using A* | `SlowDownDistance`, `StopDistance`, `AbortDistance` (default 96), `RelativeSpeed`, `UsePathfinder`; constraint: `SlowDownDistance >= StopDistance` |
 | `Flee` | Move away from target | `SlowDownDistance`, `StopDistance`, `HoldDirectionTimeRange` |
 | `Wander` | Unconstrained random wandering | `MaxHeadingChange`, `RelativeSpeed`, `MinWalkTime`, `MaxWalkTime` |
 | `WanderInCircle` | Circular wandering constrained to the NPC's **leash point** | `Radius` (default 10), `MaxHeadingChange`, `RelativeSpeed` |
 | `WanderInRect` | Rectangular wandering constrained to the NPC's **spawn/leash position** | `Width` (default 10), `Depth` (default 10), `RelativeSpeed` |
 | `MaintainDistance` | Keep a specified distance range from target | `DesiredDistanceRange`, `StrafingDurationRange` |
-| `Watch` | Look at target (head only) | `RelativeTurnSpeed` |
-| `Observe` | Sweep/pan head across an angle range | `AngleRange`, `PauseTimeRange`, `PickRandomAngle` |
-| `Aim` | Aim at target (combat, head) | `RelativeTurnSpeed` |
 | `Sequence` | Chain motions in order | `Motions` (array), `Looped` |
 | `Timer` | Run a motion for a capped duration | `Time` (range), `Motion` |
 | `Path` | Walk along a named path marker | `Shape` (LOOP/LINE/CHAIN/POINTS), `Direction`, `MinNodeDelay`, `MaxNodeDelay` |
 | `Teleport` | Teleport NPC to sensor-provided position | `OffsetRange`, `Orientation` |
+| `Leave` | Exit the current area | — |
+| `TakeOff` | Begin flying/airborne movement | — |
+| `Land` | Descend and land | — |
+| `MatchLook` | Match look direction to a target | — |
+| `AimCharge` | Charge up an aimed attack (combat) | — |
+
+### Head Motion
+
+| Motion Type | Description | Key Fields |
+|------------|-------------|------------|
+| `Watch` | Track a sensor target | `RelativeTurnSpeed` |
+| `Observe` | Sweep/pan head across an angle range | `AngleRange`, `PauseTimeRange`, `PickRandomAngle` |
+| `Aim` | Aim at a target (combat) | `RelativeTurnSpeed` |
+| `Sequence` | Chain head motions in order | `Motions` (array) |
+| `Timer` | Run a head motion for a capped duration | `Time` (range), `Motion` |
+| `Nothing` | Hold head still | — |
 
 ### MotionControllerList
 
@@ -1839,6 +2042,20 @@ Each block only passes through once its own `Not` sensor is false (tool is prese
 
 ---
 
-## Reference
+## Official Javadoc References
 
-- Source: [Hytale Modding - NPC Tutorial](https://hytalemodding.dev/en/docs/official-documentation/npc)
+- [`NPCPlugin`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html) — NPC system entry point; `registerCoreComponentType()`, `spawnNPC()`, `spawnEntity()`
+- [`Role`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html) — Runtime role object. Key support accessors:
+  - [`getStateSupport()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getStateSupport())
+  - [`getCombatSupport()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getCombatSupport())
+  - [`getWorldSupport()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getWorldSupport())
+  - [`getMarkedEntitySupport()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getMarkedEntitySupport()) — stored position slots
+  - [`getPositionCache()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getPositionCache())
+  - [`getEntitySupport()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getEntitySupport())
+  - [`getRoleStats()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getRoleStats())
+  - [`getDebugSupport()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getDebugSupport())
+- [`Role.AvoidanceMode`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.AvoidanceMode.html) — avoidance mode enum
+- [`Role.SeparationMode`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.SeparationMode.html) — separation mode enum
+- [`Role.DeferredAction`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.DeferredAction.html) — deferred action interface
+- [`com.hypixel.hytale.server.npc.role` package](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/package-summary.html)
+- [`AllNPCsLoadedEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/AllNPCsLoadedEvent.html) — fired after all NPC roles finish loading

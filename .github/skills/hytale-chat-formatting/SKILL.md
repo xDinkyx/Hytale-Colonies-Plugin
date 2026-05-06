@@ -342,6 +342,11 @@ public void sendPrivateMessage(PlayerRef from, PlayerRef to, String message) {
 - [TinyMessage GitHub Repository](https://github.com/Zoltus/TinyMessage/)
 - [TinyMessage Releases](https://github.com/Zoltus/TinyMessage/releases)
 
+## Official Javadoc References
+
+- [`ChatMessage`](https://release.server.docs.hytale.com/com/hypixel/hytale/protocol/packets/interface_/ChatMessage.html) — chat message packet
+- [`ChatType`](https://release.server.docs.hytale.com/com/hypixel/hytale/protocol/packets/interface_/ChatType.html) — chat channel type (system, player, etc.)
+
 ---
 
 ## License

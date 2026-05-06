@@ -238,3 +238,12 @@ world.execute(() -> {
 - Always wrap stat modifications in `world.execute(() -> { ... })` for thread safety.
 - `maximizeStatValue` restores to the entity's configured maximum, not a hardcoded value.
 - These APIs work on any entity with an `EntityStatMap` component, not just players.
+
+---
+
+## Official Javadoc References
+
+- [`DefaultEntityStatTypes`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/entitystats/asset/DefaultEntityStatTypes.html) — constants for health, stamina, mana, oxygen, etc.
+- [`EntityStatType`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/entitystats/asset/EntityStatType.html) — stat type definition
+- [`EntityStatsModule`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/modules/entitystats/EntityStatsModule.html)
+- Source: [Player Stats Guide](https://hytalemodding.dev/en/docs/guides/plugin/player-stats)

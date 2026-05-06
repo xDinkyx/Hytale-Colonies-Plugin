@@ -27,11 +27,10 @@ Use this skill when spawning Non-Player Characters (NPCs) using the `NPCPlugin` 
 ## Required Imports
 
 ```java
-import com.example.npc.NPCPlugin; // Adjust import as necessary
-import hytale.server.plugin.npc.INonPlayerCharacter;
-import hytale.server.plugin.npc.NPCEntity;
+import com.hypixel.hytale.server.npc.NPCPlugin;
+import com.hypixel.hytale.server.core.universe.world.npc.INonPlayerCharacter;
+import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.component.Ref;
@@ -42,7 +41,7 @@ import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.InventoryHelper;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import org.apache.commons.lang3.tuple.Pair;
+import it.unimi.dsi.fastutil.Pair;
 import java.util.Objects;
 ```
 
@@ -57,18 +56,18 @@ Use `NPCPlugin.get().spawnNPC(...)` to create the entity, assign its model, and 
 ```java
 Pair<Ref<EntityStore>, INonPlayerCharacter> result = NPCPlugin.get().spawnNPC(
     store,              // The entity store where the NPC will exist
-    "Kweebec_Sapling",  // The key/name of the entity model/type
-    null,               // Optional configuration (null for defaults)
+    "Kweebec_Sapling",  // npcType: the NPC role name
+    null,               // groupType: optional group definition reference (null for none)
     position,           // Vec3d position to spawn at
     rotation            // Vec3f facing direction
 );
 ```
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+|-----------|------|--------------|
 | `store` | `Store<EntityStore>` | The entity store where the NPC will exist |
-| `entityKey` | `String` | The key/name of the entity model/type (e.g., `"Kweebec_Sapling"`) |
-| `config` | `Object` | Optional configuration, pass `null` for defaults |
+| `npcType` | `String` | The NPC role name to spawn (e.g., `"Kweebec_Sapling"`) |
+| `groupType` | `@Nullable String` | Reference to a group definition to spawn; pass `null` for none |
 | `position` | `Vector3d` | World position to spawn the NPC |
 | `rotation` | `Vector3f` | Facing direction of the NPC |
 
@@ -126,9 +125,9 @@ inventory.setActiveHotbarSlot((byte) 0);
 ## Complete Example - NPC Spawn Command
 
 ```java
-import com.example.npc.NPCPlugin;
-import hytale.server.plugin.npc.INonPlayerCharacter;
-import hytale.server.plugin.npc.NPCEntity;
+import com.hypixel.hytale.server.npc.NPCPlugin;
+import com.hypixel.hytale.server.core.universe.world.npc.INonPlayerCharacter;
+import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
@@ -140,7 +139,7 @@ import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import org.apache.commons.lang3.tuple.Pair;
+import it.unimi.dsi.fastutil.Pair;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -166,6 +165,7 @@ public class SpawnNpcCommand extends AbstractPlayerCommand {
         Vector3f rotation = new Vector3f(0, 0, 0);
 
         // Spawn the NPC using NPCPlugin helper
+        // npcType = role name, groupType = null (no group)
         Pair<Ref<EntityStore>, INonPlayerCharacter> result = NPCPlugin.get().spawnNPC(
                 store, "Kweebec_Sapling", null, position, rotation);
 
@@ -261,4 +261,6 @@ public class MyHytaleMod extends JavaPlugin {
 
 ## Reference
 
-- Source: [Hytale Modding - Spawning NPCs Guide](https://hytalemodding.dev/en/docs/guides/plugin/spawning-npcs)
+- [`NPCPlugin` Javadoc](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html)
+- [`NPCPlugin.spawnNPC()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html#spawnNPC(com.hypixel.hytale.component.Store,java.lang.String,java.lang.String,com.hypixel.hytale.math.vector.Vector3d,com.hypixel.hytale.math.vector.Vector3f))
+- [`Role` Javadoc](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html)

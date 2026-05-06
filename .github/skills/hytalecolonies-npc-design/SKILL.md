@@ -1,6 +1,6 @@
 ---
 name: hytalecolonies-npc-design
-version: 11
+version: 14
 description: >
   Defines the canonical NPC design architecture for the HytaleColonies plugin.
   Covers the ECS/JSON contract, state machine, notification channel, system responsibilities,
@@ -59,7 +59,6 @@ These are `boolean` fields, default `false`, cleared by ECS after reading.
       ├── shared sub-states ──────────────────────────────────────────────────────
       │   .TravelingToWorkSite        walk to location where the actual work happens (e.g. mine block, tree, construction site)
       │   .WaitingForWork             colonist is at workstation but figuring out what to do; wander + scan for targets/wait for work assignment
-      │   .CollectingDrops            pick up drops after harvesting (e.g. mined block, chopped tree); 
       │   .DeliveringItems            walk to container near workstation and deposit items
       │
       └── job-specific sub-states (examples; add more per new job type) ─────────
@@ -77,7 +76,7 @@ Example working cycle (exact transitions vary by job):
 ```
 Idle.Default → Idle.TravelingToWorkstation → Working.WaitingForWork
   → Working.TravelingToWorkSite → Working.<job sub-state>
-  → Working.CollectingDrops → Working.DeliveringItems → Idle.TravelingToHome → Idle
+  → Working.DeliveringItems → Idle.TravelingToHome → Idle
 ```
 
 ### Adding a new sub-state
@@ -117,7 +116,6 @@ Do NOT add switch/case on `JobState` values in new code — use `state.group` fo
 |---|---|
 | `Working.TravelingToWorkSite` | Colonist is travelling to the location where they will perform their job (block, tree, construction site, etc.). |
 | `Working.WaitingForWork` | Colonist is at their workstation but has no assigned work yet — scans for available targets and idles. |
-| `Working.CollectingDrops` | Colonist collects items dropped at the work site (e.g. harvested resources). |
 | `Working.DeliveringItems` | Colonist delivers collected items to a nearby container. |
 
 **Job-specific Working sub-states** (current examples; more will be added per job type)
@@ -184,7 +182,7 @@ com.hytalecolonies/
 │   │                    FindNextTrunkBlock
 │   └── sensors/
 │       ├── common/      JobTarget, JobTargetBroken, JobTargetExists,
-│       │                AtWorkstation, CollectionTimerElapsed, NoWorkAvailable
+│       │                NoWorkAvailable, RunQuotaReached
 │       ├── miner/       MineQuotaReached
 │       └── woodsman/    HarvestableTree
 ├── systems/
@@ -254,6 +252,12 @@ All state sensors in colonist roles use the **native `"Type": "State"` sensor** 
 
 **Never use `"Type": "EcsJobState"` custom sensors** — that was an early workaround and has been removed.
 
+**Use native timers for duration-based transitions in JSON.** Do NOT add timing fields to `JobComponent` — timer state belongs in the NPC role.
+
+**Use native `Leash` sensor for workstation-arrival detection.** `NavigateToWorkstation` sets both the NavTarget slot and the leash anchor to the workstation. After the Seek completes, `{ "Type": "Leash", "Range": 3.0 }` detects arrival reliably without a custom sensor.
+
+**Item pickup is inline in the harvesting/clearing loop, not a separate state.** The `DroppedItem` sensor + `Seek` + `PickUpItem` instruction runs before the block-seeking instruction in each harvesting/clearing component. When drops are present, the NPC seeks them and picks them up before continuing to the next block. ECS working systems transition directly from Harvesting → `DeliveringItems` (no `CollectingDrops` intermediate state). The `ColonistItemPickupSystem` (0.5 s cadence) provides background pickup for drops that the inline sensor misses (out of range).
+
 ### Role JSON skeleton
 
 The template uses two main-state gates (`Working`, `Idle`) at the top level, each with sub-state inner blocks. Sub-states that need two tick-level concerns (loop + notify) use two consecutive siblings with the same sub-state sensor and `Continue: true`. Each leaf instruction body is injected via a `{ "Reference": { "Compute": "ParamName" }, "Interfaces": ["..."] }` node.
@@ -305,7 +309,7 @@ The template uses two main-state gates (`Working`, `Idle`) at the top level, eac
         "Instructions": [
           { "Continue": true, "Sensor": { "Type": "Any" }, "Actions": [{ "Type": "NavigateToWorkstation" }] },
           { "Continue": true, "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 }, "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 } },
-          { "Sensor": { "Type": "AtWorkstation" }, "Actions": [{ "Type": "SetEcsJobState", "JobState": "WaitingForWork" }] }
+          { "Sensor": { "Type": "Leash", "Range": 3.0 }, "Actions": [{ "Type": "SetEcsJobState", "JobState": "WaitingForWork" }] }
         ]
       },
       {
@@ -342,7 +346,7 @@ Carries: current `JobState`, workstation position, delivery-pipeline state, `wor
 - Transient fields (not persisted): flags, runtime positions, counters that reset on restart
 - Persisted fields: `jobState`, `workStationBlockPosition`
 
-Keep all transient notification flags on `JobComponent` — not on per-job components. Sensors in the NPC role have direct access to `JobComponent` fields; scattering flags across job-specific components makes them harder to read and clear.
+Do NOT add timing fields — use native NPC timers (`TimerStart`/`Timer` sensor) for any duration-based transitions that live entirely in the JSON instruction tree.
 
 ### Per-job component
 
@@ -475,6 +479,66 @@ All roles (Miner, Woodsman, Constructor, Jobless) are `Variant`s of `Template_Co
 
 ---
 
+## Built-in actions and sensors for colonist jobs
+
+These are verified engine built-ins (registered in `NPCPlugin.java`) that are directly useful for colonist NPC role JSON. Use them in components instead of writing custom actions/sensors where they cover the need.
+
+### Items and drops
+
+| JSON Type | Key Fields | When to use |
+|---|---|---|
+| `DroppedItem` sensor | `Range`, `Items[]` | Detect dropped resources at work site; provides position for `PickUpItem` |
+| `DroppedItem` sensor + `PickUpItem` action | `DroppedItem.Range: 5.0`, `PickUpItem.Range: 1.5`, `PickUpItem.StorageTarget: "Inventory"` | Inline pickup in the harvesting/clearing loop — `DroppedItem` provides position; NPC Seeks to item and picks it up before continuing to next block |
+| `Inventory` action | `Operation: "Add"\|`"Remove"\|`"Equip"\|`"ClearHeldItem"\|`"EquipHotbar"` | Give/take/equip items; use `UseTarget: false` to act on the NPC itself |
+| `DropItem` action | — | Drop carried items if needed |
+
+### World / block interaction
+
+| JSON Type | Key Fields | When to use |
+|---|---|---|
+| `Block` sensor | `Offset`, `Tag`/`BlockType` | Detect a target block at position; provides block position to actions |
+| `BlockType` sensor | `Offset`, `BlockType` | Check what type of block is at an offset |
+| `BlockChange` sensor | `Range` | Detect when a block is broken or placed nearby (e.g. work done) |
+| `CanPlaceBlock` sensor | `Direction`, `Offset` | Verify a builder colonist can place at the target offset |
+| `PlaceBlock` action | — | Place the block configured by `SetBlockToPlace` |
+| `SetBlockToPlace` action | `Block` | Specify which block type to place before `PlaceBlock` |
+| `MakePath` action | — | Trigger A* pathfinding to a sensor-provided location |
+| `StorePosition` action | `Slot` | Cache a position (e.g. work site) to a named slot for later recall |
+
+### Navigation
+
+| JSON Type | Key Fields | When to use |
+|---|---|---|
+| `ReadPosition` sensor | `Slot`, `Range`, `MinRange` | Read a position written by ECS into slot 0 (`NavTarget`); activates `Seek` |
+| `Seek` body motion | `StopDistance`, `SlowDownDistance`, `RelativeSpeed` | A* pathfinding toward the `ReadPosition` target |
+| `Path` sensor | `PathType` | Check if the current path succeeded, failed, or hasn't started |
+
+### Timing / scheduling
+
+| JSON Type | Key Fields | When to use |
+|---|---|---|
+| `Time` sensor | `Min`, `Max` | Day/night scheduling — restrict working states to daytime |
+| `TimerStart` / `TimerStop` actions | `Timer`, `Duration` | Bound the duration of work loops or collection phases |
+| `Timer` sensor | `Timer` | Gate the transition out of a timed state |
+
+### Communication
+
+| JSON Type | Key Fields | When to use |
+|---|---|---|
+| `Beacon` action | `Message`, `Range` | Broadcast a colony-wide event (e.g. danger, call for help) |
+| `Notify` action | — | Send a direct message to a specific NPC |
+| `Beacon` sensor | `Message`, `Range` | Listen for broadcasts from other colonists |
+
+### Lifecycle
+
+| JSON Type | When to use |
+|---|---|
+| `Role` action | Switch the NPC to a completely different role (e.g. promote from Jobless to Miner) |
+| `SetInteractable` action | Enable/disable player interaction on the colonist |
+| `LockOnInteractionTarget` action | Lock target to the player who opened the colonist UI |
+
+---
+
 ## Known pitfalls
 
 The items below are non-obvious operational gotchas. Structural design rules (state sensors, component authoring, leash, system cadence) are covered in their respective sections above.
@@ -486,3 +550,16 @@ The items below are non-obvious operational gotchas. Structural design rules (st
 | `Once: true` on a sensor + same-tick ECS read | Flag fires, ECS reads before propagation or after `clearOnce`, silent no-op. | Put state transitions in the ECS handler, not JSON entry actions. |
 | `ActionsBlocking` containing actions that call ECS or read game state | Blocking pipeline freezes the NPC when ECS changes state mid-sequence. | Use `ActionsBlocking` only for pure behavior sequences (equip → swing → timeout). |
 | Multiple `BodyMotion` on siblings with `Continue: true` | The last `setNextBodyMotionStep` call wins — the second `BodyMotion` silently overrides the first. | Keep at most one `BodyMotion` per logical instruction block. |
+
+---
+
+## Official Javadoc References
+
+- [`NPCPlugin`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html) — entry point for NPC spawning and role registration
+- [`NPCPlugin.spawnNPC()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html#spawnNPC(com.hypixel.hytale.component.Store,java.lang.String,java.lang.String,com.hypixel.hytale.math.vector.Vector3d,com.hypixel.hytale.math.vector.Vector3f)) — `spawnNPC(store, npcType, groupType, position, rotation)`
+- [`NPCPlugin.registerCoreComponentType()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html#registerCoreComponentType(java.lang.String,java.util.function.Supplier)) — register custom actions/sensors/roles
+- [`Role`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html) — runtime role; accessed via `npcEntity.getRole()`
+  - `getStateSupport()`, `getCombatSupport()`, `getWorldSupport()`, `getMarkedEntitySupport()`, `getEntitySupport()`, `getRoleStats()`, `getPositionCache()`, `getDebugSupport()`
+  - `setRoleChangeRequested()` — trigger an in-flight role change
+  - `addDeferredAction(Role.DeferredAction)` — queue a deferred callback
+- [`com.hypixel.hytale.server.npc.role` package](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/package-summary.html)

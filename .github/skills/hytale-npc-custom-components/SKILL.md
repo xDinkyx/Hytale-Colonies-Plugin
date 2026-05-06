@@ -1,6 +1,6 @@
 ---
 name: hytale-npc-custom-components
-version: 2
+version: 3
 tags: [hytale, npc, custom, sensor, action, extension, registerCoreComponentType, BuilderActionBase, BuilderSensorBase, holder, data-driven]
 ---
 
@@ -377,30 +377,29 @@ In **non-blocking** mode (the default when `ActionsBlocking` is absent), the ret
 
 ---
 
-## Integration with Built-in Block Sensor
+## Blackboard (shared NPC data cache)
 
-Custom sensors can layer on top of the engine's `BlockTypeView` blackboard for block detection without re-scanning chunks. Declare interest in the constructor:
+`Blackboard` (`com.hypixel.hytale.server.npc.blackboard.Blackboard`) caches expensive world data (e.g. nearby block positions) and shares it between NPCs. The NPC system manages the blackboard lifecycle. Access it through `role` in sensors/actions.
 
-```java
-// In custom sensor builder constructor — tells engine to maintain block position index
-public BuilderSensorHarvestableTree() {
-    super();
-    // support.requireBlockTypeBlackboard("Hyforged:TreeWood"); // call in readConfig or build
-}
-```
+The built-in `Block`, `BlockType`, and `SearchRay` sensors already use the blackboard internally. Custom sensors that need to scan blocks should prefer using these built-in sensors as data sources (via chaining or composition) rather than scanning chunks directly from Java.
 
-Then in the runtime `matches()`:
-
-```java
-// Query the index for a nearby block
-BlockTypeBlackboardView view = npc.getBlockTypeBlackboardView(ref, store); // hypothetical — verify exact API
-Optional<Vector3i> pos = view.findBlock(blockSetId, range, yRange, random, ref, store);
-```
-
-> **Verify the exact API** in `lib/hytale-server` source before implementing — method names may differ. The pattern is documented here as a guide.
+If direct blackboard access is needed, check `lib/hytale-server/src/main/java/com/hypixel/hytale/server/npc/blackboard/` for the current API — method signatures change across server versions.
 
 ---
 
 ## Relationship to `hytale-npc-templates`
 
 The `hytale-npc-templates` skill covers what goes in NPC role JSON. This skill covers how to add *new JSON types* for that JSON. The two skills are complementary — use both when building a full custom NPC behavior.
+
+---
+
+## Official Javadoc References
+
+- [`NPCPlugin.registerCoreComponentType()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html#registerCoreComponentType(java.lang.String,java.util.function.Supplier))
+- [`NPCPlugin`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html) — factory fields: `FACTORY_CLASS_ACTION`, `FACTORY_CLASS_SENSOR`, `FACTORY_CLASS_INSTRUCTION`, `FACTORY_CLASS_ROLE`, `FACTORY_CLASS_BODY_MOTION`, `FACTORY_CLASS_HEAD_MOTION`
+- [`Role`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html) — runtime role object accessed inside actions/sensors via `role.getXxxSupport()`
+- [`Role.getStateSupport()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getStateSupport()) — access NPC state
+- [`Role.getMarkedEntitySupport()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getMarkedEntitySupport()) — stored position slots and marked targets
+- [`Role.getCombatSupport()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getCombatSupport()) — combat state
+- [`Role.getWorldSupport()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getWorldSupport()) — world context
+- [`Role.getEntitySupport()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html#getEntitySupport()) — entity utilities

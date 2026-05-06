@@ -313,4 +313,12 @@ public void giveTool(Player player, String toolId, double maxDurability) {
 - [Notifications Skill](../hytale-notifications/SKILL.md) — Item icons in notifications
 - [UI Modding Skill](../hytale-ui-modding/SKILL.md) — Custom pages and UI
 
+## Official Javadoc References
+
+- [`InventoryComponent`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/inventory/InventoryComponent.html) — preferred inventory API (replaces deprecated `Inventory`)
+- [`ItemStack`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/inventory/ItemStack.html) — quantified item with optional metadata
+- [`PageManager`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/entity/entities/player/pages/PageManager.html) — open/close UI pages for a player
+- [`CustomUIPage`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/entity/entities/player/pages/CustomUIPage.html)
+- [`InteractiveCustomUIPage`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/entity/entities/player/pages/InteractiveCustomUIPage.html)
+
 ```
