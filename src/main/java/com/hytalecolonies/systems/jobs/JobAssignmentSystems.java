@@ -13,6 +13,9 @@ import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.server.core.HytaleServer;
+import com.hytalecolonies.events.ColonistFiredEvent;
+import com.hytalecolonies.events.ColonistHiredEvent;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.RemoveReason;
@@ -219,6 +222,9 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
 
         DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "Assigned Colonist %s to job at %s.", colonistEntityUuid.getUuid(),
                 workStation.getJobType());
+        HytaleServer.get().getEventBus()
+                .dispatchFor(ColonistHiredEvent.class, workStationPos)
+                .dispatch(new ColonistHiredEvent(colonistEntityUuid.getUuid(), workStationPos));
     }
 
     private static void LogWorkStationInfo(WorkStationComponent workStation) {
@@ -240,7 +246,11 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
      * ghost-worker cleanup) where the EntityStore is not currently processing.
      * For EntityStore tick contexts, use the CommandBuffer overload instead.
      */
-    static void fireColonist(Ref<EntityStore> ref, Store<EntityStore> store) {
+    public static void fireColonist(Ref<EntityStore> ref, Store<EntityStore> store) {
+        UUIDComponent uuidComp = store.getComponent(ref, UUIDComponent.getComponentType());
+        JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
+        Vector3i workstationPos = job != null ? job.getWorkStationBlockPosition() : null;
+
         ClaimBlockUtil.unclaimByColonist(ref, store);
         store.tryRemoveComponent(ref, JobTargetComponent.getComponentType());
         for (ComponentType<EntityStore, ?> type : JobRegistry.getJobComponentTypes()) {
@@ -249,6 +259,12 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         store.tryRemoveComponent(ref, JobComponent.getComponentType());
         if (store.getComponent(ref, UnemployedComponent.getComponentType()) == null) {
             store.addComponent(ref, UnemployedComponent.getComponentType(), new UnemployedComponent());
+        }
+
+        if (uuidComp != null && workstationPos != null) {
+            HytaleServer.get().getEventBus()
+                    .dispatchFor(ColonistFiredEvent.class, workstationPos)
+                    .dispatch(new ColonistFiredEvent(uuidComp.getUuid(), workstationPos));
         }
     }
 
@@ -260,6 +276,10 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
      */
     static void fireColonist(Ref<EntityStore> ref, Store<EntityStore> store,
             CommandBuffer<EntityStore> commandBuffer) {
+        UUIDComponent uuidComp = store.getComponent(ref, UUIDComponent.getComponentType());
+        JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
+        Vector3i workstationPos = job != null ? job.getWorkStationBlockPosition() : null;
+
         // Schedule the ChunkStore unclaim on the world thread.
         World world = store.getExternalData().getWorld();
         JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
@@ -273,6 +293,12 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
         }
         commandBuffer.tryRemoveComponent(ref, JobComponent.getComponentType());
         commandBuffer.addComponent(ref, UnemployedComponent.getComponentType(), new UnemployedComponent());
+
+        if (uuidComp != null && workstationPos != null) {
+            HytaleServer.get().getEventBus()
+                    .dispatchFor(ColonistFiredEvent.class, workstationPos)
+                    .dispatch(new ColonistFiredEvent(uuidComp.getUuid(), workstationPos));
+        }
     }
 
     @Override
