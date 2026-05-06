@@ -64,6 +64,10 @@
     },
     "ParticleColor": "#6f462c",
     "BlockSoundSetId": "Wood",
+    "InteractionHint": "server.ui.workstation.inspect.hint",
+    "Interactions": {
+      "Use": "OpenWorkstationPage"
+    },
     "BlockEntity": {
       "Components": {
         "WorkStation": {

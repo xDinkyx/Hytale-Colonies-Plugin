@@ -1,0 +1,249 @@
+$Common = "../Common.ui";
+
+Group {
+    Anchor: (Width: 560, Height: 580);
+    Background: #141c26;
+    LayoutMode: Top;
+    Padding: (Full: 16);
+
+    Label #StationTitle {
+        Text: "Workstation";
+        Anchor: (Height: 36);
+        Style: (FontSize: 20, TextColor: #ffffff, HorizontalAlignment: Center, RenderBold: true);
+    }
+
+    Label #StationStats {
+        Text: "";
+        Anchor: (Height: 20);
+        Style: (FontSize: 12, TextColor: #7a8fa8, HorizontalAlignment: Center);
+    }
+
+    Group { Anchor: (Height: 1); Background: #2b3542; }
+    Group { Anchor: (Height: 10); }
+
+    Group {
+        FlexWeight: 1;
+        LayoutMode: TopScrolling;
+        ScrollbarStyle: $Common.@DefaultScrollbarStyle;
+
+        Label #EmptyLabel {
+            Text: "No colonists assigned.";
+            Anchor: (Height: 40);
+            Style: (FontSize: 13, TextColor: #4a5e72, HorizontalAlignment: Center);
+        }
+
+        Group { Anchor: (Height: 6); }
+
+        Group #Row0 {
+            LayoutMode: Left;
+            Anchor: (Height: 44);
+            Label #Row0Name { Text: ""; Anchor: (Width: 170, Height: 44); Style: (FontSize: 13, TextColor: #e8eef5, VerticalAlignment: Center); }
+            Label #Row0State { Text: ""; Anchor: (Width: 120, Height: 44); Style: (FontSize: 11, TextColor: #5a9fcf, VerticalAlignment: Center); }
+            TextButton #Row0Inspect {
+                Text: "Inspect";
+                Anchor: (Width: 76, Height: 36);
+                Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 12, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 12, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+            Group { Anchor: (Width: 4); }
+            TextButton #Row0Fire {
+                Text: "Fire";
+                Anchor: (Width: 60, Height: 36);
+                Style: (Default: (Background: #3a1a1a, LabelStyle: (FontSize: 12, TextColor: #c06060, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #541e1e, LabelStyle: (FontSize: 12, TextColor: #f08080, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+        }
+        Group { Anchor: (Height: 4); }
+
+        Group #Row1 {
+            LayoutMode: Left;
+            Anchor: (Height: 44);
+            Label #Row1Name { Text: ""; Anchor: (Width: 170, Height: 44); Style: (FontSize: 13, TextColor: #e8eef5, VerticalAlignment: Center); }
+            Label #Row1State { Text: ""; Anchor: (Width: 120, Height: 44); Style: (FontSize: 11, TextColor: #5a9fcf, VerticalAlignment: Center); }
+            TextButton #Row1Inspect {
+                Text: "Inspect";
+                Anchor: (Width: 76, Height: 36);
+                Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 12, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 12, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+            Group { Anchor: (Width: 4); }
+            TextButton #Row1Fire {
+                Text: "Fire";
+                Anchor: (Width: 60, Height: 36);
+                Style: (Default: (Background: #3a1a1a, LabelStyle: (FontSize: 12, TextColor: #c06060, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #541e1e, LabelStyle: (FontSize: 12, TextColor: #f08080, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+        }
+        Group { Anchor: (Height: 4); }
+
+        Group #Row2 {
+            LayoutMode: Left;
+            Anchor: (Height: 44);
+            Label #Row2Name { Text: ""; Anchor: (Width: 170, Height: 44); Style: (FontSize: 13, TextColor: #e8eef5, VerticalAlignment: Center); }
+            Label #Row2State { Text: ""; Anchor: (Width: 120, Height: 44); Style: (FontSize: 11, TextColor: #5a9fcf, VerticalAlignment: Center); }
+            TextButton #Row2Inspect {
+                Text: "Inspect";
+                Anchor: (Width: 76, Height: 36);
+                Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 12, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 12, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+            Group { Anchor: (Width: 4); }
+            TextButton #Row2Fire {
+                Text: "Fire";
+                Anchor: (Width: 60, Height: 36);
+                Style: (Default: (Background: #3a1a1a, LabelStyle: (FontSize: 12, TextColor: #c06060, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #541e1e, LabelStyle: (FontSize: 12, TextColor: #f08080, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+        }
+        Group { Anchor: (Height: 4); }
+
+        Group #Row3 {
+            LayoutMode: Left;
+            Anchor: (Height: 44);
+            Label #Row3Name { Text: ""; Anchor: (Width: 170, Height: 44); Style: (FontSize: 13, TextColor: #e8eef5, VerticalAlignment: Center); }
+            Label #Row3State { Text: ""; Anchor: (Width: 120, Height: 44); Style: (FontSize: 11, TextColor: #5a9fcf, VerticalAlignment: Center); }
+            TextButton #Row3Inspect {
+                Text: "Inspect";
+                Anchor: (Width: 76, Height: 36);
+                Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 12, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 12, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+            Group { Anchor: (Width: 4); }
+            TextButton #Row3Fire {
+                Text: "Fire";
+                Anchor: (Width: 60, Height: 36);
+                Style: (Default: (Background: #3a1a1a, LabelStyle: (FontSize: 12, TextColor: #c06060, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #541e1e, LabelStyle: (FontSize: 12, TextColor: #f08080, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+        }
+        Group { Anchor: (Height: 4); }
+
+        Group #Row4 {
+            LayoutMode: Left;
+            Anchor: (Height: 44);
+            Label #Row4Name { Text: ""; Anchor: (Width: 170, Height: 44); Style: (FontSize: 13, TextColor: #e8eef5, VerticalAlignment: Center); }
+            Label #Row4State { Text: ""; Anchor: (Width: 120, Height: 44); Style: (FontSize: 11, TextColor: #5a9fcf, VerticalAlignment: Center); }
+            TextButton #Row4Inspect {
+                Text: "Inspect";
+                Anchor: (Width: 76, Height: 36);
+                Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 12, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 12, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+            Group { Anchor: (Width: 4); }
+            TextButton #Row4Fire {
+                Text: "Fire";
+                Anchor: (Width: 60, Height: 36);
+                Style: (Default: (Background: #3a1a1a, LabelStyle: (FontSize: 12, TextColor: #c06060, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #541e1e, LabelStyle: (FontSize: 12, TextColor: #f08080, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+        }
+        Group { Anchor: (Height: 4); }
+
+        Group #Row5 {
+            LayoutMode: Left;
+            Anchor: (Height: 44);
+            Label #Row5Name { Text: ""; Anchor: (Width: 170, Height: 44); Style: (FontSize: 13, TextColor: #e8eef5, VerticalAlignment: Center); }
+            Label #Row5State { Text: ""; Anchor: (Width: 120, Height: 44); Style: (FontSize: 11, TextColor: #5a9fcf, VerticalAlignment: Center); }
+            TextButton #Row5Inspect {
+                Text: "Inspect";
+                Anchor: (Width: 76, Height: 36);
+                Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 12, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 12, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+            Group { Anchor: (Width: 4); }
+            TextButton #Row5Fire {
+                Text: "Fire";
+                Anchor: (Width: 60, Height: 36);
+                Style: (Default: (Background: #3a1a1a, LabelStyle: (FontSize: 12, TextColor: #c06060, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #541e1e, LabelStyle: (FontSize: 12, TextColor: #f08080, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+        }
+        Group { Anchor: (Height: 4); }
+
+        Group #Row6 {
+            LayoutMode: Left;
+            Anchor: (Height: 44);
+            Label #Row6Name { Text: ""; Anchor: (Width: 170, Height: 44); Style: (FontSize: 13, TextColor: #e8eef5, VerticalAlignment: Center); }
+            Label #Row6State { Text: ""; Anchor: (Width: 120, Height: 44); Style: (FontSize: 11, TextColor: #5a9fcf, VerticalAlignment: Center); }
+            TextButton #Row6Inspect {
+                Text: "Inspect";
+                Anchor: (Width: 76, Height: 36);
+                Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 12, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 12, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+            Group { Anchor: (Width: 4); }
+            TextButton #Row6Fire {
+                Text: "Fire";
+                Anchor: (Width: 60, Height: 36);
+                Style: (Default: (Background: #3a1a1a, LabelStyle: (FontSize: 12, TextColor: #c06060, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #541e1e, LabelStyle: (FontSize: 12, TextColor: #f08080, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+        }
+        Group { Anchor: (Height: 4); }
+
+        Group #Row7 {
+            LayoutMode: Left;
+            Anchor: (Height: 44);
+            Label #Row7Name { Text: ""; Anchor: (Width: 170, Height: 44); Style: (FontSize: 13, TextColor: #e8eef5, VerticalAlignment: Center); }
+            Label #Row7State { Text: ""; Anchor: (Width: 120, Height: 44); Style: (FontSize: 11, TextColor: #5a9fcf, VerticalAlignment: Center); }
+            TextButton #Row7Inspect {
+                Text: "Inspect";
+                Anchor: (Width: 76, Height: 36);
+                Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 12, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 12, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+            Group { Anchor: (Width: 4); }
+            TextButton #Row7Fire {
+                Text: "Fire";
+                Anchor: (Width: 60, Height: 36);
+                Style: (Default: (Background: #3a1a1a, LabelStyle: (FontSize: 12, TextColor: #c06060, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #541e1e, LabelStyle: (FontSize: 12, TextColor: #f08080, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+        }
+        Group { Anchor: (Height: 4); }
+
+        Group #Row8 {
+            LayoutMode: Left;
+            Anchor: (Height: 44);
+            Label #Row8Name { Text: ""; Anchor: (Width: 170, Height: 44); Style: (FontSize: 13, TextColor: #e8eef5, VerticalAlignment: Center); }
+            Label #Row8State { Text: ""; Anchor: (Width: 120, Height: 44); Style: (FontSize: 11, TextColor: #5a9fcf, VerticalAlignment: Center); }
+            TextButton #Row8Inspect {
+                Text: "Inspect";
+                Anchor: (Width: 76, Height: 36);
+                Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 12, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 12, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+            Group { Anchor: (Width: 4); }
+            TextButton #Row8Fire {
+                Text: "Fire";
+                Anchor: (Width: 60, Height: 36);
+                Style: (Default: (Background: #3a1a1a, LabelStyle: (FontSize: 12, TextColor: #c06060, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #541e1e, LabelStyle: (FontSize: 12, TextColor: #f08080, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+        }
+        Group { Anchor: (Height: 4); }
+
+        Group #Row9 {
+            LayoutMode: Left;
+            Anchor: (Height: 44);
+            Label #Row9Name { Text: ""; Anchor: (Width: 170, Height: 44); Style: (FontSize: 13, TextColor: #e8eef5, VerticalAlignment: Center); }
+            Label #Row9State { Text: ""; Anchor: (Width: 120, Height: 44); Style: (FontSize: 11, TextColor: #5a9fcf, VerticalAlignment: Center); }
+            TextButton #Row9Inspect {
+                Text: "Inspect";
+                Anchor: (Width: 76, Height: 36);
+                Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 12, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 12, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+            Group { Anchor: (Width: 4); }
+            TextButton #Row9Fire {
+                Text: "Fire";
+                Anchor: (Width: 60, Height: 36);
+                Style: (Default: (Background: #3a1a1a, LabelStyle: (FontSize: 12, TextColor: #c06060, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #541e1e, LabelStyle: (FontSize: 12, TextColor: #f08080, HorizontalAlignment: Center, VerticalAlignment: Center)));
+            }
+        }
+        Group { Anchor: (Height: 4); }
+    }
+
+    Group { Anchor: (Height: 1); Background: #2b3542; }
+    Group { Anchor: (Height: 8); }
+
+    Group {
+        LayoutMode: Left;
+        Anchor: (Height: 44);
+
+        TextButton #RecallButton {
+            Text: "Recall All";
+            Anchor: (Width: 130, Height: 44);
+            Style: (Default: (Background: #1a2e1a, LabelStyle: (FontSize: 13, TextColor: #5aaa60, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #22401e, LabelStyle: (FontSize: 13, TextColor: #80cc80, HorizontalAlignment: Center, VerticalAlignment: Center)));
+        }
+
+        Group { Anchor: (Width: 236); }
+
+        TextButton #CloseButton {
+            Text: "Close";
+            Anchor: (Width: 90, Height: 44);
+            Style: (Default: (Background: #2b3542, LabelStyle: (FontSize: 13, TextColor: #96a9be, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #3b4552, LabelStyle: (FontSize: 13, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+        }
+    }
+}
