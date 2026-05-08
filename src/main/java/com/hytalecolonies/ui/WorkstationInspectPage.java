@@ -33,11 +33,8 @@ import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
-import com.hypixel.hytale.protocol.packets.interface_.Page;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
-import com.hypixel.hytale.server.core.entity.entities.player.windows.ContainerWindow;
-import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -45,7 +42,6 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.npc.entities.NPCEntity;
 
 /**
  * Management UI for a workstation block.
@@ -125,11 +121,6 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
             case "fire":
                 handleFire(data.getIndex(), ref, store);
                 break;
-
-            case "inspect":
-                // Opens a separate page -- no sendUpdate needed after
-                handleInspect(data.getIndex(), ref, store);
-                return;
 
             case "recall":
                 handleRecall(store);
@@ -288,43 +279,6 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
             DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
                     "[WorkstationUI] Player fired colonist %s from %s workstation.", uuid, blockPos);
         }
-    }
-
-    private void handleInspect(int index, Ref<EntityStore> ref, Store<EntityStore> store) {
-        if (index < 0 || index >= colonistOrder.size())
-            return;
-        UUID uuid = colonistOrder.get(index);
-
-        Player player = store.getComponent(ref, Player.getComponentType());
-        PlayerRef playerRefComp = store.getComponent(ref, PlayerRef.getComponentType());
-        if (player == null || playerRefComp == null)
-            return;
-
-        Ref<EntityStore> colonistRef = store.getExternalData().getRefFromUUID(uuid);
-        if (colonistRef == null || !colonistRef.isValid())
-            return;
-
-        NPCEntity npc = store.getComponent(colonistRef, NPCEntity.getComponentType());
-        if (npc == null)
-            return;
-
-        ItemContainer storage = npc.getInventory().getStorage();
-        if (storage == null)
-            return;
-
-        // Build HUD overlay before opening the bench page
-        ColonistInfoHud hud = new ColonistInfoHud(playerRefComp);
-        ColonistComponent cc = store.getComponent(colonistRef, ColonistComponent.getComponentType());
-        hud.setData(
-                cc != null ? cc.getColonistName() : "Colonist",
-                colonistJob(colonistRef, store),
-                "Level " + (cc != null ? cc.getColonistLevel() : 1),
-                "Colony: " + (cc != null ? cc.getColonyId() : ""));
-        player.getHudManager().setCustomHud(playerRefComp, hud);
-
-        ContainerWindow storageWindow = new ContainerWindow(storage);
-        storageWindow.registerCloseEvent(e -> player.getHudManager().setCustomHud(playerRefComp, null));
-        player.getPageManager().setPageWithWindows(ref, store, Page.Bench, true, storageWindow);
     }
 
     private void handleRecall(Store<EntityStore> store) {

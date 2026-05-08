@@ -45,7 +45,6 @@ import com.hytalecolonies.npc.actions.common.BuilderActionIncrementJobCounter;
 import com.hytalecolonies.npc.actions.common.BuilderActionLogDebug;
 import com.hytalecolonies.npc.actions.common.BuilderActionNavigateToWorkstation;
 import com.hytalecolonies.npc.actions.common.BuilderActionNotifyBlockBroken;
-import com.hytalecolonies.npc.actions.common.BuilderActionOpenColonistInspectPage;
 import com.hytalecolonies.npc.actions.common.BuilderActionReleaseJobTarget;
 import com.hytalecolonies.npc.actions.common.BuilderActionResetJobCounter;
 import com.hytalecolonies.npc.actions.common.BuilderActionSetEcsJobState;
@@ -293,7 +292,6 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             .registerCoreComponentType("NavigateToWorkstation",      BuilderActionNavigateToWorkstation::new)
             .registerCoreComponentType("FindDeliveryContainer",      BuilderActionFindDeliveryContainer::new)
             .registerCoreComponentType("DepositItems",               BuilderActionDepositItems::new)
-            .registerCoreComponentType("OpenColonistInspectPage",      BuilderActionOpenColonistInspectPage::new)
             // Sensors
             .registerCoreComponentType("HarvestableTree",            BuilderSensorHarvestableTree::new)
             .registerCoreComponentType("JobTarget",                  BuilderSensorJobTarget::new)
