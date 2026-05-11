@@ -33,12 +33,10 @@ import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
-import com.hypixel.hytale.protocol.packets.interface_.Page;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
-import com.hypixel.hytale.server.core.entity.entities.player.windows.ContainerWindow;
-import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
+import com.hytalecolonies.utils.ColonistInventoryUtil;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -283,16 +281,10 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
         if (colonistRef == null || !colonistRef.isValid())
             return;
 
-        NPCEntity npc = store.getComponent(colonistRef, NPCEntity.getComponentType());
-        if (npc == null)
+        if (store.getComponent(colonistRef, NPCEntity.getComponentType()) == null)
             return;
 
-        ItemContainer storage = npc.getInventory().getStorage();
-        if (storage == null)
-            return;
-
-        ContainerWindow window = new ContainerWindow(storage);
-        player.getPageManager().setPageWithWindows(ref, store, Page.Bench, true, window);
+        ColonistInventoryUtil.openForPlayer(colonistRef, ref, player, store);
     }
 
     private void handleFire(int index, Ref<EntityStore> ref, Store<EntityStore> store) {
