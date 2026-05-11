@@ -65,6 +65,8 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
             return;
         }
 
+        TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
+
         // Write the target to the "NavTarget" stored position slot (slot 0).
         // The ReadPosition sensor in Template_Colonist.json checks this slot
         // every tick and activates the Seek body motion while the NPC is outside MinRange.
@@ -77,8 +79,13 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
             return;
         }
 
+        DebugLog.fine(DebugCategory.MOVEMENT,
+                "[PathFinding] [%s] Nav target set: current=%s -> target=%s.",
+                DebugLog.npcId(ref, store),
+                transform != null ? transform.getTransform().getPosition() : "unknown",
+                component.target);
+
         // Debug visualization -- blue = NPC position, red = target, green line = intent.
-        TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform != null && HytaleColoniesPlugin.getInstance().getDebugConfig().get().isDrawColonistPaths()) {
             showDebugPath(
                     store.getExternalData().getWorld(),

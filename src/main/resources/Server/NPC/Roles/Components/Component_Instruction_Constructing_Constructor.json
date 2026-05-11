@@ -15,6 +15,7 @@
         "Sensor": { "Type": "JobTarget", "Range": 2.5 },
         "ActionsBlocking": true,
         "Actions": [
+          { "Type": "PlayAnimation", "Slot": "Status", "Animation": "Interact" },
           { "Type": "LogDebug", "Message": "Constructing: placing block.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
           { "Type": "PlaceConstructionBlock" },
           { "Type": "Timeout", "Delay": [0.6, 0.8] }

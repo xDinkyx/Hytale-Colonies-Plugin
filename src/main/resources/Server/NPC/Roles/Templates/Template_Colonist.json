@@ -9,7 +9,7 @@
       "Description": "Translation key for the NPC display name."
     },
     "Appearance": {
-      "Value": "Mannequin",
+      "Value": "Colonist",
       "Description": "Model to use for this colonist."
     },
     "MaxHealth": {
@@ -67,7 +67,8 @@
       "States": [{ "From": ["Working"], "To": [] }],
       "Actions": [
         { "Type": "LogDebug", "Message": "StateTransition Working ->.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
-        { "Type": "Inventory", "Operation": "ClearHeldItem", "UseTarget": false }
+        { "Type": "Inventory", "Operation": "ClearHeldItem", "UseTarget": false },
+        { "Type": "PlayAnimation", "Slot": "Status" }
       ]
     },
     {
@@ -222,7 +223,7 @@
             {
               "Continue": true,
               "Sensor": { "Type": "Any" },
-              "Actions": [{ "Type": "NavigateToWorkstation" }]
+              "Actions": [{ "Type": "NavigateTo", "Target": "Workstation" }]
             },
             {
               "Continue": true,
@@ -230,7 +231,7 @@
               "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
             },
             {
-              "Sensor": { "Type": "Leash", "Range": 3.0 },
+              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 3.0, "MinRange": 0.0 },
               "Actions": [
                 { "Type": "LogDebug", "Message": "TravelingToWorkstation: arrived -> WaitingForWork.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
                 { "Type": "SetEcsJobState", "JobState": "WaitingForWork" }
@@ -246,7 +247,7 @@
             {
               "Continue": true,
               "Sensor": { "Type": "Any" },
-              "Actions": [{ "Type": "NavigateToWorkstation" }]
+              "Actions": [{ "Type": "NavigateTo", "Target": "Workstation" }]
             },
             {
               "Continue": true,
@@ -254,7 +255,7 @@
               "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
             },
             {
-              "Sensor": { "Type": "Leash", "Range": 3.0 },
+              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 3.0, "MinRange": 0.0 },
               "Actions": [
                 { "Type": "LogDebug", "Message": "TravelingToHome: arrived -> Idle.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
                 { "Type": "SetEcsJobState", "JobState": "Idle" }

@@ -44,7 +44,7 @@ import com.hytalecolonies.npc.actions.common.BuilderActionFindDeliveryContainer;
 import com.hytalecolonies.npc.actions.common.BuilderActionHarvestBlock;
 import com.hytalecolonies.npc.actions.common.BuilderActionIncrementJobCounter;
 import com.hytalecolonies.npc.actions.common.BuilderActionLogDebug;
-import com.hytalecolonies.npc.actions.common.BuilderActionNavigateToWorkstation;
+import com.hytalecolonies.npc.actions.common.BuilderActionNavigateTo;
 import com.hytalecolonies.npc.actions.common.BuilderActionNotifyBlockBroken;
 import com.hytalecolonies.npc.actions.common.BuilderActionReleaseJobTarget;
 import com.hytalecolonies.npc.actions.common.BuilderActionResetJobCounter;
@@ -286,11 +286,11 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             .registerCoreComponentType("IncrementJobCounter",       BuilderActionIncrementJobCounter::new)
             .registerCoreComponentType("ResetJobCounter",           BuilderActionResetJobCounter::new)
             .registerCoreComponentType("SetEcsJobState",             BuilderActionSetEcsJobState::new)
+            .registerCoreComponentType("NavigateTo",                 BuilderActionNavigateTo::new)
             .registerCoreComponentType("NotifyBlockBroken",          BuilderActionNotifyBlockBroken::new)
             .registerCoreComponentType("PlaceConstructionBlock",     BuilderActionPlaceConstructionBlock::new)
             .registerCoreComponentType("RetrieveConstructionBlocks", BuilderActionRetrieveConstructionBlocks::new)
             .registerCoreComponentType("SeekNextClearingBlock",      BuilderActionSeekNextClearingBlock::new)
-            .registerCoreComponentType("NavigateToWorkstation",      BuilderActionNavigateToWorkstation::new)
             .registerCoreComponentType("FindDeliveryContainer",      BuilderActionFindDeliveryContainer::new)
             .registerCoreComponentType("DepositItems",               BuilderActionDepositItems::new)
             .registerCoreComponentType("OpenColonistInspectPage",     BuilderActionOpenColonistInspectPage::new)

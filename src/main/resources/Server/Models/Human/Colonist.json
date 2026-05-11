@@ -1,0 +1,16 @@
+{
+  "$Comment": "Colonist character model. Inherits all Player animations via Mannequin and adds work-action animation sets.",
+  "Parent": "Mannequin",
+  "AnimationSets": {
+    "Interact": {
+      "Animations": [
+        {
+          "Animation": "Characters/Animations/Default/Interact.blockyanim",
+          "BlendingDuration": 0.1,
+          "Looping": true,
+          "Speed": 1.2
+        }
+      ]
+    }
+  }
+}

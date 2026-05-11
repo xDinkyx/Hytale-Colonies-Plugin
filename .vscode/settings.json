@@ -23,7 +23,7 @@
         "files.encoding": "utf8"
     },
     "[java]": {
-        "editor.defaultFormatter": "xaver.clang-format"
+        "editor.defaultFormatter": "redhat.java"
     },
     "clang-format.executable": "C:\\Program Files\\LLVM\\bin\\clang-format.exe"
 }

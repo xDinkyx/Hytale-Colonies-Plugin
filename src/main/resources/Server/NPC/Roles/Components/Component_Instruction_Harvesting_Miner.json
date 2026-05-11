@@ -24,6 +24,7 @@
         "Sensor": { "Type": "JobTarget", "Range": 2.5 },
         "ActionsBlocking": true,
         "Actions": [
+          { "Type": "PlayAnimation", "Slot": "Status", "Animation": "Interact" },
           { "Type": "LogDebug", "Message": "Harvesting: breaking block.", "Category": "MINER_JOB", "Level": "FINE" },
           { "Type": "EquipBestTool" },
           { "Type": "HarvestBlock", "DamageScale": 0.1 },

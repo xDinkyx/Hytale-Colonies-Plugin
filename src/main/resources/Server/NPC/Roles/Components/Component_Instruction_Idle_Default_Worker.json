@@ -9,7 +9,7 @@
       {
         "Sensor": { "Type": "Any" },
         "Actions": [
-          { "Type": "NavigateToWorkstation" },
+          { "Type": "NavigateTo", "Target": "Workstation" },
           { "Type": "SetEcsJobState", "JobState": "TravelingToWorkstation" }
         ]
       }
