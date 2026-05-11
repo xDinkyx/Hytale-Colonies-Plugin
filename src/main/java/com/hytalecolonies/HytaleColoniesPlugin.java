@@ -38,6 +38,7 @@ import com.hytalecolonies.listeners.ConstructorBuildOrderFilter;
 import com.hytalecolonies.listeners.ConstructorPrefabPageFilter;
 import com.hytalecolonies.listeners.PlayerListener;
 import com.hytalecolonies.npc.actions.common.BuilderActionDepositItems;
+import com.hytalecolonies.npc.actions.common.BuilderActionOpenColonistInspectPage;
 import com.hytalecolonies.npc.actions.common.BuilderActionEquipBestTool;
 import com.hytalecolonies.npc.actions.common.BuilderActionFindDeliveryContainer;
 import com.hytalecolonies.npc.actions.common.BuilderActionHarvestBlock;
@@ -292,6 +293,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
             .registerCoreComponentType("NavigateToWorkstation",      BuilderActionNavigateToWorkstation::new)
             .registerCoreComponentType("FindDeliveryContainer",      BuilderActionFindDeliveryContainer::new)
             .registerCoreComponentType("DepositItems",               BuilderActionDepositItems::new)
+            .registerCoreComponentType("OpenColonistInspectPage",     BuilderActionOpenColonistInspectPage::new)
             // Sensors
             .registerCoreComponentType("HarvestableTree",            BuilderSensorHarvestableTree::new)
             .registerCoreComponentType("JobTarget",                  BuilderSensorJobTarget::new)

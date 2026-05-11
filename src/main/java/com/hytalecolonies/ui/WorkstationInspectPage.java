@@ -33,9 +33,13 @@ import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.protocol.packets.interface_.Page;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
+import com.hypixel.hytale.server.core.entity.entities.player.windows.ContainerWindow;
+import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
+import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -121,6 +125,10 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
             case "fire":
                 handleFire(data.getIndex(), ref, store);
                 break;
+
+            case "inspect":
+                handleInspect(data.getIndex(), ref, store);
+                return;
 
             case "recall":
                 handleRecall(store);
@@ -260,6 +268,32 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
     // -------------------------------------------------------------------------
     // Actions
     // -------------------------------------------------------------------------
+
+    private void handleInspect(int index, Ref<EntityStore> ref, Store<EntityStore> store) {
+        if (index < 0 || index >= colonistOrder.size())
+            return;
+        UUID uuid = colonistOrder.get(index);
+
+        Player player = store.getComponent(ref, Player.getComponentType());
+        PlayerRef playerRefComp = store.getComponent(ref, PlayerRef.getComponentType());
+        if (player == null || playerRefComp == null)
+            return;
+
+        Ref<EntityStore> colonistRef = store.getExternalData().getRefFromUUID(uuid);
+        if (colonistRef == null || !colonistRef.isValid())
+            return;
+
+        NPCEntity npc = store.getComponent(colonistRef, NPCEntity.getComponentType());
+        if (npc == null)
+            return;
+
+        ItemContainer storage = npc.getInventory().getStorage();
+        if (storage == null)
+            return;
+
+        ContainerWindow window = new ContainerWindow(storage);
+        player.getPageManager().setPageWithWindows(ref, store, Page.Bench, true, window);
+    }
 
     private void handleFire(int index, Ref<EntityStore> ref, Store<EntityStore> store) {
         if (index < 0 || index >= colonistOrder.size())

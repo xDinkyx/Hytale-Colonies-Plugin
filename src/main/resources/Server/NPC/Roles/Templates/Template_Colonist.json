@@ -1,6 +1,7 @@
-﻿{
+{
   "$Comment": "Abstract base for all colonist roles. All state/sub-state sensors are defined here so ECS can reach them via role.getStateSupport().setState(). Components plug in leaf instruction bodies per sub-state.",
   "Type": "Abstract",
+  "DefaultPlayerAttitude": "Friendly",
   "StartState": "Idle",
   "Parameters": {
     "NameTranslationKey": {
@@ -283,6 +284,12 @@
         "Sensor": { "Type": "Any" },
         "Actions": [
           { "Type": "SetInteractable", "Interactable": true, "Hint": "server.interactionHints.generic" }
+        ]
+      },
+      {
+        "Sensor": { "Type": "HasInteracted" },
+        "Actions": [
+          { "Type": "OpenColonistInspectPage" }
         ]
       }
     ]
