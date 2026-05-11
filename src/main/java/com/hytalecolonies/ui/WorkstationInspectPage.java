@@ -8,20 +8,18 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.hytalecolonies.components.jobs.ConstructorJobComponent;
 import com.hytalecolonies.events.ColonistFiredEvent;
 import com.hytalecolonies.events.ColonistHiredEvent;
 import com.hypixel.hytale.event.EventRegistration;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
-import com.hytalecolonies.components.jobs.MinerJobComponent;
-import com.hytalecolonies.components.jobs.WoodsmanJobComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
+import com.hytalecolonies.utils.ColonistStateUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
@@ -319,30 +317,19 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
             if (colonistRef == null || !colonistRef.isValid())
                 continue;
 
+            JobComponent job = store.getComponent(colonistRef, JobComponent.getComponentType());
+            if (job != null)
+                ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
+
             double ox = (RANDOM.nextDouble() * 2.0 - 1.0) * RECALL_RADIUS;
             double oz = (RANDOM.nextDouble() * 2.0 - 1.0) * RECALL_RADIUS;
             Vector3d pos = new Vector3d(blockPos.x + 0.5 + ox, blockPos.y + 1.0, blockPos.z + 0.5 + oz);
-            store.addComponent(colonistRef, Teleport.getComponentType(),
-                    new Teleport(world, pos, new Vector3f(0, 0, 0)));
+            store.addComponent(colonistRef, Teleport.getComponentType(), new Teleport(world, pos, new Vector3f(0, 0, 0)));
             count++;
         }
 
         DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
                 "[WorkstationUI] Recalled %d colonist(s) to %s.", count, blockPos);
-    }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    private static String colonistJob(Ref<EntityStore> colonistRef, Store<EntityStore> store) {
-        if (store.getComponent(colonistRef, WoodsmanJobComponent.getComponentType()) != null)
-            return "Woodsman";
-        if (store.getComponent(colonistRef, MinerJobComponent.getComponentType()) != null)
-            return "Miner";
-        if (store.getComponent(colonistRef, ConstructorJobComponent.getComponentType()) != null)
-            return "Constructor";
-        return "Unemployed";
     }
 
     // -------------------------------------------------------------------------
