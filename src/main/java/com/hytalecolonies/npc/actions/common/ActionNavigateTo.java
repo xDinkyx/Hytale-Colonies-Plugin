@@ -19,19 +19,30 @@ import com.hytalecolonies.utils.ColonistLeashUtil;
 import com.hytalecolonies.utils.JobNavigationUtil;
 
 /**
- * Dispatches one-shot navigation via {@link com.hytalecolonies.components.npc.MoveToTargetComponent}.
+ * Dispatches one-shot navigation via
+ * {@link com.hytalecolonies.components.npc.MoveToTargetComponent}.
  * Constructed by {@link BuilderActionNavigateTo}.
  *
- * <p>Supported targets:
+ * <p>
+ * Supported targets:
  * <ul>
- *   <li>{@code "Workstation"} -- seeks {@code JobComponent.getWorkStationBlockPosition()} and re-anchors the leash.</li>
- *   <li>{@code "JobTarget"} -- seeks {@code JobTargetComponent.targetPosition} (the currently claimed work block).</li>
+ * <li>{@code "Workstation"} -- seeks
+ * {@code JobComponent.getWorkStationBlockPosition()} and re-anchors the
+ * leash.</li>
+ * <li>{@code "JobTarget"} -- seeks {@code JobTargetComponent.targetPosition}
+ * (the currently claimed work block).</li>
  * </ul>
  */
 public class ActionNavigateTo extends ActionBase {
 
     private static final String TARGET_WORKSTATION = "Workstation";
-    private static final String TARGET_JOB_TARGET  = "JobTarget";
+    private static final String TARGET_JOB_TARGET = "JobTarget";
+
+    /**
+     * NavTarget stored-position slot index — must match Template_Colonist.json slot
+     * 0.
+     */
+    private static final int NAV_TARGET_SLOT = 0;
 
     private final String target;
 
@@ -41,13 +52,14 @@ public class ActionNavigateTo extends ActionBase {
     }
 
     @Override
-    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store) {
+    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo,
+            double dt, @Nonnull Store<EntityStore> store) {
         super.execute(ref, role, sensorInfo, dt, store);
 
         if (TARGET_WORKSTATION.equals(target)) {
-            navigateToWorkstation(ref, store);
+            navigateToWorkstation(ref, role, store);
         } else if (TARGET_JOB_TARGET.equals(target)) {
-            navigateToJobTarget(ref, store);
+            navigateToJobTarget(ref, role, store);
         } else {
             DebugLog.warning(DebugCategory.MOVEMENT,
                     "[NavigateTo] [%s] Unknown target type '%s'.", DebugLog.npcId(ref, store), target);
@@ -56,17 +68,22 @@ public class ActionNavigateTo extends ActionBase {
         return true;
     }
 
-    private void navigateToJobTarget(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
+    private void navigateToJobTarget(@Nonnull Ref<EntityStore> ref, @Nonnull Role role,
+            @Nonnull Store<EntityStore> store) {
         JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.getTargetPosition() == null) {
             DebugLog.fine(DebugCategory.MOVEMENT,
-                    "[NavigateTo] [%s] No JobTargetComponent or target position -- cannot navigate.", DebugLog.npcId(ref, store));
+                    "[NavigateTo] [%s] No JobTargetComponent or target position -- cannot navigate.",
+                    DebugLog.npcId(ref, store));
             return;
         }
-        JobNavigationUtil.dispatchNavigation(store, ref, jobTarget.getTargetPosition());
+        Vector3i pos = jobTarget.getTargetPosition();
+        setNavTarget(role, pos.x + 0.5, (double) pos.y, pos.z + 0.5);
+        JobNavigationUtil.dispatchNavigation(store, ref, pos);
     }
 
-    private void navigateToWorkstation(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
+    private void navigateToWorkstation(@Nonnull Ref<EntityStore> ref, @Nonnull Role role,
+            @Nonnull Store<EntityStore> store) {
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null) {
             DebugLog.fine(DebugCategory.MOVEMENT,
@@ -79,7 +96,17 @@ public class ActionNavigateTo extends ActionBase {
                     "[NavigateTo] [%s] No workstation position -- cannot navigate.", DebugLog.npcId(ref, store));
             return;
         }
+        // Write directly to NavTarget slot so the Seek sensor sees the correct position
+        // in the same instruction tick. PathFindingSystem fires after the NPC
+        // instruction
+        // pass, so dispatching via MoveToTargetComponent alone would leave slot stale
+        // for one tick and briefly navigate toward the old position.
+        setNavTarget(role, wsPos.x + 0.5, (double) wsPos.y, wsPos.z + 0.5);
         JobNavigationUtil.dispatchNavigation(store, ref, wsPos);
         ColonistLeashUtil.setLeashToBlockCenter(ref, store, wsPos);
+    }
+
+    private void setNavTarget(@Nonnull Role role, double x, double y, double z) {
+            role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(x, y, z);
     }
 }

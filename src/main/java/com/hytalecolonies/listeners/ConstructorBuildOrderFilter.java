@@ -39,6 +39,9 @@ public class ConstructorBuildOrderFilter implements PlayerPacketFilter
     /** Players locked from pasting until they select a new prefab via {@link com.hytalecolonies.ui.ConstructorPrefabPage}. */
     public static final Set<UUID> pasteLocked = ConcurrentHashMap.newKeySet();
 
+    /** Last virtual browser directory path, keyed by player UUID. Restored when the prefab picker reopens. */
+    public static final ConcurrentHashMap<UUID, String> lastBrowserPath = new ConcurrentHashMap<>();
+
     public static void clearPasteLock(UUID uuid)
     {
         pasteLocked.remove(uuid);

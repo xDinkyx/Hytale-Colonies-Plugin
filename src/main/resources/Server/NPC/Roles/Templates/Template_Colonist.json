@@ -98,20 +98,6 @@
           ]
         },
         {
-          "$Comment": "Harvesting #2 -- when block is air, notify ECS. Runs alongside #1 via Continue.",
-          "Continue": true,
-          "Sensor": { "Type": "State", "State": ".Harvesting", "IgnoreMissingSetState": true },
-          "Instructions": [
-            {
-              "Sensor": { "Type": "JobTargetBroken" },
-              "Actions": [
-                { "Type": "LogDebug", "Message": "Harvesting: block broken -- notifying ECS.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
-                { "Type": "NotifyBlockBroken" }
-              ]
-            }
-          ]
-        },
-        {
           "$Comment": "Clearing #1 -- seek to block and break it (constructor loop).",
           "Continue": true,
           "Sensor": { "Type": "State", "State": ".Clearing", "IgnoreMissingSetState": true },
@@ -222,7 +208,7 @@
           "Instructions": [
             {
               "Continue": true,
-              "Sensor": { "Type": "Any" },
+              "Sensor": { "Type": "Any", "Once": true },
               "Actions": [{ "Type": "NavigateTo", "Target": "Workstation" }]
             },
             {
@@ -246,7 +232,7 @@
           "Instructions": [
             {
               "Continue": true,
-              "Sensor": { "Type": "Any" },
+              "Sensor": { "Type": "Any", "Once": true },
               "Actions": [{ "Type": "NavigateTo", "Target": "Workstation" }]
             },
             {

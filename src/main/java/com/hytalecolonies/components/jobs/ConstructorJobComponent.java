@@ -19,9 +19,11 @@ public class ConstructorJobComponent implements Component<EntityStore> {
             .builder(ConstructorJobComponent.class, ConstructorJobComponent::new)
             .build();
 
-    // ===== Transient fields =====
-    /** Batch of pre-claimed build block positions for the current constructing run. Not persisted. */
+    // ===== Transient fields (not persisted) =====
     public ArrayDeque<Vector3i> pendingBuildQueue = new ArrayDeque<>();
+    public boolean clearingBlockBrokenNotification = false;
+    public boolean blockPlacedNotification = false;
+    public boolean itemsRetrievedNotification = false;
 
     // ===== Constructors =====
     public ConstructorJobComponent() {}
@@ -34,6 +36,6 @@ public class ConstructorJobComponent implements Component<EntityStore> {
     // ===== Cloneable =====
     @Override
     public @Nullable Component<EntityStore> clone() {
-        return new ConstructorJobComponent(); // pendingBuildQueue is transient -- not copied
+        return new ConstructorJobComponent();
     }
 }

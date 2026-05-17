@@ -7,6 +7,7 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import javax.annotation.Nullable;
 
@@ -47,6 +48,10 @@ public class WorkStationComponent implements Component<ChunkStore> {
     protected Set<UUID> assignedColonists = new HashSet<>();
     /** How many blocks each worker processes per run before collecting drops. */
     public int blocksPerRun = 16;
+
+    // ===== Transient runtime fields (not persisted) =====
+    public @Nullable Vector3i deliveryContainerPosition = null; // Cached position of the delivery container for this workstation.
+    public boolean workAvailable = true; // Marks that the workstation has work available.
 
     // ===== Constructors =====
     public WorkStationComponent() {

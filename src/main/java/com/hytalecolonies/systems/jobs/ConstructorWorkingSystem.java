@@ -75,25 +75,25 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
 
         JobState state = job.getCurrentTask();
 
-        if (state == JobState.WorkingClearing && job.blockBrokenNotification)
+        if (state == JobState.WorkingClearing && constructorJob.clearingBlockBrokenNotification)
         {
-            job.blockBrokenNotification = false;
+            constructorJob.clearingBlockBrokenNotification = false;
             counter.count++;
             dispatchClearingAdvance(chunk.getReferenceTo(index), store, job, counter);
             return;
         }
 
-        if ((state == JobState.WorkingRetrievingBlocks || state == JobState.WorkingConstructing) && job.itemsRetrievedNotification)
+        if ((state == JobState.WorkingRetrievingBlocks || state == JobState.WorkingConstructing) && constructorJob.itemsRetrievedNotification)
         {
-            job.itemsRetrievedNotification = false;
+            constructorJob.itemsRetrievedNotification = false;
             counter.count = 0;
             dispatchBuildStart(chunk.getReferenceTo(index), store, job);
             return;
         }
 
-        if (state == JobState.WorkingConstructing && job.blockPlacedNotification)
+        if (state == JobState.WorkingConstructing && constructorJob.blockPlacedNotification)
         {
-            job.blockPlacedNotification = false;
+            constructorJob.blockPlacedNotification = false;
             dispatchBuildAdvance(chunk.getReferenceTo(index), store, job, constructorJob);
         }
     }
@@ -262,10 +262,8 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
         }
         else
         {
-            DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
-                          "[ConstructorWorking] [%s] All clearing targets claimed by another colonist -- WaitingForWork.",
-                          npcId);
-            liveJob.workAvailable = true;
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorWorking] [%s] All clearing targets claimed -- WaitingForWork.", npcId);
+            setWorkAvailable(liveJob, world);
             ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WaitingForWork);
         }
     }
@@ -289,7 +287,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
 
         if (colonistUuid == null || prefab == null)
         {
-            liveJob.workAvailable = true;
+            setWorkAvailable(liveJob, world);
             ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WaitingForWork);
             return;
         }
@@ -303,7 +301,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
 
         if (claimed.isEmpty())
         {
-            liveJob.workAvailable = true;
+            setWorkAvailable(liveJob, world);
             ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WaitingForWork);
             return;
         }
@@ -406,7 +404,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
                     JobNavigationUtil.setJobTarget(entityStore.getStore(), colonistRef, claimed);
                     JobNavigationUtil.dispatchNavigation(entityStore.getStore(), colonistRef, claimed);
 
-                    liveJob.workAvailable = true;
+                    setWorkAvailable(liveJob, world);
 
                     ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingClearing);
                     DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
@@ -417,13 +415,13 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
                 }
             }
 
-            liveJob.workAvailable = true;
+            setWorkAvailable(liveJob, world);
             ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WaitingForWork);
             return;
         }
 
         clearTarget(entityStore, colonistRef);
-        liveJob.workAvailable = true;
+        setWorkAvailable(liveJob, world);
         ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WaitingForWork);
         DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorWorking] [%s] Construction complete -- WaitingForWork.", npcId);
     }
@@ -433,5 +431,13 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
         JobTargetComponent liveJt = entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType());
         if (liveJt != null)
             liveJt.setTargetPosition(null);
+    }
+
+    private static void setWorkAvailable(@Nonnull JobComponent job, @Nonnull World world)
+    {
+        Vector3i wsPos = job.getWorkStationBlockPosition();
+        if (wsPos == null) return;
+        WorkStationComponent ws = WorkStationUtil.getWorkStationAt(world, wsPos);
+        if (ws != null) ws.workAvailable = true;
     }
 }

@@ -1,6 +1,6 @@
 package com.hytalecolonies.npc.actions.common;
 
-import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.ConstructorJobComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hypixel.hytale.component.Ref;
@@ -13,10 +13,7 @@ import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-/**
- * JSON->ECS notification bridge for the miner. Sets {@link JobComponent#blockBrokenNotification};
- * no game-logic. {@link com.hytalecolonies.systems.jobs.MinerWorkingSystem} reads and clears the flag.
- */
+/** Sets {@link ConstructorJobComponent#clearingBlockBrokenNotification} for the constructor clearing loop. */
 public class ActionNotifyBlockBroken extends ActionBase {
 
     public ActionNotifyBlockBroken(@Nonnull BuilderActionNotifyBlockBroken builder,
@@ -30,17 +27,17 @@ public class ActionNotifyBlockBroken extends ActionBase {
                            @Nonnull Store<EntityStore> store) {
         super.execute(ref, role, sensorInfo, dt, store);
 
-        JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
-        if (job == null) {
-            DebugLog.fine(DebugCategory.MINER_JOB,
-                    "[NotifyBlockBroken] [%s] No JobComponent -- skipping.",
+        ConstructorJobComponent constructorJob = store.getComponent(ref, ConstructorJobComponent.getComponentType());
+        if (constructorJob == null) {
+            DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB,
+                    "[NotifyBlockBroken] [%s] No ConstructorJobComponent -- skipping.",
                     DebugLog.npcId(ref, store));
             return true;
         }
 
-        if (!job.blockBrokenNotification) {
-            job.blockBrokenNotification = true;
-            DebugLog.fine(DebugCategory.MINER_JOB, "[NotifyBlockBroken] [%s] Flag set.", DebugLog.npcId(ref, store));
+        if (!constructorJob.clearingBlockBrokenNotification) {
+            constructorJob.clearingBlockBrokenNotification = true;
+            DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB, "[NotifyBlockBroken] [%s] Flag set.", DebugLog.npcId(ref, store));
         }
 
         return true;

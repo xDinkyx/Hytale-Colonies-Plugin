@@ -17,6 +17,7 @@ import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
 import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import com.hytalecolonies.ConstructionOrderStore;
+import com.hytalecolonies.components.jobs.ConstructorJobComponent;
 import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
@@ -27,7 +28,7 @@ import com.hytalecolonies.utils.WorkStationUtil;
 
 /**
  * Places the correct prefab block at the colonist's job-target position.
- * Sets {@link JobComponent#blockPlacedNotification} so the constructor working system can advance.
+ * Sets {@link ConstructorJobComponent#blockPlacedNotification} so the constructor working system can advance.
  */
 public class ActionPlaceConstructionBlock extends ActionBase
 {
@@ -91,7 +92,8 @@ public class ActionPlaceConstructionBlock extends ActionBase
                           wy,
                           wz);
             // Still notify so ECS can advance past this position.
-            job.blockPlacedNotification = true;
+            ConstructorJobComponent constructorJob = store.getComponent(ref, ConstructorJobComponent.getComponentType());
+            if (constructorJob != null) constructorJob.blockPlacedNotification = true;
             return true;
         }
 
@@ -122,9 +124,10 @@ public class ActionPlaceConstructionBlock extends ActionBase
             DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] Placed '%s' (rot=%d) at %d,%d,%d.", blockKey, blockRotation, wx, wy, wz);
         });
 
-        if (!job.blockPlacedNotification)
+        ConstructorJobComponent constructorJob = store.getComponent(ref, ConstructorJobComponent.getComponentType());
+        if (constructorJob != null && !constructorJob.blockPlacedNotification)
         {
-            job.blockPlacedNotification = true;
+            constructorJob.blockPlacedNotification = true;
             DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] [%s] Notification flag set.", npcId);
         }
 

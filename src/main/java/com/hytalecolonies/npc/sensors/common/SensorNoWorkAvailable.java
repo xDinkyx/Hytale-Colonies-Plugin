@@ -1,8 +1,10 @@
 package com.hytalecolonies.npc.sensors.common;
 
 import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.WorkStationUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -12,15 +14,7 @@ import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import javax.annotation.Nonnull;
 
-/**
- * Generic sensor that fires when the colonist's {@link JobComponent#noWorkAvailable}
- * flag is {@code true}.
- *
- * <p>Any seek action (SeekNextMineBlock, SeekNextTree, etc.) sets this flag when
- * it scans for task targets and finds none. The flag is cleared when work is found,
- * allowing the colonist to use this sensor to transition away from the Working state
- * once all available tasks are exhausted.
- */
+/** Fires when {@link WorkStationComponent#workAvailable} is {@code false}. */
 public class SensorNoWorkAvailable extends SensorBase {
 
     public SensorNoWorkAvailable(@Nonnull BuilderSensorNoWorkAvailable builder,
@@ -36,12 +30,14 @@ public class SensorNoWorkAvailable extends SensorBase {
         }
 
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
-        boolean result = job != null && !job.workAvailable;
+        if (job == null) return false;
+        WorkStationComponent workStation = WorkStationUtil.getWorkStation(store, ref);
+        boolean result = workStation != null && !workStation.workAvailable;
         DebugLog.fine(DebugCategory.JOB_SYSTEM,
-                "[SensorNoWorkAvailable] [%s] worker=%s workAvailable=%s result=%s.",
+                "[SensorNoWorkAvailable] [%s] workStation=%s workAvailable=%s result=%s.",
                 DebugLog.npcId(ref, store),
-                job != null ? "present" : "null",
-                job != null ? job.workAvailable : "N/A",
+                workStation != null ? "present" : "null",
+                workStation != null ? workStation.workAvailable : "N/A",
                 result);
         return result;
     }

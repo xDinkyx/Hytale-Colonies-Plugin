@@ -1,6 +1,6 @@
 package com.hytalecolonies.npc.actions.constructor;
 
-import com.hytalecolonies.components.jobs.JobComponent;
+import com.hytalecolonies.components.jobs.ConstructorJobComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hypixel.hytale.component.Ref;
@@ -15,7 +15,7 @@ import javax.annotation.Nullable;
 
 /**
  * Stub action: pretends to retrieve construction materials from the workstation.
- * Sets {@link JobComponent#itemsRetrievedNotification}; no actual inventory transfer yet.
+ * Sets {@link ConstructorJobComponent#itemsRetrievedNotification}; no actual inventory transfer yet.
  */
 public class ActionRetrieveConstructionBlocks extends ActionBase {
 
@@ -30,16 +30,16 @@ public class ActionRetrieveConstructionBlocks extends ActionBase {
                            @Nonnull Store<EntityStore> store) {
         super.execute(ref, role, sensorInfo, dt, store);
 
-        JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
-        if (job == null) {
+        ConstructorJobComponent constructorJob = store.getComponent(ref, ConstructorJobComponent.getComponentType());
+        if (constructorJob == null) {
             DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                    "[RetrieveConstructionBlocks] [%s] No JobComponent -- skipping.",
+                    "[RetrieveConstructionBlocks] [%s] No ConstructorJobComponent -- skipping.",
                     DebugLog.npcId(ref, store));
             return true;
         }
 
-        if (!job.itemsRetrievedNotification) {
-            job.itemsRetrievedNotification = true;
+        if (!constructorJob.itemsRetrievedNotification) {
+            constructorJob.itemsRetrievedNotification = true;
             DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB,
                     "[RetrieveConstructionBlocks] [%s] Flag set (stub).",
                     DebugLog.npcId(ref, store));

@@ -14,6 +14,7 @@ import com.hypixel.hytale.event.EventRegistration;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
+import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.debug.DebugCategory;
@@ -320,6 +321,10 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
             JobComponent job = store.getComponent(colonistRef, JobComponent.getComponentType());
             if (job != null)
                 ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
+
+            JobTargetComponent jt = store.getComponent(colonistRef, JobTargetComponent.getComponentType());
+            if (jt != null)
+                jt.setTargetPosition(null);
 
             double ox = (RANDOM.nextDouble() * 2.0 - 1.0) * RECALL_RADIUS;
             double oz = (RANDOM.nextDouble() * 2.0 - 1.0) * RECALL_RADIUS;

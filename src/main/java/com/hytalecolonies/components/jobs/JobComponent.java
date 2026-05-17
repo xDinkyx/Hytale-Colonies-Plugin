@@ -1,7 +1,5 @@
 package com.hytalecolonies.components.jobs;
 
-// Imports
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -32,19 +30,6 @@ public class JobComponent implements Component<EntityStore> {
     // ===== Fields =====
     protected @Nullable Vector3i workStationBlockPosition = null;
     protected @Nullable JobState jobState = null; // ToDo: Probably move state logic to separate component.
-    /** World position of the linked delivery container. Transient -- re-discovered each delivery run. */
-    public @Nullable Vector3i deliveryContainerPosition = null;
-    /**
-     * {@code false} when no work targets were found. Cleared when work is found or target released.
-     * Read by {@link com.hytalecolonies.npc.sensors.SensorNoWorkAvailable}. Transient.
-     */
-    public boolean workAvailable = true;
-    /** Set by {@code ActionNotifyBlockBroken}; read and cleared by {@link com.hytalecolonies.systems.jobs.MinerWorkingSystem}. Transient. */
-    public boolean blockBrokenNotification = false;
-    /** Set by {@code ActionPlaceConstructionBlock}; read and cleared by the constructor working system. Transient. */
-    public boolean blockPlacedNotification = false;
-    /** Set by {@code ActionRetrieveConstructionBlocks}; read and cleared by the constructor working system. Transient. */
-    public boolean itemsRetrievedNotification = false;
 
     // ===== Constructors =====
     public JobComponent() {}

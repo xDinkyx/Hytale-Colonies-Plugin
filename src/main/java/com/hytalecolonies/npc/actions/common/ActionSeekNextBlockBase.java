@@ -30,8 +30,10 @@ import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
  * and sets navigation toward it. Marks {@code workAvailable = false} when the
  * scan returns nothing.
  *
- * <p>Subclasses implement {@link #findNextBlock} for job-specific scans, and
- * may override {@link #preProcess} for one-time setup and {@link #getClaimLabel}
+ * <p>
+ * Subclasses implement {@link #findNextBlock} for job-specific scans, and
+ * may override {@link #preProcess} for one-time setup and
+ * {@link #getClaimLabel}
  * for debug identification.
  */
 public abstract class ActionSeekNextBlockBase extends ActionBase {
@@ -40,7 +42,7 @@ public abstract class ActionSeekNextBlockBase extends ActionBase {
     protected static final int NAV_TARGET_SLOT = 0;
 
     protected ActionSeekNextBlockBase(@Nonnull BuilderActionBase builder,
-                                      @Nonnull BuilderSupport support) {
+            @Nonnull BuilderSupport support) {
         super(builder);
     }
 
@@ -50,7 +52,8 @@ public abstract class ActionSeekNextBlockBase extends ActionBase {
      * Default is a no-op.
      */
     protected void preProcess(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref,
-                              @Nonnull JobComponent job, @Nonnull String npcId) {}
+            @Nonnull JobComponent job, @Nonnull String npcId) {
+    }
 
     /**
      * Scans for the next eligible target block. Return {@code null} when none
@@ -58,7 +61,7 @@ public abstract class ActionSeekNextBlockBase extends ActionBase {
      */
     @Nullable
     protected abstract Vector3i findNextBlock(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref,
-                                              @Nonnull World world, @Nonnull String npcId);
+            @Nonnull World world, @Nonnull String npcId);
 
     /** Label passed to {@link ClaimBlockUtil} for debug identification. */
     protected String getClaimLabel() {
@@ -67,8 +70,8 @@ public abstract class ActionSeekNextBlockBase extends ActionBase {
 
     @Override
     public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role,
-                           @Nullable InfoProvider sensorInfo, double dt,
-                           @Nonnull Store<EntityStore> store) {
+            @Nullable InfoProvider sensorInfo, double dt,
+            @Nonnull Store<EntityStore> store) {
         super.execute(ref, role, sensorInfo, dt, store);
         String npcId = DebugLog.npcId(ref, store);
 
@@ -88,7 +91,8 @@ public abstract class ActionSeekNextBlockBase extends ActionBase {
 
         UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
         if (uuidComponent == null) {
-            DebugLog.warning(DebugCategory.PERFORMANCE, "[SeekNextBlock] [%s] No UUIDComponent -- cannot claim.", npcId);
+            DebugLog.warning(DebugCategory.PERFORMANCE, "[SeekNextBlock] [%s] No UUIDComponent -- cannot claim.",
+                    npcId);
             return true;
         }
         UUID colonistUuid = uuidComponent.getUuid();
@@ -114,7 +118,7 @@ public abstract class ActionSeekNextBlockBase extends ActionBase {
 
         Vector3i nextBlock = findNextBlock(store, ref, world, npcId);
         if (nextBlock == null) {
-            job.workAvailable = false;
+            workStation.workAvailable = false;
             return true;
         }
 
@@ -124,7 +128,8 @@ public abstract class ActionSeekNextBlockBase extends ActionBase {
         world.execute(() -> {
             // Guard against duplicate callbacks in the same cycle.
             JobTargetComponent current = store.getComponent(ref, JobTargetComponent.getComponentType());
-            if (current != null && current.targetPosition != null) return;
+            if (current != null && current.targetPosition != null)
+                return;
 
             if (!ClaimBlockUtil.claimBlock(world, candidate, colonistUuid, claimLabel)) {
                 DebugLog.fine(DebugCategory.PERFORMANCE,
@@ -136,8 +141,9 @@ public abstract class ActionSeekNextBlockBase extends ActionBase {
             capturedRole.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT)
                     .assign(candidate.x + 0.5, (double) candidate.y, candidate.z + 0.5);
 
-            JobComponent liveJob = store.getComponent(ref, JobComponent.getComponentType());
-            if (liveJob != null) liveJob.workAvailable = true;
+            WorkStationComponent liveWorkStation = WorkStationUtil.getWorkStation(store, ref);
+            if (liveWorkStation != null)
+                liveWorkStation.workAvailable = true;
         });
 
         return true;

@@ -2,8 +2,10 @@ package com.hytalecolonies.npc.actions.common;
 
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.WorkStationUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -27,8 +29,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Deposits all non-tool items into the delivery container at
- * {@link JobComponent#deliveryContainerPosition}, then clears the delivery target.
+ * Deposits all non-tool items into the delivery container cached on
+ * {@link WorkStationComponent#deliveryContainerPosition}, then clears the delivery target.
  *
  * <p>Constructed by {@link BuilderActionDepositItems}.
  */
@@ -54,8 +56,16 @@ public class ActionDepositItems extends ActionBase {
             return true;
         }
 
-        Vector3i cp = job.deliveryContainerPosition;
-        if (cp == null) {
+        WorkStationComponent workStation = WorkStationUtil.getWorkStation(store, ref);
+        if (workStation == null) {
+            DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
+                    "[DepositItems] [%s] No WorkStationComponent.", npcId);
+            clearJobTarget(store, ref);
+            return true;
+        }
+
+        Vector3i deliveryContainerPosition = workStation.deliveryContainerPosition;
+        if (deliveryContainerPosition == null) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
                     "[DepositItems] [%s] No deliveryContainerPosition -- skipping deposit.", npcId);
             clearJobTarget(store, ref);
@@ -63,11 +73,11 @@ public class ActionDepositItems extends ActionBase {
         }
 
         World world = store.getExternalData().getWorld();
-        Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, cp.x, cp.y, cp.z);
+        Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, deliveryContainerPosition.x, deliveryContainerPosition.y, deliveryContainerPosition.z);
         if (blockRef == null || !blockRef.isValid()) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[DepositItems] [%s] Container block at %s is no longer present.", npcId, cp);
-            job.deliveryContainerPosition = null;
+                    "[DepositItems] [%s] Container block at %s is no longer present.", npcId, deliveryContainerPosition);
+            workStation.deliveryContainerPosition = null;
             clearJobTarget(store, ref);
             return true;
         }
@@ -76,8 +86,8 @@ public class ActionDepositItems extends ActionBase {
                 blockRef, BlockModule.get().getItemContainerBlockComponentType());
         if (containerBlock == null) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[DepositItems] [%s] Block at %s is no longer an item container.", npcId, cp);
-            job.deliveryContainerPosition = null;
+                    "[DepositItems] [%s] Block at %s is no longer an item container.", npcId, deliveryContainerPosition);
+            workStation.deliveryContainerPosition = null;
             clearJobTarget(store, ref);
             return true;
         }
@@ -91,11 +101,11 @@ public class ActionDepositItems extends ActionBase {
 
         depositItems(npcId, colonist, containerBlock.getItemContainer());
 
-        job.deliveryContainerPosition = null;
+        workStation.deliveryContainerPosition = null;
         clearJobTarget(store, ref);
 
         DebugLog.info(DebugCategory.COLONIST_DELIVERY,
-                "[DepositItems] [%s] Deposit complete at %s.", npcId, cp);
+                "[DepositItems] [%s] Deposit complete at %s.", npcId, deliveryContainerPosition);
 
         return true;
     }

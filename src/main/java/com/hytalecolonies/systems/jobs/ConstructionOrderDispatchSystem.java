@@ -24,22 +24,14 @@ import com.hytalecolonies.utils.BlockStateInfoUtil;
 /** Assigns pending orders from {@link ConstructionOrderQueue} to idle Constructor workstations every 3 s. */
 public class ConstructionOrderDispatchSystem extends DelayedEntitySystem<ChunkStore>
 {
+    /** Maximum Euclidean distance (blocks) from workstation to build origin for assignment. Must match the Seek Range in the Constructing NPC instruction. */
+    private static final double MAX_ASSIGN_RADIUS = 200.0;
 
     private static final Query<ChunkStore> QUERY = Query.and(ConstructorWorkStationComponent.getComponentType(), BlockModule.BlockStateInfo.getComponentType());
 
     public ConstructionOrderDispatchSystem()
     {
         super(3.0f);
-    }
-
-    @Override public void tick(float dt, int systemIndex, @Nonnull Store<ChunkStore> store)
-    {
-        if (ConstructionOrderQueue.get().isEmpty())
-            return;
-        DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
-                      "[ConstructionOrderDispatch] Queue has %d pending order(s) -- scanning workstations.",
-                      ConstructionOrderQueue.get().size());
-        super.tick(dt, systemIndex, store);
     }
 
     @Override
@@ -88,6 +80,22 @@ public class ConstructionOrderDispatchSystem extends DelayedEntitySystem<ChunkSt
         {
             DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructionOrderDispatch] Order %s not found in store -- discarding.", nextId);
             return;
+        }
+
+        if (entry.buildOrigin != null)
+        {
+            double dx = entry.buildOrigin.x - wsPos.x;
+            double dy = entry.buildOrigin.y - wsPos.y;
+            double dz = entry.buildOrigin.z - wsPos.z;
+            double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (dist > MAX_ASSIGN_RADIUS)
+            {
+                DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
+                                 "[ConstructionOrderDispatch] Order %s build site %s is %.1f blocks from workstation %s (max %.0f) -- re-queuing.",
+                                 nextId, entry.buildOrigin, dist, wsPos, MAX_ASSIGN_RADIUS);
+                ConstructionOrderQueue.get().enqueue(nextId);
+                return;
+            }
         }
 
         liveWs.activeOrderId = nextId;

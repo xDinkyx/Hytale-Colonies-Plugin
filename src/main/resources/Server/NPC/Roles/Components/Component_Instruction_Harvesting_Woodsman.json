@@ -30,6 +30,15 @@
           { "Type": "HarvestBlock", "DamageScale": 0.1 },
           { "Type": "Timeout", "Delay": [0.5, 0.5] }
         ]
+      },
+      {
+        "Sensor": { "Type": "JobTargetBroken" },
+        "Instructions": [
+          {
+            "Sensor": { "Type": "Any" },
+            "Actions": [ { "Type": "AdvanceTreeHarvest" } ]
+          }
+        ]
       }
     ]
   }

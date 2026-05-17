@@ -2,11 +2,11 @@ package com.hytalecolonies.ui;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import javax.annotation.Nonnull;
 
 import com.hypixel.hytale.builtin.buildertools.BuilderToolsPlugin;
-import com.hypixel.hytale.builtin.buildertools.utils.PasteToolUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.GameMode;
@@ -52,7 +52,9 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
                                            .maxResults(50)
                                            .assetPackMode(true, "Server/Prefabs")
                                            .build();
-        this.browser = new ServerFileBrowser(config);
+        String savedPath = ConstructorBuildOrderFilter.lastBrowserPath.get(playerRef.getUuid());
+        Path initialDir = (savedPath != null && !savedPath.isEmpty()) ? Paths.get(savedPath) : null;
+        this.browser = new ServerFileBrowser(config, null, initialDir);
     }
 
     @Override
@@ -111,6 +113,13 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
         if (file != null && !Files.isDirectory(file))
         {
             DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorPage] Prefab selected: %s", file);
+            PlayerRef playerRefComp = store.getComponent(ref, PlayerRef.getComponentType());
+            if (playerRefComp != null)
+            {
+                String curPath = this.browser.getAssetPackCurrentPath();
+                if (!curPath.isEmpty())
+                    ConstructorBuildOrderFilter.lastBrowserPath.put(playerRefComp.getUuid(), curPath);
+            }
             handlePrefabSelection(ref, store, file);
         }
         else
@@ -156,7 +165,6 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
         BuilderToolsPlugin.addToQueue(playerComponent,
                                       playerRefComponent,
                                       (r, s, componentAccessor) -> s.load(file.getFileName().toString(), prefab, componentAccessor));
-        PasteToolUtil.switchToPasteTool(ref, playerComponent, playerRefComponent, store);
     }
 
     private void buildCurrentPath(@Nonnull UICommandBuilder commandBuilder)
