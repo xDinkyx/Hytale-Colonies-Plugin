@@ -74,10 +74,6 @@
           "JobType": "Miner",
           "MaxWorkers": 3,
           "BlocksPerRun": 16
-        },
-        "MinerWorkStation": {
-          "MineSize": 4,
-          "MineOffsetZ": 5
         }
       }
     }

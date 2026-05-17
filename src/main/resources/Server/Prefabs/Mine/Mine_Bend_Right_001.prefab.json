@@ -1,0 +1,9 @@
+{
+  "$Comment": "TODO: Build this prefab in-game using /editprefab. A 90-degree right turn corridor. Entry from +Z, exit to +X. Expected size: roughly 8x4x8 (W x H x D). Anchor is at the entry face center.",
+  "version": 8,
+  "blockIdVersion": 8,
+  "anchorX": 0,
+  "anchorY": 0,
+  "anchorZ": 0,
+  "blocks": []
+}

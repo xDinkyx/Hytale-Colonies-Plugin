@@ -1,0 +1,48 @@
+{
+  "$Comment": "Defines the sequence and types of modular prefab segments that make up a mine.",
+  "Segments": [
+    {
+      "Type": "Entrance",
+      "PrefabId": "/Server/Prefabs/Mine/Mine_Entrance_001.prefab.json",
+      "ExitOffsetX": 0,
+      "ExitOffsetY": 0,
+      "ExitOffsetZ": 8
+    },
+    {
+      "Type": "Shaft",
+      "PrefabId": "/Server/Prefabs/Mine/Mine_Shaft_001.prefab.json",
+      "ExitOffsetX": 0,
+      "ExitOffsetY": 0,
+      "ExitOffsetZ": 8
+    },
+    {
+      "Type": "JunctionT",
+      "PrefabId": "/Server/Prefabs/Mine/Mine_Junction_T_001.prefab.json",
+      "ExitOffsetX": 0,
+      "ExitOffsetY": 0,
+      "ExitOffsetZ": 8
+    },
+    {
+      "Type": "BendLeft",
+      "PrefabId": "/Server/Prefabs/Mine/Mine_Bend_Left_001.prefab.json",
+      "ExitOffsetX": -8,
+      "ExitOffsetY": 0,
+      "ExitOffsetZ": 0
+    },
+    {
+      "Type": "BendRight",
+      "PrefabId": "/Server/Prefabs/Mine/Mine_Bend_Right_001.prefab.json",
+      "ExitOffsetX": 8,
+      "ExitOffsetY": 0,
+      "ExitOffsetZ": 0
+    },
+    {
+      "Type": "Hallway",
+      "PrefabId": "/Server/Prefabs/Mine/Mine_Hallway_001.prefab.json",
+      "ExitOffsetX": 0,
+      "ExitOffsetY": 0,
+      "ExitOffsetZ": 4
+    }
+  ],
+  "DefaultSequence": ["Entrance", "Shaft", "Shaft", "Shaft", "JunctionT", "Shaft", "Shaft"]
+}

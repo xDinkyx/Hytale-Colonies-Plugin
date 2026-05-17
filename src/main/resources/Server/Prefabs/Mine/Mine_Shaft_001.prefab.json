@@ -1,0 +1,9 @@
+{
+  "$Comment": "TODO: Build this prefab in-game using /editprefab. A straight horizontal corridor segment. Expected size: roughly 4x4x8 (W x H x D). Connects to the previous segment along the +Z axis. The anchor is at the entry face.",
+  "version": 8,
+  "blockIdVersion": 8,
+  "anchorX": 0,
+  "anchorY": 0,
+  "anchorZ": 0,
+  "blocks": []
+}

@@ -1,0 +1,9 @@
+{
+  "$Comment": "TODO: Build this prefab in-game using /editprefab. The entrance is the first segment of the mine, connecting the workstation to the underground. Expected size: roughly 4x6x8 (W x H x D). Anchor should be the block adjacent to the workstation opening.",
+  "version": 8,
+  "blockIdVersion": 8,
+  "anchorX": 0,
+  "anchorY": 0,
+  "anchorZ": 0,
+  "blocks": []
+}

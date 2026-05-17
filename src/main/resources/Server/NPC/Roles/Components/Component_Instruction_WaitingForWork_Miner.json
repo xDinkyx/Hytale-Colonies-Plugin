@@ -39,19 +39,36 @@
         ]
       },
       {
-        "$Comment": "Has both tools (passed Not-checks above) -- scan for the next mine block and claim it.",
+        "$Comment": "Has both tools (passed Not-checks above) -- check for a queued ore vein block first (higher priority).",
         "Continue": true,
         "Sensor": { "Type": "Any" },
         "Actions": [
-          { "Type": "LogDebug", "Message": "WaitingForWork: scanning for next mine block.", "Category": "MINER_JOB", "Level": "FINE" },
-          { "Type": "SeekNextMineBlock" }
+          { "Type": "LogDebug", "Message": "WaitingForWork: checking for queued ore vein block.", "Category": "MINER_JOB", "Level": "FINE" },
+          { "Type": "SeekNextOreVeinBlock" }
         ]
       },
       {
-        "$Comment": "Target found -- travel to the claimed mine block.",
+        "$Comment": "Ore vein target claimed -- travel to it.",
         "Sensor": { "Type": "JobTargetExists" },
         "Actions": [
-          { "Type": "LogDebug", "Message": "WaitingForWork: target found -> TravelingToWorkSite.", "Category": "MINER_JOB", "Level": "FINE" },
+          { "Type": "LogDebug", "Message": "WaitingForWork: ore vein target found -> TravelingToWorkSite.", "Category": "MINER_JOB", "Level": "FINE" },
+          { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
+        ]
+      },
+      {
+        "$Comment": "No ore vein -- try the active mine segment prefab next.",
+        "Continue": true,
+        "Sensor": { "Type": "Any" },
+        "Actions": [
+          { "Type": "LogDebug", "Message": "WaitingForWork: checking active mine segment.", "Category": "MINER_JOB", "Level": "FINE" },
+          { "Type": "SeekNextMineSegmentBlock" }
+        ]
+      },
+      {
+        "$Comment": "Segment block claimed -- travel to it.",
+        "Sensor": { "Type": "JobTargetExists" },
+        "Actions": [
+          { "Type": "LogDebug", "Message": "WaitingForWork: mine segment target found -> TravelingToWorkSite.", "Category": "MINER_JOB", "Level": "FINE" },
           { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
         ]
       }

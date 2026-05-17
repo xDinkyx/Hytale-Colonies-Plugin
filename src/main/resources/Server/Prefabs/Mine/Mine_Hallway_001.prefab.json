@@ -1,0 +1,9 @@
+{
+  "$Comment": "TODO: Build this prefab in-game using /editprefab. A short straight hallway for connecting junctions or adding variety. Expected size: roughly 4x4x4 (W x H x D). Anchor is at the entry face center.",
+  "version": 8,
+  "blockIdVersion": 8,
+  "anchorX": 0,
+  "anchorY": 0,
+  "anchorZ": 0,
+  "blocks": []
+}

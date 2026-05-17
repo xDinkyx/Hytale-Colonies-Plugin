@@ -1,0 +1,9 @@
+{
+  "$Comment": "TODO: Build this prefab in-game using /editprefab. A T-shaped junction -- one entrance and two exits (left/right). Expected size: roughly 12x4x8 (W x H x D). Anchor is at the center of the entry face.",
+  "version": 8,
+  "blockIdVersion": 8,
+  "anchorX": 0,
+  "anchorY": 0,
+  "anchorZ": 0,
+  "blocks": []
+}
