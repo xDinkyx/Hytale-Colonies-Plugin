@@ -59,7 +59,7 @@
   "HotbarSize": 4,
   "InventorySize": 12,
   "MotionControllerList": [
-    { "Type": "Walk", "MaxWalkSpeed": { "Compute": "MaxSpeed" } }
+    { "Type": "Walk", "MaxWalkSpeed": { "Compute": "MaxSpeed" }, "MaxDropHeight": 1.0 }
   ],
   "StateTransitions": [
     {
