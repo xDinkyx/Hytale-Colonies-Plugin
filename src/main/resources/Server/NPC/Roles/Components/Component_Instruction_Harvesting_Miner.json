@@ -30,6 +30,24 @@
           { "Type": "HarvestBlock", "DamageScale": 0.1 },
           { "Type": "Timeout", "Delay": [0.5, 0.5] }
         ]
+      },
+      {
+        "Sensor": { "Type": "JobTargetBroken" },
+        "Instructions": [
+          {
+            "Continue": true,
+            "Sensor": { "Type": "Any" },
+            "Actions": [ { "Type": "ReleaseJobTarget" }, { "Type": "IncrementJobCounter" } ]
+          },
+          {
+            "Sensor": { "Type": "RunQuotaReached" },
+            "Actions": [ { "Type": "ResetJobCounter" }, { "Type": "SetEcsJobState", "JobState": "DeliveringItems" } ]
+          },
+          {
+            "Sensor": { "Type": "Any" },
+            "Actions": [ { "Type": "ScanForOreVein" }, { "Type": "SetEcsJobState", "JobState": "WaitingForWork" } ]
+          }
+        ]
       }
     ]
   }
