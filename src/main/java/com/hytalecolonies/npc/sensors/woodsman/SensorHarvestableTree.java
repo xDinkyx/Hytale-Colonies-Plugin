@@ -3,6 +3,7 @@ package com.hytalecolonies.npc.sensors.woodsman;
 import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.utils.ClaimBlockUtil;
+import com.hytalecolonies.utils.StoreUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
@@ -146,7 +147,7 @@ public class SensorHarvestableTree extends SensorBase {
         Vector3i[] nearestRef = {null};
         double[] nearestDistSq = {Double.MAX_VALUE};
 
-        world.getChunkStore().getStore().forEachChunk(TREE_QUERY, (chunk, unused) -> {
+        StoreUtil.forEachChunkMatchingQuery(world.getChunkStore().getStore(), TREE_QUERY, (chunk, unused) -> {
             for (int i = 0; i < chunk.size(); i++) {
                 HarvestableTreeComponent tree =
                         chunk.getComponent(i, HarvestableTreeComponent.getComponentType());

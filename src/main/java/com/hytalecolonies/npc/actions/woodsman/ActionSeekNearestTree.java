@@ -27,6 +27,7 @@ import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.JobNavigationUtil;
+import com.hytalecolonies.utils.StoreUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
 
 
@@ -122,7 +123,7 @@ public class ActionSeekNearestTree extends ActionBase
         List<Vector3i> candidates = new ArrayList<>();
         Query<ChunkStore> treeQuery = Query.and(HarvestableTreeComponent.getComponentType());
 
-        world.getChunkStore().getStore().forEachChunk(treeQuery, (chunk, _unused) -> {
+        StoreUtil.forEachChunkMatchingQuery(world.getChunkStore().getStore(), treeQuery, (chunk, _unused) -> {
             for (int index = 0; index < chunk.size(); index++)
             {
                 HarvestableTreeComponent tree = chunk.getComponent(index, HarvestableTreeComponent.getComponentType());

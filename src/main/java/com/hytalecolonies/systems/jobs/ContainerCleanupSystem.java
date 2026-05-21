@@ -29,6 +29,7 @@ import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.ColonistStateUtil;
+import com.hytalecolonies.utils.StoreUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
 
 /**
@@ -84,7 +85,7 @@ public class ContainerCleanupSystem extends RefSystem<ChunkStore> {
                 "[ContainerCleanupSystem] Container removed at %s -- scanning colonists.", blockPos);
 
         Store<EntityStore> entityStore = store.getExternalData().getWorld().getEntityStore().getStore();
-        entityStore.forEachChunk(colonistQuery, (chunk, cb) -> {
+        StoreUtil.forEachChunkMatchingQuery(entityStore, colonistQuery, (chunk, cb) -> {
             for (int i = 0; i < chunk.size(); i++) {
                 JobComponent colonistJob = chunk.getComponent(i, JobComponent.getComponentType());
                 if (colonistJob == null)

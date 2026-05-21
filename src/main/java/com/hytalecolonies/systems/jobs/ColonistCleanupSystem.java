@@ -21,6 +21,7 @@ import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.StoreUtil;
 
 /**
  * Periodic safety-net system that runs every 30 seconds to repair two classes
@@ -58,7 +59,7 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore> {
         Query<ChunkStore> claimQuery = Query.and(ClaimedBlockComponent.getComponentType());
         List<Ref<ChunkStore>> orphanedRefs = new ArrayList<>();
 
-        store.forEachChunk(claimQuery, (chunk, _cb) -> {
+        StoreUtil.forEachChunkMatchingQuery(store, claimQuery, (chunk, _cb) -> {
             for (int i = 0; i < chunk.size(); i++) {
                 ClaimedBlockComponent claim = chunk.getComponent(i, ClaimedBlockComponent.getComponentType());
                 if (claim == null) continue;
@@ -85,7 +86,7 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore> {
         Query<EntityStore> jobQuery = Query.and(JobComponent.getComponentType());
         List<Ref<EntityStore>> orphans = new ArrayList<>();
 
-        entityStore.getStore().forEachChunk(jobQuery, (chunk, _cb) -> {
+        StoreUtil.forEachChunkMatchingQuery(entityStore.getStore(), jobQuery, (chunk, _cb) -> {
             for (int i = 0; i < chunk.size(); i++) {
                 JobComponent job = chunk.getComponent(i, JobComponent.getComponentType());
                 if (job == null) continue;

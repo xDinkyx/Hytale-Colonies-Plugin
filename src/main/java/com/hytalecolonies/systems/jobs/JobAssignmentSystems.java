@@ -47,6 +47,7 @@ import com.hytalecolonies.debug.DebugTiming;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
 import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
+import com.hytalecolonies.utils.StoreUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
 
 
@@ -124,7 +125,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             return;
 
         try (var t = DebugTiming.measure("JobAssignment.assignColonists@" + workStationPos, 100)) {
-            entityStore.getStore().forEachChunk(unemployedQuery, (_archetypeChunk, _commandBuffer) -> {
+            StoreUtil.forEachChunkMatchingQuery(entityStore.getStore(), unemployedQuery, (_archetypeChunk, _commandBuffer) -> {
                 // Stop once slots are full.
                 if (workStation.getAvailableJobSlots() <= 0) return;
 
