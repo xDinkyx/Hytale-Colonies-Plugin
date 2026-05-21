@@ -17,7 +17,7 @@ public enum JobState {
     Working(Group.Working, "Harvesting"),
     WorkingClearing(Group.Working, "Clearing"),
     WorkingConstructing(Group.Working, "Constructing"),
-    WorkingRetrievingBlocks(Group.Working, "RetrievingBlocks"),
+    WorkingRetrievingItems(Group.Working, "RetrievingItems"),
     WaitingForWork(Group.Working, "WaitingForWork"),
     TravelingToWorkSite(Group.Working, "TravelingToWorkSite"),
     DeliveringItems(Group.Working, "DeliveringItems"),

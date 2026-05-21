@@ -44,9 +44,9 @@
       "Value": "Component_Instruction_NoOp",
       "Description": "Seek-to-block and place-block body for the Constructing sub-state (constructor). NoOp for other jobs."
     },
-    "RetrievingBlocksComponent": {
+    "RetrievingItemsComponent": {
       "Value": "Component_Instruction_NoOp",
-      "Description": "Walk to container and retrieve materials for the RetrievingBlocks sub-state (constructor). NoOp for other jobs."
+      "Description": "Walk to container and retrieve items needed for the planned work."
     },
     "DefaultIdleComponent": {
       "Value": "Component_Instruction_Idle_Default_Worker",
@@ -145,12 +145,12 @@
           ]
         },
         {
-          "$Comment": "RetrievingBlocks -- walk to container and pull materials.",
+          "$Comment": "RetrievingItems -- walk to container and retrieve required items.",
           "Continue": true,
-          "Sensor": { "Type": "State", "State": ".RetrievingBlocks", "IgnoreMissingSetState": true },
+          "Sensor": { "Type": "State", "State": ".RetrievingItems", "IgnoreMissingSetState": true },
           "Instructions": [
             {
-              "Reference": { "Compute": "RetrievingBlocksComponent" },
+              "Reference": { "Compute": "RetrievingItemsComponent" },
               "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
             }
           ]

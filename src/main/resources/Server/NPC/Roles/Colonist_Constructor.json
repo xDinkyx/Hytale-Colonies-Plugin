@@ -9,6 +9,6 @@
     "TravelingToWorkSiteComponent": "Component_Instruction_TravelingToWorkSite_Constructor",
     "ClearingComponent": "Component_Instruction_Clearing_Constructor",
     "ConstructingComponent": "Component_Instruction_Constructing_Constructor",
-    "RetrievingBlocksComponent": "Component_Instruction_RetrievingBlocks_Constructor"
+    "RetrievingItemsComponent": "Component_Instruction_RetrievingItems_Constructor"
   }
 }

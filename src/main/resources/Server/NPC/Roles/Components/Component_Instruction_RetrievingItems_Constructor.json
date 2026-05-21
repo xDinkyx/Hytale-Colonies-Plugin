@@ -1,5 +1,5 @@
 {
-  "$Comment": "RetrievingBlocks body for the Constructor -- finds the nearby container, seeks to it, and retrieves materials.",
+  "$Comment": "RetrievingItems body for the Constructor -- finds the nearby container, seeks to it, and retrieves materials.",
   "Type": "Component",
   "Class": "Instruction",
   "Interface": "HytaleColonies.Instruction.Colonist.StateBody",
@@ -10,7 +10,7 @@
         "Continue": true,
         "Sensor": { "Type": "Any" },
         "Actions": [
-          { "Type": "LogDebug", "Message": "RetrievingBlocks: scanning for container.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
+          { "Type": "LogDebug", "Message": "RetrievingItems: scanning for container.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
           { "Type": "FindDeliveryContainer" }
         ]
       },
@@ -23,7 +23,7 @@
         "Sensor": { "Type": "JobTarget", "Range": 3.0 },
         "ActionsBlocking": true,
         "Actions": [
-          { "Type": "LogDebug", "Message": "RetrievingBlocks: at container -- retrieving materials.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
+          { "Type": "LogDebug", "Message": "RetrievingItems: at container -- retrieving materials.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
           { "Type": "RetrieveConstructionBlocks" }
         ]
       }

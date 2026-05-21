@@ -83,7 +83,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
             return;
         }
 
-        if ((state == JobState.WorkingRetrievingBlocks || state == JobState.WorkingConstructing) && constructorJob.itemsRetrievedNotification)
+        if ((state == JobState.WorkingRetrievingItems || state == JobState.WorkingConstructing) && constructorJob.itemsRetrievedNotification)
         {
             constructorJob.itemsRetrievedNotification = false;
             counter.count = 0;
@@ -257,8 +257,8 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
         boolean trulyDone = ConstructorUtil.findNextClearingTarget(order, world, prefab) == null;
         if (trulyDone)
         {
-            DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorWorking] [%s] Clearing complete -- WorkingRetrievingBlocks.", npcId);
-            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingRetrievingBlocks);
+            DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorWorking] [%s] Clearing complete -- WorkingRetrievingItems.", npcId);
+            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingRetrievingItems);
         }
         else
         {
@@ -282,7 +282,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
         if (liveJob == null)
             return;
         JobState liveState = liveJob.getCurrentTask();
-        if (liveState != JobState.WorkingRetrievingBlocks && liveState != JobState.WorkingConstructing)
+        if (liveState != JobState.WorkingRetrievingItems && liveState != JobState.WorkingConstructing)
             return;
 
         if (colonistUuid == null || prefab == null)
@@ -379,9 +379,9 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
         if (nextBuild != null)
         {
             clearTarget(entityStore, colonistRef);
-            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingRetrievingBlocks);
+            ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingRetrievingItems);
             DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
-                          "[ConstructorWorking] [%s] Queue exhausted, more blocks remain -- WorkingRetrievingBlocks.",
+                          "[ConstructorWorking] [%s] Queue exhausted, more blocks remain -- WorkingRetrievingItems.",
                           npcId);
             return;
         }

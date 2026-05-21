@@ -145,7 +145,7 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
             return;
         }
 
-        DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Clearing done, build targets exist -- WorkingRetrievingBlocks.", npcId);
+        DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Clearing done, build targets exist -- WorkingRetrievingItems.", npcId);
         EntityStore entityStore = world.getEntityStore();
         world.execute(() -> startRetrievingBlocks(colonistRef, entityStore));
     }
@@ -235,7 +235,7 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         Vector3i wsPos = liveJob.getWorkStationBlockPosition();
         WorkStationComponent ws = wsPos != null ? WorkStationUtil.getWorkStationAt(world, wsPos) : null;
         if (ws != null) ws.workAvailable = true;
-        ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingRetrievingBlocks);
+        ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingRetrievingItems);
     }
 
     @Override public @Nullable Query<EntityStore> getQuery()
