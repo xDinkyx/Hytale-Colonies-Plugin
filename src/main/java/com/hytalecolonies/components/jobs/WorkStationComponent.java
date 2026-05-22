@@ -40,6 +40,10 @@ public class WorkStationComponent implements Component<ChunkStore> {
                     (o, v) -> o.blocksPerRun = v,
                     o -> o.blocksPerRun)
             .add()
+            .append(new KeyedCodec<>("DefaultRequiredItems", new ArrayCodec<>(Codec.STRING, String[]::new)),
+                    (o, v) -> o.defaultRequiredItems = v,
+                    o -> o.defaultRequiredItems)
+            .add()
             .build();
 
     // ===== Shared fields =====
@@ -48,6 +52,8 @@ public class WorkStationComponent implements Component<ChunkStore> {
     protected Set<UUID> assignedColonists = new HashSet<>();
     /** How many blocks each worker processes per run before collecting drops. */
     public int blocksPerRun = 16;
+    /** Item ID glob patterns the colonist must always keep in inventory (tools, required consumables). */
+    public String[] defaultRequiredItems = new String[0];
 
     // ===== Transient runtime fields (not persisted) =====
     public @Nullable Vector3i deliveryContainerPosition = null; // Cached position of the delivery container for this workstation.
@@ -73,6 +79,7 @@ public class WorkStationComponent implements Component<ChunkStore> {
         WorkStationComponent copy = new WorkStationComponent(this.jobType, this.maxWorkers);
         copy.assignedColonists = new HashSet<>(this.assignedColonists);
         copy.blocksPerRun = this.blocksPerRun;
+        copy.defaultRequiredItems = this.defaultRequiredItems.clone();
         return copy;
     }
 

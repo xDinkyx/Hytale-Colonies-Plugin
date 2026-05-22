@@ -72,7 +72,8 @@
       "Components": {
         "WorkStation": {
           "JobType": "Constructor",
-          "MaxWorkers": 2
+          "MaxWorkers": 2,
+          "DefaultRequiredItems": ["Tool_Pickaxe_*", "Tool_Shovel_*", "Tool_Hatchet_*"]
         },
         "ConstructorWorkStation": {}
       }

@@ -72,7 +72,8 @@
       "Components": {
         "WorkStation": {
           "JobType": "Woodsman",
-          "MaxWorkers": 3
+          "MaxWorkers": 3,
+          "DefaultRequiredItems": ["Tool_Hatchet_*"]
         },
         "WoodsmanWorkStation": {}
       }

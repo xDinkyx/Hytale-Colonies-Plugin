@@ -73,7 +73,8 @@
         "WorkStation": {
           "JobType": "Miner",
           "MaxWorkers": 3,
-          "BlocksPerRun": 16
+          "BlocksPerRun": 16,
+          "DefaultRequiredItems": ["Tool_Pickaxe_*", "Tool_Shovel_*"]
         }
       }
     }

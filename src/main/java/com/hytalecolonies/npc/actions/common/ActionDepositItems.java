@@ -30,21 +30,23 @@ import java.util.Map;
 
 /**
  * Deposits all non-tool items into the delivery container cached on
- * {@link WorkStationComponent#deliveryContainerPosition}, then clears the delivery target.
+ * {@link WorkStationComponent#deliveryContainerPosition}, then clears the
+ * delivery target.
  *
- * <p>Constructed by {@link BuilderActionDepositItems}.
+ * <p>
+ * Constructed by {@link BuilderActionDepositItems}.
  */
 public class ActionDepositItems extends ActionBase {
 
     public ActionDepositItems(@Nonnull BuilderActionDepositItems builder,
-                              @Nonnull BuilderSupport support) {
+            @Nonnull BuilderSupport support) {
         super(builder);
     }
 
     @Override
     public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role,
-                           @Nullable InfoProvider sensorInfo, double dt,
-                           @Nonnull Store<EntityStore> store) {
+            @Nullable InfoProvider sensorInfo, double dt,
+            @Nonnull Store<EntityStore> store) {
         super.execute(ref, role, sensorInfo, dt, store);
 
         String npcId = DebugLog.npcId(ref, store);
@@ -73,10 +75,12 @@ public class ActionDepositItems extends ActionBase {
         }
 
         World world = store.getExternalData().getWorld();
-        Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, deliveryContainerPosition.x, deliveryContainerPosition.y, deliveryContainerPosition.z);
+        Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, deliveryContainerPosition.x,
+                deliveryContainerPosition.y, deliveryContainerPosition.z);
         if (blockRef == null || !blockRef.isValid()) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[DepositItems] [%s] Container block at %s is no longer present.", npcId, deliveryContainerPosition);
+                    "[DepositItems] [%s] Container block at %s is no longer present.", npcId,
+                    deliveryContainerPosition);
             workStation.deliveryContainerPosition = null;
             clearJobTarget(store, ref);
             return true;
@@ -86,7 +90,8 @@ public class ActionDepositItems extends ActionBase {
                 blockRef, BlockModule.get().getItemContainerBlockComponentType());
         if (containerBlock == null) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[DepositItems] [%s] Block at %s is no longer an item container.", npcId, deliveryContainerPosition);
+                    "[DepositItems] [%s] Block at %s is no longer an item container.", npcId,
+                    deliveryContainerPosition);
             workStation.deliveryContainerPosition = null;
             clearJobTarget(store, ref);
             return true;
@@ -99,7 +104,7 @@ public class ActionDepositItems extends ActionBase {
             return true;
         }
 
-        depositItems(npcId, colonist, containerBlock.getItemContainer());
+        depositItems(npcId, colonist, containerBlock.getItemContainer(), workStation.defaultRequiredItems);
 
         workStation.deliveryContainerPosition = null;
         clearJobTarget(store, ref);
@@ -110,7 +115,10 @@ public class ActionDepositItems extends ActionBase {
         return true;
     }
 
-    /** Nulls {@link JobTargetComponent#targetPosition} so stale position does not block future work-finding. */
+    /**
+     * Nulls {@link JobTargetComponent#targetPosition} so stale position does not
+     * block future work-finding.
+     */
     private static void clearJobTarget(@Nonnull Store<EntityStore> store, @Nonnull Ref<EntityStore> ref) {
         JobTargetComponent jt = store.getComponent(ref, JobTargetComponent.getComponentType());
         if (jt != null) {
@@ -123,22 +131,71 @@ public class ActionDepositItems extends ActionBase {
         return stack.getItem() != null && stack.getItem().getTool() != null;
     }
 
+    /**
+     * Returns true if itemId matches any glob pattern in requiredItems. Falls back
+     * to tool check if list is empty.
+     */
+    private static boolean shouldKeep(@Nonnull ItemStack stack, @Nonnull String[] requiredItems) {
+        if (stack.getItem() == null)
+            return false;
+        if (requiredItems.length == 0)
+            return shouldKeep(stack);
+        String itemId = stack.getItemId();
+        for (String pattern : requiredItems) {
+            if (globMatch(itemId, pattern))
+                return true;
+            // Also match against the local name (after namespace colon).
+            int colon = itemId.indexOf(':');
+            if (colon >= 0 && globMatch(itemId.substring(colon + 1), pattern))
+                return true;
+        }
+        return false;
+    }
+
+    /** Case-sensitive glob match supporting {@code *} as wildcard. */
+    private static boolean globMatch(@Nonnull String text, @Nonnull String pattern) {
+        int t = 0, p = 0, starIdx = -1, match = 0;
+        while (t < text.length()) {
+            if (p < pattern.length() && (pattern.charAt(p) == '*' || pattern.charAt(p) == text.charAt(t))) {
+                if (pattern.charAt(p) == '*') {
+                    starIdx = p++;
+                    match = t;
+                } else {
+                    t++;
+                    p++;
+                }
+            } else if (starIdx >= 0) {
+                p = starIdx + 1;
+                t = ++match;
+            } else {
+                return false;
+            }
+        }
+        while (p < pattern.length() && pattern.charAt(p) == '*')
+            p++;
+        return p == pattern.length();
+    }
+
     private static void depositItems(@Nonnull String npcId,
-                                     @Nonnull LivingEntity colonist,
-                                     @Nonnull ItemContainer chestContainer) {
+            @Nonnull LivingEntity colonist,
+            @Nonnull ItemContainer chestContainer,
+            @Nonnull String[] requiredItems) {
         ItemContainer colonistStorage = colonist.getInventory().getStorage();
         short capacity = colonistStorage.getCapacity();
         Map<String, Integer> deposited = new LinkedHashMap<>();
 
         for (short slot = 0; slot < capacity; slot++) {
             ItemStack stack = colonistStorage.getItemStack(slot);
-            if (ItemStack.isEmpty(stack)) continue;
-            if (shouldKeep(stack)) continue;
+            if (ItemStack.isEmpty(stack))
+                continue;
+            if (shouldKeep(stack, requiredItems))
+                continue;
             colonistStorage.removeItemStackFromSlot(slot);
             ItemStackTransaction tx = chestContainer.addItemStack(stack);
             ItemStack remainder = tx.getRemainder();
             int depositedQty = stack.getQuantity() - (remainder != null ? remainder.getQuantity() : 0);
-            if (depositedQty > 0) deposited.merge(stack.getItemId(), depositedQty, Integer::sum);
+            if (depositedQty > 0)
+                deposited.merge(stack.getItemId(), depositedQty, Integer::sum);
             if (remainder != null && !remainder.isEmpty()) {
                 colonistStorage.setItemStackForSlot(slot, remainder);
             }
@@ -149,10 +206,12 @@ public class ActionDepositItems extends ActionBase {
     }
 
     private static String summarise(@Nonnull Map<String, Integer> counts) {
-        if (counts.isEmpty()) return "-";
+        if (counts.isEmpty())
+            return "-";
         StringBuilder sb = new StringBuilder();
         counts.forEach((id, qty) -> {
-            if (!sb.isEmpty()) sb.append(", ");
+            if (!sb.isEmpty())
+                sb.append(", ");
             sb.append(id).append('*').append(qty);
         });
         return sb.toString();
