@@ -52,8 +52,8 @@
         "$Comment": "Target found -- travel to the claimed block.",
         "Sensor": { "Type": "JobTargetExists" },
         "Actions": [
-          { "Type": "LogDebug", "Message": "WaitingForWork: target found -> TravelingToWorkSite.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
-          { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
+          { "Type": "LogDebug", "Message": "WaitingForWork: target found -> ClaimWork.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
+          { "Type": "SetEcsJobState", "JobState": "ClaimWork" }
         ]
       }
     ]

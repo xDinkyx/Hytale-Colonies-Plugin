@@ -51,8 +51,8 @@
         "$Comment": "Ore vein target claimed -- travel to it.",
         "Sensor": { "Type": "JobTargetExists" },
         "Actions": [
-          { "Type": "LogDebug", "Message": "WaitingForWork: ore vein target found -> TravelingToWorkSite.", "Category": "MINER_JOB", "Level": "FINE" },
-          { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
+          { "Type": "LogDebug", "Message": "WaitingForWork: ore vein target found -> ClaimWork.", "Category": "MINER_JOB", "Level": "FINE" },
+          { "Type": "SetEcsJobState", "JobState": "ClaimWork" }
         ]
       },
       {
@@ -68,8 +68,8 @@
         "$Comment": "Segment block claimed -- travel to it.",
         "Sensor": { "Type": "JobTargetExists" },
         "Actions": [
-          { "Type": "LogDebug", "Message": "WaitingForWork: mine segment target found -> TravelingToWorkSite.", "Category": "MINER_JOB", "Level": "FINE" },
-          { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
+          { "Type": "LogDebug", "Message": "WaitingForWork: mine segment target found -> ClaimWork.", "Category": "MINER_JOB", "Level": "FINE" },
+          { "Type": "SetEcsJobState", "JobState": "ClaimWork" }
         ]
       }
     ]

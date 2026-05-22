@@ -46,8 +46,8 @@
         "$Comment": "Target found -- travel to the claimed tree.",
         "Sensor": { "Type": "JobTargetExists" },
         "Actions": [
-          { "Type": "LogDebug", "Message": "WaitingForWork: tree found -> TravelingToWorkSite.", "Category": "WOODSMAN_JOB", "Level": "FINE" },
-          { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
+          { "Type": "LogDebug", "Message": "WaitingForWork: tree found -> ClaimWork.", "Category": "WOODSMAN_JOB", "Level": "FINE" },
+          { "Type": "SetEcsJobState", "JobState": "ClaimWork" }
         ]
       }
     ]

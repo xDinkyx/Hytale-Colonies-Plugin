@@ -44,6 +44,10 @@
       "Value": "Component_Instruction_NoOp",
       "Description": "Seek-to-block and place-block body for the Constructing sub-state (constructor). NoOp for other jobs."
     },
+    "ClaimWorkComponent": {
+      "Value": "Component_Instruction_ClaimWork_NoOp",
+      "Description": "Claim all blocks planned for current work run."
+    },
     "RetrievingItemsComponent": {
       "Value": "Component_Instruction_NoOp",
       "Description": "Walk to container and retrieve items needed for the planned work."
@@ -184,12 +188,23 @@
           ]
         },
         {
-          "$Comment": "WaitingForWork -- job-specific tool checks and target scan.",
+          "$Comment": "WaitingForWork -- job-specific wander and target scan.",
           "Sensor": { "Type": "State", "State": ".WaitingForWork", "IgnoreMissingSetState": true },
           "Instructions": [
             {
               "Reference": { "Compute": "WaitingForWorkComponent" },
               "Interfaces": [ "HytaleColonies.Instruction.Colonist.WaitingForWork" ]
+            }
+          ]
+        },
+        {
+          "$Comment": "ClaimWork -- batch-claim all blocks planned for current work run.",
+          "Continue": true,
+          "Sensor": { "Type": "State", "State": ".ClaimWork", "IgnoreMissingSetState": true },
+          "Instructions": [
+            {
+              "Reference": { "Compute": "ClaimWorkComponent" },
+              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
             }
           ]
         },
