@@ -48,6 +48,10 @@
       "Value": "Component_Instruction_ClaimWork_NoOp",
       "Description": "Claim all blocks planned for current work run."
     },
+    "WaitingForClaimReleaseComponent": {
+      "Value": "Component_Instruction_WaitingForClaimRelease_Default",
+      "Description": "Wander nearby while waiting for another colonist to release a block claim."
+    },
     "RetrievingItemsComponent": {
       "Value": "Component_Instruction_NoOp",
       "Description": "Walk to container and retrieve items needed for the planned work."
@@ -204,6 +208,17 @@
           "Instructions": [
             {
               "Reference": { "Compute": "ClaimWorkComponent" },
+              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
+            }
+          ]
+        },
+        {
+          "$Comment": "WaitingForClaimRelease -- wander nearby while a block is claimed by another colonist.",
+          "Continue": true,
+          "Sensor": { "Type": "State", "State": ".WaitingForClaimRelease", "IgnoreMissingSetState": true },
+          "Instructions": [
+            {
+              "Reference": { "Compute": "WaitingForClaimReleaseComponent" },
               "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
             }
           ]

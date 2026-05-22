@@ -1,0 +1,17 @@
+{
+  "$Comment": "WaitingForClaimRelease body -- wander in a small circle near block while another colonist holds its claim. ECS transitions to PerformWork when the claim is released.",
+  "Type": "Component",
+  "Class": "Instruction",
+  "Interface": "HytaleColonies.Instruction.Colonist.StateBody",
+  "Content": {
+    "Sensor": { "Type": "Any" },
+    "BodyMotion": {
+      "Type": "Sequence",
+      "Looped": true,
+      "Motions": [
+        { "Type": "Timer", "Time": [3, 5], "Motion": { "Type": "WanderInCircle", "Radius": 3, "MaxHeadingChange": 0.4 } },
+        { "Type": "Timer", "Time": [1, 2], "Motion": { "Type": "Nothing" } }
+      ]
+    }
+  }
+}
