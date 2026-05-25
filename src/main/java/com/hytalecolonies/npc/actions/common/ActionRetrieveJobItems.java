@@ -13,6 +13,7 @@ import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
+import com.hypixel.hytale.server.core.inventory.transaction.MoveTransaction;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.block.components.ItemContainerBlock;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -115,7 +116,8 @@ public class ActionRetrieveJobItems extends ActionBase {
 
         if (blockRef == null || !blockRef.isValid()) {
             DebugLog.severe(DebugCategory.COLONIST_DELIVERY,
-                    "[RetrieveJobItems] [%s] Container block missing at %s -- setting workstation container to null", npcId,
+                    "[RetrieveJobItems] [%s] Container block missing at %s -- setting workstation container to null",
+                    npcId,
                     workStation.deliveryContainerPosition);
             workStation.deliveryContainerPosition = null;
             return false;
@@ -125,7 +127,8 @@ public class ActionRetrieveJobItems extends ActionBase {
                 blockRef, BlockModule.get().getItemContainerBlockComponentType());
         if (containerBlock == null) {
             DebugLog.severe(DebugCategory.COLONIST_DELIVERY,
-                    "[RetrieveJobItems] [%s] Block at %s is not an item container -- setting workstation container to null.", npcId,
+                    "[RetrieveJobItems] [%s] Block at %s is not an item container -- setting workstation container to null.",
+                    npcId,
                     workStation.deliveryContainerPosition);
             workStation.deliveryContainerPosition = null;
             return false;
@@ -166,49 +169,32 @@ public class ActionRetrieveJobItems extends ActionBase {
         for (ItemRequirement req : requirements) {
             int have = InventoryHelper.countItems(colonistStorage, List.of(req.item));
             int needed = req.quantity - have;
+
             if (needed <= 0)
                 continue;
+            
             int remaining = needed;
-            while (remaining > 0) {
-                ItemStack found = takeFromContainer(chest, req.item, remaining);
-                if (found == null)
+            short capacity = chest.getCapacity();
+            for (short slot = 0; slot < capacity && remaining > 0; slot++) 
+            {
+                ItemStack chestStack = chest.getItemStack(slot);
+                if (!InventoryHelper.matchesItem(req.item, chestStack))
+                    continue;
+
+                int take = Math.min(remaining, chestStack.getQuantity());
+                MoveTransaction<?> tx = chest.moveItemStackFromSlot(slot, take, colonistStorage);
+                if (!tx.succeeded())
                     break;
-                colonistStorage.addItemStack(found);
-                remaining -= found.getQuantity();
+
+                remaining -= take;
                 DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
                         "[RetrieveJobItems] [%s] Retrieved %dx'%s' from container.",
-                        npcId, found.getQuantity(), found.getItemId());
+                        npcId, take, chestStack.getItemId());
             }
             if (remaining > 0) {
                 DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
                         "[RetrieveJobItems] [%s] Container missing %d of '%s'.", npcId, remaining, req.item);
             }
         }
-    }
-
-    /**
-     * Transfers items from container to colonist inventory. Item string can be a glob pattern.
-     */
-    @Nullable
-    private static ItemStack takeFromContainer(@Nonnull ItemContainer container,
-            @Nonnull String item, int amount) {
-        short capacity = container.getCapacity();
-        for (short slot = 0; slot < capacity; slot++) {
-            ItemStack stack = container.getItemStack(slot);
-            if (!InventoryHelper.matchesItem(item, stack))
-                continue;
-            int take = Math.min(amount, stack.getQuantity());
-            ItemStack pulled = new ItemStack(stack.getItemId(), take,
-                    stack.getDurability(), stack.getMaxDurability(), stack.getMetadata());
-            int leftover = stack.getQuantity() - take;
-            if (leftover > 0) {
-                container.setItemStackForSlot(slot, new ItemStack(stack.getItemId(), leftover,
-                        stack.getDurability(), stack.getMaxDurability(), stack.getMetadata()));
-            } else {
-                container.removeItemStackFromSlot(slot);
-            }
-            return pulled;
-        }
-        return null;
     }
 }

@@ -15,6 +15,7 @@ import com.hypixel.hytale.server.core.entity.LivingEntity;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.inventory.transaction.ItemStackTransaction;
+import com.hypixel.hytale.server.core.inventory.transaction.MoveTransaction;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.block.components.ItemContainerBlock;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -159,15 +160,11 @@ public class ActionDepositItems extends ActionBase {
                 continue;
             if (shouldKeep(stack, requiredItems))
                 continue;
-            colonistStorage.removeItemStackFromSlot(slot);
-            ItemStackTransaction tx = chestContainer.addItemStack(stack);
-            ItemStack remainder = tx.getRemainder();
+            MoveTransaction<ItemStackTransaction> tx = colonistStorage.moveItemStackFromSlot(slot, chestContainer);
+            ItemStack remainder = tx.getAddTransaction().getRemainder();
             int depositedQty = stack.getQuantity() - (remainder != null ? remainder.getQuantity() : 0);
             if (depositedQty > 0)
                 deposited.merge(stack.getItemId(), depositedQty, Integer::sum);
-            if (remainder != null && !remainder.isEmpty()) {
-                colonistStorage.setItemStackForSlot(slot, remainder);
-            }
         }
 
         DebugLog.info(DebugCategory.COLONIST_DELIVERY,
