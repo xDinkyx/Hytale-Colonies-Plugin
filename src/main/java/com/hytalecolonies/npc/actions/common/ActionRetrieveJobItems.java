@@ -85,8 +85,6 @@ public class ActionRetrieveJobItems extends ActionBase {
             return true; // Nothing required; proceed immediately.
         }
 
-        ItemRequirement[] requirements = requiredItems.toArray(ItemRequirement[]::new);
-
         LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ref, store);
         if (colonist == null) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
@@ -97,7 +95,7 @@ public class ActionRetrieveJobItems extends ActionBase {
         ItemContainer colonistStorage = colonist.getInventory().getStorage();
 
         // Fast path: inventory already satisfied.
-        if (hasItemsInInventory(colonistStorage, requirements)) {
+        if (hasItemsInInventory(colonistStorage, requiredItems)) {
             DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
                     "[RetrieveJobItems] [%s] All required items already in inventory.", npcId);
             return true;
@@ -135,9 +133,9 @@ public class ActionRetrieveJobItems extends ActionBase {
         }
 
         ItemContainer itemContainer = containerBlock.getItemContainer();
-        transferMissing(npcId, requirements, itemContainer, colonistStorage);
+        transferMissing(npcId, requiredItems, itemContainer, colonistStorage);
 
-        boolean satisfied = hasItemsInInventory(colonistStorage, requirements);
+        boolean satisfied = hasItemsInInventory(colonistStorage, requiredItems);
         if (satisfied) {
             DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
                     "[RetrieveJobItems] [%s] All required items retrieved.", npcId);
@@ -153,7 +151,7 @@ public class ActionRetrieveJobItems extends ActionBase {
      * Check if colonist already has all required items in inventory.
      */
     private static boolean hasItemsInInventory(@Nonnull ItemContainer colonistStorage,
-            @Nonnull ItemRequirement[] requirements) {
+            @Nonnull List<ItemRequirement> requirements) {
         for (ItemRequirement req : requirements) {
             if (InventoryHelper.countItems(colonistStorage, List.of(req.item)) < req.quantity)
                 return false;
@@ -164,7 +162,7 @@ public class ActionRetrieveJobItems extends ActionBase {
     /**
      * Take missing items from container.
      */
-    private static void transferMissing(@Nonnull String npcId, @Nonnull ItemRequirement[] requirements,
+    private static void transferMissing(@Nonnull String npcId, @Nonnull List<ItemRequirement> requirements,
             @Nonnull ItemContainer chest, @Nonnull ItemContainer colonistStorage) {
         for (ItemRequirement req : requirements) {
             int have = InventoryHelper.countItems(colonistStorage, List.of(req.item));
