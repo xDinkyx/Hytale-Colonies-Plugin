@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.actions.common;
+﻿package com.hytalecolonies.npc.actions.common;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
@@ -37,7 +37,7 @@ public class BuilderActionHarvestBlock extends BuilderActionBase {
     @Nonnull
     @Override
     public BuilderDescriptorState getBuilderDescriptorState() {
-        return BuilderDescriptorState.Experimental;
+        return BuilderDescriptorState.WorkInProgress;
     }
 
     @Nonnull
@@ -46,7 +46,7 @@ public class BuilderActionHarvestBlock extends BuilderActionBase {
         this.getDouble(
             data, "DamageScale", this.damageScale, 1.0,
             DoubleRangeValidator.fromExclToIncl(0.0, Double.MAX_VALUE),
-            BuilderDescriptorState.Experimental,
+            BuilderDescriptorState.WorkInProgress,
             "Multiplier applied to the per-swing block damage (default 1.0)", null
         );
         return this;

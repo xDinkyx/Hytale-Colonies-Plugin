@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.actions.common;
+﻿package com.hytalecolonies.npc.actions.common;
 
 import javax.annotation.Nonnull;
 
@@ -28,7 +28,7 @@ public class BuilderActionOpenColonistInspectPage extends BuilderActionBase {
     @Nonnull
     @Override
     public BuilderDescriptorState getBuilderDescriptorState() {
-        return BuilderDescriptorState.Experimental;
+        return BuilderDescriptorState.WorkInProgress;
     }
 
     @Nonnull

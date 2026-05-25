@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.actions.constructor;
+﻿package com.hytalecolonies.npc.actions.constructor;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
@@ -26,7 +26,7 @@ public class BuilderActionRetrieveConstructionBlocks extends BuilderActionBase {
     @Nonnull
     @Override
     public BuilderDescriptorState getBuilderDescriptorState() {
-        return BuilderDescriptorState.Experimental;
+        return BuilderDescriptorState.WorkInProgress;
     }
 
     @Nonnull

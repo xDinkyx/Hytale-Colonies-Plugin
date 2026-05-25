@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.actions.miner;
+﻿package com.hytalecolonies.npc.actions.miner;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
@@ -31,7 +31,7 @@ public class BuilderActionSeekNextOreVeinBlock extends BuilderActionBase {
     @Override
     public BuilderDescriptorState getBuilderDescriptorState()
     {
-        return BuilderDescriptorState.Experimental;
+        return BuilderDescriptorState.WorkInProgress;
     }
 
     @Nonnull

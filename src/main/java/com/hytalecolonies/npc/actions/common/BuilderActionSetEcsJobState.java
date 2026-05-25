@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.actions.common;
+﻿package com.hytalecolonies.npc.actions.common;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
@@ -21,14 +21,14 @@ public class BuilderActionSetEcsJobState extends BuilderActionBase {
 
     @Nonnull @Override public String getShortDescription() { return "Sets the colonist's ECS job state to the configured value."; }
     @Nonnull @Override public String getLongDescription() { return getShortDescription(); }
-    @Nonnull @Override public BuilderDescriptorState getBuilderDescriptorState() { return BuilderDescriptorState.Experimental; }
+    @Nonnull @Override public BuilderDescriptorState getBuilderDescriptorState() { return BuilderDescriptorState.WorkInProgress; }
 
     @Nonnull
     @Override
     public Builder<Action> readConfig(@Nonnull JsonElement data) {
         this.getString(data, "JobState", this.stateName, "Idle",
                 null,
-                BuilderDescriptorState.Experimental,
+                BuilderDescriptorState.WorkInProgress,
                 "The ECS job state to set (e.g. DeliveringItems, Idle)", null);
         return this;
     }

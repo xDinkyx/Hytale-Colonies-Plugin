@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.sensors.common;
+﻿package com.hytalecolonies.npc.sensors.common;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
@@ -48,7 +48,7 @@ public class BuilderSensorJobTarget extends BuilderSensorBase {
     @Nonnull
     @Override
     public BuilderDescriptorState getBuilderDescriptorState() {
-        return BuilderDescriptorState.Experimental;
+        return BuilderDescriptorState.WorkInProgress;
     }
 
     @Nonnull
@@ -57,7 +57,7 @@ public class BuilderSensorJobTarget extends BuilderSensorBase {
         this.requireDouble(
             data, "Range", this.range,
             DoubleRangeValidator.fromExclToIncl(0.0, Double.MAX_VALUE),
-            BuilderDescriptorState.Experimental,
+            BuilderDescriptorState.WorkInProgress,
             "Maximum horizontal distance from the target position for the sensor to fire", null
         );
         this.provideFeature(Feature.Position);

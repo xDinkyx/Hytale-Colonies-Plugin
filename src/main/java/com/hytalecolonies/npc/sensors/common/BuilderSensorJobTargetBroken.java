@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.sensors.common;
+﻿package com.hytalecolonies.npc.sensors.common;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
@@ -16,7 +16,7 @@ public class BuilderSensorJobTargetBroken extends BuilderSensorBase {
     }
     @Nonnull @Override public String getLongDescription() { return getShortDescription(); }
     @Nonnull @Override public BuilderDescriptorState getBuilderDescriptorState() {
-        return BuilderDescriptorState.Experimental;
+        return BuilderDescriptorState.WorkInProgress;
     }
 
     @Nonnull @Override

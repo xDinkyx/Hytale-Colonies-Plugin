@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.actions.woodsman;
+﻿package com.hytalecolonies.npc.actions.woodsman;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
@@ -13,7 +13,7 @@ public class BuilderActionFindNextTrunkBlock extends BuilderActionBase {
 
     @Nonnull @Override public String getShortDescription() { return "Finds the next adjacent trunk block after the current one is broken; clears target if none remain."; }
     @Nonnull @Override public String getLongDescription() { return getShortDescription(); }
-    @Nonnull @Override public BuilderDescriptorState getBuilderDescriptorState() { return BuilderDescriptorState.Experimental; }
+    @Nonnull @Override public BuilderDescriptorState getBuilderDescriptorState() { return BuilderDescriptorState.WorkInProgress; }
 
     @Nonnull
     @Override

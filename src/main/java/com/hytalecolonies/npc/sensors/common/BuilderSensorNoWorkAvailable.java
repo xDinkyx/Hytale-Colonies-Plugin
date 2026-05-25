@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.sensors.common;
+﻿package com.hytalecolonies.npc.sensors.common;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
@@ -20,7 +20,7 @@ public class BuilderSensorNoWorkAvailable extends BuilderSensorBase {
 
     @Nonnull @Override public String getShortDescription() { return "Fires when the colonist's seek action found no work available."; }
     @Nonnull @Override public String getLongDescription() { return getShortDescription(); }
-    @Nonnull @Override public BuilderDescriptorState getBuilderDescriptorState() { return BuilderDescriptorState.Experimental; }
+    @Nonnull @Override public BuilderDescriptorState getBuilderDescriptorState() { return BuilderDescriptorState.WorkInProgress; }
 
     @Nonnull
     @Override

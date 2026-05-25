@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.sensors.woodsman;
+﻿package com.hytalecolonies.npc.sensors.woodsman;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
@@ -51,7 +51,7 @@ public class BuilderSensorHarvestableTree extends BuilderSensorBase {
     @Nonnull
     @Override
     public BuilderDescriptorState getBuilderDescriptorState() {
-        return BuilderDescriptorState.Experimental;
+        return BuilderDescriptorState.WorkInProgress;
     }
 
     @Nonnull
@@ -60,7 +60,7 @@ public class BuilderSensorHarvestableTree extends BuilderSensorBase {
         this.requireDouble(
             data, "Range", this.range,
             DoubleRangeValidator.fromExclToIncl(0.0, Double.MAX_VALUE),
-            BuilderDescriptorState.Experimental,
+            BuilderDescriptorState.WorkInProgress,
             "Horizontal range to search for harvestable trees (metres)", null
         );
         // Declare that this sensor provides a position -- Seek will pick it up.

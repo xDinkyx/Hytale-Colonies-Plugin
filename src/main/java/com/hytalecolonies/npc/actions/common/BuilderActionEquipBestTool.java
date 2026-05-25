@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.actions.common;
+﻿package com.hytalecolonies.npc.actions.common;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
@@ -42,18 +42,18 @@ public class BuilderActionEquipBestTool extends BuilderActionBase {
     @Nonnull
     @Override
     public BuilderDescriptorState getBuilderDescriptorState() {
-        return BuilderDescriptorState.Experimental;
+        return BuilderDescriptorState.WorkInProgress;
     }
 
     @Nonnull
     @Override
     public Builder<Action> readConfig(@Nonnull JsonElement data) {
         this.getString(data, "GatherType", this.gatherType, null,
-                null, BuilderDescriptorState.Experimental,
+                null, BuilderDescriptorState.WorkInProgress,
                 "Gather type to look up the best tool for (e.g. Woodcutting, Mining). Omit to auto-detect from sensor block.", null);
         this.getInt(
             data, "MinQuality", this.minQuality, 0, IntSingleValidator.greaterEqual0(),
-            BuilderDescriptorState.Experimental,
+            BuilderDescriptorState.WorkInProgress,
             "Minimum tool quality tier required (0 = any)", null
         );
         return this;

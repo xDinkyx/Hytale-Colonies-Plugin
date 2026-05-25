@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.actions.common;
+﻿package com.hytalecolonies.npc.actions.common;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
@@ -38,19 +38,19 @@ public class BuilderActionLogDebug extends BuilderActionBase {
     @Nonnull
     @Override
     public BuilderDescriptorState getBuilderDescriptorState() {
-        return BuilderDescriptorState.Experimental;
+        return BuilderDescriptorState.WorkInProgress;
     }
 
     @Nonnull
     @Override
     public Builder<Action> readConfig(@Nonnull JsonElement data) {
         this.getString(data, "Message", this.message, "(no message)",
-                null, BuilderDescriptorState.Experimental, "The message to log.", null);
+                null, BuilderDescriptorState.WorkInProgress, "The message to log.", null);
         this.getString(data, "Category", this.category, "GENERAL",
-                null, BuilderDescriptorState.Experimental,
+                null, BuilderDescriptorState.WorkInProgress,
                 "DebugCategory to log to (e.g. GENERAL, WOODSMAN_JOB, MINER_JOB, JOB_SYSTEM).", null);
         this.getString(data, "Level", this.level, "INFO",
-                null, BuilderDescriptorState.Experimental,
+                null, BuilderDescriptorState.WorkInProgress,
                 "Log level: OFF, FINE, DEBUG (alias for FINE), INFO, WARNING, SEVERE.", null);
         return this;
     }

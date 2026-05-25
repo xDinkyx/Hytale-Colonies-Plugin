@@ -1,4 +1,4 @@
-package com.hytalecolonies.npc.actions.common;
+﻿package com.hytalecolonies.npc.actions.common;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
@@ -16,7 +16,7 @@ public class BuilderActionReleaseJobTarget extends BuilderActionBase {
 
     @Nonnull @Override public String getShortDescription() { return "Releases the colonist's current job target claim and clears the target position."; }
     @Nonnull @Override public String getLongDescription() { return getShortDescription(); }
-    @Nonnull @Override public BuilderDescriptorState getBuilderDescriptorState() { return BuilderDescriptorState.Experimental; }
+    @Nonnull @Override public BuilderDescriptorState getBuilderDescriptorState() { return BuilderDescriptorState.WorkInProgress; }
 
     @Nonnull
     @Override
