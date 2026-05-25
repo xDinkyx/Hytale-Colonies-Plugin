@@ -1,12 +1,12 @@
 {
-  "$Comment": "ClaimWork pass-through -- no claiming logic yet. Transitions directly to TravelingToWorkSite. Replace per job when real claiming is wired.",
+  "$Comment": "ClaimWork pass-through -- no claiming logic yet. Transitions directly to RetrievingItems. Replace per job when real claiming is wired.",
   "Type": "Component",
   "Class": "Instruction",
   "Interface": "HytaleColonies.Instruction.Colonist.StateBody",
   "Content": {
     "Sensor": { "Type": "Any" },
     "Actions": [
-      { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
+      { "Type": "SetEcsJobState", "JobState": "WorkingRetrievingItems" }
     ]
   }
 }

@@ -22,10 +22,12 @@ import com.hytalecolonies.ConstructionOrderStore;
 import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.components.jobs.ConstructorJobComponent;
 import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
+import com.hytalecolonies.components.jobs.ItemRequirement;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobRunCounterComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.components.jobs.JobTaskComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
@@ -235,6 +237,16 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         Vector3i wsPos = liveJob.getWorkStationBlockPosition();
         WorkStationComponent ws = wsPos != null ? WorkStationUtil.getWorkStationAt(world, wsPos) : null;
         if (ws != null) ws.workAvailable = true;
+
+        // Set task items: blocks needed for this build run.
+        // Pattern "Block_*" covers all placeable block items; quantity = blocksPerRun.
+        int blocksPerRun = ws != null ? ws.blocksPerRun : 16;
+        JobTaskComponent taskComponent = new JobTaskComponent();
+        taskComponent.requiredItems = new ItemRequirement[]{ new ItemRequirement("Block_*", blocksPerRun) };
+        entityStore.getStore().addComponent(colonistRef, JobTaskComponent.getComponentType(), taskComponent);
+        DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Task set: Block_*x%d.",
+                DebugLog.npcId(colonistRef, entityStore.getStore()), blocksPerRun);
+
         ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingRetrievingItems);
     }
 

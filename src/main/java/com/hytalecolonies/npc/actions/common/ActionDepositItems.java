@@ -23,8 +23,10 @@ import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
 import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
+import com.hypixel.hytale.server.npc.util.InventoryHelper;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -127,53 +129,20 @@ public class ActionDepositItems extends ActionBase {
     }
 
     /** Tools are kept on the colonist; everything else is deposited. */
-    private static boolean shouldKeep(@Nonnull ItemStack stack) {
+    private static boolean isTool(@Nonnull ItemStack stack) {
         return stack.getItem() != null && stack.getItem().getTool() != null;
     }
 
     /**
-     * Returns true if itemId matches any glob pattern in requiredItems. Falls back
-     * to tool check if list is empty.
+     * Keeps items matching any pattern in requiredItems; falls back to tool check
+     * if list is empty.
      */
     private static boolean shouldKeep(@Nonnull ItemStack stack, @Nonnull String[] requiredItems) {
         if (stack.getItem() == null)
             return false;
         if (requiredItems.length == 0)
-            return shouldKeep(stack);
-        String itemId = stack.getItemId();
-        for (String pattern : requiredItems) {
-            if (globMatch(itemId, pattern))
-                return true;
-            // Also match against the local name (after namespace colon).
-            int colon = itemId.indexOf(':');
-            if (colon >= 0 && globMatch(itemId.substring(colon + 1), pattern))
-                return true;
-        }
-        return false;
-    }
-
-    /** Case-sensitive glob match supporting {@code *} as wildcard. */
-    private static boolean globMatch(@Nonnull String text, @Nonnull String pattern) {
-        int t = 0, p = 0, starIdx = -1, match = 0;
-        while (t < text.length()) {
-            if (p < pattern.length() && (pattern.charAt(p) == '*' || pattern.charAt(p) == text.charAt(t))) {
-                if (pattern.charAt(p) == '*') {
-                    starIdx = p++;
-                    match = t;
-                } else {
-                    t++;
-                    p++;
-                }
-            } else if (starIdx >= 0) {
-                p = starIdx + 1;
-                t = ++match;
-            } else {
-                return false;
-            }
-        }
-        while (p < pattern.length() && pattern.charAt(p) == '*')
-            p++;
-        return p == pattern.length();
+            return isTool(stack);
+        return InventoryHelper.matchesItem(Arrays.asList(requiredItems), stack);
     }
 
     private static void depositItems(@Nonnull String npcId,

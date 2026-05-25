@@ -17,6 +17,7 @@ import com.hypixel.hytale.server.core.util.Config;
 import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hytalecolonies.commands.HytaleColoniesPluginCommand;
 import com.hytalecolonies.components.jobs.ConstructorJobComponent;
+import com.hytalecolonies.components.jobs.JobTaskComponent;
 import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobRunCounterComponent;
@@ -48,6 +49,7 @@ import com.hytalecolonies.npc.actions.common.BuilderActionNotifyBlockBroken;
 import com.hytalecolonies.npc.actions.common.BuilderActionOpenColonistInspectPage;
 import com.hytalecolonies.npc.actions.common.BuilderActionReleaseJobTarget;
 import com.hytalecolonies.npc.actions.common.BuilderActionResetJobCounter;
+import com.hytalecolonies.npc.actions.common.BuilderActionRetrieveJobItems;
 import com.hytalecolonies.npc.actions.common.BuilderActionSetEcsJobState;
 import com.hytalecolonies.npc.actions.constructor.BuilderActionPlaceConstructionBlock;
 import com.hytalecolonies.npc.actions.constructor.BuilderActionRetrieveConstructionBlocks;
@@ -58,6 +60,7 @@ import com.hytalecolonies.npc.actions.miner.BuilderActionSeekNextOreVeinBlock;
 import com.hytalecolonies.npc.actions.woodsman.BuilderActionAdvanceTreeHarvest;
 import com.hytalecolonies.npc.actions.woodsman.BuilderActionFindNextTrunkBlock;
 import com.hytalecolonies.npc.actions.woodsman.BuilderActionSeekNearestTree;
+import com.hytalecolonies.npc.sensors.common.BuilderSensorJobHasTaskItems;
 import com.hytalecolonies.npc.sensors.common.BuilderSensorJobTarget;
 import com.hytalecolonies.npc.sensors.common.BuilderSensorJobTargetBroken;
 import com.hytalecolonies.npc.sensors.common.BuilderSensorJobTargetExists;
@@ -104,6 +107,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     private ComponentType<EntityStore, MinerJobComponent> minerJobComponentType;
     private ComponentType<EntityStore, JobRunCounterComponent> jobRunCounterComponentType;
     private ComponentType<EntityStore, ConstructorJobComponent> constructorJobComponentType;
+    private ComponentType<EntityStore, JobTaskComponent> jobTaskComponentType;
     private ComponentType<ChunkStore, WorkStationComponent> workStationComponentType;
     private ComponentType<ChunkStore, WoodsmanWorkStationComponent> woodsmanWorkStationComponentType;
     private ComponentType<ChunkStore, MinerWorkStationComponent> minerWorkStationComponentType;
@@ -200,6 +204,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         minerJobComponentType = getEntityStoreRegistry().registerComponent(MinerJobComponent.class, "MinerJob", MinerJobComponent.CODEC);
         jobRunCounterComponentType = getEntityStoreRegistry().registerComponent(JobRunCounterComponent.class, "JobRunCounter", JobRunCounterComponent.CODEC);
         constructorJobComponentType = getEntityStoreRegistry().registerComponent(ConstructorJobComponent.class, "ConstructorJob", ConstructorJobComponent.CODEC);
+        jobTaskComponentType = getEntityStoreRegistry().registerComponent(JobTaskComponent.class, "JobTask", JobTaskComponent.CODEC);
         workStationComponentType = getChunkStoreRegistry().registerComponent(WorkStationComponent.class, "WorkStation", WorkStationComponent.CODEC);
         woodsmanWorkStationComponentType = getChunkStoreRegistry().registerComponent(WoodsmanWorkStationComponent.class, "WoodsmanWorkStation", WoodsmanWorkStationComponent.CODEC);
         minerWorkStationComponentType = getChunkStoreRegistry().registerComponent(MinerWorkStationComponent.class, "MinerWorkStation", MinerWorkStationComponent.CODEC);
@@ -271,6 +276,10 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         return constructorJobComponentType;
     }
 
+    public ComponentType<EntityStore, JobTaskComponent> getJobTaskComponentType() {
+        return jobTaskComponentType;
+    }
+
     public ComponentType<EntityStore, MoveToTargetComponent> getMoveToTargetComponentType() {
         return moveToTargetComponentType;
     }
@@ -315,6 +324,7 @@ public class HytaleColoniesPlugin extends JavaPlugin {
                 .registerCoreComponentType("SetEcsJobState", BuilderActionSetEcsJobState::new)
                 .registerCoreComponentType("FindDeliveryContainer", BuilderActionFindDeliveryContainer::new)
                 .registerCoreComponentType("DepositItems", BuilderActionDepositItems::new)
+                .registerCoreComponentType("RetrieveJobItems", BuilderActionRetrieveJobItems::new)
                 .registerCoreComponentType("OpenColonistInspectPage", BuilderActionOpenColonistInspectPage::new)
                 // Woodsman actions
                 .registerCoreComponentType("SeekNearestTree", BuilderActionSeekNearestTree::new)
@@ -336,7 +346,8 @@ public class HytaleColoniesPlugin extends JavaPlugin {
                 .registerCoreComponentType("JobTargetBroken", BuilderSensorJobTargetBroken::new)
                 .registerCoreComponentType("RunQuotaReached", BuilderSensorRunQuotaReached::new)
                 .registerCoreComponentType("NoWorkAvailable", BuilderSensorNoWorkAvailable::new)
-                .registerCoreComponentType("OreVeinPending", BuilderSensorOreVeinPending::new);
+                .registerCoreComponentType("OreVeinPending", BuilderSensorOreVeinPending::new)
+                .registerCoreComponentType("JobHasTaskItems", BuilderSensorJobHasTaskItems::new);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered NPC component types");
     }
 

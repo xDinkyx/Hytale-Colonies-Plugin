@@ -19,27 +19,7 @@
         }
       },
       {
-        "$Comment": "No pickaxe -- confused particle + wait.",
-        "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Pickaxe_*"], "CountRange": [1, 999] }] } },
-        "ActionsBlocking": true,
-        "Actions": [
-          { "Type": "LogDebug", "Message": "WaitingForWork: missing pickaxe -- showing confused particle.", "Category": "MINER_JOB", "Level": "FINE" },
-          { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
-          { "Type": "Timeout", "Delay": [3, 3] }
-        ]
-      },
-      {
-        "$Comment": "No shovel -- confused particle + wait.",
-        "Sensor": { "Type": "Not", "Sensor": { "Type": "Self", "Filters": [{ "Type": "Inventory", "Items": ["Tool_Shovel_*"], "CountRange": [1, 999] }] } },
-        "ActionsBlocking": true,
-        "Actions": [
-          { "Type": "LogDebug", "Message": "WaitingForWork: missing shovel -- showing confused particle.", "Category": "MINER_JOB", "Level": "FINE" },
-          { "Type": "SpawnParticles", "ParticleSystem": "Question_Subtle", "Offset": [0, 2.1, 0] },
-          { "Type": "Timeout", "Delay": [3, 3] }
-        ]
-      },
-      {
-        "$Comment": "Has both tools (passed Not-checks above) -- check for a queued ore vein block first (higher priority).",
+        "$Comment": "Has tools (checked at RetrievingItems) -- check for a queued ore vein block first (higher priority).",
         "Continue": true,
         "Sensor": { "Type": "Any" },
         "Actions": [

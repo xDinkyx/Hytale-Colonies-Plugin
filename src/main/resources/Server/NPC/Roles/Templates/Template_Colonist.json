@@ -53,7 +53,7 @@
       "Description": "Wander nearby while waiting for another colonist to release a block claim."
     },
     "RetrievingItemsComponent": {
-      "Value": "Component_Instruction_NoOp",
+      "Value": "Component_Instruction_RetrievingItems_Default",
       "Description": "Walk to container and retrieve items needed for the planned work."
     },
     "DefaultIdleComponent": {
