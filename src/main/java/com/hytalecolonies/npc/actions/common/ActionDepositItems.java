@@ -5,6 +5,7 @@ import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.BlockEntityUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -77,8 +78,7 @@ public class ActionDepositItems extends ActionBase {
         }
 
         World world = store.getExternalData().getWorld();
-        Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, deliveryContainerPosition.x,
-                deliveryContainerPosition.y, deliveryContainerPosition.z);
+        Ref<ChunkStore> blockRef = BlockEntityUtil.getBlockEntityAt(world, deliveryContainerPosition);
         if (blockRef == null || !blockRef.isValid()) {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
                     "[DepositItems] [%s] Container block at %s is no longer present.", npcId,

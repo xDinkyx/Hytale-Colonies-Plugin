@@ -44,6 +44,7 @@ import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.debug.DebugTiming;
+import com.hytalecolonies.utils.BlockEntityUtil;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
 import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
@@ -429,8 +430,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore> {
             // Get work station from position.
             Vector3i workStationPos = jobComponent.getWorkStationBlockPosition();
 
-            Ref<ChunkStore> blockEntity = BlockModule.getBlockEntity(world, workStationPos.x, workStationPos.y,
-                    workStationPos.z);
+            Ref<ChunkStore> blockEntity = BlockEntityUtil.getBlockEntityAt(world, workStationPos);
             var workStationComponent = blockEntity.getStore().getComponent(blockEntity,
                     WorkStationComponent.getComponentType());
             assert workStationComponent != null;

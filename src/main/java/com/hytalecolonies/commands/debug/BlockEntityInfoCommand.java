@@ -12,7 +12,7 @@ import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.command.system.arguments.types.RelativeIntPosition;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractWorldCommand;
 import com.hypixel.hytale.server.core.command.system.exceptions.GeneralCommandException;
-import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hytalecolonies.utils.BlockEntityUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
@@ -97,7 +97,7 @@ public class BlockEntityInfoCommand extends AbstractWorldCommand {
         }
 
         // 5. Now use 'position' to get block entity as usual
-        var blockEntity = BlockModule.getBlockEntity(world, position.x, position.y, position.z);
+        var blockEntity = BlockEntityUtil.getBlockEntityAt(world, position);
         if (blockEntity == null) {
             context.sendMessage(Message.raw("No BlockEntity found for block " + blockId + "-" + blockType.getId() + " at " + position));
             return;

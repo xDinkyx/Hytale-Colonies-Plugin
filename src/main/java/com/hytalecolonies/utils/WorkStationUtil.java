@@ -7,7 +7,6 @@ import javax.annotation.Nullable;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -40,7 +39,7 @@ public final class WorkStationUtil
 
     @Nullable public static WorkStationComponent getWorkStationAt(World world, Vector3i position)
     {
-        Ref<ChunkStore> ref = BlockModule.getBlockEntity(world, position.x, position.y, position.z);
+        Ref<ChunkStore> ref = BlockEntityUtil.getBlockEntityAt(world, position);
         if (ref == null)
             return null;
         return ref.getStore().getComponent(ref, WorkStationComponent.getComponentType());
@@ -59,7 +58,7 @@ public final class WorkStationUtil
 
     @Nullable public static WoodsmanWorkStationComponent getWoodsmanWorkStationAt(World world, Vector3i position)
     {
-        Ref<ChunkStore> ref = BlockModule.getBlockEntity(world, position.x, position.y, position.z);
+        Ref<ChunkStore> ref = BlockEntityUtil.getBlockEntityAt(world, position);
         if (ref == null)
             return null;
         return ref.getStore().getComponent(ref, WoodsmanWorkStationComponent.getComponentType());
@@ -78,7 +77,7 @@ public final class WorkStationUtil
 
     @Nullable public static MinerWorkStationComponent getMinerWorkStationAt(World world, Vector3i position)
     {
-        Ref<ChunkStore> ref = BlockModule.getBlockEntity(world, position.x, position.y, position.z);
+        Ref<ChunkStore> ref = BlockEntityUtil.getBlockEntityAt(world, position);
         if (ref == null)
             return null;
         return ref.getStore().getComponent(ref, MinerWorkStationComponent.getComponentType());
@@ -97,7 +96,7 @@ public final class WorkStationUtil
 
     @Nullable public static ConstructorWorkStationComponent getConstructorWorkStationAt(World world, Vector3i position)
     {
-        Ref<ChunkStore> ref = BlockModule.getBlockEntity(world, position.x, position.y, position.z);
+        Ref<ChunkStore> ref = BlockEntityUtil.getBlockEntityAt(world, position);
         if (ref == null)
             return null;
         return ref.getStore().getComponent(ref, ConstructorWorkStationComponent.getComponentType());

@@ -11,7 +11,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.DelayedSystem;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hytalecolonies.utils.BlockEntityUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -92,7 +92,7 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore> {
                 if (job == null) continue;
                 Vector3i wsPos = job.getWorkStationBlockPosition();
                 if (wsPos == null) continue;
-                Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, wsPos.x, wsPos.y, wsPos.z);
+                Ref<ChunkStore> wsRef = BlockEntityUtil.getBlockEntityAt(world, wsPos);
                 WorkStationComponent workStation = wsRef != null
                         ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType())
                         : null;

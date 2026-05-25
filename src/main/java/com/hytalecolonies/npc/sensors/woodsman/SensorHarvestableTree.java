@@ -10,7 +10,7 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
-import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hytalecolonies.utils.BlockEntityUtil;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -87,7 +87,7 @@ public class SensorHarvestableTree extends SensorBase {
         // Validate existing optimistic claim
         // ------------------------------------------------------------------
         if (claimedTreePos != null) {
-            Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, claimedTreePos.x, claimedTreePos.y, claimedTreePos.z);
+            Ref<ChunkStore> blockRef = BlockEntityUtil.getBlockEntityAt(world, claimedTreePos);
             if (blockRef != null && blockRef.isValid()) {
                 ClaimedBlockComponent claim = blockRef.getStore().getComponent(blockRef, ClaimedBlockComponent.getComponentType());
                 if (claim != null && myUuid != null && myUuid.equals(claim.getClaimedByUuid())) {

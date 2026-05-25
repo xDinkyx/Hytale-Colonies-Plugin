@@ -19,6 +19,7 @@ import com.hytalecolonies.ConstructionOrderStore;
 import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.BlockEntityUtil;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
 
 /** Assigns pending orders from {@link ConstructionOrderQueue} to idle Constructor workstations every 3 s. */
@@ -63,7 +64,7 @@ public class ConstructionOrderDispatchSystem extends DelayedEntitySystem<ChunkSt
 
     private static void executeAssignOrderToWorkstationOnWorldThread(@Nonnull World world, @Nonnull Vector3i wsPos)
     {
-        Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, wsPos.x, wsPos.y, wsPos.z);
+        Ref<ChunkStore> wsRef = BlockEntityUtil.getBlockEntityAt(world, wsPos);
         if (wsRef == null || !wsRef.isValid())
             return;
         Store<ChunkStore> cs = world.getChunkStore().getStore();

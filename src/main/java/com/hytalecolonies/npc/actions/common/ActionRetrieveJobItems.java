@@ -5,6 +5,7 @@ import com.hytalecolonies.components.jobs.JobTaskComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.BlockEntityUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -109,10 +110,8 @@ public class ActionRetrieveJobItems extends ActionBase {
         }
 
         World world = store.getExternalData().getWorld();
-        Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world,
-                workStation.deliveryContainerPosition.x,
-                workStation.deliveryContainerPosition.y,
-                workStation.deliveryContainerPosition.z);
+        Ref<ChunkStore> blockRef = BlockEntityUtil.getBlockEntityAt(world,
+                workStation.deliveryContainerPosition);
 
         if (blockRef == null || !blockRef.isValid()) {
             DebugLog.severe(DebugCategory.COLONIST_DELIVERY,

@@ -13,7 +13,7 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
-import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hytalecolonies.utils.BlockEntityUtil;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -193,7 +193,7 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
             @Nonnull Ref<EntityStore> colonistRef,
             @Nonnull EntityStore entityStore)
     {
-        Ref<ChunkStore> wsRef = BlockModule.getBlockEntity(world, wsPos.x, wsPos.y, wsPos.z);
+        Ref<ChunkStore> wsRef = BlockEntityUtil.getBlockEntityAt(world, wsPos);
         if (wsRef != null && wsRef.isValid())
         {
             var cs = world.getChunkStore().getStore();
@@ -212,7 +212,7 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
 
     private static void clearStaleOrderFromWorkstation(@Nonnull World world, @Nonnull Vector3i staleWsPos)
     {
-        Ref<ChunkStore> wsRef2 = BlockModule.getBlockEntity(world, staleWsPos.x, staleWsPos.y, staleWsPos.z);
+        Ref<ChunkStore> wsRef2 = BlockEntityUtil.getBlockEntityAt(world, staleWsPos);
         if (wsRef2 == null || !wsRef2.isValid())
             return;
         var cs2 = world.getChunkStore().getStore();

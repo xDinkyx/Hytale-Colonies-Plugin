@@ -5,7 +5,7 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hytalecolonies.utils.BlockEntityUtil;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -65,7 +65,7 @@ public final class ClaimedBlockRegistry {
 
         Vector3i pos = jobTarget.targetPosition;
         World world = entityStore.getExternalData().getWorld();
-        Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, pos.x, pos.y, pos.z);
+        Ref<ChunkStore> blockRef = BlockEntityUtil.getBlockEntityAt(world, pos);
         if (blockRef == null) return;
 
         Store<ChunkStore> chunkStore = blockRef.getStore();

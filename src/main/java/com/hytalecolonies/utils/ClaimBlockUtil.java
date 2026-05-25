@@ -195,7 +195,7 @@ public final class ClaimBlockUtil {
             return;
         }
 
-        Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, canonical.x, canonical.y, canonical.z);
+        Ref<ChunkStore> blockRef = BlockEntityUtil.getBlockEntityAt(world, canonical);
         if (blockRef == null || !blockRef.isValid()) {
             DebugLog.fine(DebugCategory.CLAIM_SYSTEM,
                     "[Claim] unclaimBlock(%s) -- no block entity, nothing to remove.", canonical);
