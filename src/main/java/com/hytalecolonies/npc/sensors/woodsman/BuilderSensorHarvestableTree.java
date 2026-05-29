@@ -1,4 +1,4 @@
-﻿package com.hytalecolonies.npc.sensors.woodsman;
+package com.hytalecolonies.npc.sensors.woodsman;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;

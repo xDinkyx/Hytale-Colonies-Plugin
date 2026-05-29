@@ -1,4 +1,4 @@
-﻿package com.hytalecolonies.npc.actions.common;
+package com.hytalecolonies.npc.actions.common;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;

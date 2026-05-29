@@ -1,4 +1,4 @@
-﻿package com.hytalecolonies.npc.actions.common;
+package com.hytalecolonies.npc.actions.common;
 
 import javax.annotation.Nonnull;
 

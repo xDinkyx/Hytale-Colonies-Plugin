@@ -1,4 +1,4 @@
-﻿package com.hytalecolonies.npc.sensors.miner;
+package com.hytalecolonies.npc.sensors.miner;
 
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
