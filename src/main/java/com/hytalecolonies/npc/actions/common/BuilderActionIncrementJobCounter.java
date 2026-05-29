@@ -1,43 +1,49 @@
 package com.hytalecolonies.npc.actions.common;
 
+import javax.annotation.Nonnull;
+
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderDescriptorState;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
 import com.hypixel.hytale.server.npc.instructions.Action;
-import javax.annotation.Nonnull;
 
 /** Builder for {@code "IncrementJobCounter"}. */
-public class BuilderActionIncrementJobCounter extends BuilderActionBase {
-
+public class BuilderActionIncrementJobCounter extends BuilderActionBase
+{
     @Nonnull
     @Override
-    public String getShortDescription() {
+    public String getShortDescription()
+    {
         return "Increments the colonist's run counter (JobRunCounterComponent.count) by one.";
     }
 
     @Nonnull
     @Override
-    public String getLongDescription() {
+    public String getLongDescription()
+    {
         return getShortDescription();
     }
 
     @Nonnull
     @Override
-    public BuilderDescriptorState getBuilderDescriptorState() {
+    public BuilderDescriptorState getBuilderDescriptorState()
+    {
         return BuilderDescriptorState.WorkInProgress;
     }
 
     @Nonnull
     @Override
-    public Builder<Action> readConfig(@Nonnull JsonElement data) {
+    public Builder<Action> readConfig(@Nonnull JsonElement data)
+    {
         return this;
     }
 
     @Nonnull
     @Override
-    public Action build(@Nonnull BuilderSupport support) {
+    public Action build(@Nonnull BuilderSupport support)
+    {
         return new ActionIncrementJobCounter(this, support);
     }
 }

@@ -17,15 +17,12 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
-
 /**
- * /hc construct {@literal <name>} -- loads a server prefab into the player's clipboard so
- * the paste ghost preview appears. The actual construction order prefab ID comes
- * from the item's {@code ConstructionPrefabId} metadata, not from this command.
+ * /hc construct {@literal <name>} -- loads a server prefab into the player's clipboard so the paste ghost preview appears. The actual construction order prefab
+ * ID comes from the item's {@code ConstructionPrefabId} metadata, not from this command.
  */
 public class ConstructSubCommand extends AbstractPlayerCommand
 {
-
     private static final Message MSG_PREFAB_NOT_FOUND = Message.translation("server.commands.colonies.construct.prefabNotFound");
     private static final Message MSG_PREFAB_LOADED = Message.translation("server.commands.colonies.construct.prefabLoaded");
 
@@ -38,7 +35,8 @@ public class ConstructSubCommand extends AbstractPlayerCommand
         this.setPermissionGroup(null);
     }
 
-    @Override protected boolean canGeneratePermission()
+    @Override
+    protected boolean canGeneratePermission()
     {
         return false;
     }
@@ -50,7 +48,6 @@ public class ConstructSubCommand extends AbstractPlayerCommand
                            @Nonnull PlayerRef playerRef,
                            @Nonnull World world)
     {
-
         String prefabName = prefabNameArg.get(context);
         Player player = store.getComponent(ref, Player.getComponentType());
         if (player == null)

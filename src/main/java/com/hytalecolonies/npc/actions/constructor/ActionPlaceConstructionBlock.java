@@ -27,12 +27,11 @@ import com.hytalecolonies.utils.ConstructorUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
 
 /**
- * Places the correct prefab block at the colonist's job-target position.
- * Sets {@link ConstructorJobComponent#blockPlacedNotification} so the constructor working system can advance.
+ * Places the correct prefab block at the colonist's job-target position. Sets {@link ConstructorJobComponent#blockPlacedNotification} so the constructor
+ * working system can advance.
  */
 public class ActionPlaceConstructionBlock extends ActionBase
 {
-
     private static final String EMPTY_BLOCK_KEY = "Empty";
 
     public ActionPlaceConstructionBlock(@Nonnull BuilderActionPlaceConstructionBlock builder, @Nonnull BuilderSupport support)
@@ -93,7 +92,8 @@ public class ActionPlaceConstructionBlock extends ActionBase
                           wz);
             // Still notify so ECS can advance past this position.
             ConstructorJobComponent constructorJob = store.getComponent(ref, ConstructorJobComponent.getComponentType());
-            if (constructorJob != null) constructorJob.blockPlacedNotification = true;
+            if (constructorJob != null)
+                constructorJob.blockPlacedNotification = true;
             return true;
         }
 
@@ -117,7 +117,11 @@ public class ActionPlaceConstructionBlock extends ActionBase
             {
                 DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
                                  "[PlaceConstructionBlock] Cell(s) blocked at %d,%d,%d (rot=%d, block='%s') -- skipping place.",
-                                 wx, wy, wz, blockRotation, blockKey);
+                                 wx,
+                                 wy,
+                                 wz,
+                                 blockRotation,
+                                 blockKey);
                 return;
             }
             chunk.setBlock(wx, wy, wz, blockId, blockType, blockRotation, 0, 0);

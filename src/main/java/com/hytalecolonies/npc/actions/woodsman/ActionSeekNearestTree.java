@@ -30,15 +30,12 @@ import com.hytalecolonies.utils.JobNavigationUtil;
 import com.hytalecolonies.utils.StoreUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
 
-
 /**
- * Scans for the nearest unclaimed harvestable tree within the workstation's search radius,
- * claims it atomically via {@code world.execute()}, sets it as the job target, and dispatches navigation.
- * If none is available the target is left unset and the instruction block retries next cycle.
+ * Scans for the nearest unclaimed harvestable tree within the workstation's search radius, claims it atomically via {@code world.execute()}, sets it as the job
+ * target, and dispatches navigation. If none is available the target is left unset and the instruction block retries next cycle.
  */
 public class ActionSeekNearestTree extends ActionBase
 {
-
     public ActionSeekNearestTree(@Nonnull BuilderActionSeekNearestTree builder, @Nonnull BuilderSupport support)
     {
         super(builder);

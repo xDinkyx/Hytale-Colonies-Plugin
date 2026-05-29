@@ -1,8 +1,7 @@
 package com.hytalecolonies.npc.sensors.common;
 
-import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
+import javax.annotation.Nonnull;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -10,20 +9,23 @@ import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.SensorBase;
 import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
-import javax.annotation.Nonnull;
+import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 
 /** Runtime sensor -- fires when {@link JobTargetComponent} is present and its position is non-null. */
-public class SensorJobTargetExists extends SensorBase {
-
-    public SensorJobTargetExists(@Nonnull BuilderSensorJobTargetExists builder,
-                                  @Nonnull BuilderSupport support) {
+public class SensorJobTargetExists extends SensorBase
+{
+    public SensorJobTargetExists(@Nonnull BuilderSensorJobTargetExists builder, @Nonnull BuilderSupport support)
+    {
         super(builder);
     }
 
     @Override
-    public boolean matches(@Nonnull Ref<EntityStore> ref, @Nonnull Role role,
-                           double dt, @Nonnull Store<EntityStore> store) {
-        if (!super.matches(ref, role, dt, store)) {
+    public boolean matches(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, double dt, @Nonnull Store<EntityStore> store)
+    {
+        if (!super.matches(ref, role, dt, store))
+        {
             return false;
         }
 
@@ -37,7 +39,8 @@ public class SensorJobTargetExists extends SensorBase {
     }
 
     @Override
-    public InfoProvider getSensorInfo() {
+    public InfoProvider getSensorInfo()
+    {
         return null;
     }
 }

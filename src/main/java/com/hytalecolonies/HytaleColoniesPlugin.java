@@ -17,11 +17,11 @@ import com.hypixel.hytale.server.core.util.Config;
 import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hytalecolonies.commands.HytaleColoniesPluginCommand;
 import com.hytalecolonies.components.jobs.ConstructorJobComponent;
-import com.hytalecolonies.components.jobs.JobTaskComponent;
 import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobRunCounterComponent;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.components.jobs.JobTaskComponent;
 import com.hytalecolonies.components.jobs.MinerJobComponent;
 import com.hytalecolonies.components.jobs.MinerWorkStationComponent;
 import com.hytalecolonies.components.jobs.UnemployedComponent;
@@ -88,16 +88,15 @@ import com.hytalecolonies.systems.world.TreeScannerSystem;
 /**
  * HytaleColonies - A Hytale server plugin.
  */
-public class HytaleColoniesPlugin extends JavaPlugin {
-
+public class HytaleColoniesPlugin extends JavaPlugin
+{
     public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static HytaleColoniesPlugin instance;
 
     private final Config<DebugConfig> debugConfig = this.withConfig("DebugConfig", DebugConfig.CODEC);
-    private final Config<ConstructionOrderStore.StoreData> constructionOrderConfig = this
-            .withConfig("ConstructionOrders", ConstructionOrderStore.StoreData.CODEC);
-    private final Config<MineSegmentStore.StoreData> mineSegmentConfig = this.withConfig("MineSegments",
-            MineSegmentStore.StoreData.CODEC);
+    private final Config<ConstructionOrderStore.StoreData> constructionOrderConfig =
+            this.withConfig("ConstructionOrders", ConstructionOrderStore.StoreData.CODEC);
+    private final Config<MineSegmentStore.StoreData> mineSegmentConfig = this.withConfig("MineSegments", MineSegmentStore.StoreData.CODEC);
 
     // ECS Component Types
     private ComponentType<EntityStore, ColonistComponent> colonistComponentType;
@@ -117,7 +116,8 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     private ComponentType<EntityStore, JobTargetComponent> jobTargetComponentType;
     private ComponentType<ChunkStore, ClaimedBlockComponent> claimedBlockComponentType;
 
-    public HytaleColoniesPlugin(@Nonnull JavaPluginInit init) {
+    public HytaleColoniesPlugin(@Nonnull JavaPluginInit init)
+    {
         super(init);
         LOGGER.atInfo().log("Hello from %s version %s", this.getName(), this.getManifest().getVersion().toString());
         instance = this;
@@ -125,19 +125,22 @@ public class HytaleColoniesPlugin extends JavaPlugin {
 
     /**
      * Get the plugin instance.
-     * 
+     *
      * @return The plugin instance
      */
-    public static HytaleColoniesPlugin getInstance() {
+    public static HytaleColoniesPlugin getInstance()
+    {
         return instance;
     }
 
-    public Config<DebugConfig> getDebugConfig() {
+    public Config<DebugConfig> getDebugConfig()
+    {
         return debugConfig;
     }
 
     @Override
-    protected void setup() {
+    protected void setup()
+    {
         LOGGER.at(Level.INFO).log("[HytaleColonies] Setting up...");
 
         // Allow all levels through so DebugCategory can control filtering.
@@ -160,11 +163,14 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         LOGGER.at(Level.INFO).log("[HytaleColonies] Setup complete!");
     }
 
-    private void initConstructionOrders() {
+    private void initConstructionOrders()
+    {
         constructionOrderConfig.save();
         ConstructionOrderStore.get().init(constructionOrderConfig);
-        for (ConstructionOrderStore.Entry e : ConstructionOrderStore.get().all()) {
-            if (e.status == ConstructionOrderStore.STATUS_IN_PROGRESS) {
+        for (ConstructionOrderStore.Entry e : ConstructionOrderStore.get().all())
+        {
+            if (e.status == ConstructionOrderStore.STATUS_IN_PROGRESS)
+            {
                 // Already assigned to a workstation.
                 continue;
             }
@@ -173,11 +179,14 @@ public class HytaleColoniesPlugin extends JavaPlugin {
         }
     }
 
-    private void initMineSegments() {
+    private void initMineSegments()
+    {
         mineSegmentConfig.save();
         MineSegmentStore.get().init(mineSegmentConfig);
-        for (MineSegmentStore.Entry seg : MineSegmentStore.get().all()) {
-            if (seg.status == MineSegmentStore.STATUS_IN_PROGRESS) {
+        for (MineSegmentStore.Entry seg : MineSegmentStore.get().all())
+        {
+            if (seg.status == MineSegmentStore.STATUS_IN_PROGRESS)
+            {
                 // Already linked to a workstation.
                 continue;
             }
@@ -188,7 +197,8 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     /**
      * Register plugin commands.
      */
-    private void registerCommands() {
+    private void registerCommands()
+    {
         getCommandRegistry().registerCommand(new HytaleColoniesPluginCommand(this.getName(), this.getManifest().getVersion().toString()));
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered plugin commands");
     }
@@ -196,34 +206,40 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     /**
      * Register ECS components.
      */
-    private void registerComponents() {
+    private void registerComponents()
+    {
         colonistComponentType = getEntityStoreRegistry().registerComponent(ColonistComponent.class, "Colonist", ColonistComponent.CODEC);
         colonistJobComponentType = getEntityStoreRegistry().registerComponent(JobComponent.class, "ColonistJob", JobComponent.CODEC);
         unemployedComponentType = getEntityStoreRegistry().registerComponent(UnemployedComponent.class, "Unemployed", UnemployedComponent.CODEC);
         woodsmanJobComponentType = getEntityStoreRegistry().registerComponent(WoodsmanJobComponent.class, "WoodsmanJob", WoodsmanJobComponent.CODEC);
         minerJobComponentType = getEntityStoreRegistry().registerComponent(MinerJobComponent.class, "MinerJob", MinerJobComponent.CODEC);
         jobRunCounterComponentType = getEntityStoreRegistry().registerComponent(JobRunCounterComponent.class, "JobRunCounter", JobRunCounterComponent.CODEC);
-        constructorJobComponentType = getEntityStoreRegistry().registerComponent(ConstructorJobComponent.class, "ConstructorJob", ConstructorJobComponent.CODEC);
+        constructorJobComponentType =
+                getEntityStoreRegistry().registerComponent(ConstructorJobComponent.class, "ConstructorJob", ConstructorJobComponent.CODEC);
         jobTaskComponentType = getEntityStoreRegistry().registerComponent(JobTaskComponent.class, "JobTask", JobTaskComponent.CODEC);
         workStationComponentType = getChunkStoreRegistry().registerComponent(WorkStationComponent.class, "WorkStation", WorkStationComponent.CODEC);
-        woodsmanWorkStationComponentType = getChunkStoreRegistry().registerComponent(WoodsmanWorkStationComponent.class, "WoodsmanWorkStation", WoodsmanWorkStationComponent.CODEC);
-        minerWorkStationComponentType = getChunkStoreRegistry().registerComponent(MinerWorkStationComponent.class, "MinerWorkStation", MinerWorkStationComponent.CODEC);
-        constructorWorkStationComponentType = getChunkStoreRegistry().registerComponent(ConstructorWorkStationComponent.class, "ConstructorWorkStation", ConstructorWorkStationComponent.CODEC);
+        woodsmanWorkStationComponentType =
+                getChunkStoreRegistry().registerComponent(WoodsmanWorkStationComponent.class, "WoodsmanWorkStation", WoodsmanWorkStationComponent.CODEC);
+        minerWorkStationComponentType =
+                getChunkStoreRegistry().registerComponent(MinerWorkStationComponent.class, "MinerWorkStation", MinerWorkStationComponent.CODEC);
+        constructorWorkStationComponentType = getChunkStoreRegistry().registerComponent(ConstructorWorkStationComponent.class,
+                                                                                        "ConstructorWorkStation",
+                                                                                        ConstructorWorkStationComponent.CODEC);
         moveToTargetComponentType = getEntityStoreRegistry().registerComponent(MoveToTargetComponent.class, MoveToTargetComponent::new);
-        harvestableTreeComponentType = getChunkStoreRegistry().registerComponent(HarvestableTreeComponent.class, "HarvestableTree", HarvestableTreeComponent.CODEC);
+        harvestableTreeComponentType =
+                getChunkStoreRegistry().registerComponent(HarvestableTreeComponent.class, "HarvestableTree", HarvestableTreeComponent.CODEC);
         jobTargetComponentType = getEntityStoreRegistry().registerComponent(JobTargetComponent.class, "JobTarget", JobTargetComponent.CODEC);
         claimedBlockComponentType = getChunkStoreRegistry().registerComponent(ClaimedBlockComponent.class, "ClaimedBlock", ClaimedBlockComponent.CODEC);
-        
+
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ECS components");
     }
 
     /**
-     * Registers job component types so {@link JobAssignmentSystems#fireColonist}
-     * can strip them.
-     * All state transitions are now driven by NPC role JSON actions and sensors --
-     * no Java handlers.
+     * Registers job component types so {@link JobAssignmentSystems#fireColonist} can strip them. All state transitions are now driven by NPC role JSON actions
+     * and sensors -- no Java handlers.
      */
-    private void registerSharedJobHandlers() {
+    private void registerSharedJobHandlers()
+    {
         JobRegistry.register(WoodsmanJobComponent.getComponentType());
         JobRegistry.register(MinerJobComponent.getComponentType());
         JobRegistry.register(ConstructorJobComponent.getComponentType());
@@ -232,87 +248,100 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     }
 
     // Accessors for ECS component types
-    public ComponentType<EntityStore, ColonistComponent> getColonistComponentType() {
+    public ComponentType<EntityStore, ColonistComponent> getColonistComponentType()
+    {
         return colonistComponentType;
     }
 
-    public ComponentType<EntityStore, UnemployedComponent> getUnemployedComponentType() {
+    public ComponentType<EntityStore, UnemployedComponent> getUnemployedComponentType()
+    {
         return unemployedComponentType;
     }
 
-    public ComponentType<ChunkStore, WorkStationComponent> getWorkStationComponentType() {
+    public ComponentType<ChunkStore, WorkStationComponent> getWorkStationComponentType()
+    {
         return workStationComponentType;
     }
 
-    public ComponentType<ChunkStore, WoodsmanWorkStationComponent> getWoodsmanWorkStationComponentType() {
+    public ComponentType<ChunkStore, WoodsmanWorkStationComponent> getWoodsmanWorkStationComponentType()
+    {
         return woodsmanWorkStationComponentType;
     }
 
-    public ComponentType<ChunkStore, MinerWorkStationComponent> getMinerWorkStationComponentType() {
+    public ComponentType<ChunkStore, MinerWorkStationComponent> getMinerWorkStationComponentType()
+    {
         return minerWorkStationComponentType;
     }
 
-    public ComponentType<ChunkStore, ConstructorWorkStationComponent> getConstructorWorkStationComponentType() {
+    public ComponentType<ChunkStore, ConstructorWorkStationComponent> getConstructorWorkStationComponentType()
+    {
         return constructorWorkStationComponentType;
     }
 
-    public ComponentType<EntityStore, JobComponent> getJobComponentType() {
+    public ComponentType<EntityStore, JobComponent> getJobComponentType()
+    {
         return colonistJobComponentType;
     }
 
-    public ComponentType<EntityStore, WoodsmanJobComponent> getWoodsmanJobComponentType() {
+    public ComponentType<EntityStore, WoodsmanJobComponent> getWoodsmanJobComponentType()
+    {
         return woodsmanJobComponentType;
     }
 
-    public ComponentType<EntityStore, MinerJobComponent> getMinerJobComponentType() {
+    public ComponentType<EntityStore, MinerJobComponent> getMinerJobComponentType()
+    {
         return minerJobComponentType;
     }
 
-    public ComponentType<EntityStore, JobRunCounterComponent> getJobRunCounterComponentType() {
+    public ComponentType<EntityStore, JobRunCounterComponent> getJobRunCounterComponentType()
+    {
         return jobRunCounterComponentType;
     }
 
-    public ComponentType<EntityStore, ConstructorJobComponent> getConstructorJobComponentType() {
+    public ComponentType<EntityStore, ConstructorJobComponent> getConstructorJobComponentType()
+    {
         return constructorJobComponentType;
     }
 
-    public ComponentType<EntityStore, JobTaskComponent> getJobTaskComponentType() {
+    public ComponentType<EntityStore, JobTaskComponent> getJobTaskComponentType()
+    {
         return jobTaskComponentType;
     }
 
-    public ComponentType<EntityStore, MoveToTargetComponent> getMoveToTargetComponentType() {
+    public ComponentType<EntityStore, MoveToTargetComponent> getMoveToTargetComponentType()
+    {
         return moveToTargetComponentType;
     }
 
-    public ComponentType<ChunkStore, HarvestableTreeComponent> getHarvestableTreeComponentType() {
+    public ComponentType<ChunkStore, HarvestableTreeComponent> getHarvestableTreeComponentType()
+    {
         return harvestableTreeComponentType;
     }
 
-    public ComponentType<EntityStore, JobTargetComponent> getJobTargetComponentType() {
+    public ComponentType<EntityStore, JobTargetComponent> getJobTargetComponentType()
+    {
         return jobTargetComponentType;
     }
 
-    public ComponentType<ChunkStore, ClaimedBlockComponent> getClaimedBlockComponentType() {
+    public ComponentType<ChunkStore, ClaimedBlockComponent> getClaimedBlockComponentType()
+    {
         return claimedBlockComponentType;
     }
 
     /**
      * Register plugin interactions.
      */
-    private void registerInteractions() {
-        Interaction.CODEC.register(
-                "SpawnColonist",
-                SpawnColonistInteraction.class,
-                SpawnColonistInteraction.CODEC);
-        Interaction.CODEC.register(
-                "OpenWorkstationPage",
-                OpenWorkstationPageInteraction.class,
-                OpenWorkstationPageInteraction.CODEC);
+    private void registerInteractions()
+    {
+        Interaction.CODEC.register("SpawnColonist", SpawnColonistInteraction.class, SpawnColonistInteraction.CODEC);
+        Interaction.CODEC.register("OpenWorkstationPage", OpenWorkstationPageInteraction.class, OpenWorkstationPageInteraction.CODEC);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered plugin interactions");
     }
 
-    private void registerNpcComponentTypes() {
-        NPCPlugin.get()
+    private void registerNpcComponentTypes()
+    {
+        NPCPlugin
+                .get()
                 // Common actions
                 .registerCoreComponentType("LogDebug", BuilderActionLogDebug::new)
                 .registerCoreComponentType("EquipBestTool", BuilderActionEquipBestTool::new)
@@ -354,7 +383,8 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     /**
      * Register plugin systems.
      */
-    private void registerSystems() {
+    private void registerSystems()
+    {
         TreeScannerSystem treeScannerSystem = new TreeScannerSystem();
 
         getEntityStoreRegistry().registerSystem(new ColonySystem(colonistComponentType));
@@ -385,41 +415,51 @@ public class HytaleColoniesPlugin extends JavaPlugin {
     /**
      * Register event listeners.
      */
-    private void registerListeners() {
+    private void registerListeners()
+    {
         EventRegistry eventBus = getEventRegistry();
 
-        try {
+        try
+        {
             new PlayerListener().register(eventBus);
             LOGGER.at(Level.INFO).log("[HytaleColonies] Registered player event listeners");
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register listeners");
         }
 
-        try {
+        try
+        {
             PacketAdapters.registerInbound(new ConstructorBuildOrderFilter());
             LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ConstructorBuildOrderFilter");
-        } catch (Exception e) {
-            LOGGER.at(Level.WARNING).withCause(e)
-                    .log("[HytaleColonies] Failed to register ConstructorBuildOrderFilter");
+        }
+        catch (Exception e)
+        {
+            LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register ConstructorBuildOrderFilter");
         }
 
-        try {
+        try
+        {
             PacketAdapters.registerInbound(new ConstructorPrefabPageFilter());
             LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ConstructorPrefabPageFilter");
-        } catch (Exception e) {
-            LOGGER.at(Level.WARNING).withCause(e)
-                    .log("[HytaleColonies] Failed to register ConstructorPrefabPageFilter");
+        }
+        catch (Exception e)
+        {
+            LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register ConstructorPrefabPageFilter");
         }
     }
 
     @Override
-    protected void start() {
+    protected void start()
+    {
         LOGGER.at(Level.INFO).log("[HytaleColonies] Started!");
         LOGGER.at(Level.INFO).log("[HytaleColonies] Use /hc help for commands");
     }
 
     @Override
-    protected void shutdown() {
+    protected void shutdown()
+    {
         LOGGER.at(Level.INFO).log("[HytaleColonies] Shutting down...");
         ConstructionOrderStore.reset();
         MineSegmentStore.reset();

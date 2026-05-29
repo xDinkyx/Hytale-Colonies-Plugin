@@ -7,13 +7,13 @@ import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
-public class BlockStateInfoUtil {
-    public Vector3i GetBlockWorldPosition(BlockModule.BlockStateInfo blockStateInfo, CommandBuffer<ChunkStore> commandBuffer) {
+public class BlockStateInfoUtil
+{
+    public Vector3i GetBlockWorldPosition(BlockModule.BlockStateInfo blockStateInfo, CommandBuffer<ChunkStore> commandBuffer)
+    {
         WorldChunk worldChunkComponent = commandBuffer.getComponent(blockStateInfo.getChunkRef(), WorldChunk.getComponentType());
-        return new Vector3i(
-                ChunkUtil.worldCoordFromLocalCoord(worldChunkComponent.getX(), ChunkUtil.xFromBlockInColumn(blockStateInfo.getIndex())),
-                ChunkUtil.yFromBlockInColumn(blockStateInfo.getIndex()),
-                ChunkUtil.worldCoordFromLocalCoord(worldChunkComponent.getZ(), ChunkUtil.zFromBlockInColumn(blockStateInfo.getIndex()))
-        );
+        return new Vector3i(ChunkUtil.worldCoordFromLocalCoord(worldChunkComponent.getX(), ChunkUtil.xFromBlockInColumn(blockStateInfo.getIndex())),
+                            ChunkUtil.yFromBlockInColumn(blockStateInfo.getIndex()),
+                            ChunkUtil.worldCoordFromLocalCoord(worldChunkComponent.getZ(), ChunkUtil.zFromBlockInColumn(blockStateInfo.getIndex())));
     }
 }

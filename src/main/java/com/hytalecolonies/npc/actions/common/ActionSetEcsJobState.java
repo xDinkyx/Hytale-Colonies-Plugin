@@ -16,11 +16,9 @@ import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.ColonistStateUtil;
 
-
 /** Sets {@link JobComponent#getCurrentTask()} to the state configured in {@link BuilderActionSetEcsJobState}. */
 public class ActionSetEcsJobState extends ActionBase
 {
-
     private final JobState targetState;
 
     public ActionSetEcsJobState(@Nonnull BuilderActionSetEcsJobState builder, @Nonnull BuilderSupport support)

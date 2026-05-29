@@ -29,27 +29,22 @@ import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 
-
 /**
- * Continuously picks up nearby dropped items for every colonist
- * -- mirroring how players auto-collect items.
+ * Continuously picks up nearby dropped items for every colonist -- mirroring how players auto-collect items.
  *
- * <p>Runs at a 0.5 s cadence (vs. the ~0.25 s player pickup throttle) so
- * players maintain a slight pickup priority over colonists when both are
- * competing for the same drop.
- * ToDo: Maybe there's a better way to handle pickup priority? Like checking if a player is near.
+ * <p>
+ * Runs at a 0.5 s cadence (vs. the ~0.25 s player pickup throttle) so players maintain a slight pickup priority over colonists when both are competing for the
+ * same drop. ToDo: Maybe there's a better way to handle pickup priority? Like checking if a player is near.
  *
- * <p>Full-inventory handling is automatic: {@link ItemComponent#addToItemContainer}
- * sets a short retry delay on the item entity when the container is full, so
- * the colonist will re-attempt on the next tick once space is freed.
+ * <p>
+ * Full-inventory handling is automatic: {@link ItemComponent#addToItemContainer} sets a short retry delay on the item entity when the container is full, so the
+ * colonist will re-attempt on the next tick once space is freed.
  *
- * <h3>NPC inventory defaults</h3>
- * By default an NPC has 3 hotbar slots and 0 storage slots. The colonist base
- * template overrides that expands their inventory size.
+ * <h3>NPC inventory defaults</h3> By default an NPC has 3 hotbar slots and 0 storage slots. The colonist base template overrides that expands their inventory
+ * size.
  */
 public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore>
 {
-
     /** Radius (blocks) within which a colonist will collect dropped items. */
     public static final float PICKUP_RADIUS = 5.0f;
 
@@ -60,7 +55,9 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore>
         super(0.5f); // 0.5 s -- hopefully gives players a mild pickup priority over colonists.
     }
 
-    @Override @Nonnull public Query<EntityStore> getQuery()
+    @Override
+    @Nonnull
+    public Query<EntityStore> getQuery()
     {
         return query;
     }
@@ -72,7 +69,6 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore>
                      @Nonnull Store<EntityStore> store,
                      @Nonnull CommandBuffer<EntityStore> commandBuffer)
     {
-
         TransformComponent transform = archetypeChunk.getComponent(index, TransformComponent.getComponentType());
         if (transform == null)
             return;
@@ -88,11 +84,10 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore>
     }
 
     /**
-     * Queries the item spatial index for dropped items within {@link #PICKUP_RADIUS}
-     * of {@code position} and adds each eligible one to {@code container}.
+     * Queries the item spatial index for dropped items within {@link #PICKUP_RADIUS} of {@code position} and adds each eligible one to {@code container}.
      *
-     * <p>Reads use {@code store}; the entity removal is deferred through
-     * {@code commandBuffer} to avoid {@link IllegalStateException} when calling
+     * <p>
+     * Reads use {@code store}; the entity removal is deferred through {@code commandBuffer} to avoid {@link IllegalStateException} when calling
      * {@code store.removeEntity} during a tick.
      */
     private static void pickUpNearbyItems(@Nonnull Ref<EntityStore> colonistRef,

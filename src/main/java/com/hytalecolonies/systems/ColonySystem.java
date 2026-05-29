@@ -1,25 +1,33 @@
 package com.hytalecolonies.systems;
 
-import com.hytalecolonies.components.npc.ColonistComponent;
-import com.hypixel.hytale.component.*;
+import javax.annotation.Nonnull;
+
+import com.hypixel.hytale.component.ArchetypeChunk;
+import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hytalecolonies.components.npc.ColonistComponent;
 
-import javax.annotation.Nonnull;
-
-public class ColonySystem extends EntityTickingSystem<EntityStore> {
-
+public class ColonySystem extends EntityTickingSystem<EntityStore>
+{
     private final ComponentType<EntityStore, ColonistComponent> colonistComponentType;
 
-    public ColonySystem(ComponentType<EntityStore, ColonistComponent> colonistComponentType) {
+    public ColonySystem(ComponentType<EntityStore, ColonistComponent> colonistComponentType)
+    {
         this.colonistComponentType = colonistComponentType;
     }
 
     @Override
-    public void tick(float dt, int index, @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
-                     @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-
+    public void tick(float dt,
+                     int index,
+                     @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
+                     @Nonnull Store<EntityStore> store,
+                     @Nonnull CommandBuffer<EntityStore> commandBuffer)
+    {
         ColonistComponent colonist = archetypeChunk.getComponent(index, colonistComponentType);
         Ref<EntityStore> ref = archetypeChunk.getReferenceTo(index);
 
@@ -28,7 +36,8 @@ public class ColonySystem extends EntityTickingSystem<EntityStore> {
 
     @Nonnull
     @Override
-    public Query<EntityStore> getQuery() {
+    public Query<EntityStore> getQuery()
+    {
         return Query.and(this.colonistComponentType);
     }
 }

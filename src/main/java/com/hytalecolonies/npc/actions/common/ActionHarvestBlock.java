@@ -1,7 +1,8 @@
 package com.hytalecolonies.npc.actions.common;
 
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
@@ -27,80 +28,78 @@ import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
 import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.sensorinfo.IPositionProvider;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
 
 /**
- * Applies block damage each tick to the block at the sensor position using a configurable scale.
- * Returns {@code true} when the block breaks.
+ * Applies block damage each tick to the block at the sensor position using a configurable scale. Returns {@code true} when the block breaks.
  *
- * <p>Constructed by {@link BuilderActionHarvestBlock}.
+ * <p>
+ * Constructed by {@link BuilderActionHarvestBlock}.
  */
-public class ActionHarvestBlock extends ActionBase {
-
+public class ActionHarvestBlock extends ActionBase
+{
     private final float damageScale;
     private final Vector3d targetVec = new Vector3d();
 
-    public ActionHarvestBlock(@Nonnull BuilderActionHarvestBlock builder,
-                              @Nonnull BuilderSupport support) {
+    public ActionHarvestBlock(@Nonnull BuilderActionHarvestBlock builder, @Nonnull BuilderSupport support)
+    {
         super(builder);
         this.damageScale = builder.getDamageScale(support);
     }
 
     @Override
-    public boolean execute(
-            @Nonnull Ref<EntityStore> ref,
-            @Nonnull Role role,
-            @Nullable InfoProvider sensorInfo,
-            double dt,
-            @Nonnull Store<EntityStore> store) {
+    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
+    {
         super.execute(ref, role, sensorInfo, dt, store);
 
         String npcId = DebugLog.npcId(ref, store);
 
         DebugLog.fine(DebugCategory.JOB_SYSTEM, "[HarvestBlock] [%s] Action started.", npcId);
 
-        if (sensorInfo == null || !sensorInfo.hasPosition()) return false;
+        if (sensorInfo == null || !sensorInfo.hasPosition())
+            return false;
 
         IPositionProvider pos = sensorInfo.getPositionProvider();
-        if (pos == null) return false;
+        if (pos == null)
+            return false;
 
-        if (!pos.providePosition(targetVec)) return false;
+        if (!pos.providePosition(targetVec))
+            return false;
 
-        Vector3i targetPos = new Vector3i(
-                MathUtil.floor(targetVec.x),
-                MathUtil.floor(targetVec.y),
-                MathUtil.floor(targetVec.z));
+        Vector3i targetPos = new Vector3i(MathUtil.floor(targetVec.x), MathUtil.floor(targetVec.y), MathUtil.floor(targetVec.z));
 
-        LivingEntity entity = (LivingEntity) EntityUtils.getEntity(ref, store);
-        if (entity == null) return false;
+        LivingEntity entity = (LivingEntity)EntityUtils.getEntity(ref, store);
+        if (entity == null)
+            return false;
 
         Inventory inventory = entity.getInventory();
-        if (inventory == null) return false;
+        if (inventory == null)
+            return false;
 
         World world = store.getExternalData().getWorld();
         long chunkIdx = ChunkUtil.indexChunkFromBlock(targetPos.x, targetPos.z);
         Ref<ChunkStore> chunkRef = world.getChunkStore().getChunkReference(chunkIdx);
-        if (chunkRef == null || !chunkRef.isValid()) return false;
+        if (chunkRef == null || !chunkRef.isValid())
+            return false;
 
         ItemStack heldItem = inventory.getItemInHand();
-        ItemTool tool = (heldItem != null && heldItem.getItem() != null)
-                ? heldItem.getItem().getTool()
-                : null;
+        ItemTool tool = (heldItem != null && heldItem.getItem() != null) ? heldItem.getItem().getTool() : null;
 
         String heldId = (heldItem != null && heldItem.getItem() != null) ? heldItem.getItem().getId() : "null";
-        String toolSpecs = (tool != null && tool.getSpecs() != null)
-                ? java.util.Arrays.stream(tool.getSpecs())
-                        .map(s -> s.getGatherType() + "q" + s.getQuality() + "p" + s.getPower())
-                        .collect(java.util.stream.Collectors.joining(","))
-                : "null";
+        String toolSpecs = (tool != null && tool.getSpecs() != null) ? java.util.Arrays.stream(tool.getSpecs())
+                                                                               .map(s -> s.getGatherType() + "q" + s.getQuality() + "p" + s.getPower())
+                                                                               .collect(java.util.stream.Collectors.joining(","))
+                                                                     : "null";
 
         // Diagnose what the block actually is at the target position.
         Ref<ChunkStore> chunkRef2 = world.getChunkStore().getChunkReference(chunkIdx);
-        if (chunkRef2 != null && chunkRef2.isValid()) {
+        if (chunkRef2 != null && chunkRef2.isValid())
+        {
             WorldChunk worldChunk = world.getChunkStore().getStore().getComponent(chunkRef2, WorldChunk.getComponentType());
             BlockHealthChunk bhc = world.getChunkStore().getStore().getComponent(chunkRef2, BlockHealthModule.get().getBlockHealthChunkComponentType());
-            if (worldChunk != null) {
+            if (worldChunk != null)
+            {
                 BlockType bt = worldChunk.getBlockType(targetPos.x, targetPos.y, targetPos.z);
                 BlockGathering bg = bt != null ? bt.getGathering() : null;
                 float currentHealth = bhc != null ? bhc.getBlockHealth(targetPos) : -1f;
@@ -108,22 +107,37 @@ public class ActionHarvestBlock extends ActionBase {
                 String gatherType = (bg != null && bg.getBreaking() != null) ? bg.getBreaking().getGatherType() : "null";
                 int reqQuality = (bg != null && bg.getBreaking() != null) ? bg.getBreaking().getQuality() : -1;
                 DebugLog.fine(DebugCategory.JOB_SYSTEM,
-                        "[HarvestBlock] [%s] target=%s blockType=%s gatherType=%s reqQuality=%d isSoft=%b health=%.3f heldItem=%s toolSpecs=[%s].",
-                        npcId, targetPos, bt != null ? bt.getId() : "null", gatherType, reqQuality, isSoft, currentHealth, heldId, toolSpecs);
+                              "[HarvestBlock] [%s] target=%s blockType=%s gatherType=%s reqQuality=%d isSoft=%b health=%.3f heldItem=%s toolSpecs=[%s].",
+                              npcId,
+                              targetPos,
+                              bt != null ? bt.getId() : "null",
+                              gatherType,
+                              reqQuality,
+                              isSoft,
+                              currentHealth,
+                              heldId,
+                              toolSpecs);
             }
         }
 
-        boolean broke = BlockHarvestUtils.performBlockDamage(
-                entity, ref,
-                targetPos,
-                heldItem, tool, null, false,
-                damageScale, 0,
-                chunkRef,
-                store,
-                world.getChunkStore().getStore());
-        if (broke) {
+        boolean broke = BlockHarvestUtils.performBlockDamage(entity,
+                                                             ref,
+                                                             targetPos,
+                                                             heldItem,
+                                                             tool,
+                                                             null,
+                                                             false,
+                                                             damageScale,
+                                                             0,
+                                                             chunkRef,
+                                                             store,
+                                                             world.getChunkStore().getStore());
+        if (broke)
+        {
             DebugLog.fine(DebugCategory.JOB_SYSTEM, "[HarvestBlock] [%s] Block broke at %s.", npcId, targetPos);
-        } else {
+        }
+        else
+        {
             DebugLog.fine(DebugCategory.JOB_SYSTEM, "[HarvestBlock] [%s] performBlockDamage returned false for %s.", npcId, targetPos);
         }
         // Always return true so the blocking action list advances to the Timeout delay.

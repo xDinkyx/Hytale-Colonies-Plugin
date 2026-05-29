@@ -8,10 +8,28 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.hytalecolonies.events.ColonistFiredEvent;
-import com.hytalecolonies.events.ColonistHiredEvent;
+import com.hypixel.hytale.codec.Codec;
+import com.hypixel.hytale.codec.KeyedCodec;
+import com.hypixel.hytale.codec.builder.BuilderCodec;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.EventRegistration;
+import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
+import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
+import com.hypixel.hytale.server.core.ui.builder.EventData;
+import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
+import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
@@ -19,38 +37,18 @@ import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.events.ColonistFiredEvent;
+import com.hytalecolonies.events.ColonistHiredEvent;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
+import com.hytalecolonies.utils.ColonistInventoryUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
-import com.hypixel.hytale.codec.Codec;
-import com.hypixel.hytale.codec.KeyedCodec;
-import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
-import com.hypixel.hytale.math.vector.Vector3i;
-import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
-import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
-import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
-import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
-import com.hytalecolonies.utils.ColonistInventoryUtil;
-import com.hypixel.hytale.server.npc.entities.NPCEntity;
-import com.hypixel.hytale.server.core.ui.builder.EventData;
-import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
-import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
-import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
- * Management UI for a workstation block.
- * Shows job stats and the list of assigned colonists with per-colonist
- * controls.
+ * Management UI for a workstation block. Shows job stats and the list of assigned colonists with per-colonist controls.
  */
-public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationInspectPage.UIEventData> {
-
+public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationInspectPage.UIEventData>
+{
     public static final String LAYOUT = "hytalecolonies/WorkstationInspect.ui";
     static final int ROW_MAX = 10;
 
@@ -60,19 +58,18 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
 
     private final Vector3i blockPos;
     /**
-     * Snapshot of assigned-colonist order used to map row index to UUID. Updated
-     * each build/refresh.
+     * Snapshot of assigned-colonist order used to map row index to UUID. Updated each build/refresh.
      */
     private List<UUID> colonistOrder = new ArrayList<>();
     /**
-     * Captured from build() so event callbacks can schedule work on the correct
-     * world thread.
+     * Captured from build() so event callbacks can schedule work on the correct world thread.
      */
     private Ref<EntityStore> capturedRef;
     private EventRegistration<?, ?> hiredRegistration;
     private EventRegistration<?, ?> firedRegistration;
 
-    public WorkstationInspectPage(@Nonnull PlayerRef playerRef, @Nonnull Vector3i blockPos) {
+    public WorkstationInspectPage(@Nonnull PlayerRef playerRef, @Nonnull Vector3i blockPos)
+    {
         super(playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, UIEventData.CODEC);
         this.blockPos = new Vector3i(blockPos.x, blockPos.y, blockPos.z);
     }
@@ -82,20 +79,13 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
     // -------------------------------------------------------------------------
 
     @Override
-    public void build(
-            @Nonnull Ref<EntityStore> ref,
-            @Nonnull UICommandBuilder cmd,
-            @Nonnull UIEventBuilder evt,
-            @Nonnull Store<EntityStore> store) {
+    public void build(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder cmd, @Nonnull UIEventBuilder evt, @Nonnull Store<EntityStore> store)
+    {
         this.capturedRef = ref;
         // Re-register in case build() is called more than once.
         unregisterEventListeners();
-        hiredRegistration = HytaleServer.get().getEventBus().register(
-                ColonistHiredEvent.class, blockPos,
-                e -> scheduleRefresh());
-        firedRegistration = HytaleServer.get().getEventBus().register(
-                ColonistFiredEvent.class, blockPos,
-                e -> scheduleRefresh());
+        hiredRegistration = HytaleServer.get().getEventBus().register(ColonistHiredEvent.class, blockPos, e -> scheduleRefresh());
+        firedRegistration = HytaleServer.get().getEventBus().register(ColonistFiredEvent.class, blockPos, e -> scheduleRefresh());
         cmd.append(LAYOUT);
         populatePage(cmd, evt, store);
     }
@@ -105,16 +95,16 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
     // -------------------------------------------------------------------------
 
     @Override
-    public void handleDataEvent(
-            @Nonnull Ref<EntityStore> ref,
-            @Nonnull Store<EntityStore> store,
-            @Nonnull UIEventData data) {
-        if (data.action == null) {
+    public void handleDataEvent(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull UIEventData data)
+    {
+        if (data.action == null)
+        {
             sendUpdate(null, false);
             return;
         }
 
-        switch (data.action) {
+        switch (data.action)
+        {
             case "close":
                 this.close();
                 return;
@@ -142,24 +132,27 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
     }
 
     @Override
-    public void onDismiss(
-            @Nonnull Ref<EntityStore> ref,
-            @Nonnull Store<EntityStore> store) {
+    public void onDismiss(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store)
+    {
         unregisterEventListeners();
     }
 
-    private void scheduleRefresh() {
+    private void scheduleRefresh()
+    {
         if (capturedRef == null || !capturedRef.isValid())
             return;
         capturedRef.getStore().getExternalData().getWorld().execute(this::refreshPage);
     }
 
-    private void unregisterEventListeners() {
-        if (hiredRegistration != null) {
+    private void unregisterEventListeners()
+    {
+        if (hiredRegistration != null)
+        {
             hiredRegistration.unregister();
             hiredRegistration = null;
         }
-        if (firedRegistration != null) {
+        if (firedRegistration != null)
+        {
             firedRegistration.unregister();
             firedRegistration = null;
         }
@@ -169,14 +162,13 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
     // Page population
     // -------------------------------------------------------------------------
 
-    private void populatePage(
-            @Nonnull UICommandBuilder cmd,
-            @Nonnull UIEventBuilder evt,
-            @Nonnull Store<EntityStore> store) {
+    private void populatePage(@Nonnull UICommandBuilder cmd, @Nonnull UIEventBuilder evt, @Nonnull Store<EntityStore> store)
+    {
         World world = store.getExternalData().getWorld();
         WorkStationComponent ws = WorkStationUtil.getWorkStationAt(world, blockPos);
 
-        if (ws == null) {
+        if (ws == null)
+        {
             cmd.set("#StationTitle.Text", "Workstation");
             cmd.set("#StationStats.Text", "(removed)");
             cmd.set("#EmptyLabel.Visible", true);
@@ -188,43 +180,50 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
         String jobLabel = ws.getJobType() != null ? ws.getJobType().name() : "Unknown";
         int assigned = ws.getAssignedColonists().size();
         cmd.set("#StationTitle.Text", jobLabel + " Workstation");
-        cmd.set("#StationStats.Text",
-                "Workers: " + assigned + " / " + ws.getMaxWorkers()
-                        + "   Blocks/run: " + ws.blocksPerRun);
+        cmd.set("#StationStats.Text", "Workers: " + assigned + " / " + ws.getMaxWorkers() + "   Blocks/run: " + ws.blocksPerRun);
 
         colonistOrder = new ArrayList<>(ws.getAssignedColonists());
         boolean empty = colonistOrder.isEmpty();
         cmd.set("#EmptyLabel.Visible", empty);
 
-        for (int i = 0; i < ROW_MAX; i++) {
-            if (i < colonistOrder.size()) {
+        for (int i = 0; i < ROW_MAX; i++)
+        {
+            if (i < colonistOrder.size())
+            {
                 populateRow(i, colonistOrder.get(i), cmd, evt, store);
-            } else {
+            }
+            else
+            {
                 hideRow(i, cmd);
             }
         }
 
         bindClose(evt);
-        evt.addEventBinding(CustomUIEventBindingType.Activating, "#RecallButton",
-                new EventData().append("Action", "recall"), false);
+        evt.addEventBinding(CustomUIEventBindingType.Activating, "#RecallButton", new EventData().append("Action", "recall"), false);
     }
 
-    private void populateRow(int i, UUID uuid, UICommandBuilder cmd, UIEventBuilder evt, Store<EntityStore> store) {
+    private void populateRow(int i, UUID uuid, UICommandBuilder cmd, UIEventBuilder evt, Store<EntityStore> store)
+    {
         String name = "Colonist";
         String state = "";
 
         Ref<EntityStore> colonistRef = store.getExternalData().getRefFromUUID(uuid);
-        if (colonistRef != null && colonistRef.isValid()) {
+        if (colonistRef != null && colonistRef.isValid())
+        {
             ColonistComponent cc = store.getComponent(colonistRef, ColonistComponent.getComponentType());
-            if (cc != null) {
+            if (cc != null)
+            {
                 name = cc.getColonistName();
             }
             JobComponent jc = store.getComponent(colonistRef, JobComponent.getComponentType());
-            if (jc != null) {
+            if (jc != null)
+            {
                 JobState js = jc.getCurrentTask();
                 state = js != null ? js.name() : "";
             }
-        } else {
+        }
+        else
+        {
             state = "offline";
         }
 
@@ -232,28 +231,36 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
         cmd.set("#Row" + i + "Name.Text", name);
         cmd.set("#Row" + i + "State.Text", state);
 
-        evt.addEventBinding(CustomUIEventBindingType.Activating, "#Row" + i + "Inspect",
-                new EventData().append("Action", "inspect").append("Index", String.valueOf(i)), false);
-        evt.addEventBinding(CustomUIEventBindingType.Activating, "#Row" + i + "Fire",
-                new EventData().append("Action", "fire").append("Index", String.valueOf(i)), false);
+        evt.addEventBinding(CustomUIEventBindingType.Activating,
+                            "#Row" + i + "Inspect",
+                            new EventData().append("Action", "inspect").append("Index", String.valueOf(i)),
+                            false);
+        evt.addEventBinding(CustomUIEventBindingType.Activating,
+                            "#Row" + i + "Fire",
+                            new EventData().append("Action", "fire").append("Index", String.valueOf(i)),
+                            false);
     }
 
-    private void hideRow(int i, UICommandBuilder cmd) {
+    private void hideRow(int i, UICommandBuilder cmd)
+    {
         cmd.set("#Row" + i + ".Visible", false);
     }
 
-    private void hideAllRows(UICommandBuilder cmd) {
-        for (int i = 0; i < ROW_MAX; i++) {
+    private void hideAllRows(UICommandBuilder cmd)
+    {
+        for (int i = 0; i < ROW_MAX; i++)
+        {
             hideRow(i, cmd);
         }
     }
 
-    private void bindClose(UIEventBuilder evt) {
-        evt.addEventBinding(CustomUIEventBindingType.Activating, "#CloseButton",
-                new EventData().append("Action", "close"), false);
+    private void bindClose(UIEventBuilder evt)
+    {
+        evt.addEventBinding(CustomUIEventBindingType.Activating, "#CloseButton", new EventData().append("Action", "close"), false);
     }
 
-    private void refreshPage() {
+    private void refreshPage()
+    {
         if (capturedRef == null || !capturedRef.isValid())
             return;
         UICommandBuilder cmd = new UICommandBuilder();
@@ -266,7 +273,8 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
     // Actions
     // -------------------------------------------------------------------------
 
-    private void handleInspect(int index, Ref<EntityStore> ref, Store<EntityStore> store) {
+    private void handleInspect(int index, Ref<EntityStore> ref, Store<EntityStore> store)
+    {
         if (index < 0 || index >= colonistOrder.size())
             return;
         UUID uuid = colonistOrder.get(index);
@@ -286,7 +294,8 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
         ColonistInventoryUtil.openForPlayer(colonistRef, ref, player, store);
     }
 
-    private void handleFire(int index, Ref<EntityStore> ref, Store<EntityStore> store) {
+    private void handleFire(int index, Ref<EntityStore> ref, Store<EntityStore> store)
+    {
         if (index < 0 || index >= colonistOrder.size())
             return;
         UUID uuid = colonistOrder.get(index);
@@ -299,21 +308,23 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
         ws.removeAssignedColonist(uuid);
 
         Ref<EntityStore> colonistRef = store.getExternalData().getRefFromUUID(uuid);
-        if (colonistRef != null && colonistRef.isValid()) {
+        if (colonistRef != null && colonistRef.isValid())
+        {
             JobAssignmentSystems.fireColonist(colonistRef, store);
-            DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
-                    "[WorkstationUI] Player fired colonist %s from %s workstation.", uuid, blockPos);
+            DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "[WorkstationUI] Player fired colonist %s from %s workstation.", uuid, blockPos);
         }
     }
 
-    private void handleRecall(Store<EntityStore> store) {
+    private void handleRecall(Store<EntityStore> store)
+    {
         World world = store.getExternalData().getWorld();
         WorkStationComponent ws = WorkStationUtil.getWorkStationAt(world, blockPos);
         if (ws == null)
             return;
 
         int count = 0;
-        for (UUID uuid : ws.getAssignedColonists()) {
+        for (UUID uuid : ws.getAssignedColonists())
+        {
             Ref<EntityStore> colonistRef = store.getExternalData().getRefFromUUID(uuid);
             if (colonistRef == null || !colonistRef.isValid())
                 continue;
@@ -333,36 +344,37 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
             count++;
         }
 
-        DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
-                "[WorkstationUI] Recalled %d colonist(s) to %s.", count, blockPos);
+        DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "[WorkstationUI] Recalled %d colonist(s) to %s.", count, blockPos);
     }
 
     // -------------------------------------------------------------------------
     // Event data
     // -------------------------------------------------------------------------
 
-    public static class UIEventData {
-        public static final BuilderCodec<UIEventData> CODEC = BuilderCodec
-                .builder(UIEventData.class, UIEventData::new)
-                .append(new KeyedCodec<>("Action", Codec.STRING),
-                        (e, s) -> e.action = s, e -> e.action)
-                .add()
-                .append(new KeyedCodec<>("Index", Codec.STRING),
-                        (e, s) -> e.index = s, e -> e.index)
-                .add()
-                .build();
+    public static class UIEventData
+    {
+        public static final BuilderCodec<UIEventData> CODEC = BuilderCodec.builder(UIEventData.class, UIEventData::new)
+                                                                      .append(new KeyedCodec<>("Action", Codec.STRING), (e, s) -> e.action = s, e -> e.action)
+                                                                      .add()
+                                                                      .append(new KeyedCodec<>("Index", Codec.STRING), (e, s) -> e.index = s, e -> e.index)
+                                                                      .add()
+                                                                      .build();
 
         @Nullable
         String action;
         @Nullable
         String index;
 
-        int getIndex() {
+        int getIndex()
+        {
             if (index == null)
                 return -1;
-            try {
+            try
+            {
                 return Integer.parseInt(index);
-            } catch (NumberFormatException e) {
+            }
+            catch (NumberFormatException e)
+            {
                 return -1;
             }
         }

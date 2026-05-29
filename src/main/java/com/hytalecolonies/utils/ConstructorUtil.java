@@ -37,54 +37,50 @@ import com.hytalecolonies.debug.DebugTiming;
 import com.hytalecolonies.listeners.ConstructorBuildOrderFilter;
 
 /** Utility methods for the Constructor colonist job. */
-public final class ConstructorUtil {
-
+public final class ConstructorUtil
+{
     private static final String EMPTY_BLOCK_KEY = "Empty";
 
-    private ConstructorUtil() {
-    }
+    private ConstructorUtil() {}
 
     /**
-     * Collects all non-empty prefab base blocks and returns them sorted by Y
-     * ascending so colonists build floor-first.
-     * Each entry is {@code {lx, ly, lz, blockId, rotation}}. Filler slave cells are
-     * excluded -- they are
-     * auto-created (and auto-removed) by the engine when the base block is placed
-     * or cleared.
+     * Collects all non-empty prefab base blocks and returns them sorted by Y ascending so colonists build floor-first. Each entry is
+     * {@code {lx, ly, lz, blockId, rotation}}. Filler slave cells are excluded -- they are auto-created (and auto-removed) by the engine when the base block is
+     * placed or cleared.
      */
-    private static List<int[]> sortedPrefabBlocks(BlockSelection prefab) {
+    private static List<int[]> sortedPrefabBlocks(BlockSelection prefab)
+    {
         List<int[]> blocks = new ArrayList<>();
         prefab.forEachBlock((lx, ly, lz, block) -> {
             if (block.filler() != 0)
                 return; // slave cell -- auto-managed by the engine via the base block
-            blocks.add(new int[] { lx, ly, lz, block.blockId(), block.rotation() });
+            blocks.add(new int[] {lx, ly, lz, block.blockId(), block.rotation()});
         });
         blocks.sort(Comparator.comparingInt((int[] b) -> b[1]).thenComparingInt(b -> b[0]).thenComparingInt(b -> b[2]));
         return blocks;
     }
 
     /**
-     * Returns the cached sorted block list for {@code order}, building it on first
-     * use.
-     * Callers iterate forward (Y ascending) for building, or reversed for clearing.
+     * Returns the cached sorted block list for {@code order}, building it on first use. Callers iterate forward (Y ascending) for building, or reversed for
+     * clearing.
      */
-    private static List<int[]> getSortedBlocks(ConstructionOrderStore.Entry order, BlockSelection prefab) {
+    private static List<int[]> getSortedBlocks(ConstructionOrderStore.Entry order, BlockSelection prefab)
+    {
         if (order.cachedSortedBlocks == null)
             order.cachedSortedBlocks = sortedPrefabBlocks(prefab);
         return order.cachedSortedBlocks;
     }
 
     /**
-     * Returns {@code true} if {@code worldBlockId} satisfies the
-     * {@code prefabBlockId} requirement.
-     * E.g.: a placed {@code Soil_Dirt} block that has grown into a
-     * {@code Soil_Grass} is considered as equivalent.
+     * Returns {@code true} if {@code worldBlockId} satisfies the {@code prefabBlockId} requirement. E.g.: a placed {@code Soil_Dirt} block that has grown into
+     * a {@code Soil_Grass} is considered as equivalent.
      *
      * <p>
-     * TODO: Expand for all blocks that are considered the same for construction
-     * purposes.
+     * <b> TODO: Expand for all blocks that are considered the same for construction purposes. </b>
+     * </p>
      */
-    private static boolean isBlockEquivalent(int worldBlockId, int prefabBlockId) {
+    private static boolean isBlockEquivalent(int worldBlockId, int prefabBlockId)
+    {
         if (worldBlockId == prefabBlockId)
             return true;
 
@@ -109,21 +105,20 @@ public final class ConstructorUtil {
     }
 
     /**
-     * Returns the cached runtime selection if available, otherwise loads from the
-     * asset-pack ZipFS.
-     * {@code prefabId} is a ZipFS-internal path, e.g.
-     * {@code /Server/Prefabs/test.prefab.json}.
-     * The loaded result is stored back on {@code entry.cachedSelection} for reuse.
+     * Returns the cached runtime selection if available, otherwise loads from the asset-pack ZipFS. {@code prefabId} is a ZipFS-internal path, e.g.
+     * {@code /Server/Prefabs/test.prefab.json}. The loaded result is stored back on {@code entry.cachedSelection} for reuse.
      */
     @Nullable
-    public static BlockSelection loadPrefab(@Nullable ConstructionOrderStore.Entry order) {
-        if (order == null) {
+    public static BlockSelection loadPrefab(@Nullable ConstructionOrderStore.Entry order)
+    {
+        if (order == null)
+        {
             return null; // caller should log
         }
 
-        if (order.prefabId == null || order.prefabId.isEmpty()) {
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                    "[ConstructorUtil] Order %s has no prefabId stored -- cannot load prefab.", order.id);
+        if (order.prefabId == null || order.prefabId.isEmpty())
+        {
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorUtil] Order %s has no prefabId stored -- cannot load prefab.", order.id);
             return null;
         }
 
@@ -133,9 +128,11 @@ public final class ConstructorUtil {
 
         // Next, prefer the runtime selection from the build-order filter -- it has the
         // player's rotation baked in.
-        if (order.buildOrigin != null) {
+        if (order.buildOrigin != null)
+        {
             BlockSelection cached = ConstructorBuildOrderFilter.pendingSelections.get(order.buildOrigin);
-            if (cached != null) {
+            if (cached != null)
+            {
                 order.cachedSelection = cached;
                 order.cachedSortedBlocks = sortedPrefabBlocks(cached);
                 return cached;
@@ -144,44 +141,49 @@ public final class ConstructorUtil {
 
         // Fall back to the asset-pack ZipFS path (must use the live ZipFileSystem to
         // avoid cross-filesystem issues).
-        try {
+        try
+        {
             Path packRoot = AssetModule.get().getBaseAssetPack().getRoot();
             Path prefabPath = packRoot.getFileSystem().getPath(order.prefabId);
             BlockSelection loaded = PrefabStore.get().getPrefab(prefabPath);
             order.cachedSelection = loaded;
             order.cachedSortedBlocks = sortedPrefabBlocks(loaded);
             return loaded;
-        } catch (PrefabLoadException e) {
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                    "[ConstructorUtil] Failed to load prefab '%s' from asset pack: %s", order.prefabId, e.getMessage());
+        }
+        catch (PrefabLoadException e)
+        {
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorUtil] Failed to load prefab '%s' from asset pack: %s", order.prefabId, e.getMessage());
             return null;
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                    "[ConstructorUtil] Error loading prefab '%s': %s (%s)",
-                    order.prefabId,
-                    e.getMessage(),
-                    e.getClass().getSimpleName());
+                             "[ConstructorUtil] Error loading prefab '%s': %s (%s)",
+                             order.prefabId,
+                             e.getMessage(),
+                             e.getClass().getSimpleName());
             return null;
         }
     }
 
     /**
-     * Returns the next world position inside the prefab footprint that needs to be
-     * cleared, or {@code null} when clearing is complete. Scans top-down (Y
+     * Returns the next world position inside the prefab footprint that needs to be cleared, or {@code null} when clearing is complete. Scans top-down (Y
      * descending) so floating blocks are cleared first.
      */
     @Nullable
-    public static Vector3i findNextClearingTarget(@Nullable ConstructionOrderStore.Entry order, World world,
-            BlockSelection prefab) {
+    public static Vector3i findNextClearingTarget(@Nullable ConstructionOrderStore.Entry order, World world, BlockSelection prefab)
+    {
         if (order == null || order.buildOrigin == null)
             return null;
         Vector3i origin = order.buildOrigin;
 
         int emptyId = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
 
-        try (var _ = DebugTiming.measure("ConstructorUtil.findNextClearingTarget", 50)) {
+        try (var _ = DebugTiming.measure("ConstructorUtil.findNextClearingTarget", 50))
+        {
             List<int[]> blocks = getSortedBlocks(order, prefab);
-            for (int i = blocks.size() - 1; i >= 0; i--) {
+            for (int i = blocks.size() - 1; i >= 0; i--)
+            {
                 int[] b = blocks.get(i);
                 int prefabBlockId = b[3];
                 boolean isAir = (prefabBlockId == 0 || prefabBlockId == emptyId);
@@ -192,10 +194,13 @@ public final class ConstructorUtil {
 
                 int worldBlock = world.getBlock(wx, wy, wz);
 
-                if (isAir) {
+                if (isAir)
+                {
                     if (worldBlock != 0)
                         return new Vector3i(wx, wy, wz);
-                } else {
+                }
+                else
+                {
                     if (worldBlock != 0 && !isBlockEquivalent(worldBlock, prefabBlockId))
                         return new Vector3i(wx, wy, wz);
                 }
@@ -206,22 +211,22 @@ public final class ConstructorUtil {
     }
 
     /**
-     * Returns the next world position inside the prefab footprint that is currently
-     * air/empty
-     * and still needs a block placed there, or {@code null} when no such position
-     * exists.
+     * Returns the next world position inside the prefab footprint that is currently air/empty and still needs a block placed there, or {@code null} when no
+     * such position exists.
      */
     @Nullable
-    public static Vector3i findNextBuildTarget(@Nullable ConstructionOrderStore.Entry order, World world,
-            BlockSelection prefab) {
+    public static Vector3i findNextBuildTarget(@Nullable ConstructionOrderStore.Entry order, World world, BlockSelection prefab)
+    {
         if (order == null || order.buildOrigin == null)
             return null;
         Vector3i origin = order.buildOrigin;
 
         int emptyId = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
 
-        try (var _ = DebugTiming.measure("ConstructorUtil.findNextBuildTarget", 50)) {
-            for (int[] b : getSortedBlocks(order, prefab)) {
+        try (var _ = DebugTiming.measure("ConstructorUtil.findNextBuildTarget", 50))
+        {
+            for (int[] b : getSortedBlocks(order, prefab))
+            {
                 int prefabBlockId = b[3];
                 if (prefabBlockId == 0 || prefabBlockId == emptyId)
                     continue;
@@ -244,19 +249,17 @@ public final class ConstructorUtil {
     }
 
     /**
-     * White = origin, red = needs clearing, yellow = needs filling, green = already
-     * correct.
+     * White = origin, red = needs clearing, yellow = needs filling, green = already correct.
      */
-    public static void drawConstructionOrderOverlay(@Nullable ConstructionOrderStore.Entry order,
-            @Nullable BlockSelection prefab, World world) {
+    public static void drawConstructionOrderOverlay(@Nullable ConstructionOrderStore.Entry order, @Nullable BlockSelection prefab, World world)
+    {
         if (order == null || order.buildOrigin == null || prefab == null)
             return;
         Vector3i origin = order.buildOrigin;
         float drawTime = 2.0f;
         int emptyId = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
 
-        DebugUtils.addCube(world, origin.x + 0.5, origin.y + 0.5, origin.z + 0.5, DebugUtils.COLOR_WHITE, 1.4,
-                drawTime);
+        DebugUtils.addCube(world, origin.x + 0.5, origin.y + 0.5, origin.z + 0.5, DebugUtils.COLOR_WHITE, 1.4, drawTime);
 
         prefab.forEachBlock((lx, ly, lz, block) -> {
             int prefabBlockId = block.blockId();
@@ -269,7 +272,8 @@ public final class ConstructorUtil {
             int worldBlock = world.getBlock(wx, wy, wz);
 
             Vector3f color;
-            if (isAir ? worldBlock != 0 : (worldBlock != 0 && !isBlockEquivalent(worldBlock, prefabBlockId))) {
+            if (isAir ? worldBlock != 0 : (worldBlock != 0 && !isBlockEquivalent(worldBlock, prefabBlockId)))
+            {
                 color = DebugUtils.COLOR_RED;
                 DebugUtils.addCube(world, wx + 0.5, wy + 0.5, wz + 0.5, color, 1.1, drawTime);
             }
@@ -285,11 +289,10 @@ public final class ConstructorUtil {
     }
 
     /**
-     * Returns the {@code RotationTuple} index for the prefab block at the given
-     * world position, or {@code 0} if absent.
+     * Returns the {@code RotationTuple} index for the prefab block at the given world position, or {@code 0} if absent.
      */
-    public static int getDesiredBlockRotation(@Nullable ConstructionOrderStore.Entry order, BlockSelection prefab,
-            int wx, int wy, int wz) {
+    public static int getDesiredBlockRotation(@Nullable ConstructionOrderStore.Entry order, BlockSelection prefab, int wx, int wy, int wz)
+    {
         if (order == null || order.buildOrigin == null)
             return 0;
         Vector3i origin = order.buildOrigin;
@@ -301,24 +304,22 @@ public final class ConstructorUtil {
     }
 
     /**
-     * Returns true if the base cell and every filler cell the block occupies (at
-     * the given rotation) are all air. Must be called on the world thread.
+     * Returns true if the base cell and every filler cell the block occupies (at the given rotation) are all air.
      */
-    public static boolean areAllCellsClear(BlockType blockType, int rotation, int wx, int wy, int wz, World world) {
+    public static boolean areAllCellsClear(BlockType blockType, int rotation, int wx, int wy, int wz, World world)
+    {
         BlockBoundingBoxes hitbox = BlockBoundingBoxes.getAssetMap().getAsset(blockType.getHitboxTypeIndex());
         if (hitbox == null)
             return world.getBlock(wx, wy, wz) == 0;
-        return FillerBlockUtil.testFillerBlocks(hitbox.get(rotation),
-                (fx, fy, fz) -> world.getBlock(wx + fx, wy + fy, wz + fz) == 0);
+        return FillerBlockUtil.testFillerBlocks(hitbox.get(rotation), (fx, fy, fz) -> world.getBlock(wx + fx, wy + fy, wz + fz) == 0);
     }
 
     /**
-     * Returns the block type key for the prefab position, or {@code null} if
-     * outside the footprint.
+     * Returns the block type key for the prefab position, or {@code null} if outside the footprint.
      */
     @Nullable
-    public static String getDesiredBlockKey(@Nullable ConstructionOrderStore.Entry order, BlockSelection prefab, int wx,
-            int wy, int wz) {
+    public static String getDesiredBlockKey(@Nullable ConstructionOrderStore.Entry order, BlockSelection prefab, int wx, int wy, int wz)
+    {
         if (order == null || order.buildOrigin == null)
             return null;
         Vector3i origin = order.buildOrigin;
@@ -336,31 +337,29 @@ public final class ConstructorUtil {
     }
 
     /**
-     * Iterates the prefab top-down, finds the first block that needs clearing and
-     * can be claimed, claims it, and returns its world position. Returns
-     * {@code null} if no
-     * claimable clearing target exists (all done or all already claimed by other
-     * colonists).
+     * Iterates the prefab top-down, finds the first block that needs clearing and can be claimed, claims it, and returns its world position. Returns
+     * {@code null} if no claimable clearing target exists (all done or all already claimed by other colonists).
      *
      * <p>
-     * Must be called on the world thread (e.g. inside a {@code world.execute()}
-     * callback).
-     * The find and claim are atomic so two colonists cannot race to claim the same
-     * position.
+     * Must be called on the world thread (e.g. inside a {@code world.execute()} callback). The find and claim are atomic so two colonists cannot race to claim
+     * the same position.
      */
     @Nullable
-    public static Vector3i claimNextClearingTarget(@Nullable ConstructionOrderStore.Entry order, @Nonnull World world,
-            @Nullable BlockSelection prefab, @Nonnull UUID colonistUuid) {
+    public static Vector3i
+    claimNextClearingTarget(@Nullable ConstructionOrderStore.Entry order, @Nonnull World world, @Nullable BlockSelection prefab, @Nonnull UUID colonistUuid)
+    {
         if (order == null || order.buildOrigin == null || prefab == null)
             return null;
         Vector3i origin = order.buildOrigin;
         int emptyId = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
 
-        try (var _ = DebugTiming.measure("ConstructorUtil.claimNextClearingTarget", 50)) {
+        try (var _ = DebugTiming.measure("ConstructorUtil.claimNextClearingTarget", 50))
+        {
             // Scan top-down so floating blocks are claimed and cleared before their
             // supports.
             List<int[]> blocks = getSortedBlocks(order, prefab);
-            for (int i = blocks.size() - 1; i >= 0; i--) {
+            for (int i = blocks.size() - 1; i >= 0; i--)
+            {
                 int[] b = blocks.get(i);
                 int prefabBlockId = b[3];
                 boolean isAir = (prefabBlockId == 0 || prefabBlockId == emptyId);
@@ -369,8 +368,7 @@ public final class ConstructorUtil {
                 int wz = b[2] + origin.z - prefab.getAnchorZ();
                 int worldBlock = world.getBlock(wx, wy, wz);
 
-                boolean needsClear = isAir ? (worldBlock != 0)
-                        : (worldBlock != 0 && !isBlockEquivalent(worldBlock, prefabBlockId));
+                boolean needsClear = isAir ? (worldBlock != 0) : (worldBlock != 0 && !isBlockEquivalent(worldBlock, prefabBlockId));
                 if (!needsClear)
                     continue;
 
@@ -383,22 +381,21 @@ public final class ConstructorUtil {
     }
 
     /**
-     * Iterates the prefab, tries to claim each block that still needs placing, and
-     * returns
-     * up to {@code maxCount} successfully claimed world positions (in prefab scan
-     * order).
+     * Iterates the prefab, tries to claim each block that still needs placing, and returns up to {@code maxCount} successfully claimed world positions (in
+     * prefab scan order).
      *
      * <p>
-     * Must be called on the world thread (e.g. inside a {@code world.execute()}
-     * callback).
+     * Must be called on the world thread (e.g. inside a {@code world.execute()} callback).
      */
     @Nonnull
     public static List<Vector3i> getAndClaimBuildTargets(@Nullable ConstructionOrderStore.Entry order,
-            @Nonnull World world,
-            @Nullable BlockSelection prefab,
-            @Nonnull UUID colonistUuid,
-            int maxCount) {
-        if (order == null || order.buildOrigin == null || prefab == null || maxCount <= 0) {
+                                                         @Nonnull World world,
+                                                         @Nullable BlockSelection prefab,
+                                                         @Nonnull UUID colonistUuid,
+                                                         int maxCount)
+    {
+        if (order == null || order.buildOrigin == null || prefab == null || maxCount <= 0)
+        {
             return Collections.emptyList();
         }
 
@@ -406,7 +403,8 @@ public final class ConstructorUtil {
         int emptyId = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
         List<Vector3i> claimedBlocks = new ArrayList<>();
 
-        for (int[] b : getSortedBlocks(order, prefab)) {
+        for (int[] b : getSortedBlocks(order, prefab))
+        {
             if (claimedBlocks.size() >= maxCount)
                 break;
 
@@ -431,10 +429,10 @@ public final class ConstructorUtil {
             int rotation = b[4];
             Vector3i pos = new Vector3i(wx, wy, wz);
 
-            // We immediately claim the block before returning it, so no other colonist can
-            // claim the block.
+            // We immediately claim the block before returning it, so no other colonist can claim the block.
             // If the claim fails, it was already claimed and we skip.
-            if (ClaimBlockUtil.claimBlockAndFillers(world, wx, wy, wz, blockType, rotation, colonistUuid, "Build")) {
+            if (ClaimBlockUtil.claimBlockAndFillers(world, wx, wy, wz, blockType, rotation, colonistUuid, "Build"))
+            {
                 claimedBlocks.add(pos);
             }
         }
@@ -446,13 +444,15 @@ public final class ConstructorUtil {
      * Computes the blocks needed to place all {@code buildTargets}.
      */
     @Nonnull
-    public static List<ItemStack> getBuildingBlocks(@Nullable ConstructionOrderStore.Entry order,
-            @Nullable BlockSelection prefab, @Nonnull List<Vector3i> buildTargets) {
+    public static List<ItemStack>
+    getBuildingBlocks(@Nullable ConstructionOrderStore.Entry order, @Nullable BlockSelection prefab, @Nonnull List<Vector3i> buildTargets)
+    {
         if (order == null || prefab == null || buildTargets.isEmpty())
             return Collections.emptyList();
 
         Map<String, Integer> needed = new LinkedHashMap<>();
-        for (Vector3i pos : buildTargets) {
+        for (Vector3i pos : buildTargets)
+        {
             String blockKey = getDesiredBlockKey(order, prefab, pos.x, pos.y, pos.z);
             if (blockKey == null || blockKey.isEmpty() || EMPTY_BLOCK_KEY.equals(blockKey))
                 continue;
@@ -466,30 +466,30 @@ public final class ConstructorUtil {
         }
 
         List<ItemStack> result = new ArrayList<>(needed.size());
-        for (Map.Entry<String, Integer> entry : needed.entrySet()) {
+        for (Map.Entry<String, Integer> entry : needed.entrySet())
+        {
             result.add(new ItemStack(entry.getKey(), entry.getValue()));
         }
         return result;
     }
 
     /**
-     * Claims build target block locations, sets {@link JobTaskComponent} item
-     * requirements,
-     * and adds them to {@link ConstructorJobComponent#pendingBuildQueue}.
+     * Claims build target block locations, sets {@link JobTaskComponent} item requirements, and adds them to {@link ConstructorJobComponent#pendingBuildQueue}.
      * Returns {@code true} if at least one block was claimed.
      */
-    public static boolean setupBuildRun(
-            @Nonnull Ref<EntityStore> colonistRef,
-            @Nonnull EntityStore entityStore,
-            @Nonnull World world,
-            @Nonnull ConstructionOrderStore.Entry order,
-            @Nonnull BlockSelection prefab,
-            @Nonnull UUID colonistUuid,
-            int blockCount,
-            @Nonnull String npcId) {
+    public static boolean setupBuildRun(@Nonnull Ref<EntityStore> colonistRef,
+                                        @Nonnull EntityStore entityStore,
+                                        @Nonnull World world,
+                                        @Nonnull ConstructionOrderStore.Entry order,
+                                        @Nonnull BlockSelection prefab,
+                                        @Nonnull UUID colonistUuid,
+                                        int blockCount,
+                                        @Nonnull String npcId)
+    {
         // Claim blocks where colonist wants to build.
         List<Vector3i> claimedBlocks = getAndClaimBuildTargets(order, world, prefab, colonistUuid, blockCount);
-        if (claimedBlocks.isEmpty()) {
+        if (claimedBlocks.isEmpty())
+        {
             DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] No claimable build targets.", npcId);
             return false;
         }
@@ -500,27 +500,27 @@ public final class ConstructorUtil {
 
         // Update constructor build queue.
         ConstructorJobComponent constructorJob = entityStore.getStore().getComponent(colonistRef, ConstructorJobComponent.getComponentType());
-        if (constructorJob != null) {
+        if (constructorJob != null)
+        {
             constructorJob.pendingBuildQueue.clear();
             constructorJob.pendingBuildQueue.addAll(claimedBlocks);
         }
 
         DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
-                "[ConstructorJob] [%s] Build run: %d position(s), %d item type(s).",
-                npcId, claimedBlocks.size(), buildingBlocks.size());
+                      "[ConstructorJob] [%s] Build run: %d position(s), %d item type(s).",
+                      npcId,
+                      claimedBlocks.size(),
+                      buildingBlocks.size());
         return true;
     }
 
     /**
      * Sets the {@link JobTaskComponent} item requirements for the blocks to build.
      */
-    public static void setRequiredTaskItems(
-            @Nonnull Ref<EntityStore> colonistRef,
-            @Nonnull EntityStore entityStore,
-            @Nonnull List<ItemStack> buildingBlocks) {
-        ItemRequirement[] requiredBuildingBlocks = buildingBlocks.stream()
-                .map(s -> new ItemRequirement(s.getItemId(), s.getQuantity()))
-                .toArray(ItemRequirement[]::new);
+    public static void setRequiredTaskItems(@Nonnull Ref<EntityStore> colonistRef, @Nonnull EntityStore entityStore, @Nonnull List<ItemStack> buildingBlocks)
+    {
+        ItemRequirement[] requiredBuildingBlocks =
+                buildingBlocks.stream().map(s -> new ItemRequirement(s.getItemId(), s.getQuantity())).toArray(ItemRequirement[] ::new);
 
         JobTaskComponent taskComponent = new JobTaskComponent();
         taskComponent.requiredItems = requiredBuildingBlocks;

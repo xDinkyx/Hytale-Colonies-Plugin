@@ -1,5 +1,7 @@
 package com.hytalecolonies.commands.debug;
 
+import javax.annotation.Nonnull;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -14,33 +16,33 @@ import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.debug.DebugConfig;
 import com.hytalecolonies.ui.DebugConfigUI;
 
-import javax.annotation.Nonnull;
-
 /**
  * /hc debuggui -- Opens the Debug Configuration UI for adjusting per-category log levels.
  */
-public class DebugGuiCommand extends AbstractPlayerCommand {
-
-    public DebugGuiCommand() {
+public class DebugGuiCommand extends AbstractPlayerCommand
+{
+    public DebugGuiCommand()
+    {
         super("debuggui", "Open the debug configuration panel");
         this.setPermissionGroup(null);
     }
 
     @Override
-    protected boolean canGeneratePermission() {
+    protected boolean canGeneratePermission()
+    {
         return false;
     }
 
     @Override
-    protected void execute(
-            @Nonnull CommandContext context,
-            @Nonnull Store<EntityStore> store,
-            @Nonnull Ref<EntityStore> ref,
-            @Nonnull PlayerRef playerRef,
-            @Nonnull World world
-    ) {
+    protected void execute(@Nonnull CommandContext context,
+                           @Nonnull Store<EntityStore> store,
+                           @Nonnull Ref<EntityStore> ref,
+                           @Nonnull PlayerRef playerRef,
+                           @Nonnull World world)
+    {
         Player player = store.getComponent(ref, Player.getComponentType());
-        if (player == null) {
+        if (player == null)
+        {
             context.sendMessage(Message.raw("Error: Could not get Player component."));
             return;
         }

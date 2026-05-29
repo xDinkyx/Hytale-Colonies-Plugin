@@ -23,55 +23,58 @@ import com.hytalecolonies.utils.WorkStationUtil;
 import com.hytalecolonies.utils.WorkstationContainerUtil;
 
 /**
- * Locates the nearest container within {@link #SEARCH_RADIUS} blocks of the workstation
- * and sets it as the delivery target. If no container is found, transitions to {@link JobState#TravelingToWorkstation}.
+ * Locates the nearest container within {@link #SEARCH_RADIUS} blocks of the workstation and sets it as the delivery target. If no container is found,
+ * transitions to {@link JobState#TravelingToWorkstation}.
  */
-public class ActionFindDeliveryContainer extends ActionBase {
-
+public class ActionFindDeliveryContainer extends ActionBase
+{
     private static final int NAV_TARGET_SLOT = 0;
     private static final int SEARCH_RADIUS = 3;
 
-    public ActionFindDeliveryContainer(@Nonnull BuilderActionFindDeliveryContainer builder,
-            @Nonnull BuilderSupport support) {
+    public ActionFindDeliveryContainer(@Nonnull BuilderActionFindDeliveryContainer builder, @Nonnull BuilderSupport support)
+    {
         super(builder);
     }
 
     @Override
-    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role,
-            @Nullable InfoProvider sensorInfo, double dt,
-            @Nonnull Store<EntityStore> store) {
+    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
+    {
         super.execute(ref, role, sensorInfo, dt, store);
 
         String npcId = DebugLog.npcId(ref, store);
 
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
-        if (job == null) {
-            DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[FindDeliveryContainer] [%s] No JobComponent.", npcId);
+        if (job == null)
+        {
+            DebugLog.warning(DebugCategory.COLONIST_DELIVERY, "[FindDeliveryContainer] [%s] No JobComponent.", npcId);
             return true;
         }
 
         WorkStationComponent workStation = WorkStationUtil.getWorkStation(store, ref);
-        if (workStation == null) {
-            DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[FindDeliveryContainer] [%s] No WorkStationComponent.", npcId);
+        if (workStation == null)
+        {
+            DebugLog.warning(DebugCategory.COLONIST_DELIVERY, "[FindDeliveryContainer] [%s] No WorkStationComponent.", npcId);
             ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToWorkstation);
             return true;
         }
 
-        if (workStation.deliveryContainerPosition != null) {
+        if (workStation.deliveryContainerPosition != null)
+        {
             JobNavigationUtil.setJobTarget(store, ref, workStation.deliveryContainerPosition);
-            role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT)
+            role.getMarkedEntitySupport()
+                    .getStoredPosition(NAV_TARGET_SLOT)
                     .assign(workStation.deliveryContainerPosition.x + 0.5,
-                            (double) workStation.deliveryContainerPosition.y,
+                            (double)workStation.deliveryContainerPosition.y,
                             workStation.deliveryContainerPosition.z + 0.5);
             return true;
         }
 
         Vector3i wsPos = job.getWorkStationBlockPosition();
-        if (wsPos == null) {
+        if (wsPos == null)
+        {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[FindDeliveryContainer] [%s] No workstation position -- transitioning to TravelingToWorkstation.", npcId);
+                             "[FindDeliveryContainer] [%s] No workstation position -- transitioning to TravelingToWorkstation.",
+                             npcId);
             ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToWorkstation);
             return true;
         }
@@ -79,21 +82,22 @@ public class ActionFindDeliveryContainer extends ActionBase {
         World world = store.getExternalData().getWorld();
         Vector3i containerPos = WorkstationContainerUtil.findNearbyContainer(world, wsPos, SEARCH_RADIUS);
 
-        if (containerPos == null) {
+        if (containerPos == null)
+        {
             DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[FindDeliveryContainer] [%s] No container within %d blocks of workstation %s -- transitioning to TravelingToWorkstation.",
-                    npcId, SEARCH_RADIUS, wsPos);
+                             "[FindDeliveryContainer] [%s] No container within %d blocks of workstation %s -- transitioning to TravelingToWorkstation.",
+                             npcId,
+                             SEARCH_RADIUS,
+                             wsPos);
             ColonistStateUtil.setJobState(ref, store, job, JobState.TravelingToWorkstation);
             return true;
         }
 
         workStation.deliveryContainerPosition = containerPos;
         JobNavigationUtil.setJobTarget(store, ref, containerPos);
-        role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT)
-                .assign(containerPos.x + 0.5, (double) containerPos.y, containerPos.z + 0.5);
+        role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(containerPos.x + 0.5, (double)containerPos.y, containerPos.z + 0.5);
 
-        DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
-                "[FindDeliveryContainer] [%s] Container at %s -- navigating.", npcId, containerPos);
+        DebugLog.fine(DebugCategory.COLONIST_DELIVERY, "[FindDeliveryContainer] [%s] Container at %s -- navigating.", npcId, containerPos);
 
         return true;
     }

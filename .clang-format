@@ -4,33 +4,58 @@ Language: Java
 # Line length
 ColumnLimit: 160
 
+# Imports: leave organization to VS Code's Java extension
+SortIncludes: Never
+
 # Indentation
 IndentWidth: 4
 TabWidth: 4
 UseTab: Never
 ContinuationIndentWidth: 8
 
+# Remove blank line at the start of blocks (after opening {)
+KeepEmptyLines:
+  AtStartOfBlock: false
+  AtStartOfFile:  true
+  AtEndOfFile:    false
+
 # Brace style: Allman - opening brace always on a new line
 BreakBeforeBraces: Allman
 
+# Annotations: each @Annotation on its own line before the declaration
+BreakAfterAttributes: Always
+BreakAfterJavaFieldAnnotations: true
+
 # Parameter / argument alignment
 # Horizontally align to the opening parenthesis when wrapping
-AlignAfterOpenBracket: true
+AlignAfterOpenBracket: Align
 # When parameters don't fit on one line, put each on its own line
 BinPackParameters: OnePerLine
 BinPackArguments: false
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowAllArgumentsOnNextLine: false
 
-# Disallow collapsing to single lines
-AllowShortBlocksOnASingleLine: Never
-AllowShortFunctionsOnASingleLine: None
+# Empty methods/constructors collapse to a single line: void foo() {}
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 
 # Operand / ternary alignment
 AlignOperands: Align
 BreakBeforeTernaryOperators: true
+
+# Align consecutive assignments (=) and declarations across adjacent lines
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments:   false
+  PadOperators:     true
+
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments:   false
 
 # Trailing comments
 AlignTrailingComments:

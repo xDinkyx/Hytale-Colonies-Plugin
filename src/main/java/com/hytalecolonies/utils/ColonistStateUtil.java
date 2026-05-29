@@ -12,7 +12,6 @@ import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 
-
 /** Writes {@link JobState} to {@link JobComponent} and mirrors it into the NPC role state machine. */
 public final class ColonistStateUtil
 {
@@ -24,9 +23,7 @@ public final class ColonistStateUtil
 
     static final Key INSTANCE = new Key();
 
-    private ColonistStateUtil()
-    {
-    }
+    private ColonistStateUtil() {}
 
     /** Sets the job state on {@code job} and mirrors it into the NPC role state machine. Mirror is skipped if the NPC has no role yet. */
     public static void setJobState(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull JobComponent job, @Nonnull JobState state)
@@ -39,8 +36,7 @@ public final class ColonistStateUtil
 
         job.setCurrentTask(INSTANCE, state);
 
-        DebugLog.fine(DebugCategory.JOB_SYSTEM,
-                "[StateTransition] [%s] %s -> %s.", DebugLog.npcId(ref, store), previousState, state);
+        DebugLog.fine(DebugCategory.JOB_SYSTEM, "[StateTransition] [%s] %s -> %s.", DebugLog.npcId(ref, store), previousState, state);
 
         NPCEntity npc = store.getComponent(ref, NPCEntity.getComponentType());
         if (npc == null)

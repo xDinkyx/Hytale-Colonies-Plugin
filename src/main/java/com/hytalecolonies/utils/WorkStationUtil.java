@@ -17,16 +17,13 @@ import com.hytalecolonies.components.jobs.MinerWorkStationComponent;
 import com.hytalecolonies.components.jobs.WoodsmanWorkStationComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 
-
 /** Lookup utilities for workstation block components. */
 public final class WorkStationUtil
 {
+    private WorkStationUtil() {}
 
-    private WorkStationUtil()
-    {
-    }
-
-    @Nullable public static WorkStationComponent getWorkStation(Store<EntityStore> store, Ref<EntityStore> ref)
+    @Nullable
+    public static WorkStationComponent getWorkStation(Store<EntityStore> store, Ref<EntityStore> ref)
     {
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null)
@@ -37,7 +34,8 @@ public final class WorkStationUtil
         return getWorkStationAt(world(store), pos);
     }
 
-    @Nullable public static WorkStationComponent getWorkStationAt(World world, Vector3i position)
+    @Nullable
+    public static WorkStationComponent getWorkStationAt(World world, Vector3i position)
     {
         Ref<ChunkStore> ref = BlockEntityUtil.getBlockEntityAt(world, position);
         if (ref == null)
@@ -45,7 +43,8 @@ public final class WorkStationUtil
         return ref.getStore().getComponent(ref, WorkStationComponent.getComponentType());
     }
 
-    @Nullable public static WoodsmanWorkStationComponent getWoodsmanWorkStation(Store<EntityStore> store, Ref<EntityStore> ref)
+    @Nullable
+    public static WoodsmanWorkStationComponent getWoodsmanWorkStation(Store<EntityStore> store, Ref<EntityStore> ref)
     {
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null)
@@ -56,7 +55,8 @@ public final class WorkStationUtil
         return getWoodsmanWorkStationAt(world(store), pos);
     }
 
-    @Nullable public static WoodsmanWorkStationComponent getWoodsmanWorkStationAt(World world, Vector3i position)
+    @Nullable
+    public static WoodsmanWorkStationComponent getWoodsmanWorkStationAt(World world, Vector3i position)
     {
         Ref<ChunkStore> ref = BlockEntityUtil.getBlockEntityAt(world, position);
         if (ref == null)
@@ -64,7 +64,8 @@ public final class WorkStationUtil
         return ref.getStore().getComponent(ref, WoodsmanWorkStationComponent.getComponentType());
     }
 
-    @Nullable public static MinerWorkStationComponent getMinerWorkStation(Store<EntityStore> store, Ref<EntityStore> ref)
+    @Nullable
+    public static MinerWorkStationComponent getMinerWorkStation(Store<EntityStore> store, Ref<EntityStore> ref)
     {
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null)
@@ -75,7 +76,8 @@ public final class WorkStationUtil
         return getMinerWorkStationAt(world(store), pos);
     }
 
-    @Nullable public static MinerWorkStationComponent getMinerWorkStationAt(World world, Vector3i position)
+    @Nullable
+    public static MinerWorkStationComponent getMinerWorkStationAt(World world, Vector3i position)
     {
         Ref<ChunkStore> ref = BlockEntityUtil.getBlockEntityAt(world, position);
         if (ref == null)
@@ -83,7 +85,8 @@ public final class WorkStationUtil
         return ref.getStore().getComponent(ref, MinerWorkStationComponent.getComponentType());
     }
 
-    @Nullable public static ConstructorWorkStationComponent getConstructorWorkStation(Store<EntityStore> store, Ref<EntityStore> ref)
+    @Nullable
+    public static ConstructorWorkStationComponent getConstructorWorkStation(Store<EntityStore> store, Ref<EntityStore> ref)
     {
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null)
@@ -94,7 +97,8 @@ public final class WorkStationUtil
         return getConstructorWorkStationAt(world(store), pos);
     }
 
-    @Nullable public static ConstructorWorkStationComponent getConstructorWorkStationAt(World world, Vector3i position)
+    @Nullable
+    public static ConstructorWorkStationComponent getConstructorWorkStationAt(World world, Vector3i position)
     {
         Ref<ChunkStore> ref = BlockEntityUtil.getBlockEntityAt(world, position);
         if (ref == null)
@@ -103,7 +107,8 @@ public final class WorkStationUtil
     }
 
     /** Returns the active order for the colonist's workstation, or null if none. */
-    @Nullable public static ConstructionOrderStore.Entry getConstructionOrder(Store<EntityStore> store, Ref<EntityStore> ref)
+    @Nullable
+    public static ConstructionOrderStore.Entry getConstructionOrder(Store<EntityStore> store, Ref<EntityStore> ref)
     {
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null)
@@ -115,7 +120,8 @@ public final class WorkStationUtil
     }
 
     /** Returns the active order for the given workstation position, or null if none assigned. */
-    @Nullable public static ConstructionOrderStore.Entry getConstructionOrderForWorkstation(World world, Vector3i wsPos)
+    @Nullable
+    public static ConstructionOrderStore.Entry getConstructionOrderForWorkstation(World world, Vector3i wsPos)
     {
         ConstructorWorkStationComponent ws = getConstructorWorkStationAt(world, wsPos);
         if (ws == null || ws.activeOrderId == null)
@@ -124,7 +130,8 @@ public final class WorkStationUtil
     }
 
     /** Resolves an order by ID directly from the store. */
-    @Nullable public static ConstructionOrderStore.Entry getConstructionOrderById(UUID id)
+    @Nullable
+    public static ConstructionOrderStore.Entry getConstructionOrderById(UUID id)
     {
         return ConstructionOrderStore.get().get(id);
     }

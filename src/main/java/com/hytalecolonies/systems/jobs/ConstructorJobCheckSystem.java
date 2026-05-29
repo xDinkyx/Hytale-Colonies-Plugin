@@ -13,7 +13,6 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
-import com.hytalecolonies.utils.BlockEntityUtil;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -29,11 +28,11 @@ import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.BlockEntityUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
 import com.hytalecolonies.utils.ConstructorUtil;
 import com.hytalecolonies.utils.JobNavigationUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
-
 
 /** Every 2 s, dispatches {@link JobState#WaitingForWork} constructors to clearing, retrieving, or marks the order complete. */
 public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
@@ -79,7 +78,10 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
 
         JobTargetComponent existingTarget = store.getComponent(colonistRef, JobTargetComponent.getComponentType());
         if (existingTarget != null && existingTarget.targetPosition != null)
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] WaitingForWork with stale JobTarget %s -- should have been cleared.", npcId, existingTarget.targetPosition);
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
+                             "[ConstructorJob] [%s] WaitingForWork with stale JobTarget %s -- should have been cleared.",
+                             npcId,
+                             existingTarget.targetPosition);
 
         Vector3i wsPos = job.getWorkStationBlockPosition();
         if (wsPos == null)
@@ -95,7 +97,10 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         ConstructorWorkStationComponent ws = WorkStationUtil.getConstructorWorkStationAt(world, wsPos);
         if (ws == null)
         {
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] No ConstructorWorkStationComponent at %s -- cannot check order.", npcId, wsPos);
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
+                             "[ConstructorJob] [%s] No ConstructorWorkStationComponent at %s -- cannot check order.",
+                             npcId,
+                             wsPos);
             return;
         }
 
@@ -155,19 +160,21 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         world.execute(() -> startRetrievingBlocks(colonistRef, npcId, order, world, prefab, colonistUuid, blocksPerRun, entityStore));
     }
 
-    private static void claimAndStartClearing(
-            @Nonnull Ref<EntityStore> colonistRef,
-            @Nonnull String npcId,
-            @Nonnull ConstructionOrderStore.Entry order,
-            @Nonnull World world,
-            @Nonnull BlockSelection prefab,
-            @Nonnull UUID colonistUuid,
-            @Nonnull EntityStore entityStore)
+    private static void claimAndStartClearing(@Nonnull Ref<EntityStore> colonistRef,
+                                              @Nonnull String npcId,
+                                              @Nonnull ConstructionOrderStore.Entry order,
+                                              @Nonnull World world,
+                                              @Nonnull BlockSelection prefab,
+                                              @Nonnull UUID colonistUuid,
+                                              @Nonnull EntityStore entityStore)
     {
         JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
         if (liveJob == null || liveJob.getCurrentTask() != JobState.WaitingForWork)
         {
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] claimAndStartClearing guard failed: state=%s.", npcId, liveJob != null ? liveJob.getCurrentTask() : "no-job");
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
+                             "[ConstructorJob] [%s] claimAndStartClearing guard failed: state=%s.",
+                             npcId,
+                             liveJob != null ? liveJob.getCurrentTask() : "no-job");
             return;
         }
         // Claim on world thread to prevent two colonists racing to the same block.
@@ -181,7 +188,8 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         JobNavigationUtil.dispatchNavigation(entityStore.getStore(), colonistRef, claimed);
         Vector3i wsPos = liveJob.getWorkStationBlockPosition();
         WorkStationComponent ws = wsPos != null ? WorkStationUtil.getWorkStationAt(world, wsPos) : null;
-        if (ws != null) ws.workAvailable = true;
+        if (ws != null)
+            ws.workAvailable = true;
         JobRunCounterComponent liveCounter = entityStore.getStore().getComponent(colonistRef, JobRunCounterComponent.getComponentType());
         if (liveCounter != null)
             liveCounter.count = 0;
@@ -189,12 +197,11 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Dispatched to clearing block at %s.", npcId, claimed);
     }
 
-    private static void completeOrderAndFreeWorkstation(
-            @Nonnull World world,
-            @Nonnull Vector3i wsPos,
-            @Nonnull UUID orderId,
-            @Nonnull Ref<EntityStore> colonistRef,
-            @Nonnull EntityStore entityStore)
+    private static void completeOrderAndFreeWorkstation(@Nonnull World world,
+                                                        @Nonnull Vector3i wsPos,
+                                                        @Nonnull UUID orderId,
+                                                        @Nonnull Ref<EntityStore> colonistRef,
+                                                        @Nonnull EntityStore entityStore)
     {
         Ref<ChunkStore> wsRef = BlockEntityUtil.getBlockEntityAt(world, wsPos);
         if (wsRef != null && wsRef.isValid())
@@ -209,7 +216,8 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         if (liveJob != null)
         {
             WorkStationComponent ws = WorkStationUtil.getWorkStationAt(world, wsPos);
-            if (ws != null) ws.workAvailable = true;
+            if (ws != null)
+                ws.workAvailable = true;
         }
     }
 
@@ -225,26 +233,28 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         staleWs.activeOrderId = null;
     }
 
-    private static void startRetrievingBlocks(
-            @Nonnull Ref<EntityStore> colonistRef,
-            @Nonnull String npcId,
-            @Nonnull ConstructionOrderStore.Entry order,
-            @Nonnull World world,
-            @Nonnull BlockSelection prefab,
-            @Nonnull UUID colonistUuid,
-            int blocksPerRun,
-            @Nonnull EntityStore entityStore)
+    private static void startRetrievingBlocks(@Nonnull Ref<EntityStore> colonistRef,
+                                              @Nonnull String npcId,
+                                              @Nonnull ConstructionOrderStore.Entry order,
+                                              @Nonnull World world,
+                                              @Nonnull BlockSelection prefab,
+                                              @Nonnull UUID colonistUuid,
+                                              int blocksPerRun,
+                                              @Nonnull EntityStore entityStore)
     {
         JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
         if (liveJob == null || liveJob.getCurrentTask() != JobState.WaitingForWork)
         {
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] startRetrievingBlocks guard failed: state=%s.", liveJob != null ? liveJob.getCurrentTask() : "no-job");
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
+                             "[ConstructorJob] startRetrievingBlocks guard failed: state=%s.",
+                             liveJob != null ? liveJob.getCurrentTask() : "no-job");
             return;
         }
 
         Vector3i wsPos = liveJob.getWorkStationBlockPosition();
         WorkStationComponent ws = wsPos != null ? WorkStationUtil.getWorkStationAt(world, wsPos) : null;
-        if (ws != null) ws.workAvailable = true;
+        if (ws != null)
+            ws.workAvailable = true;
 
         if (!ConstructorUtil.setupBuildRun(colonistRef, entityStore, world, order, prefab, colonistUuid, blocksPerRun, npcId))
             return; // No claimable build targets -- stay in WaitingForWork, retry next tick.
@@ -252,7 +262,8 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingRetrievingItems);
     }
 
-    @Override public @Nullable Query<EntityStore> getQuery()
+    @Override
+    public @Nullable Query<EntityStore> getQuery()
     {
         return QUERY;
     }

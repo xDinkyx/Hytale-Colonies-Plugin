@@ -21,9 +21,8 @@ import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.util.Config;
 
 /**
- * Server-side store for mine segment excavation orders per workstation.
- * Analogous to {@link ConstructionOrderStore} but for the Miner job.
- * Persisted so progress survives server restarts.
+ * Server-side store for mine segment excavation orders per workstation. Analogous to {@link ConstructionOrderStore} but for the Miner job. Persisted so
+ * progress survives server restarts.
  */
 public final class MineSegmentStore
 {
@@ -37,30 +36,30 @@ public final class MineSegmentStore
     {
         public static final BuilderCodec<Entry> CODEC =
                 BuilderCodec.builder(Entry.class, Entry::new)
-                        .append(new KeyedCodec<>("Id", Codec.UUID_STRING),       (o, v) -> o.id = v,             o -> o.id)
+                        .append(new KeyedCodec<>("Id", Codec.UUID_STRING), (o, v) -> o.id = v, o -> o.id)
                         .add()
                         .append(new KeyedCodec<>("WorkstationKey", Codec.STRING), (o, v) -> o.workstationKey = v, o -> o.workstationKey)
                         .add()
-                        .append(new KeyedCodec<>("SegmentType", Codec.STRING),   (o, v) -> o.segmentType = v,    o -> o.segmentType)
+                        .append(new KeyedCodec<>("SegmentType", Codec.STRING), (o, v) -> o.segmentType = v, o -> o.segmentType)
                         .add()
-                        .append(new KeyedCodec<>("PrefabId", Codec.STRING),      (o, v) -> o.prefabId = v,       o -> o.prefabId)
+                        .append(new KeyedCodec<>("PrefabId", Codec.STRING), (o, v) -> o.prefabId = v, o -> o.prefabId)
                         .add()
-                        .append(new KeyedCodec<>("Origin", Vector3i.CODEC),      (o, v) -> o.origin = v,         o -> o.origin)
+                        .append(new KeyedCodec<>("Origin", Vector3i.CODEC), (o, v) -> o.origin = v, o -> o.origin)
                         .add()
                         .append(new KeyedCodec<>("SequenceIndex", Codec.INTEGER), (o, v) -> o.sequenceIndex = v, o -> o.sequenceIndex)
                         .add()
-                        .append(new KeyedCodec<>("Status", Codec.STRING),        (o, v) -> o.status = v,         o -> o.status)
+                        .append(new KeyedCodec<>("Status", Codec.STRING), (o, v) -> o.status = v, o -> o.status)
                         .add()
                         .build();
 
-        public UUID    id            = UUID.randomUUID();
-        public String  workstationKey = "";
-        public String  segmentType   = "";
-        public String  prefabId      = "";
+        public UUID   id             = UUID.randomUUID();
+        public String workstationKey = "";
+        public String segmentType    = "";
+        public String prefabId       = "";
         @Nullable
-        public Vector3i origin       = null;
-        public int     sequenceIndex = 0;
-        public String  status        = STATUS_PENDING;
+        public Vector3i origin        = null;
+        public int      sequenceIndex = 0;
+        public String   status        = STATUS_PENDING;
 
         /** Transient -- loaded prefab selection. Not persisted. */
         public transient BlockSelection cachedSelection;
@@ -69,8 +68,7 @@ public final class MineSegmentStore
 
         public Entry() {}
 
-        public Entry(String workstationKey, String segmentType, String prefabId,
-                     @Nullable Vector3i origin, int sequenceIndex)
+        public Entry(String workstationKey, String segmentType, String prefabId, @Nullable Vector3i origin, int sequenceIndex)
         {
             this.workstationKey = workstationKey;
             this.segmentType    = segmentType;
@@ -84,13 +82,13 @@ public final class MineSegmentStore
 
     public static final class StoreData
     {
-        public static final BuilderCodec<StoreData> CODEC =
-                BuilderCodec.builder(StoreData.class, StoreData::new)
-                        .append(new KeyedCodec<>("Segments", new ArrayCodec<>(Entry.CODEC, Entry[]::new)),
-                                (o, v) -> o.segments = v != null ? v : new Entry[0],
-                                o -> o.segments)
-                        .add()
-                        .build();
+        public static final BuilderCodec<StoreData> CODEC = BuilderCodec.builder(StoreData.class, StoreData::new)
+                                                                    .append(new KeyedCodec<>("Segments", new ArrayCodec<>(Entry.CODEC, Entry[] ::new)),
+                                                                            (o, v)
+                                                                                    -> o.segments = v != null ? v : new Entry[0],
+                                                                            o -> o.segments)
+                                                                    .add()
+                                                                    .build();
 
         public Entry[] segments = new Entry[0];
 
@@ -101,15 +99,14 @@ public final class MineSegmentStore
 
     private static final MineSegmentStore INSTANCE = new MineSegmentStore();
 
-    private static final ExecutorService SAVE_EXEC = Executors.newSingleThreadExecutor(r ->
-    {
+    private static final ExecutorService SAVE_EXEC = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "MineSegmentStore-save");
         t.setDaemon(true);
         return t;
     });
 
     private final Map<UUID, Entry> segments = new ConcurrentHashMap<>();
-    private Config<StoreData> config;
+    private Config<StoreData>      config;
 
     private MineSegmentStore() {}
 
@@ -147,22 +144,22 @@ public final class MineSegmentStore
     /** Returns all segments for a workstation, sorted by {@link Entry#sequenceIndex} ascending. */
     public List<Entry> getSegmentsForWorkstation(String workstationKey)
     {
-        return segments.values().stream()
+        return segments.values()
+                .stream()
                 .filter(e -> workstationKey.equals(e.workstationKey))
                 .sorted(Comparator.comparingInt(e -> e.sequenceIndex))
                 .collect(Collectors.toList());
     }
 
     /**
-     * Returns the active (Pending or InProgress) segment for the workstation
-     * with the lowest sequence index, or {@code null} if all segments are complete.
+     * Returns the active (Pending or InProgress) segment for the workstation with the lowest sequence index, or {@code null} if all segments are complete.
      */
     @Nullable
     public Entry getActiveSegment(String workstationKey)
     {
-        return segments.values().stream()
-                .filter(e -> workstationKey.equals(e.workstationKey)
-                        && !STATUS_COMPLETE.equals(e.status))
+        return segments.values()
+                .stream()
+                .filter(e -> workstationKey.equals(e.workstationKey) && !STATUS_COMPLETE.equals(e.status))
                 .min(Comparator.comparingInt(e -> e.sequenceIndex))
                 .orElse(null);
     }
@@ -170,11 +167,7 @@ public final class MineSegmentStore
     /** Returns the highest sequence index used by this workstation, or -1 if none. */
     public int getMaxSequenceIndex(String workstationKey)
     {
-        return segments.values().stream()
-                .filter(e -> workstationKey.equals(e.workstationKey))
-                .mapToInt(e -> e.sequenceIndex)
-                .max()
-                .orElse(-1);
+        return segments.values().stream().filter(e -> workstationKey.equals(e.workstationKey)).mapToInt(e -> e.sequenceIndex).max().orElse(-1);
     }
 
     @Nullable
@@ -228,9 +221,8 @@ public final class MineSegmentStore
     {
         if (config == null)
             return;
-        Entry[] snapshot = segments.values().toArray(Entry[]::new);
-        SAVE_EXEC.submit(() ->
-        {
+        Entry[] snapshot = segments.values().toArray(Entry[] ::new);
+        SAVE_EXEC.submit(() -> {
             config.get().segments = snapshot;
             config.save();
         });

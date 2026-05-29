@@ -10,36 +10,41 @@ import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
 import com.hypixel.hytale.server.npc.instructions.Action;
 
 /** Builder for the {@code "OpenColonistInspectPage"} NPC action. No configuration. */
-public class BuilderActionOpenColonistInspectPage extends BuilderActionBase {
-
+public class BuilderActionOpenColonistInspectPage extends BuilderActionBase
+{
     @Nonnull
     @Override
-    public String getShortDescription() {
+    public String getShortDescription()
+    {
         return "Opens the colonist's storage inventory for the interacting player.";
     }
 
     @Nonnull
     @Override
-    public String getLongDescription() {
+    public String getLongDescription()
+    {
         return "Opens Page.Bench with a ContainerWindow wrapping the colonist's storage. "
-             + "Must be inside an InteractionInstruction HasInteracted block.";
+                + "Must be inside an InteractionInstruction HasInteracted block.";
     }
 
     @Nonnull
     @Override
-    public BuilderDescriptorState getBuilderDescriptorState() {
+    public BuilderDescriptorState getBuilderDescriptorState()
+    {
         return BuilderDescriptorState.WorkInProgress;
     }
 
     @Nonnull
     @Override
-    public Builder<Action> readConfig(@Nonnull JsonElement data) {
+    public Builder<Action> readConfig(@Nonnull JsonElement data)
+    {
         return this;
     }
 
     @Nonnull
     @Override
-    public Action build(@Nonnull BuilderSupport support) {
+    public Action build(@Nonnull BuilderSupport support)
+    {
         return new ActionOpenColonistInspectPage(this, support);
     }
 }

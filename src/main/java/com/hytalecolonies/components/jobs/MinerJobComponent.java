@@ -12,17 +12,14 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.HytaleColoniesPlugin;
 
 /** Identifies a colonist as a miner. Holds transient per-session mining state. */
-public class MinerJobComponent implements Component<EntityStore> {
-
+public class MinerJobComponent implements Component<EntityStore>
+{
     // ===== Codec =====
-    public static final BuilderCodec<MinerJobComponent> CODEC = BuilderCodec
-            .builder(MinerJobComponent.class, MinerJobComponent::new)
-            .build();
+    public static final BuilderCodec<MinerJobComponent> CODEC = BuilderCodec.builder(MinerJobComponent.class, MinerJobComponent::new).build();
 
     /**
-     * Transient: ore blocks queued for mining (vein detected adjacent to cleared mine region).
-     * Not persisted -- populated at runtime by MinerWorkingSystem and consumed by
-     * ActionSeekNextOreVeinBlock.
+     * Transient: ore blocks queued for mining (vein detected adjacent to cleared mine region). Not persisted -- populated at runtime by MinerWorkingSystem and
+     * consumed by ActionSeekNextOreVeinBlock.
      */
     public final LinkedList<Vector3i> oreVeinQueue = new LinkedList<>();
 
@@ -30,13 +27,15 @@ public class MinerJobComponent implements Component<EntityStore> {
     public MinerJobComponent() {}
 
     // ===== Component Type =====
-    public static ComponentType<EntityStore, MinerJobComponent> getComponentType() {
+    public static ComponentType<EntityStore, MinerJobComponent> getComponentType()
+    {
         return HytaleColoniesPlugin.getInstance().getMinerJobComponentType();
     }
 
     // ===== Cloneable =====
     @Override
-    public @Nullable Component<EntityStore> clone() {
+    public @Nullable Component<EntityStore> clone()
+    {
         // oreVeinQueue is transient -- clone starts with an empty queue.
         return new MinerJobComponent();
     }

@@ -1,5 +1,8 @@
 package com.hytalecolonies.npc.actions.common;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -8,9 +11,6 @@ import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
 import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import com.hytalecolonies.components.jobs.JobRunCounterComponent;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 
 /** Resets {@link JobRunCounterComponent#count} to zero. */
 public class ActionResetJobCounter extends ActionBase

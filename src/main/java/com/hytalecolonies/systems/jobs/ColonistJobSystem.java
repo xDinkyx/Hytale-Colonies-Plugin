@@ -24,33 +24,32 @@ import com.hytalecolonies.utils.WorkStationUtil;
 /**
  * Periodic consistency-check system for colonist NPCs.
  *
- * <p>All state transitions (Idle, WaitingForWork, Working, TravelingToWorkSite,
- * TravelingToWorkstation, TravelingToHome, DeliveringItems) are
- * now fully driven by the NPC role JSON instruction engine via custom actions and
- * sensors. This system retains only two lightweight safety checks:
+ * <p>
+ * All state transitions (Idle, WaitingForWork, Working, TravelingToWorkSite, TravelingToWorkstation, TravelingToHome, DeliveringItems) are now fully driven by
+ * the NPC role JSON instruction engine via custom actions and sensors. This system retains only two lightweight safety checks:
  *
  * <ol>
- *   <li><b>Role-consistency guard</b>: ensures the NPC is on the correct JSON role
- *       for its assigned job type (catches stale state after server restart or
- *       mid-flight role-switch failure).</li>
- *   <li><b>Null-state reset</b>: resets colonists whose {@code JobState} is
- *       {@code null} (should not happen in normal operation) back to {@code Idle}.</li>
+ * <li><b>Role-consistency guard</b>: ensures the NPC is on the correct JSON role for its assigned job type (catches stale state after server restart or
+ * mid-flight role-switch failure).</li>
+ * <li><b>Null-state reset</b>: resets colonists whose {@code JobState} is {@code null} (should not happen in normal operation) back to {@code Idle}.</li>
  * </ol>
  */
-public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
-
+public class ColonistJobSystem extends DelayedEntitySystem<EntityStore>
+{
     private final Query<EntityStore> query = Query.and(JobComponent.getComponentType());
 
-    public ColonistJobSystem() {
+    public ColonistJobSystem()
+    {
         super(2.0f);
     }
 
     @Override
-    public void tick(float dt, int index,
+    public void tick(float dt,
+                     int index,
                      @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
                      @Nonnull Store<EntityStore> store,
-                     @Nonnull CommandBuffer<EntityStore> commandBuffer) {
-
+                     @Nonnull CommandBuffer<EntityStore> commandBuffer)
+    {
         JobComponent job = archetypeChunk.getComponent(index, JobComponent.getComponentType());
         assert job != null;
 
@@ -58,36 +57,44 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore> {
 
         // Null-state guard: should not happen, but recover gracefully.
         JobState state = job.getCurrentTask();
-        if (state == null) {
+        if (state == null)
+        {
             DebugLog.warning(DebugCategory.JOB_SYSTEM,
-                    "[ColonistJob] [%s] Colonist has null JobState -- resetting to Idle.",
-                    DebugLog.npcId(colonistRef, store));
+                             "[ColonistJob] [%s] Colonist has null JobState -- resetting to Idle.",
+                             DebugLog.npcId(colonistRef, store));
             ColonistStateUtil.setJobState(colonistRef, store, job, JobState.Idle);
             return;
         }
 
         // Role-consistency guard: self-correct if the NPC is on the wrong role.
         NPCEntity npcEntity = store.getComponent(colonistRef, NPCEntity.getComponentType());
-        if (npcEntity == null) return;
+        if (npcEntity == null)
+            return;
 
         Role currentRole = npcEntity.getRole();
-        if (currentRole == null || currentRole.isRoleChangeRequested()) return;
+        if (currentRole == null || currentRole.isRoleChangeRequested())
+            return;
 
         WorkStationComponent workStation = WorkStationUtil.getWorkStation(store, colonistRef);
-        if (workStation == null) return;
+        if (workStation == null)
+            return;
 
         String expectedRole = ColonistRoleMap.roleFor(workStation.getJobType());
         String actualRole = NPCPlugin.get().getName(currentRole.getRoleIndex());
-        if (!expectedRole.equals(actualRole)) {
+        if (!expectedRole.equals(actualRole))
+        {
             DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
-                    "[ColonistJob] [%s] Role mismatch: NPC is '%s' but should be '%s' -- switching.",
-                    DebugLog.npcId(colonistRef, store), actualRole, expectedRole);
+                          "[ColonistJob] [%s] Role mismatch: NPC is '%s' but should be '%s' -- switching.",
+                          DebugLog.npcId(colonistRef, store),
+                          actualRole,
+                          expectedRole);
             ColonistRoleMap.switchRole(colonistRef, store, expectedRole);
         }
     }
 
     @Override
-    public @Nullable Query<EntityStore> getQuery() {
+    public @Nullable Query<EntityStore> getQuery()
+    {
         return query;
     }
 }

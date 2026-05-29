@@ -1,22 +1,22 @@
 package com.hytalecolonies.commands;
 
+import javax.annotation.Nonnull;
+
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.CommandBase;
-
 import com.hytalecolonies.HytaleColoniesPlugin;
-
-import javax.annotation.Nonnull;
 
 /**
  * /colonies info - Show plugin information
  */
-public class InfoSubCommand extends CommandBase {
-
+public class InfoSubCommand extends CommandBase
+{
     private final String pluginName;
     private final String pluginVersion;
 
-    public InfoSubCommand(String pluginName, String pluginVersion) {
+    public InfoSubCommand(String pluginName, String pluginVersion)
+    {
         super("info", "Show plugin information");
         this.setPermissionGroup(null);
         this.pluginName = pluginName;
@@ -24,12 +24,14 @@ public class InfoSubCommand extends CommandBase {
     }
 
     @Override
-    protected boolean canGeneratePermission() {
+    protected boolean canGeneratePermission()
+    {
         return false;
     }
 
     @Override
-    protected void executeSync(@Nonnull CommandContext context) {
+    protected void executeSync(@Nonnull CommandContext context)
+    {
         HytaleColoniesPlugin plugin = HytaleColoniesPlugin.getInstance();
 
         context.sendMessage(Message.raw(""));

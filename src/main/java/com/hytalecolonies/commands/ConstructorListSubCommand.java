@@ -13,18 +13,17 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.ui.ConstructorPrefabPage;
 
-
 /** /hc list -- opens the constructor prefab picker. */
 public class ConstructorListSubCommand extends AbstractPlayerCommand
 {
-
     public ConstructorListSubCommand()
     {
         super("list", "Open the constructor prefab picker");
         this.setPermissionGroup(null);
     }
 
-    @Override protected boolean canGeneratePermission()
+    @Override
+    protected boolean canGeneratePermission()
     {
         return false;
     }

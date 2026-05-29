@@ -12,12 +12,10 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.HytaleColoniesPlugin;
 
 /** Marker component identifying a colonist as a constructor. */
-public class ConstructorJobComponent implements Component<EntityStore> {
-
+public class ConstructorJobComponent implements Component<EntityStore>
+{
     // ===== Codec =====
-    public static final BuilderCodec<ConstructorJobComponent> CODEC = BuilderCodec
-            .builder(ConstructorJobComponent.class, ConstructorJobComponent::new)
-            .build();
+    public static final BuilderCodec<ConstructorJobComponent> CODEC = BuilderCodec.builder(ConstructorJobComponent.class, ConstructorJobComponent::new).build();
 
     // ===== Transient fields (not persisted) =====
     public ArrayDeque<Vector3i> pendingBuildQueue = new ArrayDeque<>();
@@ -29,13 +27,15 @@ public class ConstructorJobComponent implements Component<EntityStore> {
     public ConstructorJobComponent() {}
 
     // ===== Component Type =====
-    public static ComponentType<EntityStore, ConstructorJobComponent> getComponentType() {
+    public static ComponentType<EntityStore, ConstructorJobComponent> getComponentType()
+    {
         return HytaleColoniesPlugin.getInstance().getConstructorJobComponentType();
     }
 
     // ===== Cloneable =====
     @Override
-    public @Nullable Component<EntityStore> clone() {
+    public @Nullable Component<EntityStore> clone()
+    {
         return new ConstructorJobComponent();
     }
 }

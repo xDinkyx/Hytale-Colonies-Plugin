@@ -18,11 +18,10 @@ import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 
 /**
- * Detects ore blocks in the 1-block perimeter surrounding a cleared region and
- * performs BFS flood-fill to collect connected ore veins.
+ * Detects ore blocks in the 1-block perimeter surrounding a cleared region and performs BFS flood-fill to collect connected ore veins.
  *
- * <p>Uses the {@code Ores} block-type list from the server assets to identify
- * ore blocks without hard-coding any block names.
+ * <p>
+ * Uses the {@code Ores} block-type list from the server assets to identify ore blocks without hard-coding any block names.
  */
 public final class MineOreDetector
 {
@@ -30,11 +29,7 @@ public final class MineOreDetector
     private static final int MAX_VEIN_BLOCKS = 48;
 
     /** 6-connected face neighbours for BFS. */
-    private static final int[][] FACE_NEIGHBOURS = {
-        {1, 0, 0}, {-1, 0, 0},
-        {0, 1, 0}, {0, -1, 0},
-        {0, 0, 1}, {0, 0, -1}
-    };
+    private static final int[][] FACE_NEIGHBOURS = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
 
     private static volatile Set<String> cachedOreKeys;
 
@@ -45,25 +40,20 @@ public final class MineOreDetector
     // =========================================================================
 
     /**
-     * Scans the 1-block shell around the axis-aligned bounding box defined by
-     * {@code min} (inclusive) and {@code max} (inclusive) for ore blocks. When
-     * an ore is found it is expanded into its connected vein (BFS, capped at
-     * {@link #MAX_VEIN_BLOCKS}). The result is the full list of ore positions
-     * from the first vein encountered, or an empty list if no ore is found.
+     * Scans the 1-block shell around the axis-aligned bounding box defined by {@code min} (inclusive) and {@code max} (inclusive) for ore blocks. When an ore
+     * is found it is expanded into its connected vein (BFS, capped at {@link #MAX_VEIN_BLOCKS}). The result is the full list of ore positions from the first
+     * vein encountered, or an empty list if no ore is found.
      *
-     * <p>Must be called on the world thread.
+     * <p>
+     * Must be called on the world thread.
      *
      * @param world the world to scan
      * @param min   minimum corner of the cleared region (inclusive)
      * @param max   maximum corner of the cleared region (inclusive)
-     * @return ordered list of ore block positions forming the first detected vein,
-     *         or an empty list if none are found
+     * @return ordered list of ore block positions forming the first detected vein, or an empty list if none are found
      */
     @Nonnull
-    public static List<Vector3i> findFirstVeinAroundBox(
-            @Nonnull World world,
-            @Nonnull Vector3i min,
-            @Nonnull Vector3i max)
+    public static List<Vector3i> findFirstVeinAroundBox(@Nonnull World world, @Nonnull Vector3i min, @Nonnull Vector3i max)
     {
         Set<String> oreKeys = getOreKeys();
         if (oreKeys.isEmpty())
@@ -83,9 +73,7 @@ public final class MineOreDetector
                 for (int z = z1; z <= z2; z++)
                 {
                     // Only check the shell (at least one coordinate is at min-1 or max+1).
-                    boolean onShell = x == x1 || x == x2
-                            || y == y1 || y == y2
-                            || z == z1 || z == z2;
+                    boolean onShell = x == x1 || x == x2 || y == y1 || y == y2 || z == z1 || z == z2;
                     if (!onShell)
                         continue;
 
@@ -95,8 +83,11 @@ public final class MineOreDetector
                         if (!vein.isEmpty())
                         {
                             DebugLog.info(DebugCategory.MINER_JOB,
-                                    "[MineOreDetector] Found ore vein of %d blocks starting at (%d,%d,%d).",
-                                    vein.size(), x, y, z);
+                                          "[MineOreDetector] Found ore vein of %d blocks starting at (%d,%d,%d).",
+                                          vein.size(),
+                                          x,
+                                          y,
+                                          z);
                             return vein;
                         }
                     }
@@ -114,10 +105,7 @@ public final class MineOreDetector
 
     /** BFS flood-fill from {@code seed}, collecting all connected ore blocks up to the cap. */
     @Nonnull
-    private static List<Vector3i> floodFillVein(
-            @Nonnull World world,
-            @Nonnull Vector3i seed,
-            @Nonnull Set<String> oreKeys)
+    private static List<Vector3i> floodFillVein(@Nonnull World world, @Nonnull Vector3i seed, @Nonnull Set<String> oreKeys)
     {
         List<Vector3i> result = new ArrayList<>();
         Set<String> visited = new HashSet<>();
@@ -151,8 +139,7 @@ public final class MineOreDetector
         return result;
     }
 
-    private static boolean isOre(@Nonnull World world, int x, int y, int z,
-                                  @Nonnull Set<String> oreKeys)
+    private static boolean isOre(@Nonnull World world, int x, int y, int z, @Nonnull Set<String> oreKeys)
     {
         int blockId = world.getBlock(x, y, z);
         if (blockId == 0)
@@ -172,11 +159,8 @@ public final class MineOreDetector
                 if (cachedOreKeys == null)
                 {
                     BlockTypeListAsset asset = BlockTypeListAsset.getAssetMap().getAsset(ORE_BLOCK_LIST_KEY);
-                    cachedOreKeys = asset != null
-                            ? Collections.unmodifiableSet(new HashSet<>(asset.getBlockTypeKeys()))
-                            : Collections.emptySet();
-                    DebugLog.fine(DebugCategory.MINER_JOB,
-                            "[MineOreDetector] Loaded %d ore block types.", cachedOreKeys.size());
+                    cachedOreKeys = asset != null ? Collections.unmodifiableSet(new HashSet<>(asset.getBlockTypeKeys())) : Collections.emptySet();
+                    DebugLog.fine(DebugCategory.MINER_JOB, "[MineOreDetector] Loaded %d ore block types.", cachedOreKeys.size());
                 }
             }
         }

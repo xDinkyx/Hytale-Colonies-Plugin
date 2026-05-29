@@ -2,7 +2,8 @@ package com.hytalecolonies.components.jobs;
 
 import com.hypixel.hytale.codec.codecs.EnumCodec;
 
-public enum JobType {
+public enum JobType
+{
     Woodsman,
     Miner,
     Farmer,

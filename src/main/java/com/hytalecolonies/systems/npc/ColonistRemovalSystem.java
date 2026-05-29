@@ -32,12 +32,11 @@ import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.ClaimBlockUtil;
 
 /**
- * Fires when a colonist entity is removed from the world (death, despawn, etc.)
- * and drops all items from its inventory onto the ground at its last known position.
+ * Fires when a colonist entity is removed from the world (death, despawn, etc.) and drops all items from its inventory onto the ground at its last known
+ * position.
  */
 public class ColonistRemovalSystem extends RefSystem<EntityStore>
 {
-
     private final Query<EntityStore> query = Query.and(ColonistComponent.getComponentType());
 
     @Override
@@ -79,9 +78,8 @@ public class ColonistRemovalSystem extends RefSystem<EntityStore>
     }
 
     /**
-     * Releases any block claims held by this colonist:
-     * the current job-target claim (clearing) and all pre-claimed build-queue positions.
-     * Captured positions are snapshotted before the removal, then unclaimed on the world thread.
+     * Releases any block claims held by this colonist: the current job-target claim (clearing) and all pre-claimed build-queue positions. Captured positions
+     * are snapshotted before the removal, then unclaimed on the world thread.
      */
     private void releaseBlockClaims(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store)
     {
@@ -97,12 +95,10 @@ public class ColonistRemovalSystem extends RefSystem<EntityStore>
     }
 
     /**
-     * Collects all items from the colonist's hotbar and storage and drops them
-     * as item entities at the colonist's current position.
+     * Collects all items from the colonist's hotbar and storage and drops them as item entities at the colonist's current position.
      */
     private void dropInventory(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer)
     {
-
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform == null)
         {
@@ -153,7 +149,9 @@ public class ColonistRemovalSystem extends RefSystem<EntityStore>
             out.addAll(dropped);
     }
 
-    @Override @Nullable public Query<EntityStore> getQuery()
+    @Override
+    @Nullable
+    public Query<EntityStore> getQuery()
     {
         return query;
     }

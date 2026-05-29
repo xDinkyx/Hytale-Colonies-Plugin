@@ -22,7 +22,7 @@ import com.hypixel.hytale.server.core.util.Config;
 public final class ConstructionOrderStore
 {
     // Persisted status values.
-    public static final String STATUS_PENDING     = "Pending";
+    public static final String STATUS_PENDING = "Pending";
     public static final String STATUS_IN_PROGRESS = "InProgress";
 
     /** Plain data object. */
@@ -51,9 +51,7 @@ public final class ConstructionOrderStore
         /** Transient -- prefab blocks sorted Y ascending (build order); iterate in reverse for clearing. Not persisted. */
         public transient List<int[]> cachedSortedBlocks;
 
-        public Entry()
-        {
-        }
+        public Entry() {}
 
         public Entry(UUID id, String prefabId, Vector3i buildOrigin)
         {
@@ -67,15 +65,15 @@ public final class ConstructionOrderStore
     {
         public static final BuilderCodec<StoreData> CODEC = BuilderCodec.builder(StoreData.class, StoreData::new)
                                                                     .append(new KeyedCodec<>("Orders", new ArrayCodec<>(Entry.CODEC, Entry[] ::new)),
-                                                                            (o, v) -> o.orders = v != null ? v : new Entry[0], o -> o.orders)
+                                                                            (o, v)
+                                                                                    -> o.orders = v != null ? v : new Entry[0],
+                                                                            o -> o.orders)
                                                                     .add()
                                                                     .build();
 
         public Entry[] orders = new Entry[0];
 
-        public StoreData()
-        {
-        }
+        public StoreData() {}
     }
 
     // Singleton instance.
@@ -91,9 +89,7 @@ public final class ConstructionOrderStore
     private final Map<UUID, Entry> orders = new ConcurrentHashMap<>();
     private Config<StoreData> config;
 
-    private ConstructionOrderStore()
-    {
-    }
+    private ConstructionOrderStore() {}
 
     public static ConstructionOrderStore get()
     {
@@ -144,7 +140,8 @@ public final class ConstructionOrderStore
         return orders.values();
     }
 
-    @Nullable public Entry get(UUID id)
+    @Nullable
+    public Entry get(UUID id)
     {
         return orders.get(id);
     }
@@ -154,7 +151,7 @@ public final class ConstructionOrderStore
     {
         if (config == null)
             return;
-        Entry[] snapshot = orders.values().toArray(Entry[]::new);
+        Entry[] snapshot = orders.values().toArray(Entry[] ::new);
         SAVE_EXEC.submit(() -> {
             config.get().orders = snapshot;
             config.save();

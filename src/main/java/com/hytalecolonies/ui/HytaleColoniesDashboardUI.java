@@ -1,5 +1,7 @@
 package com.hytalecolonies.ui;
 
+import javax.annotation.Nonnull;
+
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -17,75 +19,56 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.NotificationUtil;
 
-import javax.annotation.Nonnull;
-
 /**
  * HytaleColonies Dashboard UI
  *
- * A simple interactive dashboard page showing plugin information
- * with refresh and close buttons.
+ * A simple interactive dashboard page showing plugin information with refresh and close buttons.
  */
-public class HytaleColoniesDashboardUI extends InteractiveCustomUIPage<HytaleColoniesDashboardUI.UIEventData> {
-
+public class HytaleColoniesDashboardUI extends InteractiveCustomUIPage<HytaleColoniesDashboardUI.UIEventData>
+{
     // Path relative to Common/UI/Custom/
     public static final String LAYOUT = "hytalecolonies/Dashboard.ui";
 
     private final PlayerRef playerRef;
     private int refreshCount = 0;
 
-    public HytaleColoniesDashboardUI(@Nonnull PlayerRef playerRef) {
+    public HytaleColoniesDashboardUI(@Nonnull PlayerRef playerRef)
+    {
         super(playerRef, CustomPageLifetime.CanDismiss, UIEventData.CODEC);
         this.playerRef = playerRef;
     }
 
     @Override
-    public void build(
-            @Nonnull Ref<EntityStore> ref,
-            @Nonnull UICommandBuilder cmd,
-            @Nonnull UIEventBuilder evt,
-            @Nonnull Store<EntityStore> store
-    ) {
+    public void build(@Nonnull Ref<EntityStore> ref, @Nonnull UICommandBuilder cmd, @Nonnull UIEventBuilder evt, @Nonnull Store<EntityStore> store)
+    {
         // Load base layout
         cmd.append(LAYOUT);
 
         // Bind refresh button
-        evt.addEventBinding(
-            CustomUIEventBindingType.Activating,
-            "#RefreshButton",
-            new EventData().append("Action", "refresh"),
-            false
-        );
+        evt.addEventBinding(CustomUIEventBindingType.Activating, "#RefreshButton", new EventData().append("Action", "refresh"), false);
 
         // Bind close button
-        evt.addEventBinding(
-            CustomUIEventBindingType.Activating,
-            "#CloseButton",
-            new EventData().append("Action", "close"),
-            false
-        );
+        evt.addEventBinding(CustomUIEventBindingType.Activating, "#CloseButton", new EventData().append("Action", "close"), false);
     }
 
     @Override
-    public void handleDataEvent(
-            @Nonnull Ref<EntityStore> ref,
-            @Nonnull Store<EntityStore> store,
-            @Nonnull UIEventData data
-    ) {
-        if (data.action == null) return;
+    public void handleDataEvent(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull UIEventData data)
+    {
+        if (data.action == null)
+            return;
 
-        switch (data.action) {
+        switch (data.action)
+        {
             case "refresh":
                 refreshCount++;
                 UICommandBuilder cmd = new UICommandBuilder();
                 cmd.set("#StatusText.Text", "Refreshed " + refreshCount + " time(s)!");
                 this.sendUpdate(cmd, false);
 
-                NotificationUtil.sendNotification(
-                    playerRef.getPacketHandler(),
-                    Message.raw("HytaleColonies"),
-                    Message.raw("Dashboard refreshed!"),
-                    NotificationStyle.Success
-                );
+                NotificationUtil.sendNotification(playerRef.getPacketHandler(),
+                                                  Message.raw("HytaleColonies"),
+                                                  Message.raw("Dashboard refreshed!"),
+                                                  NotificationStyle.Success);
                 break;
 
             case "close":
@@ -97,13 +80,12 @@ public class HytaleColoniesDashboardUI extends InteractiveCustomUIPage<HytaleCol
     /**
      * Event data class with codec for handling UI events.
      */
-    public static class UIEventData {
-        public static final BuilderCodec<UIEventData> CODEC = BuilderCodec.builder(
-                UIEventData.class, UIEventData::new
-        )
-        .append(new KeyedCodec<>("Action", Codec.STRING), (e, v) -> e.action = v, e -> e.action)
-        .add()
-        .build();
+    public static class UIEventData
+    {
+        public static final BuilderCodec<UIEventData> CODEC = BuilderCodec.builder(UIEventData.class, UIEventData::new)
+                                                                      .append(new KeyedCodec<>("Action", Codec.STRING), (e, v) -> e.action = v, e -> e.action)
+                                                                      .add()
+                                                                      .build();
 
         private String action;
 

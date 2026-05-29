@@ -1,16 +1,17 @@
 package com.hytalecolonies.npc.actions.miner;
 
+import javax.annotation.Nonnull;
+
 import com.google.gson.JsonElement;
 import com.hypixel.hytale.server.npc.asset.builder.Builder;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderDescriptorState;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
 import com.hypixel.hytale.server.npc.instructions.Action;
-import javax.annotation.Nonnull;
 
 /** Builder for {@code "SeekNextMineSegmentBlock"}. */
-public class BuilderActionSeekNextMineSegmentBlock extends BuilderActionBase {
-
+public class BuilderActionSeekNextMineSegmentBlock extends BuilderActionBase
+{
     @Nonnull
     @Override
     public String getShortDescription()

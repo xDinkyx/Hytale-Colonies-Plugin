@@ -9,14 +9,14 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 /** Utility wrappers for block entity lookups. */
-public final class BlockEntityUtil {
-
-    private BlockEntityUtil() {
-    }
+public final class BlockEntityUtil
+{
+    private BlockEntityUtil() {}
 
     /** Returns the block entity {@link Ref} at the given world position, or {@code null} if none. */
     @Nullable
-    public static Ref<ChunkStore> getBlockEntityAt(World world, Vector3i pos) {
+    public static Ref<ChunkStore> getBlockEntityAt(World world, Vector3i pos)
+    {
         return BlockModule.getBlockEntity(world, pos.x, pos.y, pos.z);
     }
 }

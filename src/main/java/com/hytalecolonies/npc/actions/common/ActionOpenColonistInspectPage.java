@@ -16,29 +16,26 @@ import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import com.hytalecolonies.utils.ColonistInventoryUtil;
 
 /**
- * Opens the colonist's hotbar and storage inventory for the interacting player
- * using the native bench/container page.
- * Must run inside an InteractionInstruction HasInteracted block so that
- * {@link com.hypixel.hytale.server.npc.role.support.StateSupport#getInteractionIterationTarget()}
- * is set.
+ * Opens the colonist's hotbar and storage inventory for the interacting player using the native bench/container page. Must run inside an InteractionInstruction
+ * HasInteracted block so that {@link com.hypixel.hytale.server.npc.role.support.StateSupport#getInteractionIterationTarget()} is set.
  */
-public class ActionOpenColonistInspectPage extends ActionBase {
-
-    public ActionOpenColonistInspectPage(@Nonnull BuilderActionOpenColonistInspectPage builder,
-            @Nonnull BuilderSupport support) {
+public class ActionOpenColonistInspectPage extends ActionBase
+{
+    public ActionOpenColonistInspectPage(@Nonnull BuilderActionOpenColonistInspectPage builder, @Nonnull BuilderSupport support)
+    {
         super(builder);
     }
 
     @Override
-    public boolean canExecute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo,
-            double dt, @Nonnull Store<EntityStore> store) {
-        return super.canExecute(ref, role, sensorInfo, dt, store)
-                && role.getStateSupport().getInteractionIterationTarget() != null;
+    public boolean
+    canExecute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
+    {
+        return super.canExecute(ref, role, sensorInfo, dt, store) && role.getStateSupport().getInteractionIterationTarget() != null;
     }
 
     @Override
-    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo,
-            double dt, @Nonnull Store<EntityStore> store) {
+    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
+    {
         super.execute(ref, role, sensorInfo, dt, store);
 
         Ref<EntityStore> playerRef = role.getStateSupport().getInteractionIterationTarget();

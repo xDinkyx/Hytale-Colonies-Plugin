@@ -1,15 +1,8 @@
 package com.hytalecolonies.systems.jobs;
 
-import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
-import com.hytalecolonies.components.jobs.JobType;
-import com.hytalecolonies.components.jobs.MinerWorkStationComponent;
-import com.hytalecolonies.components.jobs.WorkStationComponent;
-import com.hytalecolonies.components.jobs.WoodsmanWorkStationComponent;
-import com.hytalecolonies.debug.DebugCategory;
-import com.hytalecolonies.debug.DebugLog;
-import com.hytalecolonies.debug.DebugTiming;
-import com.hytalecolonies.systems.world.TreeScannerSystem;
-import com.hytalecolonies.utils.BlockStateInfoUtil;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
@@ -19,118 +12,116 @@ import com.hypixel.hytale.component.system.RefChangeSystem;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
+import com.hytalecolonies.components.jobs.JobType;
+import com.hytalecolonies.components.jobs.MinerWorkStationComponent;
+import com.hytalecolonies.components.jobs.WoodsmanWorkStationComponent;
+import com.hytalecolonies.components.jobs.WorkStationComponent;
+import com.hytalecolonies.debug.DebugCategory;
+import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.debug.DebugTiming;
+import com.hytalecolonies.systems.world.TreeScannerSystem;
+import com.hytalecolonies.utils.BlockStateInfoUtil;
 
 /**
- * Performs initial setup for any workstation the moment its
- * {@link WorkStationComponent} is loaded or created. Dispatches to
- * per-{@link JobType} initialization logic
- * so each job type can seed whatever state it needs.
- * 
+ * Performs initial setup for any workstation the moment its {@link WorkStationComponent} is loaded or created. Dispatches to per-{@link JobType} initialization
+ * logic so each job type can seed whatever state it needs.
+ *
  */
-public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStationComponent> {
-
+public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStationComponent>
+{
     private final TreeScannerSystem treeScannerSystem;
 
-    public WorkstationInitSystem(TreeScannerSystem treeScannerSystem) {
+    public WorkstationInitSystem(TreeScannerSystem treeScannerSystem)
+    {
         this.treeScannerSystem = treeScannerSystem;
     }
 
     @Override
-    public ComponentType<ChunkStore, WorkStationComponent> componentType() {
+    public ComponentType<ChunkStore, WorkStationComponent> componentType()
+    {
         return WorkStationComponent.getComponentType();
     }
 
     @Override
-    public Query<ChunkStore> getQuery() {
+    public Query<ChunkStore> getQuery()
+    {
         return WorkStationComponent.getComponentType();
     }
 
     @Override
-    public void onComponentAdded(
-            @Nonnull Ref<ChunkStore> ref,
-            @Nonnull WorkStationComponent workStation,
-            @Nonnull Store<ChunkStore> store,
-            @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
-        switch (workStation.getJobType()) {
+    public void onComponentAdded(@Nonnull Ref<ChunkStore> ref,
+                                 @Nonnull WorkStationComponent workStation,
+                                 @Nonnull Store<ChunkStore> store,
+                                 @Nonnull CommandBuffer<ChunkStore> commandBuffer)
+    {
+        switch (workStation.getJobType())
+        {
             case Woodsman -> initWoodsman(ref, workStation, store, commandBuffer);
             case Miner -> initMiner(ref, store, commandBuffer);
             case Constructor -> initConstructor(ref, store, commandBuffer);
-            case Farmer -> {
-                /* no-op */ }
+            case Farmer ->
+            {
+            /* no-op */ }
         }
     }
 
     @Override
-    public void onComponentSet(
-            @Nonnull Ref<ChunkStore> ref,
-            @Nullable WorkStationComponent oldComponent,
-            @Nonnull WorkStationComponent newComponent,
-            @Nonnull Store<ChunkStore> store,
-            @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
+    public void onComponentSet(@Nonnull Ref<ChunkStore> ref,
+                               @Nullable WorkStationComponent oldComponent,
+                               @Nonnull WorkStationComponent newComponent,
+                               @Nonnull Store<ChunkStore> store,
+                               @Nonnull CommandBuffer<ChunkStore> commandBuffer)
+    {
         // No action needed on update.
     }
 
     @Override
-    public void onComponentRemoved(
-            @Nonnull Ref<ChunkStore> ref,
-            @Nonnull WorkStationComponent component,
-            @Nonnull Store<ChunkStore> store,
-            @Nonnull CommandBuffer<ChunkStore> commandBuffer) {
+    public void onComponentRemoved(@Nonnull Ref<ChunkStore> ref,
+                                   @Nonnull WorkStationComponent component,
+                                   @Nonnull Store<ChunkStore> store,
+                                   @Nonnull CommandBuffer<ChunkStore> commandBuffer)
+    {
         // No action needed on removal.
     }
 
-    private void initMiner(
-            Ref<ChunkStore> ref,
-            Store<ChunkStore> store,
-            CommandBuffer<ChunkStore> commandBuffer) {
-        if (store.getComponent(ref, MinerWorkStationComponent.getComponentType()) == null) {
-            DebugLog.info(DebugCategory.MINER_JOB,
-                    "[WorkstationInit] Adding MinerWorkStationComponent with defaults.");
-            commandBuffer.putComponent(ref, MinerWorkStationComponent.getComponentType(),
-                    new MinerWorkStationComponent());
+    private void initMiner(Ref<ChunkStore> ref, Store<ChunkStore> store, CommandBuffer<ChunkStore> commandBuffer)
+    {
+        if (store.getComponent(ref, MinerWorkStationComponent.getComponentType()) == null)
+        {
+            DebugLog.info(DebugCategory.MINER_JOB, "[WorkstationInit] Adding MinerWorkStationComponent with defaults.");
+            commandBuffer.putComponent(ref, MinerWorkStationComponent.getComponentType(), new MinerWorkStationComponent());
         }
     }
 
-    private void initConstructor(
-            Ref<ChunkStore> ref,
-            Store<ChunkStore> store,
-            CommandBuffer<ChunkStore> commandBuffer) {
-        if (store.getComponent(ref, ConstructorWorkStationComponent.getComponentType()) == null) {
-            DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
-                    "[WorkstationInit] Adding ConstructorWorkStationComponent with defaults.");
-            commandBuffer.putComponent(ref, ConstructorWorkStationComponent.getComponentType(),
-                    new ConstructorWorkStationComponent());
+    private void initConstructor(Ref<ChunkStore> ref, Store<ChunkStore> store, CommandBuffer<ChunkStore> commandBuffer)
+    {
+        if (store.getComponent(ref, ConstructorWorkStationComponent.getComponentType()) == null)
+        {
+            DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[WorkstationInit] Adding ConstructorWorkStationComponent with defaults.");
+            commandBuffer.putComponent(ref, ConstructorWorkStationComponent.getComponentType(), new ConstructorWorkStationComponent());
         }
     }
 
-    private void initWoodsman(
-            Ref<ChunkStore> ref,
-            WorkStationComponent workStation,
-            Store<ChunkStore> store,
-            CommandBuffer<ChunkStore> commandBuffer) {
-
-        if (store.getComponent(ref, WoodsmanWorkStationComponent.getComponentType()) == null) {
-            DebugLog.info(DebugCategory.TREE_SCANNER,
-                    "[WorkstationInit] Adding WoodsmanWorkStationComponent with defaults.");
-            commandBuffer.putComponent(ref, WoodsmanWorkStationComponent.getComponentType(),
-                    new WoodsmanWorkStationComponent());
+    private void initWoodsman(Ref<ChunkStore> ref, WorkStationComponent workStation, Store<ChunkStore> store, CommandBuffer<ChunkStore> commandBuffer)
+    {
+        if (store.getComponent(ref, WoodsmanWorkStationComponent.getComponentType()) == null)
+        {
+            DebugLog.info(DebugCategory.TREE_SCANNER, "[WorkstationInit] Adding WoodsmanWorkStationComponent with defaults.");
+            commandBuffer.putComponent(ref, WoodsmanWorkStationComponent.getComponentType(), new WoodsmanWorkStationComponent());
         }
 
-        BlockModule.BlockStateInfo blockStateInfo = store.getComponent(
-                ref, BlockModule.BlockStateInfo.getComponentType());
-        if (blockStateInfo == null) {
-            DebugLog.warning(DebugCategory.TREE_SCANNER,
-                    "[WorkstationInit] WorkStationComponent added without BlockStateInfo -- skipping initial scan.");
+        BlockModule.BlockStateInfo blockStateInfo = store.getComponent(ref, BlockModule.BlockStateInfo.getComponentType());
+        if (blockStateInfo == null)
+        {
+            DebugLog.warning(DebugCategory.TREE_SCANNER, "[WorkstationInit] WorkStationComponent added without BlockStateInfo -- skipping initial scan.");
             return;
         }
 
         Vector3i workStationPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
-        DebugLog.info(DebugCategory.TREE_SCANNER,
-                "[WorkstationInit] Initial tree scan triggered for Woodsman workstation at %s.", workStationPos);
-        try (var t = DebugTiming.measure("WorkstationInit.initialTreeScan@" + workStationPos, 1000)) {
+        DebugLog.info(DebugCategory.TREE_SCANNER, "[WorkstationInit] Initial tree scan triggered for Woodsman workstation at %s.", workStationPos);
+        try (var t = DebugTiming.measure("WorkstationInit.initialTreeScan@" + workStationPos, 1000))
+        {
             treeScannerSystem.scanForTreeWoodBlocks(workStationPos, store, commandBuffer);
         }
     }

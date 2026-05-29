@@ -27,7 +27,6 @@ import com.hytalecolonies.debug.DebugLog;
 /** Intercepts paste packets for the constructor tool and creates a {@link ConstructionOrderStore.Entry} for the paste site. */
 public class ConstructorBuildOrderFilter implements PlayerPacketFilter
 {
-
     private static final int BUILD_TOOL_PASTE_PACKET_ID = 407;
 
     /** Prefab path armed by {@link com.hytalecolonies.ui.ConstructorPrefabPage}, keyed by player UUID. */
@@ -49,7 +48,8 @@ public class ConstructorBuildOrderFilter implements PlayerPacketFilter
 
     private static final Message MSG_ORDER_QUEUED = Message.translation("server.items.Tool_Colony_Constructor_PlacePrefab.orderQueued");
 
-    @Override public boolean test(@Nonnull PlayerRef playerRef, @Nonnull Packet packet)
+    @Override
+    public boolean test(@Nonnull PlayerRef playerRef, @Nonnull Packet packet)
     {
         if (packet.getId() != BUILD_TOOL_PASTE_PACKET_ID)
             return false;

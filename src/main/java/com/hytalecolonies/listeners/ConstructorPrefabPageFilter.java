@@ -21,18 +21,17 @@ import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.ui.ConstructorPrefabPage;
 
-
 /**
- * Intercepts "/prefab list" chat commands while the player holds Tool_Colony_Constructor_PlacePrefab
- * and redirects them to {@link ConstructorPrefabPage} instead of the native PrefabPage.
+ * Intercepts "/prefab list" chat commands while the player holds Tool_Colony_Constructor_PlacePrefab and redirects them to {@link ConstructorPrefabPage}
+ * instead of the native PrefabPage.
  */
 public class ConstructorPrefabPageFilter implements PlayerPacketFilter
 {
-
     private static final int CHAT_MESSAGE_PACKET_ID = ChatMessage.PACKET_ID;
     private static final String COLONY_CONSTRUCTOR_ITEM_ID = "Tool_Colony_Constructor_PlacePrefab";
 
-    @Override public boolean test(@Nonnull PlayerRef playerRef, @Nonnull Packet packet)
+    @Override
+    public boolean test(@Nonnull PlayerRef playerRef, @Nonnull Packet packet)
     {
         if (packet.getId() != CHAT_MESSAGE_PACKET_ID)
             return false;

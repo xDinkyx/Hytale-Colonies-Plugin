@@ -14,17 +14,14 @@ import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.systems.world.TreeDetector;
 
-
 /** Utility methods for woodsman colonist job logic. */
 public final class WoodsmanUtil
 {
-
-    private WoodsmanUtil()
-    {
-    }
+    private WoodsmanUtil() {}
 
     /** Flood-fill from {@code brokenPos} at the same Y; returns the next adjacent wood block, or {@code null}. */
-    @Nullable public static Vector3i findNextBaseBlock(@Nonnull Vector3i brokenPos, @Nonnull Set<String> woodKeys, @Nonnull World world)
+    @Nullable
+    public static Vector3i findNextBaseBlock(@Nonnull Vector3i brokenPos, @Nonnull Set<String> woodKeys, @Nonnull World world)
     {
         int baseY = brokenPos.y;
         Set<Long> visited = new HashSet<>();

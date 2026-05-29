@@ -93,7 +93,11 @@ public class ConstructionOrderDispatchSystem extends DelayedEntitySystem<ChunkSt
             {
                 DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
                                  "[ConstructionOrderDispatch] Order %s build site %s is %.1f blocks from workstation %s (max %.0f) -- re-queuing.",
-                                 nextId, entry.buildOrigin, dist, wsPos, MAX_ASSIGN_RADIUS);
+                                 nextId,
+                                 entry.buildOrigin,
+                                 dist,
+                                 wsPos,
+                                 MAX_ASSIGN_RADIUS);
                 ConstructionOrderQueue.get().enqueue(nextId);
                 return;
             }
@@ -109,7 +113,8 @@ public class ConstructionOrderDispatchSystem extends DelayedEntitySystem<ChunkSt
                       ConstructionOrderQueue.get().size());
     }
 
-    @Override public Query<ChunkStore> getQuery()
+    @Override
+    public Query<ChunkStore> getQuery()
     {
         return QUERY;
     }

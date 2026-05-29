@@ -16,55 +16,55 @@ import com.hytalecolonies.debug.DebugLog;
 /**
  * Utility for opening colonist inventory (hotbar + storage).
  */
-public final class ColonistInventoryUtil {
-
-    private ColonistInventoryUtil() {
-    }
+public final class ColonistInventoryUtil
+{
+    private ColonistInventoryUtil() {}
 
     /**
-     * Opens the colonist's combined hotbar + storage as a single Bench container window for the given player. 
-     * Returns {@code false} if the colonist has no inventory containers or the page could not be opened.
+     * Opens the colonist's combined hotbar + storage as a single Bench container window for the given player. Returns {@code false} if the colonist has no
+     * inventory containers or the page could not be opened.
      *
      * @param colonistRef ref to the colonist NPC entity
      * @param playerRef   ref to the player entity
      * @param player      the {@link Player} component of the player
      * @param store       the entity store
      */
-    public static boolean openForPlayer(
-            @Nonnull Ref<EntityStore> colonistRef,
-            @Nonnull Ref<EntityStore> playerRef,
-            @Nonnull Player player,
-            @Nonnull Store<EntityStore> store) {
+    public static boolean
+    openForPlayer(@Nonnull Ref<EntityStore> colonistRef, @Nonnull Ref<EntityStore> playerRef, @Nonnull Player player, @Nonnull Store<EntityStore> store)
+    {
+        InventoryComponent.Hotbar hotbarComp = store.getComponent(colonistRef, InventoryComponent.Hotbar.getComponentType());
+        InventoryComponent.Storage storageComp = store.getComponent(colonistRef, InventoryComponent.Storage.getComponentType());
 
-        InventoryComponent.Hotbar hotbarComp = store.getComponent(colonistRef,
-                InventoryComponent.Hotbar.getComponentType());
-        InventoryComponent.Storage storageComp = store.getComponent(colonistRef,
-                InventoryComponent.Storage.getComponentType());
-
-        if (hotbarComp == null && storageComp == null) {
-            DebugLog.warning(DebugCategory.COLONIST_LIFECYCLE,
-                    "[ColonistInventory] [%s] No inventory containers.", DebugLog.npcId(colonistRef, store));
+        if (hotbarComp == null && storageComp == null)
+        {
+            DebugLog.warning(DebugCategory.COLONIST_LIFECYCLE, "[ColonistInventory] [%s] No inventory containers.", DebugLog.npcId(colonistRef, store));
             return false;
         }
 
         ItemContainer container;
-        if (hotbarComp != null && storageComp != null) {
+        if (hotbarComp != null && storageComp != null)
+        {
             // Combine hotbar (tools) first, then storage. The Bench page renders one
             // container panel — two separate ContainerWindows only show the first.
-            container = InventoryComponent.getCombined(store, colonistRef,
-                    InventoryComponent.Hotbar.getComponentType(),
-                    InventoryComponent.Storage.getComponentType());
-        } else if (hotbarComp != null) {
+            container = InventoryComponent.getCombined(store,
+                                                       colonistRef,
+                                                       InventoryComponent.Hotbar.getComponentType(),
+                                                       InventoryComponent.Storage.getComponentType());
+        }
+        else if (hotbarComp != null)
+        {
             container = hotbarComp.getInventory();
-        } else {
+        }
+        else
+        {
             container = storageComp.getInventory();
         }
 
         DebugLog.info(DebugCategory.COLONIST_LIFECYCLE,
-                "[ColonistInventory] [%s] opening window cap=%d",
-                DebugLog.npcId(colonistRef, store), container.getCapacity());
+                      "[ColonistInventory] [%s] opening window cap=%d",
+                      DebugLog.npcId(colonistRef, store),
+                      container.getCapacity());
 
-        return player.getPageManager().setPageWithWindows(playerRef, store, Page.Bench, true,
-                new ContainerWindow(container));
+        return player.getPageManager().setPageWithWindows(playerRef, store, Page.Bench, true, new ContainerWindow(container));
     }
 }

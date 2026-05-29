@@ -27,17 +27,14 @@ import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.listeners.ConstructorBuildOrderFilter;
 
-
 /**
- * Prefab picker for the colony constructor tool. Mirrors the server-prefab section of
- * the vanilla PrefabPage but also stores the resolved file path in
- * {@link ConstructorBuildOrderFilter#pendingPrefabPath} so the paste filter can create
- * a construction order without relying on item metadata.
+ * Prefab picker for the colony constructor tool. Mirrors the server-prefab section of the vanilla PrefabPage but also stores the resolved file path in
+ * {@link ConstructorBuildOrderFilter#pendingPrefabPath} so the paste filter can create a construction order without relying on item metadata.
  */
 public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEventData>
 {
-
-    @Nonnull private final ServerFileBrowser browser;
+    @Nonnull
+    private final ServerFileBrowser browser;
 
     public ConstructorPrefabPage(@Nonnull PlayerRef playerRef, @Nonnull BuilderToolsPlugin.BuilderState builderState)
     {
@@ -67,7 +64,8 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
         this.browser.buildFileList(commandBuilder, eventBuilder);
     }
 
-    @Override public void handleDataEvent(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull FileBrowserEventData data)
+    @Override
+    public void handleDataEvent(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull FileBrowserEventData data)
     {
         if (data.getSearchQuery() != null || data.isBrowseRequested())
         {
@@ -81,7 +79,8 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
         }
 
         String selectedPath = data.getSearchResult() != null ? data.getSearchResult() : data.getFile();
-        if (selectedPath == null) {
+        if (selectedPath == null)
+        {
             DebugLog.fine(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorPage] Event with no file/search result -- ignoring.");
             return;
         }
@@ -124,8 +123,7 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
         }
         else
         {
-            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB,
-                    "[ConstructorPage] Could not resolve virtual path '%s' to a file.", virtualPath);
+            DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorPage] Could not resolve virtual path '%s' to a file.", virtualPath);
             this.sendUpdate();
         }
     }
@@ -133,7 +131,8 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
     private void handlePrefabSelection(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull Path file)
     {
         Player playerComponent = store.getComponent(ref, Player.getComponentType());
-        if (playerComponent == null) {
+        if (playerComponent == null)
+        {
             DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorPage] Player component null during prefab selection.");
             return;
         }
@@ -145,7 +144,8 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
         }
 
         PlayerRef playerRefComponent = store.getComponent(ref, PlayerRef.getComponentType());
-        if (playerRefComponent == null) {
+        if (playerRefComponent == null)
+        {
             DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorPage] PlayerRef component null during prefab selection.");
             return;
         }
@@ -158,8 +158,9 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
         String absolutePath = file.toAbsolutePath().normalize().toString();
         ConstructorBuildOrderFilter.pendingPrefabPath.put(playerRefComponent.getUuid(), absolutePath);
         DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
-                "[ConstructorPage] Armed filter for '%s' with prefab '%s'.",
-                playerRefComponent.getUsername(), file.getFileName());
+                      "[ConstructorPage] Armed filter for '%s' with prefab '%s'.",
+                      playerRefComponent.getUsername(),
+                      file.getFileName());
 
         BlockSelection prefab = PrefabStore.get().getPrefab(file);
         BuilderToolsPlugin.addToQueue(playerComponent,

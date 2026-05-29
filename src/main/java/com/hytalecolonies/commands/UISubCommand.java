@@ -1,5 +1,7 @@
 package com.hytalecolonies.commands;
 
+import javax.annotation.Nonnull;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -9,27 +11,25 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
 import com.hytalecolonies.ui.HytaleColoniesDashboardUI;
-
-import javax.annotation.Nonnull;
 
 /**
  * /hc ui - Open the plugin dashboard UI
  *
- * Extends AbstractPlayerCommand to ensure proper thread handling
- * when opening custom UI pages.
+ * Extends AbstractPlayerCommand to ensure proper thread handling when opening custom UI pages.
  */
-public class UISubCommand extends AbstractPlayerCommand {
-
-    public UISubCommand() {
+public class UISubCommand extends AbstractPlayerCommand
+{
+    public UISubCommand()
+    {
         super("ui", "Open the plugin dashboard");
         this.addAliases("dashboard", "gui");
         this.setPermissionGroup(null);
     }
 
     @Override
-    protected boolean canGeneratePermission() {
+    protected boolean canGeneratePermission()
+    {
         return false;
     }
 
@@ -37,19 +37,20 @@ public class UISubCommand extends AbstractPlayerCommand {
      * Called on the world thread with proper player context.
      */
     @Override
-    protected void execute(
-            @Nonnull CommandContext context,
-            @Nonnull Store<EntityStore> store,
-            @Nonnull Ref<EntityStore> ref,
-            @Nonnull PlayerRef playerRef,
-            @Nonnull World world
-    ) {
+    protected void execute(@Nonnull CommandContext context,
+                           @Nonnull Store<EntityStore> store,
+                           @Nonnull Ref<EntityStore> ref,
+                           @Nonnull PlayerRef playerRef,
+                           @Nonnull World world)
+    {
         context.sendMessage(Message.raw("Opening HytaleColonies Dashboard..."));
 
-        try {
+        try
+        {
             // Get the player component (safe - we're on world thread)
             Player player = store.getComponent(ref, Player.getComponentType());
-            if (player == null) {
+            if (player == null)
+            {
                 context.sendMessage(Message.raw("Error: Could not get Player component."));
                 return;
             }
@@ -58,7 +59,9 @@ public class UISubCommand extends AbstractPlayerCommand {
             HytaleColoniesDashboardUI dashboardPage = new HytaleColoniesDashboardUI(playerRef);
             player.getPageManager().openCustomPage(ref, store, dashboardPage);
             context.sendMessage(Message.raw("Dashboard opened. Press ESC to close."));
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             context.sendMessage(Message.raw("Error opening dashboard: " + e.getMessage()));
         }
     }
