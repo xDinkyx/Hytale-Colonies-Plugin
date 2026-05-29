@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.hypixel.hytale.component.AddReason;
@@ -22,6 +23,7 @@ import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.FillerBlockUtil;
+import com.hytalecolonies.components.jobs.ConstructorJobComponent;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.debug.DebugCategory;
@@ -49,6 +51,25 @@ import com.hytalecolonies.debug.DebugLog;
 public final class ClaimBlockUtil {
 
     private ClaimBlockUtil() {}
+
+    /**
+     * Snapshots and clears {@link ConstructorJobComponent#pendingBuildQueue}, then
+     * unclaims all captured positions on the world thread. Does nothing if the
+     * colonist has no constructor component or its queue is empty.
+     */
+    public static void releasePendingBuildClaims(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store)
+    {
+        ConstructorJobComponent constructorJob = store.getComponent(ref, ConstructorJobComponent.getComponentType());
+        if (constructorJob == null || constructorJob.pendingBuildQueue.isEmpty())
+            return;
+        List<Vector3i> toUnclaim = new ArrayList<>(constructorJob.pendingBuildQueue);
+        constructorJob.pendingBuildQueue.clear();
+        World world = store.getExternalData().getWorld();
+        world.execute(() -> {
+            for (Vector3i pos : toUnclaim)
+                unclaimBlock(world, pos);
+        });
+    }
 
     // ===== Claim =====
 

@@ -25,7 +25,6 @@ import com.hypixel.hytale.server.core.modules.entity.item.ItemComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
-import com.hytalecolonies.components.jobs.ConstructorJobComponent;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.debug.DebugCategory;
@@ -86,29 +85,15 @@ public class ColonistRemovalSystem extends RefSystem<EntityStore>
      */
     private void releaseBlockClaims(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store)
     {
-        ConstructorJobComponent constructorJob = store.getComponent(ref, ConstructorJobComponent.getComponentType());
-        List<Vector3i> buildQueue = (constructorJob != null && !constructorJob.pendingBuildQueue.isEmpty())
-                ? new ArrayList<>(constructorJob.pendingBuildQueue)
-                : null;
-        if (constructorJob != null)
-            constructorJob.pendingBuildQueue.clear();
+        ClaimBlockUtil.releasePendingBuildClaims(ref, store);
 
         JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
         Vector3i clearingTarget = jobTarget != null ? jobTarget.targetPosition : null;
-
-        if (buildQueue == null && clearingTarget == null)
+        if (clearingTarget == null)
             return;
 
         World world = store.getExternalData().getWorld();
-        world.execute(() -> {
-            if (clearingTarget != null)
-                ClaimBlockUtil.unclaimBlock(world, clearingTarget);
-            if (buildQueue != null)
-            {
-                for (Vector3i pos : buildQueue)
-                    ClaimBlockUtil.unclaimBlock(world, pos);
-            }
-        });
+        world.execute(() -> ClaimBlockUtil.unclaimBlock(world, clearingTarget));
     }
 
     /**
