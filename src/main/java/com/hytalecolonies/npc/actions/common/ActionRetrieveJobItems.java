@@ -30,29 +30,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Retrieves required items from the delivery container into the colonist's
- * inventory.
+ * Retrieves required items from the workstation inventory into the colonist's inventory.
+ *
+ * The items are the combination of the workstation's default requirements and the current task's requirements.
  *
  * <p>
- * The full list is built by merging two sources:
- * <ol>
- * <li>{@link WorkStationComponent#defaultRequiredItems} — tools, each with
- * quantity 1.</li>
- * <li>{@link JobTaskComponent#requiredItems} — task-specific materials with
- * explicit quantities
- * (e.g. blocks to place, ingredients), if the component is present.</li>
- * </ol>
- *
- * <p>
- * Returns {@code true} when every requirement is satisfied in the colonist's
- * storage,
- * {@code false} when items are still missing (caller should stay blocked and
- * retry).
+ * Returns {@code true} when all items are in the colonist's inventory.
+ * </p>
  */
 public class ActionRetrieveJobItems extends ActionBase {
 
-    public ActionRetrieveJobItems(@Nonnull BuilderActionRetrieveJobItems builder,
-            @Nonnull BuilderSupport support) {
+    public ActionRetrieveJobItems(@Nonnull BuilderActionRetrieveJobItems builder, @Nonnull BuilderSupport support) {
         super(builder);
     }
 
@@ -66,12 +54,11 @@ public class ActionRetrieveJobItems extends ActionBase {
 
         WorkStationComponent workStation = WorkStationUtil.getWorkStation(store, ref);
         if (workStation == null) {
-            DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[RetrieveJobItems] [%s] No WorkStationComponent.", npcId);
+            DebugLog.warning(DebugCategory.COLONIST_DELIVERY, "[RetrieveJobItems] [%s] No WorkStationComponent.", npcId);
             return true;
         }
 
-        // Build the merged requirement list.
+        // Build the merged item list.
         List<ItemRequirement> requiredItems = new ArrayList<>();
         for (String pattern : workStation.defaultRequiredItems) {
             requiredItems.add(new ItemRequirement(pattern, 1));
@@ -89,8 +76,7 @@ public class ActionRetrieveJobItems extends ActionBase {
 
         LivingEntity colonist = (LivingEntity) EntityUtils.getEntity(ref, store);
         if (colonist == null) {
-            DebugLog.warning(DebugCategory.COLONIST_DELIVERY,
-                    "[RetrieveJobItems] [%s] Could not resolve colonist entity.", npcId);
+            DebugLog.warning(DebugCategory.COLONIST_DELIVERY, "[RetrieveJobItems] [%s] Could not resolve colonist entity.", npcId);
             return true;
         }
 
@@ -98,15 +84,13 @@ public class ActionRetrieveJobItems extends ActionBase {
 
         // Fast path: inventory already satisfied.
         if (hasItemsInInventory(colonistStorage, requiredItems)) {
-            DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
-                    "[RetrieveJobItems] [%s] All required items already in inventory.", npcId);
+            DebugLog.fine(DebugCategory.COLONIST_DELIVERY, "[RetrieveJobItems] [%s] All required items already in inventory.", npcId);
             return true;
         }
 
         // Get items from workstation container.
         if (workStation.deliveryContainerPosition == null) {
-            DebugLog.fine(DebugCategory.COLONIST_DELIVERY,
-                    "[RetrieveJobItems] [%s] No container linked to workstation -- waiting for items.", npcId);
+            DebugLog.fine(DebugCategory.COLONIST_DELIVERY, "[RetrieveJobItems] [%s] No container linked to workstation -- waiting for items.", npcId);
             return false;
         }
 
@@ -115,16 +99,12 @@ public class ActionRetrieveJobItems extends ActionBase {
                 workStation.deliveryContainerPosition);
 
         if (blockRef == null || !blockRef.isValid()) {
-            DebugLog.severe(DebugCategory.COLONIST_DELIVERY,
-                    "[RetrieveJobItems] [%s] Container block missing at %s -- setting workstation container to null",
-                    npcId,
-                    workStation.deliveryContainerPosition);
+            DebugLog.severe(DebugCategory.COLONIST_DELIVERY, "[RetrieveJobItems] [%s] Container block missing at %s -- setting workstation container to null", npcId, workStation.deliveryContainerPosition);
             workStation.deliveryContainerPosition = null;
             return false;
         }
 
-        ItemContainerBlock containerBlock = blockRef.getStore().getComponent(
-                blockRef, BlockModule.get().getItemContainerBlockComponentType());
+        ItemContainerBlock containerBlock = blockRef.getStore().getComponent(blockRef, BlockModule.get().getItemContainerBlockComponentType());
         if (containerBlock == null) {
             DebugLog.severe(DebugCategory.COLONIST_DELIVERY,
                     "[RetrieveJobItems] [%s] Block at %s is not an item container -- setting workstation container to null.",

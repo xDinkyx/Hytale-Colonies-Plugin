@@ -22,12 +22,10 @@ import com.hytalecolonies.ConstructionOrderStore;
 import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.components.jobs.ConstructorJobComponent;
 import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
-import com.hytalecolonies.components.jobs.ItemRequirement;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobRunCounterComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
-import com.hytalecolonies.components.jobs.JobTaskComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
@@ -148,8 +146,13 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         }
 
         DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Clearing done, build targets exist -- WorkingRetrievingItems.", npcId);
+        UUIDComponent uuidComp = store.getComponent(colonistRef, UUIDComponent.getComponentType());
+        if (uuidComp == null)
+            return;
+        final UUID colonistUuid = uuidComp.getUuid();
+        final int blocksPerRun = wsBase.blocksPerRun;
         EntityStore entityStore = world.getEntityStore();
-        world.execute(() -> startRetrievingBlocks(colonistRef, entityStore));
+        world.execute(() -> startRetrievingBlocks(colonistRef, npcId, order, world, prefab, colonistUuid, blocksPerRun, entityStore));
     }
 
     private static void claimAndStartClearing(
@@ -224,6 +227,12 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
 
     private static void startRetrievingBlocks(
             @Nonnull Ref<EntityStore> colonistRef,
+            @Nonnull String npcId,
+            @Nonnull ConstructionOrderStore.Entry order,
+            @Nonnull World world,
+            @Nonnull BlockSelection prefab,
+            @Nonnull UUID colonistUuid,
+            int blocksPerRun,
             @Nonnull EntityStore entityStore)
     {
         JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
@@ -232,20 +241,13 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
             DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] startRetrievingBlocks guard failed: state=%s.", liveJob != null ? liveJob.getCurrentTask() : "no-job");
             return;
         }
-        DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] startRetrievingBlocks executing state transition.");
-        World world = entityStore.getStore().getExternalData().getWorld();
+
         Vector3i wsPos = liveJob.getWorkStationBlockPosition();
         WorkStationComponent ws = wsPos != null ? WorkStationUtil.getWorkStationAt(world, wsPos) : null;
         if (ws != null) ws.workAvailable = true;
 
-        // Set task items: blocks needed for this build run.
-        // Pattern "Block_*" covers all placeable block items; quantity = blocksPerRun.
-        int blocksPerRun = ws != null ? ws.blocksPerRun : 16;
-        JobTaskComponent taskComponent = new JobTaskComponent();
-        taskComponent.requiredItems = new ItemRequirement[]{ new ItemRequirement("Block_*", blocksPerRun) };
-        entityStore.getStore().addComponent(colonistRef, JobTaskComponent.getComponentType(), taskComponent);
-        DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Task set: Block_*x%d.",
-                DebugLog.npcId(colonistRef, entityStore.getStore()), blocksPerRun);
+        if (!ConstructorUtil.setupBuildRun(colonistRef, entityStore, world, order, prefab, colonistUuid, blocksPerRun, npcId))
+            return; // No claimable build targets -- stay in WaitingForWork, retry next tick.
 
         ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingRetrievingItems);
     }
