@@ -204,6 +204,19 @@ tasks.register('resetServer') {
             }
         }
 
+        // Wipe plugin game-state config (construction orders, mine segments, etc.)
+        // DebugConfig.json is intentionally preserved — it stores dev preferences.
+        def pluginDataDir = file('server/mods/com.hytalecolonies_HytaleColonies')
+        if (pluginDataDir.exists()) {
+            pluginDataDir.eachFile { f ->
+                if (f.name != 'DebugConfig.json' && f.name != 'DebugConfig.json.bak') {
+                    delete(f)
+                    println "  Deleted plugin data: ${f.name}"
+                    deleted++
+                }
+            }
+        }
+
         // Restore player snapshots from dev-config.
         def snapshotsDir = file('dev-config/player-snapshots')
         int restored = 0
