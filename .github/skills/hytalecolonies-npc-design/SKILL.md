@@ -14,7 +14,9 @@ tags: [hytalecolonies, npc, ecs, colonist, job, state-machine, architecture]
 ## Core principle
 
 **ECS is the single source of truth for state and state-transition decisions.**
-**JSON is the single source of truth for movement, animation, and behavior while in a state.**
+**JSON is the single source of truth for movement, animation, and predefined NPC actions while in a state.**
+
+Each colonist has exactly one assigned job type. Multiple simultaneous roles per NPC are not supported — assign a different NPC for each job.
 
 These two concerns must not bleed into each other. ECS never issues a `BodyMotion`.
 JSON never sets a `JobState` or decides when to transition between states.
@@ -45,6 +47,8 @@ These are `boolean` fields, default `false`, cleared by ECS after reading.
 ---
 
 ## ECS state machine
+
+> For descriptions of each sub-state's purpose, see the **State semantics** tables below.
 
 `JobComponent.jobState` (`JobState` enum). Each state belongs to a `JobState.Group` that maps 1-to-1 with the NPC role main-state name. The sub-state set is **open-ended** — new job types add new sub-states by adding enum values and a corresponding sensor block in `Template_Colonist.json`.
 
@@ -98,7 +102,7 @@ state.npcMainState()  // → "Idle", "Working", or "Recharging"
 state.npcSubState     // → "Harvesting", "TravelingToWorkSite", null, etc.
 ```
 
-Do NOT add switch/case on `JobState` values in new code — use `state.group` for phase checks and `state.npcSubState` for NPC role mirroring.
+Do NOT add switch/case on `JobState` values in new code — use `state.group` for phase checks and `state.npcSubState` to reflect the NPC's role sub-state within the current phase.
 
 ### State semantics
 
@@ -221,6 +225,10 @@ com.hytalecolonies/
 ---
 
 ## JSON role authoring rules
+
+> Follow the **Adding a new job type checklist** at the end of this skill when authoring a new role. The rules below are the detailed reference behind that checklist.
+>
+> **If a role fails to parse**, the server logs a `SEVERE`/`WARNING` at startup ("Unknown NPC role" or "State sensor ... exists without accompanying ... setter"). JSON is not validated on build — use the in-game asset editor to iterate and catch errors quickly.
 
 ### Structure
 
