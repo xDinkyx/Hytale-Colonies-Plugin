@@ -1,0 +1,8 @@
+# Reference files - do not format
+/lib/
+/server/
+
+# Build outputs
+/build/
+/bin/
+/.gradle/

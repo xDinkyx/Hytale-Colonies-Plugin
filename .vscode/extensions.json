@@ -1,8 +1,9 @@
 {
-    "recommendations": [
-        "redhat.java",
-        "vscjava.vscode-java-pack",
-        "jbockle.jbockle-format-files",
-        "xaver.clang-format"
-    ]
+  "recommendations": [
+    "redhat.java",
+    "vscjava.vscode-java-pack",
+    "jbockle.jbockle-format-files",
+    "xaver.clang-format",
+    "esbenp.prettier-vscode"
+  ]
 }
