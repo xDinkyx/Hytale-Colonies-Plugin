@@ -1,5 +1,5 @@
 {
-  "$Comment": "TravelingToWorkSite body for the Constructor -- seek and transition to WorkingClearing on arrival.",
+  "$Comment": "TravelingToWorkSite body -- seek to the job target and transition to PerformWork on arrival.",
   "Type": "Component",
   "Class": "Instruction",
   "Interface": "HytaleColonies.Instruction.Colonist.StateBody",
@@ -20,8 +20,7 @@
       {
         "Sensor": { "Type": "JobTarget", "Range": 2.5 },
         "Actions": [
-          { "Type": "LogDebug", "Message": "TravelingToWorkSite: arrived -> WorkingClearing.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
-          { "Type": "SetEcsJobState", "JobState": "WorkingClearing" }
+          { "Type": "SetEcsJobState", "JobState": "PerformWork" }
         ]
       }
     ]

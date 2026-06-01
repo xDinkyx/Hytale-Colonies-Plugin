@@ -1,0 +1,9 @@
+{
+  "$Comment": "WaitingForWork no-op body -- for job types that do not use this sub-state.",
+  "Type": "Component",
+  "Class": "Instruction",
+  "Interface": "HytaleColonies.Instruction.Colonist.WaitingForWork",
+  "Content": {
+    "Sensor": { "Type": "Any" }
+  }
+}

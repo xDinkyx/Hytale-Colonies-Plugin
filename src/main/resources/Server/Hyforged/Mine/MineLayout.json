@@ -44,5 +44,13 @@
       "ExitOffsetZ": 4
     }
   ],
-  "DefaultSequence": ["Entrance", "Shaft", "Shaft", "Shaft", "JunctionT", "Shaft", "Shaft"]
+  "DefaultSequence": [
+    "Entrance",
+    "Shaft",
+    "Shaft",
+    "Shaft",
+    "JunctionT",
+    "Shaft",
+    "Shaft"
+  ]
 }

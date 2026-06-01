@@ -24,25 +24,17 @@
       "Value": "COLONIST_JOB",
       "Description": "Debug log category used in inline state log messages and StateTransitions."
     },
-    "HarvestingComponent": {
-      "Value": "Component_Instruction_Harvesting_NoOp",
-      "Description": "Seek-to-block and break-loop body for the Harvesting sub-state. Override for harvester jobs."
+    "PerformWorkComponent": {
+      "Value": "Component_Instruction_NoOp",
+      "Description": "Unified work-loop body for PerformWork sub-state. Override per job."
     },
     "WaitingForWorkComponent": {
-      "Value": "Component_Instruction_WaitingForWork_Miner",
-      "Description": "Tool-check and target-scan body for WaitingForWork. Override per job."
+      "Value": "Component_Instruction_WaitingForWork_NoOp",
+      "Description": "Target-scan and idle-wander body for WaitingForWork. Override per job."
     },
     "TravelingToWorkSiteComponent": {
-      "Value": "Component_Instruction_TravelingToWorkSite_Harvester",
-      "Description": "Seek and arrival transition for TravelingToWorkSite. Override for jobs with a different arrival state."
-    },
-    "ClearingComponent": {
-      "Value": "Component_Instruction_NoOp",
-      "Description": "Seek-to-block and break-loop body for the Clearing sub-state (constructor). NoOp for other jobs."
-    },
-    "ConstructingComponent": {
-      "Value": "Component_Instruction_NoOp",
-      "Description": "Seek-to-block and place-block body for the Constructing sub-state (constructor). NoOp for other jobs."
+      "Value": "Component_Instruction_TravelingToWorkSite_Default",
+      "Description": "Seek and arrival transition for TravelingToWorkSite. Override per job."
     },
     "ClaimWorkComponent": {
       "Value": "Component_Instruction_ClaimWork_NoOp",
@@ -61,30 +53,75 @@
       "Description": "Behavior for the Default (entry) idle sub-state. Override for jobless wander."
     }
   },
-  "Appearance": { "Compute": "Appearance" },
-  "MaxHealth": { "Compute": "MaxHealth" },
-  "NameTranslationKey": { "Compute": "NameTranslationKey" },
+  "Appearance": {
+    "Compute": "Appearance"
+  },
+  "MaxHealth": {
+    "Compute": "MaxHealth"
+  },
+  "NameTranslationKey": {
+    "Compute": "NameTranslationKey"
+  },
   "HotbarSize": 4,
   "InventorySize": 12,
   "MotionControllerList": [
-    { "Type": "Walk", "MaxWalkSpeed": { "Compute": "MaxSpeed" }, "MaxDropHeight": 1.0 }
+    {
+      "Type": "Walk",
+      "MaxWalkSpeed": {
+        "Compute": "MaxSpeed"
+      },
+      "MaxDropHeight": 1.0
+    }
   ],
   "StateTransitions": [
     {
       "$Comment": "Put tool away when leaving Working main state.",
-      "States": [{ "From": ["Working"], "To": [] }],
+      "States": [
+        {
+          "From": ["Working"],
+          "To": []
+        }
+      ],
       "Actions": [
-        { "Type": "LogDebug", "Message": "StateTransition Working ->.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
-        { "Type": "Inventory", "Operation": "ClearHeldItem", "UseTarget": false },
-        { "Type": "PlayAnimation", "Slot": "Status" }
+        {
+          "Type": "LogDebug",
+          "Message": "StateTransition Working ->.",
+          "Category": {
+            "Compute": "DebugCategory"
+          },
+          "Level": "FINE"
+        },
+        {
+          "Type": "Inventory",
+          "Operation": "ClearHeldItem",
+          "UseTarget": false
+        },
+        {
+          "Type": "PlayAnimation",
+          "Slot": "Status"
+        }
       ]
     },
     {
       "$Comment": "Reset any stuck blocking instruction chain when entering Idle main state.",
-      "States": [{ "From": [], "To": ["Idle"] }],
+      "States": [
+        {
+          "From": [],
+          "To": ["Idle"]
+        }
+      ],
       "Actions": [
-        { "Type": "LogDebug", "Message": "StateTransition -> Idle.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
-        { "Type": "ResetInstructions" }
+        {
+          "Type": "LogDebug",
+          "Message": "StateTransition -> Idle.",
+          "Category": {
+            "Compute": "DebugCategory"
+          },
+          "Level": "FINE"
+        },
+        {
+          "Type": "ResetInstructions"
+        }
       ]
     }
   ],
@@ -92,40 +129,54 @@
     {
       "$Comment": "Working -- gates all working-shift behavior.",
       "Continue": true,
-      "Sensor": { "Type": "State", "State": "Working", "IgnoreMissingSetState": true },
+      "Sensor": {
+        "Type": "State",
+        "State": "Working",
+        "IgnoreMissingSetState": true
+      },
       "Instructions": [
         {
-          "$Comment": "Harvesting #1 -- seek to block and break it (job-specific loop).",
+          "$Comment": "PerformWork -- unified work loop (job-specific body).",
           "Continue": true,
-          "Sensor": { "Type": "State", "State": ".Harvesting", "IgnoreMissingSetState": true },
+          "Sensor": {
+            "Type": "State",
+            "State": ".PerformWork",
+            "IgnoreMissingSetState": true
+          },
           "Instructions": [
             {
-              "Reference": { "Compute": "HarvestingComponent" },
-              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
+              "Reference": {
+                "Compute": "PerformWorkComponent"
+              },
+              "Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"]
             }
           ]
         },
         {
-          "$Comment": "Clearing #1 -- seek to block and break it (constructor loop).",
+          "$Comment": "PerformWork notification -- when block is air, notify ECS. Runs alongside main body via Continue.",
           "Continue": true,
-          "Sensor": { "Type": "State", "State": ".Clearing", "IgnoreMissingSetState": true },
+          "Sensor": {
+            "Type": "State",
+            "State": ".PerformWork",
+            "IgnoreMissingSetState": true
+          },
           "Instructions": [
             {
-              "Reference": { "Compute": "ClearingComponent" },
-              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
-            }
-          ]
-        },
-        {
-          "$Comment": "Clearing #2 -- when block is air, notify ECS. Runs alongside #1 via Continue.",
-          "Continue": true,
-          "Sensor": { "Type": "State", "State": ".Clearing", "IgnoreMissingSetState": true },
-          "Instructions": [
-            {
-              "Sensor": { "Type": "JobTargetBroken" },
+              "Sensor": {
+                "Type": "JobTargetBroken"
+              },
               "Actions": [
-                { "Type": "LogDebug", "Message": "Clearing: block broken -- notifying ECS.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
-                { "Type": "NotifyBlockBroken" }
+                {
+                  "Type": "LogDebug",
+                  "Message": "PerformWork: block broken -- notifying ECS.",
+                  "Category": {
+                    "Compute": "DebugCategory"
+                  },
+                  "Level": "FINE"
+                },
+                {
+                  "Type": "NotifyBlockBroken"
+                }
               ]
             }
           ]
@@ -133,180 +184,354 @@
         {
           "$Comment": "TravelingToWorkSite -- seek to claimed block and transition on arrival.",
           "Continue": true,
-          "Sensor": { "Type": "State", "State": ".TravelingToWorkSite", "IgnoreMissingSetState": true },
+          "Sensor": {
+            "Type": "State",
+            "State": ".TravelingToWorkSite",
+            "IgnoreMissingSetState": true
+          },
           "Instructions": [
             {
-              "Reference": { "Compute": "TravelingToWorkSiteComponent" },
-              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
-            }
-          ]
-        },
-        {
-          "$Comment": "Constructing -- seek to block and place it.",
-          "Continue": true,
-          "Sensor": { "Type": "State", "State": ".Constructing", "IgnoreMissingSetState": true },
-          "Instructions": [
-            {
-              "Reference": { "Compute": "ConstructingComponent" },
-              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
+              "Reference": {
+                "Compute": "TravelingToWorkSiteComponent"
+              },
+              "Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"]
             }
           ]
         },
         {
           "$Comment": "RetrievingItems -- walk to container and retrieve required items.",
           "Continue": true,
-          "Sensor": { "Type": "State", "State": ".RetrievingItems", "IgnoreMissingSetState": true },
+          "Sensor": {
+            "Type": "State",
+            "State": ".RetrievingItems",
+            "IgnoreMissingSetState": true
+          },
           "Instructions": [
             {
-              "Reference": { "Compute": "RetrievingItemsComponent" },
-              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
+              "Reference": {
+                "Compute": "RetrievingItemsComponent"
+              },
+              "Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"]
             }
           ]
         },
         {
           "$Comment": "DeliveringItems -- find container, seek to it, deposit and head home.",
           "Continue": true,
-          "Sensor": { "Type": "State", "State": ".DeliveringItems", "IgnoreMissingSetState": true },
+          "Sensor": {
+            "Type": "State",
+            "State": ".DeliveringItems",
+            "IgnoreMissingSetState": true
+          },
           "Instructions": [
             {
               "Continue": true,
-              "Sensor": { "Type": "Any" },
+              "Sensor": {
+                "Type": "Any"
+              },
               "Actions": [
-                { "Type": "LogDebug", "Message": "DeliveringItems: scanning for delivery container.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
-                { "Type": "FindDeliveryContainer" }
+                {
+                  "Type": "LogDebug",
+                  "Message": "DeliveringItems: scanning for delivery container.",
+                  "Category": {
+                    "Compute": "DebugCategory"
+                  },
+                  "Level": "FINE"
+                },
+                {
+                  "Type": "FindDeliveryContainer"
+                }
               ]
             },
             {
               "Continue": true,
-              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
-              "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
+              "Sensor": {
+                "Type": "ReadPosition",
+                "Slot": "NavTarget",
+                "Range": 200.0,
+                "MinRange": 1.0
+              },
+              "BodyMotion": {
+                "Type": "Seek",
+                "StopDistance": 0.5,
+                "SlowDownDistance": 4,
+                "RelativeSpeed": 1.0
+              }
             },
             {
-              "Sensor": { "Type": "JobTarget", "Range": 3.0 },
+              "Sensor": {
+                "Type": "JobTarget",
+                "Range": 3.0
+              },
               "Actions": [
-                { "Type": "LogDebug", "Message": "DeliveringItems: depositing and heading home.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
-                { "Type": "DepositItems" },
-                { "Type": "SetEcsJobState", "JobState": "TravelingToHome" }
+                {
+                  "Type": "LogDebug",
+                  "Message": "DeliveringItems: depositing and heading home.",
+                  "Category": {
+                    "Compute": "DebugCategory"
+                  },
+                  "Level": "FINE"
+                },
+                {
+                  "Type": "DepositItems"
+                },
+                {
+                  "Type": "SetEcsJobState",
+                  "JobState": "TravelingToHome"
+                }
               ]
             }
           ]
         },
         {
           "$Comment": "WaitingForWork -- job-specific wander and target scan.",
-          "Sensor": { "Type": "State", "State": ".WaitingForWork", "IgnoreMissingSetState": true },
+          "Sensor": {
+            "Type": "State",
+            "State": ".WaitingForWork",
+            "IgnoreMissingSetState": true
+          },
           "Instructions": [
             {
-              "Reference": { "Compute": "WaitingForWorkComponent" },
-              "Interfaces": [ "HytaleColonies.Instruction.Colonist.WaitingForWork" ]
+              "Reference": {
+                "Compute": "WaitingForWorkComponent"
+              },
+              "Interfaces": ["HytaleColonies.Instruction.Colonist.WaitingForWork"]
             }
           ]
         },
         {
           "$Comment": "ClaimWork -- batch-claim all blocks planned for current work run.",
           "Continue": true,
-          "Sensor": { "Type": "State", "State": ".ClaimWork", "IgnoreMissingSetState": true },
+          "Sensor": {
+            "Type": "State",
+            "State": ".ClaimWork",
+            "IgnoreMissingSetState": true
+          },
           "Instructions": [
             {
-              "Reference": { "Compute": "ClaimWorkComponent" },
-              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
+              "Reference": {
+                "Compute": "ClaimWorkComponent"
+              },
+              "Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"]
             }
           ]
         },
         {
           "$Comment": "WaitingForClaimRelease -- wander nearby while a block is claimed by another colonist.",
           "Continue": true,
-          "Sensor": { "Type": "State", "State": ".WaitingForClaimRelease", "IgnoreMissingSetState": true },
+          "Sensor": {
+            "Type": "State",
+            "State": ".WaitingForClaimRelease",
+            "IgnoreMissingSetState": true
+          },
           "Instructions": [
             {
-              "Reference": { "Compute": "WaitingForClaimReleaseComponent" },
-              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
+              "Reference": {
+                "Compute": "WaitingForClaimReleaseComponent"
+              },
+              "Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"]
             }
           ]
         },
-        { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
+        {
+          "Sensor": {
+            "Type": "Any"
+          },
+          "BodyMotion": {
+            "Type": "Nothing"
+          }
+        }
       ]
     },
     {
       "$Comment": "Idle -- gates all off-shift behavior.",
       "Continue": true,
-      "Sensor": { "Type": "State", "State": "Idle", "IgnoreMissingSetState": true },
+      "Sensor": {
+        "Type": "State",
+        "State": "Idle",
+        "IgnoreMissingSetState": true
+      },
       "Instructions": [
         {
           "$Comment": "TravelingToWorkstation -- seek to workstation, arrive -> WaitingForWork.",
           "Continue": true,
-          "Sensor": { "Type": "State", "State": ".TravelingToWorkstation", "IgnoreMissingSetState": true },
+          "Sensor": {
+            "Type": "State",
+            "State": ".TravelingToWorkstation",
+            "IgnoreMissingSetState": true
+          },
           "Instructions": [
             {
               "Continue": true,
-              "Sensor": { "Type": "Any", "Once": true },
-              "Actions": [{ "Type": "NavigateTo", "Target": "Workstation" }]
+              "Sensor": {
+                "Type": "Any",
+                "Once": true
+              },
+              "Actions": [
+                {
+                  "Type": "NavigateTo",
+                  "Target": "Workstation"
+                }
+              ]
             },
             {
               "Continue": true,
-              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
-              "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
+              "Sensor": {
+                "Type": "ReadPosition",
+                "Slot": "NavTarget",
+                "Range": 200.0,
+                "MinRange": 1.0
+              },
+              "BodyMotion": {
+                "Type": "Seek",
+                "StopDistance": 0.5,
+                "SlowDownDistance": 4,
+                "RelativeSpeed": 1.0
+              }
             },
             {
-              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 3.0, "MinRange": 0.0 },
+              "Sensor": {
+                "Type": "ReadPosition",
+                "Slot": "NavTarget",
+                "Range": 3.0,
+                "MinRange": 0.0
+              },
               "Actions": [
-                { "Type": "LogDebug", "Message": "TravelingToWorkstation: arrived -> WaitingForWork.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
-                { "Type": "SetEcsJobState", "JobState": "WaitingForWork" }
+                {
+                  "Type": "LogDebug",
+                  "Message": "TravelingToWorkstation: arrived -> WaitingForWork.",
+                  "Category": {
+                    "Compute": "DebugCategory"
+                  },
+                  "Level": "FINE"
+                },
+                {
+                  "Type": "SetEcsJobState",
+                  "JobState": "WaitingForWork"
+                }
               ]
             }
           ]
         },
         {
-          "$Comment": "TravelingToHome -- return to workstation area after delivery.",
+          "$Comment": "TravelingToHome -- return to workstation area after delivery. ToDo: Replace later with actual home.",
           "Continue": true,
-          "Sensor": { "Type": "State", "State": ".TravelingToHome", "IgnoreMissingSetState": true },
+          "Sensor": {
+            "Type": "State",
+            "State": ".TravelingToHome",
+            "IgnoreMissingSetState": true
+          },
           "Instructions": [
             {
               "Continue": true,
-              "Sensor": { "Type": "Any", "Once": true },
-              "Actions": [{ "Type": "NavigateTo", "Target": "Workstation" }]
+              "Sensor": {
+                "Type": "Any",
+                "Once": true
+              },
+              "Actions": [
+                {
+                  "Type": "NavigateTo",
+                  "Target": "Workstation"
+                }
+              ]
             },
             {
               "Continue": true,
-              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 200.0, "MinRange": 1.0 },
-              "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 4, "RelativeSpeed": 1.0 }
+              "Sensor": {
+                "Type": "ReadPosition",
+                "Slot": "NavTarget",
+                "Range": 200.0,
+                "MinRange": 1.0
+              },
+              "BodyMotion": {
+                "Type": "Seek",
+                "StopDistance": 0.5,
+                "SlowDownDistance": 4,
+                "RelativeSpeed": 1.0
+              }
             },
             {
-              "Sensor": { "Type": "ReadPosition", "Slot": "NavTarget", "Range": 3.0, "MinRange": 0.0 },
+              "Sensor": {
+                "Type": "ReadPosition",
+                "Slot": "NavTarget",
+                "Range": 3.0,
+                "MinRange": 0.0
+              },
               "Actions": [
-                { "Type": "LogDebug", "Message": "TravelingToHome: arrived -> Idle.", "Category": { "Compute": "DebugCategory" }, "Level": "FINE" },
-                { "Type": "SetEcsJobState", "JobState": "Idle" }
+                {
+                  "Type": "LogDebug",
+                  "Message": "TravelingToHome: arrived -> Idle.",
+                  "Category": {
+                    "Compute": "DebugCategory"
+                  },
+                  "Level": "FINE"
+                },
+                {
+                  "Type": "SetEcsJobState",
+                  "JobState": "Idle"
+                }
               ]
             }
           ]
         },
         {
           "$Comment": "Default -- entry state, navigate to workstation and begin travel.",
-          "Sensor": { "Type": "State", "State": ".Default", "IgnoreMissingSetState": true },
+          "Sensor": {
+            "Type": "State",
+            "State": ".Default",
+            "IgnoreMissingSetState": true
+          },
           "Instructions": [
             {
-              "Reference": { "Compute": "DefaultIdleComponent" },
-              "Interfaces": [ "HytaleColonies.Instruction.Colonist.StateBody" ]
+              "Reference": {
+                "Compute": "DefaultIdleComponent"
+              },
+              "Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"]
             }
           ]
         },
-        { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
+        {
+          "Sensor": {
+            "Type": "Any"
+          },
+          "BodyMotion": {
+            "Type": "Nothing"
+          }
+        }
       ]
     },
-    { "Sensor": { "Type": "Any" }, "BodyMotion": { "Type": "Nothing" } }
+    {
+      "Sensor": {
+        "Type": "Any"
+      },
+      "BodyMotion": {
+        "Type": "Nothing"
+      }
+    }
   ],
   "InteractionInstruction": {
     "Instructions": [
       {
         "Continue": true,
-        "Sensor": { "Type": "Any" },
+        "Sensor": {
+          "Type": "Any"
+        },
         "Actions": [
-          { "Type": "SetInteractable", "Interactable": true, "Hint": "server.interactionHints.generic" }
+          {
+            "Type": "SetInteractable",
+            "Interactable": true,
+            "Hint": "server.interactionHints.generic"
+          }
         ]
       },
       {
-        "Sensor": { "Type": "HasInteracted" },
+        "Sensor": {
+          "Type": "HasInteracted"
+        },
         "Actions": [
-          { "Type": "OpenColonistInspectPage" }
+          {
+            "Type": "OpenColonistInspectPage"
+          }
         ]
       }
     ]

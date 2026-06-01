@@ -1,5 +1,5 @@
 {
-  "$Comment": "Clearing loop body for the Constructor -- seeks to the target block and breaks it.",
+  "$Comment": "PerformWork loop body for the Constructor -- seeks to the target block and breaks it. Build-block placement is driven by ECS state flags within the same PerformWork sub-state.",
   "Type": "Component",
   "Class": "Instruction",
   "Interface": "HytaleColonies.Instruction.Colonist.StateBody",
@@ -7,11 +7,11 @@
     "Sensor": { "Type": "Any" },
     "Instructions": [
       {
-        "$Comment": "Dropped items nearby -- seek and pick up before clearing the next block.",
+        "$Comment": "Dropped items nearby -- seek and pick up before working the next block.",
         "Sensor": { "Type": "DroppedItem", "Range": 5.0 },
         "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 1.5, "RelativeSpeed": 0.9 },
         "Actions": [
-          { "Type": "LogDebug", "Message": "Clearing: picking up dropped item.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
+          { "Type": "LogDebug", "Message": "PerformWork: picking up dropped item.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
           { "Type": "PickUpItem", "Range": 1.5, "StorageTarget": "Inventory" }
         ]
       },
@@ -25,7 +25,7 @@
         "ActionsBlocking": true,
         "Actions": [
           { "Type": "PlayAnimation", "Slot": "Status", "Animation": "Interact" },
-          { "Type": "LogDebug", "Message": "Clearing: breaking block.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
+          { "Type": "LogDebug", "Message": "PerformWork: working block.", "Category": "CONSTRUCTOR_JOB", "Level": "FINE" },
           { "Type": "EquipBestTool" },
           { "Type": "HarvestBlock", "DamageScale": 0.1 },
           { "Type": "Timeout", "Delay": [0.5, 0.5] }

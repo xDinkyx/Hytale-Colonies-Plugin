@@ -14,9 +14,7 @@ public enum JobState
     TravelingToHome(Group.Idle, "TravelingToHome"),
 
     // Working group
-    Working(Group.Working, "Harvesting"),
-    WorkingClearing(Group.Working, "Clearing"),
-    WorkingConstructing(Group.Working, "Constructing"),
+    PerformWork(Group.Working, "PerformWork"),
     WorkingRetrievingItems(Group.Working, "RetrievingItems"),
     WaitingForWork(Group.Working, "WaitingForWork"),
     ClaimWork(Group.Working, "ClaimWork"),

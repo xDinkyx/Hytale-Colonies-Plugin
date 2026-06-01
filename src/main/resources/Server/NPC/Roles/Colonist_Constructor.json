@@ -6,9 +6,8 @@
     "NameTranslationKey": "server.npcRoles.Colonist_Constructor.name",
     "DebugCategory": "CONSTRUCTOR_JOB",
     "WaitingForWorkComponent": "Component_Instruction_WaitingForWork_Constructor",
-    "TravelingToWorkSiteComponent": "Component_Instruction_TravelingToWorkSite_Constructor",
-    "ClearingComponent": "Component_Instruction_Clearing_Constructor",
-    "ConstructingComponent": "Component_Instruction_Constructing_Constructor",
+    "TravelingToWorkSiteComponent": "Component_Instruction_TravelingToWorkSite_Default",
+    "PerformWorkComponent": "Component_Instruction_PerformWork_Constructor",
     "RetrievingItemsComponent": "Component_Instruction_RetrievingItems_Constructor"
   }
 }

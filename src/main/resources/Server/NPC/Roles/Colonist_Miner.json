@@ -5,8 +5,8 @@
   "Modify": {
     "NameTranslationKey": "server.npcRoles.Colonist_Miner.name",
     "DebugCategory": "MINER_JOB",
-    "HarvestingComponent": "Component_Instruction_Harvesting_Miner",
+    "PerformWorkComponent": "Component_Instruction_PerformWork_Miner",
     "WaitingForWorkComponent": "Component_Instruction_WaitingForWork_Miner",
-    "TravelingToWorkSiteComponent": "Component_Instruction_TravelingToWorkSite_Harvester"
+    "TravelingToWorkSiteComponent": "Component_Instruction_TravelingToWorkSite_Default"
   }
 }

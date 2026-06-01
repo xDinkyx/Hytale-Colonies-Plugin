@@ -423,7 +423,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore>
             // is gone after a server restart or role switch. TravelingToWorkstation and
             // TravelingToHome do not involve claimed blocks; their handlers re-establish nav
             // naturally, so we preserve those states rather than looping back through Idle.
-            boolean needsReset = state == JobState.Working || state == JobState.TravelingToWorkSite;
+            boolean needsReset = state == JobState.PerformWork || state == JobState.TravelingToWorkSite;
             if (needsReset)
             {
                 DebugLog.info(DebugCategory.JOB_ASSIGNMENT,

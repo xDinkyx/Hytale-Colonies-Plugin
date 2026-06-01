@@ -150,7 +150,7 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
             return;
         }
 
-        DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Clearing done, build targets exist -- WorkingRetrievingItems.", npcId);
+        DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Clearing done, build targets exist -- RetrievingItems.", npcId);
         UUIDComponent uuidComp = store.getComponent(colonistRef, UUIDComponent.getComponentType());
         if (uuidComp == null)
             return;
@@ -193,7 +193,7 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         JobRunCounterComponent liveCounter = entityStore.getStore().getComponent(colonistRef, JobRunCounterComponent.getComponentType());
         if (liveCounter != null)
             liveCounter.count = 0;
-        ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.WorkingClearing);
+        ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.PerformWork);
         DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Dispatched to clearing block at %s.", npcId, claimed);
     }
 

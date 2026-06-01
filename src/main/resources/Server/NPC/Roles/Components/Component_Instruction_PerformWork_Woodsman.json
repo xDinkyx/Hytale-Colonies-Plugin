@@ -1,5 +1,5 @@
 {
-  "$Comment": "Harvesting loop body for the Woodsman -- seeks to the target block and swings the hatchet.",
+  "$Comment": "PerformWork loop body for the Woodsman -- seeks to the target block and swings the hatchet.",
   "Type": "Component",
   "Class": "Instruction",
   "Interface": "HytaleColonies.Instruction.Colonist.StateBody",
@@ -11,7 +11,7 @@
         "Sensor": { "Type": "DroppedItem", "Range": 5.0 },
         "BodyMotion": { "Type": "Seek", "StopDistance": 0.5, "SlowDownDistance": 1.5, "RelativeSpeed": 0.9 },
         "Actions": [
-          { "Type": "LogDebug", "Message": "Harvesting: picking up dropped item.", "Category": "WOODSMAN_JOB", "Level": "FINE" },
+          { "Type": "LogDebug", "Message": "PerformWork: picking up dropped item.", "Category": "WOODSMAN_JOB", "Level": "FINE" },
           { "Type": "PickUpItem", "Range": 1.5, "StorageTarget": "Inventory" }
         ]
       },
@@ -25,7 +25,7 @@
         "ActionsBlocking": true,
         "Actions": [
           { "Type": "PlayAnimation", "Slot": "Status", "Animation": "Interact" },
-          { "Type": "LogDebug", "Message": "Harvesting: breaking block.", "Category": "WOODSMAN_JOB", "Level": "FINE" },
+          { "Type": "LogDebug", "Message": "PerformWork: breaking block.", "Category": "WOODSMAN_JOB", "Level": "FINE" },
           { "Type": "EquipBestTool" },
           { "Type": "HarvestBlock", "DamageScale": 0.1 },
           { "Type": "Timeout", "Delay": [0.5, 0.5] }
