@@ -453,7 +453,6 @@ context.sendMessage(Message.raw("Message"));
 - When getting argument values, always pass `commandContext`: `myArg.get(commandContext)`
 - `addUsageVariant()` variants must NOT pass a command name to `super()` - only pass the description
 - `canGeneratePermission()` must return `false` on BOTH parent and child for fully public subcommands
-- `setPermissionGroup(null)` alone is NOT sufficient if auto-generated permissions are still active
 
 ---
 

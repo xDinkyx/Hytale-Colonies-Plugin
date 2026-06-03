@@ -121,7 +121,7 @@ Restores the player's health to its maximum value.
 public class HealCommand extends CommandBase {
     public HealCommand() {
         super("heal", "Restores your health to maximum.");
-        this.setPermissionGroup(GameMode.Adventure);
+        this.setPermissionGroups();
     }
 
     @Override
@@ -159,7 +159,7 @@ public class DamageSelfCommand extends CommandBase {
 
     public DamageSelfCommand() {
         super("damageself", "Damages yourself by a specific amount.");
-        this.setPermissionGroup(GameMode.Adventure);
+        this.setPermissionGroups();
         this.amountArg = this.withRequiredArg("amount", "Amount of damage", ArgTypes.FLOAT);
     }
 

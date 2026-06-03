@@ -5,6 +5,8 @@ description: Manages permission nodes and groups in Hytale plugins using Permiss
 
 # Hytale Permission Management
 
+> **Update 5 (v0.5):** Permissions system overhauled — no longer tied to gamemode. Groups are now named strings (e.g., `"Admin"`, `"VIP"`). `AbstractCommand#setPermissionGroup(GameMode)` is removed; use `setPermissionGroups(String...)` instead. For unrestricted commands use `setPermissionGroups()` (empty args). Permissions now support inheritance, namespacing, thread safety, and autocomplete.
+
 Use this skill when managing permission nodes and groups in Hytale plugins. Permissions control what actions players can perform on the server, from basic commands to advanced administrative functions.
 
 ---

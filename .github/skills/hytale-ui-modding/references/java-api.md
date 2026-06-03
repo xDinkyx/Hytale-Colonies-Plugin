@@ -28,7 +28,7 @@ Full package prefix: `com.hypixel.hytale.server.core.entity.entities`
 
 `CustomUIHud` is used for persistent overlay elements (HUDs) that remain visible while the player plays.
 
-Hytale supports **one** `CustomUIHud` per player at a time via `HudManager`. To show multiple HUD elements simultaneously, include them all in a single `CustomUIHud.build()`.
+Hytale supports **multiple** `CustomUIHud` layers per player via the keyed `HudManager` API (introduced in Update 5). Each HUD is identified by a unique string key and drawn in z-order.
 
 ### Implementation
 
@@ -40,13 +40,21 @@ import javax.annotation.Nonnull;
 
 public class MyHud extends CustomUIHud {
 
+    public static final String KEY = "my_plugin:my_hud";
+
     public MyHud(@Nonnull PlayerRef playerRef) {
-        super(playerRef);
+        super(KEY, playerRef);
     }
 
     @Override
     protected void build(@Nonnull UICommandBuilder commandBuilder) {
         commandBuilder.append("Hud/MyHud.ui");
+    }
+
+    /** Called when this HUD layer is removed. Override to clean up state. */
+    @Override
+    protected void onRemove() {
+        // optional cleanup
     }
 }
 ```
@@ -58,13 +66,16 @@ public class MyHud extends CustomUIHud {
 Player playerComponent = store.getComponent(ref, Player.getComponentType());
 HudManager hudManager = playerComponent.getHudManager();
 
-// Show a custom HUD (replaces any existing custom HUD)
-hudManager.setCustomHud(playerRef, new MyHud(playerRef));
+// Add a custom HUD layer (keyed; multiple HUDs can coexist)
+hudManager.addCustomHud(playerRef, new MyHud(playerRef));
 
-// Clear the custom HUD
-hudManager.setCustomHud(playerRef, null);
+// Remove a custom HUD layer by key
+hudManager.removeCustomHud(playerRef, MyHud.KEY);
 
-// Reset all HUD state to defaults (clears custom HUD + restores default built-in components)
+// Get a HUD layer by key
+MyHud existing = (MyHud) hudManager.getCustomHud(MyHud.KEY);
+
+// Reset all HUD state to defaults (removes all custom HUDs + restores built-in components)
 hudManager.resetHud(playerRef);
 ```
 
@@ -96,20 +107,20 @@ hud.update(false, commands); // false = do not clear before applying
 Player playerComponent = store.getComponent(ref, Player.getComponentType());
 HudManager hudManager = playerComponent.getHudManager();
 
-// Set or replace the custom HUD (one per player)
-hudManager.setCustomHud(playerRef, new MyHud(playerRef));
+// Add a custom HUD layer by key
+hudManager.addCustomHud(playerRef, new MyHud(playerRef));
 
-// Clear the custom HUD
-hudManager.setCustomHud(playerRef, null);
+// Remove a custom HUD layer by key
+hudManager.removeCustomHud(playerRef, MyHud.KEY);
 
-// Reset all HUD state to defaults (clears custom HUD + restores default built-in components)
+// Get a specific HUD layer by key
+CustomUIHud currentHud = hudManager.getCustomHud(MyHud.KEY);
+
+// Reset all HUD state to defaults (removes all custom HUDs + restores built-in components)
 hudManager.resetHud(playerRef);
 
 // Full UI state reset (sends ResetUserInterfaceState packet)
 hudManager.resetUserInterface(playerRef);
-
-// Get the current custom HUD (returns null if none)
-CustomUIHud currentHud = hudManager.getCustomHud();
 ```
 
 ### Controlling built-in HUD components
@@ -469,7 +480,7 @@ world.execute(() -> {
 World world = store.getExternalData().getWorld();
 world.execute(() -> {
     Player playerComponent = store.getComponent(ref, Player.getComponentType());
-    playerComponent.getHudManager().setCustomHud(playerRef, new MyHud(playerRef));
+    playerComponent.getHudManager().addCustomHud(playerRef, new MyHud(playerRef));
 });
 ```
 

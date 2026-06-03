@@ -40,7 +40,7 @@ Important: use native UI only. Do not use HyUI.
 
 - .ui base path: Common/UI/Custom/. Relative paths inside .ui are resolved from the file location.
 - Use %translation.key in .ui and add the key to the language files under src/main/resources/Server/Languages.
-- Hytale supports one `CustomUIHud` per player at a time (via `HudManager`). To show multiple HUD elements, combine them in one `CustomUIHud.build()`.
+- Hytale supports **multiple** `CustomUIHud` layers per player via the keyed `HudManager` API (Update 5+). Each layer has a unique string key. Use `addCustomHud(playerRef, hud)` / `removeCustomHud(playerRef, key)` / `getCustomHud(key)`. The old `setCustomHud`/`getCustomHud()` (no-arg) API is removed.
 
 ## Official documentation
 
