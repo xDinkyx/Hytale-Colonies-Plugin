@@ -5,8 +5,6 @@
   "Interface": "HytaleColonies.Instruction.Colonist.StateBody",
   "Content": {
     "Sensor": { "Type": "Any" },
-    "Actions": [
-      { "Type": "SetEcsJobState", "JobState": "WorkingRetrievingItems" }
-    ]
+    "Actions": [{ "Type": "SetEcsJobState", "JobState": "WorkingRetrievingItems" }]
   }
 }

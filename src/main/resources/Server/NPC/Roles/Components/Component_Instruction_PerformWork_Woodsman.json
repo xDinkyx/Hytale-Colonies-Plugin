@@ -36,7 +36,7 @@
         "Instructions": [
           {
             "Sensor": { "Type": "Any" },
-            "Actions": [ { "Type": "AdvanceTreeHarvest" } ]
+            "Actions": [{ "Type": "AdvanceTreeHarvest" }]
           }
         ]
       }

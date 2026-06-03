@@ -9,9 +9,7 @@
       {
         "Continue": true,
         "Sensor": { "Type": "Any" },
-        "Actions": [
-          { "Type": "FindDeliveryContainer" }
-        ]
+        "Actions": [{ "Type": "FindDeliveryContainer" }]
       },
       {
         "Continue": true,
@@ -22,9 +20,7 @@
         "$Comment": "At container: try to take needed items. Returns false (stays blocked) when not all items are there; wanders nearby while waiting for restock.",
         "Sensor": { "Type": "JobTarget", "Range": 3.0 },
         "ActionsBlocking": true,
-        "Actions": [
-          { "Type": "RetrieveJobItems" }
-        ],
+        "Actions": [{ "Type": "RetrieveJobItems" }],
         "BodyMotion": {
           "Type": "Sequence",
           "Looped": true,
@@ -37,11 +33,8 @@
       {
         "$Comment": "RetrieveJobItems returned true -- all items in inventory, proceed to work.",
         "Sensor": { "Type": "Any" },
-        "Actions": [
-          { "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }
-        ]
+        "Actions": [{ "Type": "SetEcsJobState", "JobState": "TravelingToWorkSite" }]
       }
     ]
   }
 }
-

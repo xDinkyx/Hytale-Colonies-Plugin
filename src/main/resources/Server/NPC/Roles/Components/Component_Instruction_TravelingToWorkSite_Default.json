@@ -10,7 +10,10 @@
         "$Comment": "Clear work animation and set nav target on state entry.",
         "Continue": true,
         "Sensor": { "Type": "Any", "Once": true },
-        "Actions": [ { "Type": "PlayAnimation", "Slot": "Status" }, { "Type": "NavigateTo", "Target": "JobTarget" } ]
+        "Actions": [
+          { "Type": "PlayAnimation", "Slot": "Status" },
+          { "Type": "NavigateTo", "Target": "JobTarget" }
+        ]
       },
       {
         "Continue": true,
@@ -19,9 +22,7 @@
       },
       {
         "Sensor": { "Type": "JobTarget", "Range": 2.5 },
-        "Actions": [
-          { "Type": "SetEcsJobState", "JobState": "PerformWork" }
-        ]
+        "Actions": [{ "Type": "SetEcsJobState", "JobState": "PerformWork" }]
       }
     ]
   }

@@ -37,15 +37,15 @@
           {
             "Continue": true,
             "Sensor": { "Type": "Any" },
-            "Actions": [ { "Type": "ReleaseJobTarget" }, { "Type": "IncrementJobCounter" } ]
+            "Actions": [{ "Type": "ReleaseJobTarget" }, { "Type": "IncrementJobCounter" }]
           },
           {
             "Sensor": { "Type": "RunQuotaReached" },
-            "Actions": [ { "Type": "ResetJobCounter" }, { "Type": "SetEcsJobState", "JobState": "DeliveringItems" } ]
+            "Actions": [{ "Type": "ResetJobCounter" }, { "Type": "SetEcsJobState", "JobState": "DeliveringItems" }]
           },
           {
             "Sensor": { "Type": "Any" },
-            "Actions": [ { "Type": "ScanForOreVein" }, { "Type": "SetEcsJobState", "JobState": "WaitingForWork" } ]
+            "Actions": [{ "Type": "ScanForOreVein" }, { "Type": "SetEcsJobState", "JobState": "WaitingForWork" }]
           }
         ]
       }

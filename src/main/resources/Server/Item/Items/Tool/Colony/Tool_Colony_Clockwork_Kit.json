@@ -3,9 +3,7 @@
     "Name": "server.items.Tool_Colony_Clockwork_Kit.name",
     "Description": "server.items.Tool_Colony_Clockwork_Kit.description"
   },
-  "Categories": [
-    "Items.Tools"
-  ],
+  "Categories": ["Items.Tools"],
   "Quality": "Rare",
   "ItemLevel": 40,
   "Model": "Items/Tools/Repair_Kit/Repair_Kit_Iron.blockymodel",
@@ -14,12 +12,8 @@
   "DroppedItemAnimation": "Items/Animations/Dropped/Dropped_Diagonal_Left.blockyanim",
   "MaxStack": 1,
   "Tags": {
-    "Type": [
-      "Tool"
-    ],
-    "Family": [
-      "Colony"
-    ]
+    "Type": ["Tool"],
+    "Family": ["Colony"]
   },
   "Interactions": {
     "Primary": {

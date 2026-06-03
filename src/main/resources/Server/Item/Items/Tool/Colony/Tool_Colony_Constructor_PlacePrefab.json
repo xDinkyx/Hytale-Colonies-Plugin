@@ -4,23 +4,15 @@
     "Description": "server.items.Tool_Colony_Constructor_PlacePrefab.description"
   },
   "Icon": "Icons/Items/EditorTools/Prefab.png",
-  "Categories": [
-    "Tool.BuilderTool"
-  ],
+  "Categories": ["Tool.BuilderTool"],
   "Model": "Items/Tools/Brush/Brush.blockymodel",
   "Texture": "Items/Tools/Brush/Brush_Texture.png",
   "MaxStack": 1,
   "PlayerAnimationsId": "Item",
-  "HudUI": [
-    { "Path": "Hud/ToolsLegends/PasteToolLegend.ui", "Type": "Legend" }
-  ],
+  "HudUI": [{ "Path": "Hud/ToolsLegends/PasteToolLegend.ui", "Type": "Legend" }],
   "Tags": {
-    "Type": [
-      "Tool"
-    ],
-    "Family": [
-      "Colony"
-    ]
+    "Type": ["Tool"],
+    "Family": ["Colony"]
   },
   "BuilderTool": {
     "Id": "Paste",
@@ -30,12 +22,7 @@
         "Type": "Option",
         "Id": "Origin",
         "Default": "Anchor",
-        "Options": [
-          "Anchor",
-          "Bottom",
-          "Center",
-          "Top"
-        ]
+        "Options": ["Anchor", "Bottom", "Center", "Top"]
       }
     ]
   },

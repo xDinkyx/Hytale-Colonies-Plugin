@@ -13,7 +13,11 @@
           "Type": "Sequence",
           "Looped": true,
           "Motions": [
-            { "Type": "Timer", "Time": [4, 6], "Motion": { "Type": "WanderInCircle", "Radius": 3, "MaxHeadingChange": 45, "RelativeSpeed": 0.35 } },
+            {
+              "Type": "Timer",
+              "Time": [4, 6],
+              "Motion": { "Type": "WanderInCircle", "Radius": 3, "MaxHeadingChange": 45, "RelativeSpeed": 0.35 }
+            },
             { "Type": "Timer", "Time": [1, 2], "Motion": { "Type": "Nothing" } }
           ]
         }

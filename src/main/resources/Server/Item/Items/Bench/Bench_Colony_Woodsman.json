@@ -3,9 +3,7 @@
     "Name": "server.items.Bench_Colony_Woodsman.name"
   },
   "Icon": "Icons/ItemsGenerated/Bench_Lumbermill.png",
-  "Categories": [
-    "Furniture.Furniture"
-  ],
+  "Categories": ["Furniture.Furniture"],
   "Recipe": {
     "Input": [
       {
@@ -29,9 +27,7 @@
       {
         "Type": "Crafting",
         "Id": "Furniture_Bench",
-        "Categories": [
-          "Furniture_Misc"
-        ]
+        "Categories": ["Furniture_Misc"]
       }
     ]
   },
@@ -82,20 +78,11 @@
   "PlayerAnimationsId": "Block",
   "IconProperties": {
     "Scale": 0.41,
-    "Translation": [
-      11.4,
-      -7.2
-    ],
-    "Rotation": [
-      22.5,
-      45,
-      22.5
-    ]
+    "Translation": [11.4, -7.2],
+    "Rotation": [22.5, 45, 22.5]
   },
   "Tags": {
-    "Type": [
-      "Furniture"
-    ]
+    "Type": ["Furniture"]
   },
   "MaxStack": 1,
   "ItemSoundSetId": "ISS_Blocks_Wood"

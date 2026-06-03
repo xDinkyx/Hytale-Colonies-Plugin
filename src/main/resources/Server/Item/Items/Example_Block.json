@@ -4,9 +4,7 @@
   },
   "ItemLevel": 600,
   "Icon": "Icons/ItemsGenerated/Example_Block.png",
-  "Categories": [
-    "Blocks.Soils"
-  ],
+  "Categories": ["Blocks.Soils"],
   "PlayerAnimationsId": "Block",
   "Set": "Soil",
   "BlockType": {
@@ -29,28 +27,15 @@
     "ParticleColor": "#3d3e3e",
     "BlockSoundSetId": "Gravel",
     "TransitionTexture": "BlockTextures/Transition_Ashes.png",
-    "TransitionToGroups": [
-      "Stone",
-      "Lava",
-      "Dirt"
-    ]
+    "TransitionToGroups": ["Stone", "Lava", "Dirt"]
   },
   "Tags": {
-    "Type": [
-      "Soil"
-    ]
+    "Type": ["Soil"]
   },
   "ItemSoundSetId": "ISS_Blocks_Soft",
   "IconProperties": {
     "Scale": 0.58823,
-    "Rotation": [
-      22.5,
-      45,
-      22.5
-    ],
-    "Translation": [
-      0,
-      -13.5
-    ]
+    "Rotation": [22.5, 45, 22.5],
+    "Translation": [0, -13.5]
   }
 }
