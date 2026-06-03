@@ -5,9 +5,10 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
@@ -75,8 +76,8 @@ public class ActionScanForOreVein extends ActionBase
             return true;
         }
 
-        World world = store.getExternalData().getWorld();
-        List<Vector3i> vein = MineOreDetector.findFirstVeinAroundBox(world, bounds[0], bounds[1]);
+        World          world = store.getExternalData().getWorld();
+        List<Vector3i> vein  = MineOreDetector.findFirstVeinAroundBox(world, bounds[0], bounds[1]);
         if (!vein.isEmpty())
         {
             minerJob.oreVeinQueue.addAll(vein);
@@ -110,9 +111,9 @@ public class ActionScanForOreVein extends ActionBase
         {
             ConstructionOrderStore.Entry adapter = new ConstructionOrderStore.Entry(segment.id, segment.prefabId, segment.origin);
             ConstructorUtil.loadPrefab(adapter);
-            segment.cachedSelection = adapter.cachedSelection;
+            segment.cachedSelection    = adapter.cachedSelection;
             segment.cachedSortedBlocks = adapter.cachedSortedBlocks;
-            blocks = segment.cachedSortedBlocks;
+            blocks                     = segment.cachedSortedBlocks;
         }
 
         if (blocks == null || blocks.isEmpty())

@@ -43,7 +43,7 @@ public class JobRunCounterComponent implements Component<EntityStore>
     public @Nullable Component<EntityStore> clone()
     {
         JobRunCounterComponent copy = new JobRunCounterComponent();
-        copy.count = this.count;
+        copy.count                  = this.count;
         return copy;
     }
 }

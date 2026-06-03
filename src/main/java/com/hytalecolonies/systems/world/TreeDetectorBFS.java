@@ -8,7 +8,8 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.server.core.asset.type.buildertool.config.BlockTypeListAsset;
 import com.hypixel.hytale.server.core.universe.world.World;
 
@@ -33,10 +34,10 @@ public class TreeDetectorBFS implements ITreeDetector
      * generous cap is needed. Player-built structures are distinguished by the leaf check (MIN_LEAF_BLOCKS) rather than by wood count alone.
      */
     private static final int MAX_WOOD_VISITED = 300;
-    private static final int MIN_WOOD_BLOCKS = 4;
-    private static final int MIN_LEAF_BLOCKS = 8;
+    private static final int MIN_WOOD_BLOCKS  = 4;
+    private static final int MIN_LEAF_BLOCKS  = 8;
 
-    private static final String TREE_WOOD_LIST_ID = "TreeWood";
+    private static final String TREE_WOOD_LIST_ID   = "TreeWood";
     private static final String TREE_LEAVES_LIST_ID = "TreeLeaves";
 
     // 6 face-connected directions (Â±X, Â±Y, Â±Z)
@@ -61,16 +62,16 @@ public class TreeDetectorBFS implements ITreeDetector
         Set<String> woodKeys = getTreeWoodKeys();
         Set<String> leafKeys = getTreeLeafKeys();
 
-        Set<Long> visitedWood = new HashSet<>();
-        Set<Long> visitedLeaf = new HashSet<>();
-        Deque<Vector3i> queue = new ArrayDeque<>();
+        Set<Long>       visitedWood = new HashSet<>();
+        Set<Long>       visitedLeaf = new HashSet<>();
+        Deque<Vector3i> queue       = new ArrayDeque<>();
 
         visitedWood.add(pack(start));
         queue.add(start);
 
         // lowestBase -- minimum Y across all wood blocks (for consumedBlocks bookkeeping).
         // lowestTrunkBase -- minimum Y restricted to trunk/roots blocks (never a branch).
-        Vector3i lowestBase = start;
+        Vector3i lowestBase      = start;
         Vector3i lowestTrunkBase = null;
 
         String startKey = TreeDetector.getBlockKey(world, start.x, start.y, start.z);
@@ -92,7 +93,7 @@ public class TreeDetectorBFS implements ITreeDetector
                 lowestBase = current;
 
             // Look up the current block's key so we know whether we are in a branch.
-            String currentKey = TreeDetector.getBlockKey(world, current.x, current.y, current.z);
+            String  currentKey      = TreeDetector.getBlockKey(world, current.x, current.y, current.z);
             boolean currentIsBranch = currentKey != null && isBranchBlock(currentKey);
 
             if (!currentIsBranch && (lowestTrunkBase == null || isLower(current, lowestTrunkBase)))
@@ -234,7 +235,7 @@ public class TreeDetectorBFS implements ITreeDetector
         if (treeWoodKeys == null)
         {
             BlockTypeListAsset asset = BlockTypeListAsset.getAssetMap().getAsset(TREE_WOOD_LIST_ID);
-            treeWoodKeys = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
+            treeWoodKeys             = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
         }
         return treeWoodKeys;
     }
@@ -244,7 +245,7 @@ public class TreeDetectorBFS implements ITreeDetector
         if (treeLeafKeys == null)
         {
             BlockTypeListAsset asset = BlockTypeListAsset.getAssetMap().getAsset(TREE_LEAVES_LIST_ID);
-            treeLeafKeys = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
+            treeLeafKeys             = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
         }
         return treeLeafKeys;
     }

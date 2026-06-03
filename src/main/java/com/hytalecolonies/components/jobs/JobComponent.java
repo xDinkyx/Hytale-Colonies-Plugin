@@ -3,11 +3,13 @@ package com.hytalecolonies.components.jobs;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
-import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.math.vector.Vector3iUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.utils.ColonistStateUtil;
@@ -20,7 +22,7 @@ public class JobComponent implements Component<EntityStore>
     // ===== Codec =====
     public static final BuilderCodec<JobComponent> CODEC =
             BuilderCodec.builder(JobComponent.class, JobComponent::new)
-                    .append(new KeyedCodec<>("WorkStationBlockPosition", Vector3i.CODEC),
+                    .append(new KeyedCodec<>("WorkStationBlockPosition", Vector3iUtil.CODEC),
                             (o, v)
                                     -> o.workStationBlockPosition = v,
                             o -> o.workStationBlockPosition)
@@ -31,7 +33,7 @@ public class JobComponent implements Component<EntityStore>
 
     // ===== Fields =====
     protected @Nullable Vector3i workStationBlockPosition = null;
-    protected @Nullable JobState jobState = null; // ToDo: Probably move state logic to separate component.
+    protected @Nullable JobState jobState                 = null; // ToDo: Probably move state logic to separate component.
 
     // ===== Constructors =====
     public JobComponent() {}
@@ -39,7 +41,7 @@ public class JobComponent implements Component<EntityStore>
     public JobComponent(@Nullable Vector3i workStationBlockPos)
     {
         this.workStationBlockPosition = workStationBlockPos;
-        this.jobState = JobState.Idle; // Start immediately in Idle so the work loop begins on the next system tick.
+        this.jobState                 = JobState.Idle; // Start immediately in Idle so the work loop begins on the next system tick.
     }
 
     // ===== Component Type =====
@@ -53,7 +55,7 @@ public class JobComponent implements Component<EntityStore>
     public @Nullable Component<EntityStore> clone()
     {
         JobComponent copy = new JobComponent(this.workStationBlockPosition);
-        copy.jobState = this.jobState;
+        copy.jobState     = this.jobState;
         return copy;
     }
 

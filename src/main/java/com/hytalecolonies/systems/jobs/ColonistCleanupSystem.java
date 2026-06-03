@@ -6,11 +6,12 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.DelayedSystem;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -43,7 +44,7 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore>
     @Override
     public void delayedTick(float dt, int systemIndex, @Nonnull Store<ChunkStore> store)
     {
-        World world = store.getExternalData().getWorld();
+        World       world       = store.getExternalData().getWorld();
         EntityStore entityStore = world.getEntityStore();
 
         sweepOrphanedClaimMarks(store, entityStore);
@@ -52,7 +53,7 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore>
 
     private static void sweepOrphanedClaimMarks(Store<ChunkStore> store, EntityStore entityStore)
     {
-        Query<ChunkStore> claimQuery = Query.and(ClaimedBlockComponent.getComponentType());
+        Query<ChunkStore>     claimQuery   = Query.and(ClaimedBlockComponent.getComponentType());
         List<Ref<ChunkStore>> orphanedRefs = new ArrayList<>();
 
         StoreUtil.forEachChunkMatchingQuery(store, claimQuery, (chunk, _cb) -> {
@@ -62,8 +63,8 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore>
                 if (claim == null)
                     continue;
 
-                UUID colonistUuid = claim.getClaimedByUuid();
-                Ref<EntityStore> colonistRef = entityStore.getRefFromUUID(colonistUuid);
+                UUID             colonistUuid = claim.getClaimedByUuid();
+                Ref<EntityStore> colonistRef  = entityStore.getRefFromUUID(colonistUuid);
 
                 boolean orphaned = (colonistRef == null || !colonistRef.isValid()) ||
                                    entityStore.getStore().getComponent(colonistRef, JobTargetComponent.getComponentType()) == null;
@@ -84,8 +85,8 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore>
 
     private static void fireOrphanedColonists(World world, EntityStore entityStore)
     {
-        Query<EntityStore> jobQuery = Query.and(JobComponent.getComponentType());
-        List<Ref<EntityStore>> orphans = new ArrayList<>();
+        Query<EntityStore>     jobQuery = Query.and(JobComponent.getComponentType());
+        List<Ref<EntityStore>> orphans  = new ArrayList<>();
 
         StoreUtil.forEachChunkMatchingQuery(entityStore.getStore(), jobQuery, (chunk, _cb) -> {
             for (int i = 0; i < chunk.size(); i++)
@@ -96,7 +97,7 @@ public class ColonistCleanupSystem extends DelayedSystem<ChunkStore>
                 Vector3i wsPos = job.getWorkStationBlockPosition();
                 if (wsPos == null)
                     continue;
-                Ref<ChunkStore> wsRef = BlockEntityUtil.getBlockEntityAt(world, wsPos);
+                Ref<ChunkStore>      wsRef       = BlockEntityUtil.getBlockEntityAt(world, wsPos);
                 WorkStationComponent workStation = wsRef != null ? wsRef.getStore().getComponent(wsRef, WorkStationComponent.getComponentType()) : null;
                 if (workStation != null)
                     continue;

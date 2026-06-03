@@ -40,7 +40,7 @@ public enum JobState
 
     JobState(Group group, @Nullable String npcSubState)
     {
-        this.group = group;
+        this.group       = group;
         this.npcSubState = npcSubState;
     }
 

@@ -30,7 +30,7 @@ public class HytaleColoniesDashboardUI extends InteractiveCustomUIPage<HytaleCol
     public static final String LAYOUT = "hytalecolonies/Dashboard.ui";
 
     private final PlayerRef playerRef;
-    private int refreshCount = 0;
+    private int             refreshCount = 0;
 
     public HytaleColoniesDashboardUI(@Nonnull PlayerRef playerRef)
     {

@@ -5,6 +5,8 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
+import org.joml.Vector3d;
+
 import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -15,7 +17,6 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.spatial.SpatialResource;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
-import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -63,8 +64,8 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore>
     }
 
     @Override
-    public void tick(float dt,
-                     int index,
+    public void tick(float    dt,
+                     int      index,
                      @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
                      @Nonnull Store<EntityStore> store,
                      @Nonnull CommandBuffer<EntityStore> commandBuffer)
@@ -73,8 +74,8 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore>
         if (transform == null)
             return;
 
-        Ref<EntityStore> ref = archetypeChunk.getReferenceTo(index);
-        LivingEntity colonist = (LivingEntity)EntityUtils.getEntity(ref, store);
+        Ref<EntityStore> ref      = archetypeChunk.getReferenceTo(index);
+        LivingEntity     colonist = (LivingEntity)EntityUtils.getEntity(ref, store);
         if (colonist == null)
             return;
 
@@ -91,13 +92,13 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore>
      * {@code store.removeEntity} during a tick.
      */
     private static void pickUpNearbyItems(@Nonnull Ref<EntityStore> colonistRef,
-                                          @Nonnull Vector3d colonistPos,
-                                          @Nonnull ItemContainer container,
+                                          @Nonnull Vector3d         colonistPos,
+                                          @Nonnull ItemContainer    container,
                                           @Nonnull Store<EntityStore> store,
                                           @Nonnull CommandBuffer<EntityStore> commandBuffer)
     {
         SpatialResource<Ref<EntityStore>, EntityStore> spatialResource = store.getResource(EntityModule.get().getItemSpatialResourceType());
-        List<Ref<EntityStore>> nearbyItems = new ArrayList<>();
+        List<Ref<EntityStore>>                         nearbyItems     = new ArrayList<>();
         spatialResource.getSpatialStructure().ordered(colonistPos, PICKUP_RADIUS, nearbyItems);
 
         for (Ref<EntityStore> itemRef : nearbyItems)
@@ -114,10 +115,10 @@ public class ColonistItemPickupSystem extends DelayedEntitySystem<EntityStore>
 
             // Capture item position before any mutation, needed for the fly-to animation.
             TransformComponent itemTransform = store.getComponent(itemRef, TransformComponent.getComponentType());
-            Vector3d itemPos = itemTransform != null ? itemTransform.getPosition() : colonistPos;
+            Vector3d           itemPos       = itemTransform != null ? itemTransform.getPosition() : colonistPos;
 
             ItemStackTransaction transaction = container.addItemStack(itemStack);
-            ItemStack remainder = transaction.getRemainder();
+            ItemStack            remainder   = transaction.getRemainder();
             if (remainder != null && !remainder.isEmpty())
             {
                 // Partial pickup -- update the item entity with the remainder and throttle retries.

@@ -41,7 +41,7 @@ public class ClaimedBlockCleanupSystem extends RefChangeSystem<ChunkStore, Claim
     }
 
     @Override
-    public void onComponentAdded(@Nonnull Ref<ChunkStore> ref,
+    public void onComponentAdded(@Nonnull Ref<ChunkStore>       ref,
                                  @Nonnull ClaimedBlockComponent component,
                                  @Nonnull Store<ChunkStore> store,
                                  @Nonnull CommandBuffer<ChunkStore> commandBuffer)
@@ -50,7 +50,7 @@ public class ClaimedBlockCleanupSystem extends RefChangeSystem<ChunkStore, Claim
     }
 
     @Override
-    public void onComponentSet(@Nonnull Ref<ChunkStore> ref,
+    public void onComponentSet(@Nonnull Ref<ChunkStore>       ref,
                                @Nonnull ClaimedBlockComponent oldComponent,
                                @Nonnull ClaimedBlockComponent newComponent,
                                @Nonnull Store<ChunkStore> store,
@@ -60,7 +60,7 @@ public class ClaimedBlockCleanupSystem extends RefChangeSystem<ChunkStore, Claim
     }
 
     @Override
-    public void onComponentRemoved(@Nonnull Ref<ChunkStore> ref,
+    public void onComponentRemoved(@Nonnull Ref<ChunkStore>       ref,
                                    @Nonnull ClaimedBlockComponent removed,
                                    @Nonnull Store<ChunkStore> store,
                                    @Nonnull CommandBuffer<ChunkStore> commandBuffer)

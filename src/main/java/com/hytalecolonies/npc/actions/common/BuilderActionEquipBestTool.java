@@ -24,7 +24,7 @@ public class BuilderActionEquipBestTool extends BuilderActionBase
 {
     /** Configured gather type (may be a computable expression), or {@code null} to auto-detect. */
     private final StringHolder gatherType = new StringHolder();
-    private final IntHolder minQuality = new IntHolder();
+    private final IntHolder    minQuality = new IntHolder();
 
     @Nonnull
     @Override

@@ -1,8 +1,9 @@
 package com.hytalecolonies.utils;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;

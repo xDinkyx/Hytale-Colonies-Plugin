@@ -4,10 +4,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -63,8 +64,8 @@ public final class ClaimedBlockRegistry
         if (jobTarget == null || jobTarget.targetPosition == null)
             return;
 
-        Vector3i pos = jobTarget.targetPosition;
-        World world = entityStore.getExternalData().getWorld();
+        Vector3i        pos      = jobTarget.targetPosition;
+        World           world    = entityStore.getExternalData().getWorld();
         Ref<ChunkStore> blockRef = BlockEntityUtil.getBlockEntityAt(world, pos);
         if (blockRef == null)
             return;

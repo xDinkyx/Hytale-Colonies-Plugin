@@ -3,9 +3,10 @@ package com.hytalecolonies.npc.actions.constructor;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -36,9 +37,9 @@ public class ActionSeekNextClearingBlock extends ActionSeekNextBlockBase
     {
         if (WorkStationUtil.getConstructorWorkStation(store, ref) == null)
             return null;
-        JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
-        ConstructionOrderStore.Entry order = job != null ? WorkStationUtil.getConstructionOrderForWorkstation(world, job.getWorkStationBlockPosition()) : null;
-        BlockSelection prefab = ConstructorUtil.loadPrefab(order);
+        JobComponent                 job    = store.getComponent(ref, JobComponent.getComponentType());
+        ConstructionOrderStore.Entry order  = job != null ? WorkStationUtil.getConstructionOrderForWorkstation(world, job.getWorkStationBlockPosition()) : null;
+        BlockSelection               prefab = ConstructorUtil.loadPrefab(order);
         if (prefab == null)
             return null;
         return ConstructorUtil.findNextClearingTarget(order, world, prefab);

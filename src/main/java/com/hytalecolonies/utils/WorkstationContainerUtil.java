@@ -5,10 +5,11 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.joml.Vector3d;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.spatial.SpatialResource;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.block.components.ItemContainerBlock;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -43,8 +44,8 @@ public final class WorkstationContainerUtil
         SpatialResource<Ref<ChunkStore>, ChunkStore> spatialResource =
                 world.getChunkStore().getStore().getResource(BlockModule.get().getItemContainerSpatialResourceType());
 
-        Vector3d searchCenter = new Vector3d(workStationPos.x + 0.5, workStationPos.y + 0.5, workStationPos.z + 0.5);
-        List<Ref<ChunkStore>> nearby = new ArrayList<>();
+        Vector3d              searchCenter = new Vector3d(workStationPos.x + 0.5, workStationPos.y + 0.5, workStationPos.z + 0.5);
+        List<Ref<ChunkStore>> nearby       = new ArrayList<>();
         // Use ordered3DAxis (same as engine's CraftingManager chest-linking) to allow separate
         // horizontal/vertical radii -- here they're equal for a uniform 3D sphere search.
         spatialResource.getSpatialStructure().ordered3DAxis(searchCenter, radiusBlocks, radiusBlocks, radiusBlocks, nearby);
@@ -75,11 +76,11 @@ public final class WorkstationContainerUtil
                 continue;
 
             int idx = blockStateInfo.getIndex();
-            int wx = com.hypixel.hytale.math.util.ChunkUtil.worldCoordFromLocalCoord(worldChunk.getX(),
-                                                                                     com.hypixel.hytale.math.util.ChunkUtil.xFromBlockInColumn(idx));
-            int wy = com.hypixel.hytale.math.util.ChunkUtil.yFromBlockInColumn(idx);
-            int wz = com.hypixel.hytale.math.util.ChunkUtil.worldCoordFromLocalCoord(worldChunk.getZ(),
-                                                                                     com.hypixel.hytale.math.util.ChunkUtil.zFromBlockInColumn(idx));
+            int wx  = com.hypixel.hytale.math.util.ChunkUtil.worldCoordFromLocalCoord(worldChunk.getX(),
+                                                                                      com.hypixel.hytale.math.util.ChunkUtil.xFromBlockInColumn(idx));
+            int wy  = com.hypixel.hytale.math.util.ChunkUtil.yFromBlockInColumn(idx);
+            int wz  = com.hypixel.hytale.math.util.ChunkUtil.worldCoordFromLocalCoord(worldChunk.getZ(),
+                                                                                      com.hypixel.hytale.math.util.ChunkUtil.zFromBlockInColumn(idx));
 
             return new Vector3i(wx, wy, wz);
         }

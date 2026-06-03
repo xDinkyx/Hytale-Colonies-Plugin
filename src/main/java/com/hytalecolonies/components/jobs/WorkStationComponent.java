@@ -7,13 +7,14 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hytalecolonies.HytaleColoniesPlugin;
 
@@ -48,8 +49,8 @@ public class WorkStationComponent implements Component<ChunkStore>
                     .build();
 
     // ===== Shared fields =====
-    protected JobType jobType;
-    protected int maxWorkers = 1;
+    protected JobType   jobType;
+    protected int       maxWorkers        = 1;
     protected Set<UUID> assignedColonists = new HashSet<>();
     /** How many blocks each worker processes per run before collecting drops. */
     public int blocksPerRun = 16;
@@ -58,14 +59,14 @@ public class WorkStationComponent implements Component<ChunkStore>
 
     // ===== Transient runtime fields (not persisted) =====
     public @Nullable Vector3i deliveryContainerPosition = null; // Cached position of the delivery container for this workstation.
-    public boolean workAvailable = true;                        // Marks that the workstation has work available.
+    public boolean            workAvailable             = true; // Marks that the workstation has work available.
 
     // ===== Constructors =====
     public WorkStationComponent() {}
 
     public WorkStationComponent(JobType jobType, int maxWorkers)
     {
-        this.jobType = jobType;
+        this.jobType    = jobType;
         this.maxWorkers = maxWorkers;
     }
 
@@ -80,8 +81,8 @@ public class WorkStationComponent implements Component<ChunkStore>
     public @Nullable Component<ChunkStore> clone()
     {
         WorkStationComponent copy = new WorkStationComponent(this.jobType, this.maxWorkers);
-        copy.assignedColonists = new HashSet<>(this.assignedColonists);
-        copy.blocksPerRun = this.blocksPerRun;
+        copy.assignedColonists    = new HashSet<>(this.assignedColonists);
+        copy.blocksPerRun         = this.blocksPerRun;
         copy.defaultRequiredItems = this.defaultRequiredItems.clone();
         return copy;
     }

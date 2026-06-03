@@ -10,11 +10,13 @@ import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
-import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.math.vector.Vector3iUtil;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.util.Config;
 
@@ -22,7 +24,7 @@ import com.hypixel.hytale.server.core.util.Config;
 public final class ConstructionOrderStore
 {
     // Persisted status values.
-    public static final String STATUS_PENDING = "Pending";
+    public static final String STATUS_PENDING     = "Pending";
     public static final String STATUS_IN_PROGRESS = "InProgress";
 
     /** Plain data object. */
@@ -34,16 +36,16 @@ public final class ConstructionOrderStore
                         .add()
                         .append(new KeyedCodec<>("PrefabId", Codec.STRING), (o, v) -> o.prefabId = v, o -> o.prefabId)
                         .add()
-                        .append(new KeyedCodec<>("BuildOrigin", Vector3i.CODEC), (o, v) -> o.buildOrigin = v, o -> o.buildOrigin)
+                        .append(new KeyedCodec<>("BuildOrigin", Vector3iUtil.CODEC), (o, v) -> o.buildOrigin = v, o -> o.buildOrigin)
                         .add()
                         .append(new KeyedCodec<>("Status", Codec.STRING), (o, v) -> o.status = v, o -> o.status)
                         .add()
                         .build();
 
-        public UUID id = UUID.randomUUID();
-        public String prefabId = "";
+        public UUID     id          = UUID.randomUUID();
+        public String   prefabId    = "";
         public Vector3i buildOrigin = null;
-        public String status = STATUS_PENDING;
+        public String   status      = STATUS_PENDING;
 
         /** Transient -- loaded prefab selection (rotation included). Not persisted. */
         public transient BlockSelection cachedSelection;
@@ -55,8 +57,8 @@ public final class ConstructionOrderStore
 
         public Entry(UUID id, String prefabId, Vector3i buildOrigin)
         {
-            this.id = id;
-            this.prefabId = prefabId;
+            this.id          = id;
+            this.prefabId    = prefabId;
             this.buildOrigin = buildOrigin;
         }
     }
@@ -87,7 +89,7 @@ public final class ConstructionOrderStore
     });
 
     private final Map<UUID, Entry> orders = new ConcurrentHashMap<>();
-    private Config<StoreData> config;
+    private Config<StoreData>      config;
 
     private ConstructionOrderStore() {}
 

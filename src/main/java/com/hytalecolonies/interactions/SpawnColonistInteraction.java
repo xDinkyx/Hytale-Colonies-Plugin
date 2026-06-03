@@ -3,6 +3,9 @@ package com.hytalecolonies.interactions;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3d;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
@@ -10,9 +13,9 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
-import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.math.vector.Rotation3f;
+import com.hypixel.hytale.math.vector.Rotation3fc;
+import com.hypixel.hytale.math.vector.Vector3dUtil;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.RotationTuple;
@@ -53,9 +56,9 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction
                     .addValidator(NPCRoleValidator.INSTANCE) // ToDo: Create a Colonist role
                                                              // validator?
                     .add()
-                    .<Vector3d>append(new KeyedCodec<>("SpawnOffset", Vector3d.CODEC),
+                    .<Vector3d>append(new KeyedCodec<>("SpawnOffset", Vector3dUtil.CODEC),
                                       (SpawnColonistInteraction, s)
-                                              -> SpawnColonistInteraction.spawnOffset.assign(s),
+                                              -> SpawnColonistInteraction.spawnOffset.set(s),
                                       SpawnColonistInteraction -> SpawnColonistInteraction.spawnOffset)
                     .documentation("The offset to apply to the spawn position of the NPC, relative to the block's rotation and center.")
                     .add()
@@ -67,13 +70,13 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction
                     .add()
                     .build();
 
-    protected String entityId;
+    protected String   entityId;
     protected Vector3d spawnOffset = new Vector3d();
-    protected float spawnYawOffset;
+    protected float    spawnYawOffset;
 
     private void spawnColonist(@Nonnull Store<EntityStore> store, @Nonnull Vector3i targetBlock)
     {
-        World world = store.getExternalData().getWorld();
+        World                              world     = store.getExternalData().getWorld();
         SpawnColonistInteraction.SpawnData spawnData = this.computeSpawnData(world, targetBlock);
 
         // Spawn the NPC
@@ -103,9 +106,9 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction
     @Nonnull
     private SpawnColonistInteraction.SpawnData computeSpawnData(@Nonnull World world, @Nonnull Vector3i targetBlock)
     {
-        long chunkIndex = ChunkUtil.indexChunkFromBlock(targetBlock.x, targetBlock.z);
-        ChunkStore chunkStore = world.getChunkStore();
-        Ref<ChunkStore> chunkRef = chunkStore.getChunkReference(chunkIndex);
+        long            chunkIndex = ChunkUtil.indexChunkFromBlock(targetBlock.x, targetBlock.z);
+        ChunkStore      chunkStore = world.getChunkStore();
+        Ref<ChunkStore> chunkRef   = chunkStore.getChunkReference(chunkIndex);
 
         if (chunkRef != null && chunkRef.isValid())
         {
@@ -116,53 +119,58 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction
             BlockType blockType = worldChunkComponent.getBlockType(targetBlock.x, targetBlock.y, targetBlock.z);
             if (blockType == null)
             {
-                return new SpawnColonistInteraction.SpawnData(this.spawnOffset.clone().add(targetBlock).add(0.5, 0.5, 0.5), Vector3f.ZERO);
+                return new SpawnColonistInteraction.SpawnData(
+                        new Vector3d(this.spawnOffset).add(targetBlock.x, targetBlock.y, targetBlock.z).add(0.5, 0.5, 0.5),
+                        Rotation3f.ZERO);
             }
             else
             {
                 BlockChunk blockChunkComponent = chunkStore.getStore().getComponent(chunkRef, BlockChunk.getComponentType());
                 if (blockChunkComponent == null)
                 {
-                    return new SpawnColonistInteraction.SpawnData(this.spawnOffset.clone().add(targetBlock).add(0.5, 0.5, 0.5), Vector3f.ZERO);
+                    return new SpawnColonistInteraction.SpawnData(
+                            new Vector3d(this.spawnOffset).add(targetBlock.x, targetBlock.y, targetBlock.z).add(0.5, 0.5, 0.5),
+                            Rotation3f.ZERO);
                 }
                 else
                 {
-                    BlockSection section = blockChunkComponent.getSectionAtBlockY(targetBlock.y);
-                    int rotationIndex = section.getRotationIndex(targetBlock.x, targetBlock.y, targetBlock.z);
+                    BlockSection  section       = blockChunkComponent.getSectionAtBlockY(targetBlock.y);
+                    int           rotationIndex = section.getRotationIndex(targetBlock.x, targetBlock.y, targetBlock.z);
                     RotationTuple rotationTuple = RotationTuple.get(rotationIndex);
-                    Vector3d position = rotationTuple.rotatedVector(this.spawnOffset);
-                    Vector3d blockCenter = new Vector3d();
+                    Vector3d      position      = rotationTuple.rotatedVector(this.spawnOffset);
+                    Vector3d      blockCenter   = new Vector3d();
                     blockType.getBlockCenter(rotationIndex, blockCenter);
-                    position.add(blockCenter).add(targetBlock);
-                    Vector3f rotation = new Vector3f(0.0F, (float)(rotationTuple.yaw().getRadians() + Math.toRadians(this.spawnYawOffset)), 0.0F);
+                    position.add(blockCenter).add(targetBlock.x, targetBlock.y, targetBlock.z);
+                    Rotation3f rotation = new Rotation3f(0.0F, (float)(rotationTuple.yaw().getRadians() + Math.toRadians(this.spawnYawOffset)), 0.0F);
                     return new SpawnColonistInteraction.SpawnData(position, rotation);
                 }
             }
         }
         else
         {
-            return new SpawnColonistInteraction.SpawnData(this.spawnOffset.clone().add(targetBlock).add(0.5, 0.5, 0.5), Vector3f.ZERO);
+            return new SpawnColonistInteraction.SpawnData(new Vector3d(this.spawnOffset).add(targetBlock.x, targetBlock.y, targetBlock.z).add(0.5, 0.5, 0.5),
+                                                          Rotation3f.ZERO);
         }
     }
 
     @Override
     protected void interactWithBlock(@Nonnull World world,
                                      @Nonnull CommandBuffer<EntityStore> commandBuffer,
-                                     @Nonnull InteractionType type,
-                                     @Nonnull InteractionContext context,
-                                     @Nullable ItemStack itemInHand,
-                                     @Nonnull Vector3i targetBlock,
-                                     @Nonnull CooldownHandler cooldownHandler)
+                                     @Nonnull InteractionType            type,
+                                     @Nonnull InteractionContext         context,
+                                     @Nullable ItemStack                 itemInHand,
+                                     @Nonnull Vector3i                   targetBlock,
+                                     @Nonnull CooldownHandler            cooldownHandler)
     {
         commandBuffer.run(store -> this.spawnColonist(world.getEntityStore().getStore(), targetBlock));
     }
 
     @Override
-    protected void simulateInteractWithBlock(@Nonnull InteractionType type,
+    protected void simulateInteractWithBlock(@Nonnull InteractionType    type,
                                              @Nonnull InteractionContext context,
-                                             @Nullable ItemStack itemInHand,
-                                             @Nonnull World world,
-                                             @Nonnull Vector3i targetBlock)
+                                             @Nullable ItemStack         itemInHand,
+                                             @Nonnull World              world,
+                                             @Nonnull Vector3i           targetBlock)
     {
         CommandBuffer<EntityStore> commandBuffer = context.getCommandBuffer();
 
@@ -171,7 +179,7 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction
         commandBuffer.run(store -> this.spawnColonist(world.getEntityStore().getStore(), targetBlock));
     }
 
-    private record SpawnData(@Nonnull Vector3d position, @Nonnull Vector3f rotation)
+    private record SpawnData(@Nonnull Vector3d position, @Nonnull Rotation3fc rotation)
     {
     }
 }

@@ -12,11 +12,13 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
-import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.math.vector.Vector3iUtil;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.util.Config;
 
@@ -44,7 +46,7 @@ public final class MineSegmentStore
                         .add()
                         .append(new KeyedCodec<>("PrefabId", Codec.STRING), (o, v) -> o.prefabId = v, o -> o.prefabId)
                         .add()
-                        .append(new KeyedCodec<>("Origin", Vector3i.CODEC), (o, v) -> o.origin = v, o -> o.origin)
+                        .append(new KeyedCodec<>("Origin", Vector3iUtil.CODEC), (o, v) -> o.origin = v, o -> o.origin)
                         .add()
                         .append(new KeyedCodec<>("SequenceIndex", Codec.INTEGER), (o, v) -> o.sequenceIndex = v, o -> o.sequenceIndex)
                         .add()

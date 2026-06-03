@@ -30,27 +30,27 @@ public class ColonistComponent implements Component<EntityStore>
     // ===== Fields =====
     private String colonyId;
     private String colonistName;
-    private int colonistLevel;
+    private int    colonistLevel;
 
     // ===== Constructors =====
     public ColonistComponent()
     {
-        this.colonyId = "default_colony";
-        this.colonistName = "Unnamed Colonist";
+        this.colonyId      = "default_colony";
+        this.colonistName  = "Unnamed Colonist";
         this.colonistLevel = 1;
     }
 
     public ColonistComponent(String colonyId, String name, int level)
     {
-        this.colonyId = colonyId;
-        this.colonistName = name;
+        this.colonyId      = colonyId;
+        this.colonistName  = name;
         this.colonistLevel = level;
     }
 
     public ColonistComponent(ColonistComponent other)
     {
-        this.colonyId = other.colonyId;
-        this.colonistName = other.colonistName;
+        this.colonyId      = other.colonyId;
+        this.colonistName  = other.colonistName;
         this.colonistLevel = other.colonistLevel;
     }
 

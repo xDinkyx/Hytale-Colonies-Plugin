@@ -22,9 +22,9 @@ import com.hytalecolonies.debug.DebugLogUtil;
  */
 public class BuilderActionLogDebug extends BuilderActionBase
 {
-    private final StringHolder message = new StringHolder();
+    private final StringHolder message  = new StringHolder();
     private final StringHolder category = new StringHolder();
-    private final StringHolder level = new StringHolder();
+    private final StringHolder level    = new StringHolder();
 
     @Nonnull
     @Override

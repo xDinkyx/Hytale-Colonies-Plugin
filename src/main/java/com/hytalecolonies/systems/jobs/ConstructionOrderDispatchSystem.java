@@ -4,13 +4,14 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -36,8 +37,8 @@ public class ConstructionOrderDispatchSystem extends DelayedEntitySystem<ChunkSt
     }
 
     @Override
-    public void tick(float dt,
-                     int index,
+    public void tick(float    dt,
+                     int      index,
                      @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk,
                      @Nonnull Store<ChunkStore> chunkStore,
                      @Nonnull CommandBuffer<ChunkStore> commandBuffer)
@@ -57,7 +58,7 @@ public class ConstructionOrderDispatchSystem extends DelayedEntitySystem<ChunkSt
         }
 
         Vector3i wsPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
-        World world = chunkStore.getExternalData().getWorld();
+        World    world = chunkStore.getExternalData().getWorld();
 
         world.execute(() -> executeAssignOrderToWorkstationOnWorldThread(world, wsPos));
     }
@@ -67,7 +68,7 @@ public class ConstructionOrderDispatchSystem extends DelayedEntitySystem<ChunkSt
         Ref<ChunkStore> wsRef = BlockEntityUtil.getBlockEntityAt(world, wsPos);
         if (wsRef == null || !wsRef.isValid())
             return;
-        Store<ChunkStore> cs = world.getChunkStore().getStore();
+        Store<ChunkStore>               cs     = world.getChunkStore().getStore();
         ConstructorWorkStationComponent liveWs = cs.getComponent(wsRef, ConstructorWorkStationComponent.getComponentType());
         if (liveWs == null || liveWs.activeOrderId != null)
             return;
@@ -85,9 +86,9 @@ public class ConstructionOrderDispatchSystem extends DelayedEntitySystem<ChunkSt
 
         if (entry.buildOrigin != null)
         {
-            double dx = entry.buildOrigin.x - wsPos.x;
-            double dy = entry.buildOrigin.y - wsPos.y;
-            double dz = entry.buildOrigin.z - wsPos.z;
+            double dx   = entry.buildOrigin.x - wsPos.x;
+            double dy   = entry.buildOrigin.y - wsPos.y;
+            double dz   = entry.buildOrigin.z - wsPos.z;
             double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (dist > MAX_ASSIGN_RADIUS)
             {

@@ -2,11 +2,13 @@ package com.hytalecolonies.components.jobs;
 
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
-import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.math.vector.Vector3iUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.HytaleColoniesPlugin;
 
@@ -21,7 +23,7 @@ public class WoodsmanJobComponent implements Component<EntityStore>
             BuilderCodec
                     .builder(WoodsmanJobComponent.class, WoodsmanJobComponent::new)
                     // Persisted: woodsman resumes travel to the same tree after restart.
-                    .append(new KeyedCodec<>("LastKnownPosition", Vector3i.CODEC), (o, v) -> o.lastKnownPosition = v, o -> o.lastKnownPosition)
+                    .append(new KeyedCodec<>("LastKnownPosition", Vector3iUtil.CODEC), (o, v) -> o.lastKnownPosition = v, o -> o.lastKnownPosition)
                     .add()
                     .build();
 
@@ -46,7 +48,7 @@ public class WoodsmanJobComponent implements Component<EntityStore>
     public @Nullable Component<EntityStore> clone()
     {
         WoodsmanJobComponent copy = new WoodsmanJobComponent();
-        copy.lastKnownPosition = this.lastKnownPosition;
+        copy.lastKnownPosition    = this.lastKnownPosition;
         // stuckTicks intentionally not copied -- transient.
         return copy;
     }

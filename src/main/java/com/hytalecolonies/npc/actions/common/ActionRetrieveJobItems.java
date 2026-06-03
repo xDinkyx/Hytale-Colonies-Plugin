@@ -104,7 +104,7 @@ public class ActionRetrieveJobItems extends ActionBase
             return false;
         }
 
-        World world = store.getExternalData().getWorld();
+        World           world    = store.getExternalData().getWorld();
         Ref<ChunkStore> blockRef = BlockEntityUtil.getBlockEntityAt(world, workStation.deliveryContainerPosition);
 
         if (blockRef == null || !blockRef.isValid())
@@ -166,22 +166,22 @@ public class ActionRetrieveJobItems extends ActionBase
     {
         for (ItemRequirement req : requirements)
         {
-            int have = InventoryHelper.countItems(colonistStorage, List.of(req.item));
+            int have   = InventoryHelper.countItems(colonistStorage, List.of(req.item));
             int needed = req.quantity - have;
 
             if (needed <= 0)
                 continue;
 
-            int remaining = needed;
-            short capacity = chest.getCapacity();
+            int   remaining = needed;
+            short capacity  = chest.getCapacity();
             for (short slot = 0; slot < capacity && remaining > 0; slot++)
             {
                 ItemStack chestStack = chest.getItemStack(slot);
                 if (!InventoryHelper.matchesItem(req.item, chestStack))
                     continue;
 
-                int take = Math.min(remaining, chestStack.getQuantity());
-                MoveTransaction<?> tx = chest.moveItemStackFromSlot(slot, take, colonistStorage);
+                int                take = Math.min(remaining, chestStack.getQuantity());
+                MoveTransaction<?> tx   = chest.moveItemStackFromSlot(slot, take, colonistStorage);
                 if (!tx.succeeded())
                     break;
 

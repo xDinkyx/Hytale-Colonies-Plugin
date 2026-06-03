@@ -5,8 +5,9 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.buildertool.config.BlockTypeListAsset;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -42,7 +43,7 @@ public class TreeDetector implements ITreeDetector
     private static final int MIN_STACK_HEIGHT = 3;
 
     private static final String TREE_WOOD_LIST_ID = "TreeWood";
-    private static final String SOILS_LIST_ID = "Soils";
+    private static final String SOILS_LIST_ID     = "Soils";
 
     // Lazy-loaded caches -- assets are not guaranteed to be ready at construction time.
     private Set<String> treeWoodKeys;
@@ -88,9 +89,9 @@ public class TreeDetector implements ITreeDetector
         if (wy < 0 || wy >= ChunkUtil.HEIGHT)
             return null;
 
-        int chunkX = ChunkUtil.chunkCoordinate(wx);
-        int chunkZ = ChunkUtil.chunkCoordinate(wz);
-        WorldChunk chunk = world.getChunkIfInMemory(ChunkUtil.indexChunk(chunkX, chunkZ));
+        int        chunkX = ChunkUtil.chunkCoordinate(wx);
+        int        chunkZ = ChunkUtil.chunkCoordinate(wz);
+        WorldChunk chunk  = world.getChunkIfInMemory(ChunkUtil.indexChunk(chunkX, chunkZ));
         if (chunk == null)
             return null;
 
@@ -103,7 +104,7 @@ public class TreeDetector implements ITreeDetector
         int localZ = wz & ChunkUtil.SIZE_MASK;
 
         BlockSection section = blockChunk.getSectionAtBlockY(wy);
-        int blockId = section.get(localX, wy, localZ);
+        int          blockId = section.get(localX, wy, localZ);
         if (blockId == 0)
             return null;
 
@@ -120,7 +121,7 @@ public class TreeDetector implements ITreeDetector
         if (treeWoodKeys == null)
         {
             BlockTypeListAsset asset = BlockTypeListAsset.getAssetMap().getAsset(TREE_WOOD_LIST_ID);
-            treeWoodKeys = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
+            treeWoodKeys             = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
         }
         return treeWoodKeys;
     }
@@ -130,7 +131,7 @@ public class TreeDetector implements ITreeDetector
         if (soilKeys == null)
         {
             BlockTypeListAsset asset = BlockTypeListAsset.getAssetMap().getAsset(SOILS_LIST_ID);
-            soilKeys = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
+            soilKeys                 = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
         }
         return soilKeys;
     }

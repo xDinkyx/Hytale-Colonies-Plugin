@@ -9,9 +9,10 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -45,7 +46,7 @@ public class ActionFindNextTrunkBlock extends ActionBase
         super.execute(ref, role, sensorInfo, dt, store);
 
         UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
-        String npcId = DebugLog.npcId(ref, store);
+        String        npcId         = DebugLog.npcId(ref, store);
 
         DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[FindNextTrunkBlock] [%s] Action started.", npcId);
 
@@ -59,8 +60,8 @@ public class ActionFindNextTrunkBlock extends ActionBase
 
         DebugLog.info(DebugCategory.WOODSMAN_JOB, "[FindNextTrunkBlock] [%s] Block at %s broken -- flood-filling for adjacent trunk.", npcId, brokenPosition);
 
-        WoodsmanWorkStationComponent workStation = WorkStationUtil.getWoodsmanWorkStation(store, ref);
-        Set<String> allowedWoodTypes = workStation != null ? workStation.getAllowedTreeTypes() : null;
+        WoodsmanWorkStationComponent workStation      = WorkStationUtil.getWoodsmanWorkStation(store, ref);
+        Set<String>                  allowedWoodTypes = workStation != null ? workStation.getAllowedTreeTypes() : null;
         if (allowedWoodTypes == null)
         {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB,
@@ -75,7 +76,7 @@ public class ActionFindNextTrunkBlock extends ActionBase
         }
         UUID colonistUuid = uuidComponent.getUuid();
 
-        World world = store.getExternalData().getWorld();
+        World    world     = store.getExternalData().getWorld();
         Vector3i nextTrunk = allowedWoodTypes != null ? findAdjacentStandingTrunk(brokenPosition, allowedWoodTypes, world, npcId) : null;
 
         world.execute(() -> {
@@ -106,11 +107,11 @@ public class ActionFindNextTrunkBlock extends ActionBase
 
     private static void claimAndMoveToNextTrunk(@Nonnull World world,
                                                 @Nonnull Store<EntityStore> store,
-                                                @Nonnull Ref<EntityStore> ref,
-                                                @Nonnull UUID colonistUuid,
+                                                @Nonnull Ref<EntityStore>   ref,
+                                                @Nonnull UUID               colonistUuid,
                                                 @Nonnull JobTargetComponent liveTarget,
-                                                @Nonnull Vector3i nextTrunk,
-                                                @Nonnull String npcId)
+                                                @Nonnull Vector3i           nextTrunk,
+                                                @Nonnull String             npcId)
     {
         boolean claimed = JobNavigationUtil.claimAndNavigateTo(world, store, ref, colonistUuid, nextTrunk, "Harvest");
         if (claimed)
@@ -138,9 +139,9 @@ public class ActionFindNextTrunkBlock extends ActionBase
     private static Vector3i
     findAdjacentStandingTrunk(@Nonnull Vector3i brokenPosition, @Nonnull Set<String> allowedWoodTypes, @Nonnull World world, @Nonnull String npcId)
     {
-        int baseY = brokenPosition.y;
-        Set<Long> visited = new HashSet<>();
-        Deque<Vector3i> queue = new ArrayDeque<>();
+        int             baseY   = brokenPosition.y;
+        Set<Long>       visited = new HashSet<>();
+        Deque<Vector3i> queue   = new ArrayDeque<>();
         visited.add(pack(brokenPosition));
 
         int[][] cardinalDirections = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
@@ -155,8 +156,8 @@ public class ActionFindNextTrunkBlock extends ActionBase
 
         while (!queue.isEmpty())
         {
-            Vector3i current = queue.poll();
-            String blockKey = TreeDetector.getBlockKey(world, current.x, current.y, current.z);
+            Vector3i current  = queue.poll();
+            String   blockKey = TreeDetector.getBlockKey(world, current.x, current.y, current.z);
             if (blockKey != null && allowedWoodTypes.contains(blockKey))
             {
                 DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[FindNextTrunkBlock] [%s] Found adjacent trunk at %s (key=%s).", npcId, current, blockKey);

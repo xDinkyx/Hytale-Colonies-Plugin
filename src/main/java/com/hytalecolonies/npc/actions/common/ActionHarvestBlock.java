@@ -3,12 +3,13 @@ package com.hytalecolonies.npc.actions.common;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3d;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.util.MathUtil;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockGathering;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.item.config.ItemTool;
@@ -39,7 +40,7 @@ import com.hytalecolonies.debug.DebugLog;
  */
 public class ActionHarvestBlock extends ActionBase
 {
-    private final float damageScale;
+    private final float    damageScale;
     private final Vector3d targetVec = new Vector3d();
 
     public ActionHarvestBlock(@Nonnull BuilderActionHarvestBlock builder, @Nonnull BuilderSupport support)
@@ -77,16 +78,16 @@ public class ActionHarvestBlock extends ActionBase
         if (inventory == null)
             return false;
 
-        World world = store.getExternalData().getWorld();
-        long chunkIdx = ChunkUtil.indexChunkFromBlock(targetPos.x, targetPos.z);
+        World           world    = store.getExternalData().getWorld();
+        long            chunkIdx = ChunkUtil.indexChunkFromBlock(targetPos.x, targetPos.z);
         Ref<ChunkStore> chunkRef = world.getChunkStore().getChunkReference(chunkIdx);
         if (chunkRef == null || !chunkRef.isValid())
             return false;
 
         ItemStack heldItem = inventory.getItemInHand();
-        ItemTool tool = (heldItem != null && heldItem.getItem() != null) ? heldItem.getItem().getTool() : null;
+        ItemTool  tool     = (heldItem != null && heldItem.getItem() != null) ? heldItem.getItem().getTool() : null;
 
-        String heldId = (heldItem != null && heldItem.getItem() != null) ? heldItem.getItem().getId() : "null";
+        String heldId    = (heldItem != null && heldItem.getItem() != null) ? heldItem.getItem().getId() : "null";
         String toolSpecs = (tool != null && tool.getSpecs() != null) ? java.util.Arrays.stream(tool.getSpecs())
                                                                                .map(s -> s.getGatherType() + "q" + s.getQuality() + "p" + s.getPower())
                                                                                .collect(java.util.stream.Collectors.joining(","))
@@ -96,16 +97,16 @@ public class ActionHarvestBlock extends ActionBase
         Ref<ChunkStore> chunkRef2 = world.getChunkStore().getChunkReference(chunkIdx);
         if (chunkRef2 != null && chunkRef2.isValid())
         {
-            WorldChunk worldChunk = world.getChunkStore().getStore().getComponent(chunkRef2, WorldChunk.getComponentType());
-            BlockHealthChunk bhc = world.getChunkStore().getStore().getComponent(chunkRef2, BlockHealthModule.get().getBlockHealthChunkComponentType());
+            WorldChunk       worldChunk = world.getChunkStore().getStore().getComponent(chunkRef2, WorldChunk.getComponentType());
+            BlockHealthChunk bhc        = world.getChunkStore().getStore().getComponent(chunkRef2, BlockHealthModule.get().getBlockHealthChunkComponentType());
             if (worldChunk != null)
             {
-                BlockType bt = worldChunk.getBlockType(targetPos.x, targetPos.y, targetPos.z);
-                BlockGathering bg = bt != null ? bt.getGathering() : null;
-                float currentHealth = bhc != null ? bhc.getBlockHealth(targetPos) : -1f;
-                boolean isSoft = bg != null && bg.isSoft();
-                String gatherType = (bg != null && bg.getBreaking() != null) ? bg.getBreaking().getGatherType() : "null";
-                int reqQuality = (bg != null && bg.getBreaking() != null) ? bg.getBreaking().getQuality() : -1;
+                BlockType      bt            = worldChunk.getBlockType(targetPos.x, targetPos.y, targetPos.z);
+                BlockGathering bg            = bt != null ? bt.getGathering() : null;
+                float          currentHealth = bhc != null ? bhc.getBlockHealth(targetPos) : -1f;
+                boolean        isSoft        = bg != null && bg.isSoft();
+                String         gatherType    = (bg != null && bg.getBreaking() != null) ? bg.getBreaking().getGatherType() : "null";
+                int            reqQuality    = (bg != null && bg.getBreaking() != null) ? bg.getBreaking().getQuality() : -1;
                 DebugLog.fine(DebugCategory.JOB_SYSTEM,
                               "[HarvestBlock] [%s] target=%s blockType=%s gatherType=%s reqQuality=%d isSoft=%b health=%.3f heldItem=%s toolSpecs=[%s].",
                               npcId,
@@ -120,18 +121,9 @@ public class ActionHarvestBlock extends ActionBase
             }
         }
 
-        boolean broke = BlockHarvestUtils.performBlockDamage(entity,
-                                                             ref,
-                                                             targetPos,
-                                                             heldItem,
-                                                             tool,
-                                                             null,
-                                                             false,
-                                                             damageScale,
-                                                             0,
-                                                             chunkRef,
-                                                             store,
-                                                             world.getChunkStore().getStore());
+        boolean broke =
+                BlockHarvestUtils
+                        .performBlockDamage(ref, targetPos, heldItem, tool, null, false, damageScale, 0, chunkRef, store, world.getChunkStore().getStore());
         if (broke)
         {
             DebugLog.fine(DebugCategory.JOB_SYSTEM, "[HarvestBlock] [%s] Block broke at %s.", npcId, targetPos);

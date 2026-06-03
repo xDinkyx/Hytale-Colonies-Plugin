@@ -24,7 +24,6 @@ public class DebugGuiCommand extends AbstractPlayerCommand
     public DebugGuiCommand()
     {
         super("debuggui", "Open the debug configuration panel");
-        this.setPermissionGroup(null);
     }
 
     @Override
@@ -37,8 +36,8 @@ public class DebugGuiCommand extends AbstractPlayerCommand
     protected void execute(@Nonnull CommandContext context,
                            @Nonnull Store<EntityStore> store,
                            @Nonnull Ref<EntityStore> ref,
-                           @Nonnull PlayerRef playerRef,
-                           @Nonnull World world)
+                           @Nonnull PlayerRef        playerRef,
+                           @Nonnull World            world)
     {
         Player player = store.getComponent(ref, Player.getComponentType());
         if (player == null)
@@ -48,7 +47,7 @@ public class DebugGuiCommand extends AbstractPlayerCommand
         }
 
         Config<DebugConfig> debugConfig = HytaleColoniesPlugin.getInstance().getDebugConfig();
-        DebugConfigUI page = new DebugConfigUI(playerRef, debugConfig);
+        DebugConfigUI       page        = new DebugConfigUI(playerRef, debugConfig);
         player.getPageManager().openCustomPage(ref, store, page);
     }
 }

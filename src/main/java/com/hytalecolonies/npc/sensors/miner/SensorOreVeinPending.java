@@ -29,7 +29,7 @@ public class SensorOreVeinPending extends SensorBase
             return false;
 
         MinerJobComponent minerJob = store.getComponent(ref, MinerJobComponent.getComponentType());
-        boolean result = minerJob != null && !minerJob.oreVeinQueue.isEmpty();
+        boolean           result   = minerJob != null && !minerJob.oreVeinQueue.isEmpty();
         DebugLog.fine(DebugCategory.MINER_JOB,
                       "[SensorOreVeinPending] [%s] result=%s queueSize=%d.",
                       DebugLog.npcId(ref, store),

@@ -2,13 +2,14 @@ package com.hytalecolonies.systems.world;
 
 import javax.annotation.Nonnull;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
@@ -43,18 +44,18 @@ public class TreeBlockChangeEventSystem
         }
 
         @Override
-        public void handle(int index,
+        public void handle(int      index,
                            @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
                            @Nonnull Store<EntityStore> store,
                            @Nonnull CommandBuffer<EntityStore> commandBuffer,
-                           @Nonnull BreakBlockEvent event)
+                           @Nonnull BreakBlockEvent            event)
         {
             BlockType blockType = event.getBlockType();
             if (!scanner.getTreeWoodBlockKeys().contains(blockType.getId()))
                 return;
 
-            Vector3i pos = event.getTargetBlock();
-            World world = store.getExternalData().getWorld();
+            Vector3i pos   = event.getTargetBlock();
+            World    world = store.getExternalData().getWorld();
 
             world.execute(() -> {
                 Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
@@ -81,23 +82,23 @@ public class TreeBlockChangeEventSystem
         }
 
         @Override
-        public void handle(int index,
+        public void handle(int      index,
                            @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
                            @Nonnull Store<EntityStore> store,
                            @Nonnull CommandBuffer<EntityStore> commandBuffer,
-                           @Nonnull PlaceBlockEvent event)
+                           @Nonnull PlaceBlockEvent            event)
         {
             // PlaceBlockEvent fires before the block is placed; we cannot know the
             // block type yet. Schedule a check to run after placement completes.
-            Vector3i pos = event.getTargetBlock();
-            World world = store.getExternalData().getWorld();
+            Vector3i pos   = event.getTargetBlock();
+            World    world = store.getExternalData().getWorld();
 
             world.execute(() -> tryRegisterNewTree(world, pos, scanner));
         }
 
         private static void tryRegisterNewTree(@Nonnull World world, @Nonnull Vector3i pos, @Nonnull TreeScannerSystem scanner)
         {
-            int blockId = world.getBlock(pos);
+            int       blockId   = world.getBlock(pos);
             BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
             if (blockType == null)
                 return;

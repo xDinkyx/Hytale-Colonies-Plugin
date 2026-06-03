@@ -15,7 +15,6 @@ public class ReloadSubCommand extends CommandBase
     public ReloadSubCommand()
     {
         super("reload", "Reload plugin configuration");
-        this.setPermissionGroup(null);
     }
 
     @Override

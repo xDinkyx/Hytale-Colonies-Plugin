@@ -22,8 +22,8 @@ public class TestMoveCommand extends NPCWorldCommandBase
 
     @Override
     protected void execute(@Nonnull CommandContext commandContext,
-                           @Nonnull NPCEntity npcEntity,
-                           @Nonnull World world,
+                           @Nonnull NPCEntity      npcEntity,
+                           @Nonnull World          world,
                            @Nonnull Store<EntityStore> store,
                            @Nonnull Ref<EntityStore> ref)
     {

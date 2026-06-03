@@ -22,14 +22,14 @@ public class ColonySystem extends EntityTickingSystem<EntityStore>
     }
 
     @Override
-    public void tick(float dt,
-                     int index,
+    public void tick(float    dt,
+                     int      index,
                      @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
                      @Nonnull Store<EntityStore> store,
                      @Nonnull CommandBuffer<EntityStore> commandBuffer)
     {
         ColonistComponent colonist = archetypeChunk.getComponent(index, colonistComponentType);
-        Ref<EntityStore> ref = archetypeChunk.getReferenceTo(index);
+        Ref<EntityStore>  ref      = archetypeChunk.getReferenceTo(index);
 
         assert colonist != null;
     }

@@ -54,7 +54,7 @@ public class PlayerListener
     private void onPlayerConnect(PlayerConnectEvent event)
     {
         String playerName = event.getPlayerRef() != null ? event.getPlayerRef().getUsername() : "Unknown";
-        String worldName = event.getWorld() != null ? event.getWorld().getName() : "unknown";
+        String worldName  = event.getWorld() != null ? event.getWorld().getName() : "unknown";
 
         LOGGER.at(Level.INFO).log("[HytaleColonies] Player %s connected to world %s", playerName, worldName);
 

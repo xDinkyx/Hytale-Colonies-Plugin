@@ -24,13 +24,13 @@ public class ItemRequirement
      * Exact item ID or glob pattern (e.g. {@code Block_Stone} or {@code Block_*}).
      */
     public String item;
-    public int quantity = 1;
+    public int    quantity = 1;
 
     public ItemRequirement() {}
 
     public ItemRequirement(String item, int quantity)
     {
-        this.item = item;
+        this.item     = item;
         this.quantity = quantity;
     }
 

@@ -19,7 +19,6 @@ public class ConstructorListSubCommand extends AbstractPlayerCommand
     public ConstructorListSubCommand()
     {
         super("list", "Open the constructor prefab picker");
-        this.setPermissionGroup(null);
     }
 
     @Override
@@ -32,8 +31,8 @@ public class ConstructorListSubCommand extends AbstractPlayerCommand
     protected void execute(@Nonnull CommandContext context,
                            @Nonnull Store<EntityStore> store,
                            @Nonnull Ref<EntityStore> ref,
-                           @Nonnull PlayerRef playerRef,
-                           @Nonnull World world)
+                           @Nonnull PlayerRef        playerRef,
+                           @Nonnull World            world)
     {
         Player player = store.getComponent(ref, Player.getComponentType());
         if (player == null)

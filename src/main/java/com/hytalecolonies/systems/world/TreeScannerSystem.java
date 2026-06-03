@@ -11,6 +11,9 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3d;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
@@ -20,8 +23,6 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.buildertool.config.BlockTypeListAsset;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
@@ -53,9 +54,9 @@ import it.unimi.dsi.fastutil.ints.IntSet;
  */
 public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
 {
-    static final int SCAN_RADIUS_CHUNKS = 1;
-    public static final float SCAN_DELAY_SECONDS = 60.0f;
-    private static final String TREE_WOOD_LIST_ID = "TreeWood";
+    static final int            SCAN_RADIUS_CHUNKS = 1;
+    public static final float   SCAN_DELAY_SECONDS = 60.0f;
+    private static final String TREE_WOOD_LIST_ID  = "TreeWood";
 
     private final Query<ChunkStore> query = Query.and(WorkStationComponent.getComponentType(), BlockModule.BlockStateInfo.getComponentType());
 
@@ -79,14 +80,14 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
     }
 
     @Override
-    public void tick(float dt,
-                     int index,
+    public void tick(float    dt,
+                     int      index,
                      @Nonnull ArchetypeChunk<ChunkStore> archetypeChunk,
                      @Nonnull Store<ChunkStore> chunkStore,
                      @Nonnull CommandBuffer<ChunkStore> commandBuffer)
     {
         WorkStationComponent workStation = archetypeChunk.getComponent(index, WorkStationComponent.getComponentType());
-        assert workStation != null;
+        assert               workStation != null;
 
         if (workStation.getJobType() != JobType.Woodsman)
             return;
@@ -107,7 +108,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
     /** Orchestrates a full scan cycle: collect candidates -> detect trees -> register -> debug draw. */
     public void scanForTreeWoodBlocks(Vector3i centerPos, Store<ChunkStore> chunkStore, CommandBuffer<ChunkStore> commandBuffer)
     {
-        World world = chunkStore.getExternalData().getWorld();
+        World       world        = chunkStore.getExternalData().getWorld();
         Set<String> treeWoodKeys = getTreeWoodBlockKeys();
 
         List<Vector3i> segmentBottoms;
@@ -142,8 +143,8 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
     // ToDo: We should probably do bounds checking.
     private List<Vector3i> collectSegmentBottoms(World world, Vector3i centerPos, Set<String> treeWoodKeys)
     {
-        int centerChunkX = ChunkUtil.chunkCoordinate(centerPos.x);
-        int centerChunkZ = ChunkUtil.chunkCoordinate(centerPos.z);
+        int            centerChunkX   = ChunkUtil.chunkCoordinate(centerPos.x);
+        int            centerChunkZ   = ChunkUtil.chunkCoordinate(centerPos.z);
         List<Vector3i> segmentBottoms = new ArrayList<>();
 
         for (int cx = centerChunkX - SCAN_RADIUS_CHUNKS; cx <= centerChunkX + SCAN_RADIUS_CHUNKS; cx++)
@@ -172,7 +173,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
      */
     private List<TreeDetectorBFS.TreeCandidate> detectTrees(List<Vector3i> segmentBottoms, World world)
     {
-        Set<Long> consumedBlocks = new HashSet<>();
+        Set<Long>                           consumedBlocks = new HashSet<>();
         List<TreeDetectorBFS.TreeCandidate> confirmedTrees = new ArrayList<>();
 
         for (Vector3i candidate : segmentBottoms)
@@ -204,14 +205,14 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
      * Iterates confirmed trees, calling {@link #ensureHarvestableBlockEntity} for each one, then logs a summary.
      */
     private void registerHarvestableTrees(List<TreeDetectorBFS.TreeCandidate> confirmedTrees,
-                                          World world,
-                                          Store<ChunkStore> chunkStore,
-                                          CommandBuffer<ChunkStore> commandBuffer)
+                                          World                               world,
+                                          Store<ChunkStore>                   chunkStore,
+                                          CommandBuffer<ChunkStore>           commandBuffer)
     {
         int created = 0;
         int updated = 0;
         int skipped = 0;
-        int failed = 0;
+        int failed  = 0;
 
         for (TreeDetectorBFS.TreeCandidate tree : confirmedTrees)
         {
@@ -247,13 +248,13 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
      *         {@code -2} -- failed (missing block type or chunk)
      */
     int ensureHarvestableBlockEntity(TreeDetectorBFS.TreeCandidate tree,
-                                     World world,
-                                     Store<ChunkStore> chunkStore,
+                                     World                         world,
+                                     Store<ChunkStore>             chunkStore,
                                      @Nullable CommandBuffer<ChunkStore> commandBuffer)
     {
         Vector3i base = tree.base();
 
-        int blockId = world.getBlock(base);
+        int       blockId   = world.getBlock(base);
         BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
         if (blockType == null)
         {
@@ -268,7 +269,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
             return -2;
         }
 
-        Ref<ChunkStore> chunkRef = baseChunk.getReference();
+        Ref<ChunkStore>     chunkRef            = baseChunk.getReference();
         BlockComponentChunk blockComponentChunk = chunkStore.getComponent(chunkRef, BlockComponentChunk.getComponentType());
         if (blockComponentChunk == null)
         {
@@ -276,7 +277,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
             return -2;
         }
 
-        int blockIndex = ChunkUtil.indexBlockInColumn(base.x, base.y, base.z);
+        int             blockIndex  = ChunkUtil.indexBlockInColumn(base.x, base.y, base.z);
         Ref<ChunkStore> existingRef = blockComponentChunk.getEntityReference(blockIndex);
 
         if (existingRef != null && existingRef.isValid())
@@ -353,11 +354,11 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
             colorIdx++;
             for (long packed : tree.visitedWoodPacked())
             {
-                Vector3i pos = TreeDetectorBFS.unpack(packed);
+                Vector3i pos     = TreeDetectorBFS.unpack(packed);
                 Vector3d cubePos = new Vector3d(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5);
                 DebugUtils.addCube(world, cubePos, treeColor, 1.2, SCAN_DELAY_SECONDS);
             }
-            Vector3d basePos = tree.base().toVector3d().add(0.5, 0.5, 0.5);
+            Vector3d basePos = new Vector3d(tree.base().x + 0.5, tree.base().y + 0.5, tree.base().z + 0.5);
             DebugUtils.addCube(world, basePos, DebugUtils.COLOR_WHITE, 1.4, SCAN_DELAY_SECONDS);
         }
     }
@@ -441,7 +442,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
                         if (worldY > 0)
                         {
                             BlockSection belowSection = blockChunk.getSectionAtBlockY(worldY - 1);
-                            int belowId = belowSection.get(localX, worldY - 1, localZ);
+                            int          belowId      = belowSection.get(localX, worldY - 1, localZ);
                             if (belowId != 0)
                             {
                                 BlockType belowType = BlockType.getAssetMap().getAsset(belowId);
@@ -479,8 +480,8 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
 
         // Check if there is any wood directly below the broken block.
         // If not, the base was at pos and its block entity is auto-cleaned by the engine.
-        int belowBlockId = world.getBlock(new Vector3i(pos.x, pos.y - 1, pos.z));
-        BlockType belowType = BlockType.getAssetMap().getAsset(belowBlockId);
+        int       belowBlockId = world.getBlock(new Vector3i(pos.x, pos.y - 1, pos.z));
+        BlockType belowType    = BlockType.getAssetMap().getAsset(belowBlockId);
         if (belowType == null || !woodKeys.contains(belowType.getId()))
             return;
 
@@ -488,14 +489,14 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
         int baseY = pos.y - 1;
         while (baseY > 0)
         {
-            int belowId = world.getBlock(new Vector3i(pos.x, baseY - 1, pos.z));
+            int       belowId = world.getBlock(new Vector3i(pos.x, baseY - 1, pos.z));
             BlockType btBelow = BlockType.getAssetMap().getAsset(belowId);
             if (btBelow == null || !woodKeys.contains(btBelow.getId()))
                 break;
             baseY--;
         }
 
-        Vector3i basePos = new Vector3i(pos.x, baseY, pos.z);
+        Vector3i   basePos   = new Vector3i(pos.x, baseY, pos.z);
         WorldChunk baseChunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(basePos.x, basePos.z));
         if (baseChunk == null)
             return;
@@ -536,7 +537,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
      */
     void onTreeWoodBlockAdded(Vector3i pos, World world, Store<ChunkStore> chunkStore)
     {
-        int blockId = world.getBlock(pos);
+        int       blockId   = world.getBlock(pos);
         BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
         if (blockType == null)
             return;
@@ -552,15 +553,15 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
         int baseY = pos.y;
         while (baseY > 0)
         {
-            int belowId = world.getBlock(new Vector3i(pos.x, baseY - 1, pos.z));
+            int       belowId = world.getBlock(new Vector3i(pos.x, baseY - 1, pos.z));
             BlockType btBelow = BlockType.getAssetMap().getAsset(belowId);
             if (btBelow == null || !woodKeys.contains(btBelow.getId()))
                 break;
             baseY--;
         }
 
-        Vector3i segmentBottom = new Vector3i(pos.x, baseY, pos.z);
-        TreeDetectorBFS.TreeCandidate result = new TreeDetectorBFS().evaluate(segmentBottom, world);
+        Vector3i                      segmentBottom = new Vector3i(pos.x, baseY, pos.z);
+        TreeDetectorBFS.TreeCandidate result        = new TreeDetectorBFS().evaluate(segmentBottom, world);
         if (!result.isTree())
             return;
 
@@ -583,7 +584,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
         if (treeWoodBlockKeys == null)
         {
             BlockTypeListAsset treeWoodList = BlockTypeListAsset.getAssetMap().getAsset(TREE_WOOD_LIST_ID);
-            treeWoodBlockKeys = treeWoodList != null ? treeWoodList.getBlockTypeKeys() : Collections.emptySet();
+            treeWoodBlockKeys               = treeWoodList != null ? treeWoodList.getBlockTypeKeys() : Collections.emptySet();
         }
         return treeWoodBlockKeys;
     }

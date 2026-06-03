@@ -2,9 +2,10 @@ package com.hytalecolonies.npc.sensors.common;
 
 import javax.annotation.Nonnull;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
@@ -40,8 +41,8 @@ public class SensorJobTargetBroken extends SensorBase
         }
 
         Vector3i position = jobTarget.targetPosition;
-        World world = store.getExternalData().getWorld();
-        boolean broken = world.getBlock(position.x, position.y, position.z) == 0;
+        World    world    = store.getExternalData().getWorld();
+        boolean  broken   = world.getBlock(position.x, position.y, position.z) == 0;
         DebugLog.fine(DebugCategory.MINER_JOB, "[SensorJobTargetBroken] [%s] position=%s broken=%b.", DebugLog.npcId(ref, store), position, broken);
         return broken;
     }

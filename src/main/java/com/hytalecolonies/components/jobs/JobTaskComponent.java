@@ -29,7 +29,7 @@ public class JobTaskComponent implements Component<EntityStore>
     public Component<EntityStore> clone()
     {
         JobTaskComponent copy = new JobTaskComponent();
-        copy.requiredItems = this.requiredItems.clone();
+        copy.requiredItems    = this.requiredItems.clone();
         return copy;
     }
 }

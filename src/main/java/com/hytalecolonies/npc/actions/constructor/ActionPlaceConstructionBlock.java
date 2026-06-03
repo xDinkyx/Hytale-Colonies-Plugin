@@ -3,10 +3,11 @@ package com.hytalecolonies.npc.actions.constructor;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -66,13 +67,13 @@ public class ActionPlaceConstructionBlock extends ActionBase
             return true;
         }
 
-        World world = store.getExternalData().getWorld();
-        Vector3i wsPos = job.getWorkStationBlockPosition();
+        World                        world = store.getExternalData().getWorld();
+        Vector3i                     wsPos = job.getWorkStationBlockPosition();
         ConstructionOrderStore.Entry order = wsPos != null ? WorkStationUtil.getConstructionOrderForWorkstation(world, wsPos) : null;
-        Vector3i pos = target.targetPosition;
-        final int wx = pos.x;
-        final int wy = pos.y;
-        final int wz = pos.z;
+        Vector3i                     pos   = target.targetPosition;
+        final int                    wx    = pos.x;
+        final int                    wy    = pos.y;
+        final int                    wz    = pos.z;
 
         BlockSelection prefab = ConstructorUtil.loadPrefab(order);
         if (prefab == null)
@@ -97,7 +98,7 @@ public class ActionPlaceConstructionBlock extends ActionBase
             return true;
         }
 
-        final int blockId = BlockType.getAssetMap().getIndex(blockKey);
+        final int blockId       = BlockType.getAssetMap().getIndex(blockKey);
         final int blockRotation = ConstructorUtil.getDesiredBlockRotation(order, prefab, wx, wy, wz);
 
         world.execute(() -> {

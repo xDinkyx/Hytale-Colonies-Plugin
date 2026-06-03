@@ -3,9 +3,10 @@ package com.hytalecolonies.utils;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockBreakingDropType;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockGathering;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
@@ -52,7 +53,7 @@ public final class ColonistToolUtil
         WorldChunk worldChunk = world.getChunkStore().getStore().getComponent(chunkRef, WorldChunk.getComponentType());
         if (worldChunk == null)
             return null;
-        int blockId = worldChunk.getBlock(pos.x, pos.y, pos.z);
+        int       blockId   = worldChunk.getBlock(pos.x, pos.y, pos.z);
         BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
         if (blockType == null)
             return null;
@@ -159,7 +160,7 @@ public final class ColonistToolUtil
      *
      * @return {@code true} if a suitable tool was equipped (or was already in hand), {@code false} if no suitable tool exists in the inventory.
      */
-    public static boolean equipBestToolForBlock(@Nonnull Inventory inventory,
+    public static boolean equipBestToolForBlock(@Nonnull Inventory             inventory,
                                                 @Nonnull BlockBreakingDropType breaking,
                                                 @Nonnull Ref<EntityStore> ref,
                                                 @Nonnull ComponentAccessor<EntityStore> accessor)
@@ -168,7 +169,7 @@ public final class ColonistToolUtil
         if (match == null)
             return false;
 
-        ItemTool heldTool = null;
+        ItemTool  heldTool = null;
         ItemStack heldItem = inventory.getItemInHand();
         if (heldItem != null && heldItem.getItem() != null)
             heldTool = heldItem.getItem().getTool();
@@ -210,8 +211,8 @@ public final class ColonistToolUtil
      * @return {@code true} if a suitable tool was equipped (or was already in hand), {@code false} if no suitable tool exists in the inventory.
      */
     public static boolean equipBestToolForGatherType(@Nonnull Inventory inventory,
-                                                     @Nonnull String gatherType,
-                                                     int minQuality,
+                                                     @Nonnull String    gatherType,
+                                                     int                minQuality,
                                                      @Nonnull Ref<EntityStore> ref,
                                                      @Nonnull ComponentAccessor<EntityStore> accessor)
     {
@@ -219,7 +220,7 @@ public final class ColonistToolUtil
         if (match == null)
             return false;
 
-        ItemTool heldTool = null;
+        ItemTool  heldTool = null;
         ItemStack heldItem = inventory.getItemInHand();
         if (heldItem != null && heldItem.getItem() != null)
             heldTool = heldItem.getItem().getTool();
@@ -254,9 +255,9 @@ public final class ColonistToolUtil
     private static ToolMatch findBestToolForGatherType(@Nonnull Inventory inventory, @Nonnull String gatherType, int requiredQuality)
     {
         ToolMatch best = null;
-        best = betterMatch(best, inventory.getHotbar(), gatherType, requiredQuality, true);
-        best = betterMatch(best, inventory.getStorage(), gatherType, requiredQuality, false);
-        best = betterMatch(best, inventory.getBackpack(), gatherType, requiredQuality, false);
+        best           = betterMatch(best, inventory.getHotbar(), gatherType, requiredQuality, true);
+        best           = betterMatch(best, inventory.getStorage(), gatherType, requiredQuality, false);
+        best           = betterMatch(best, inventory.getBackpack(), gatherType, requiredQuality, false);
         return best;
     }
 

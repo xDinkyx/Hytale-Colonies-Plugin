@@ -149,8 +149,8 @@ public class DebugConfigUI extends InteractiveCustomUIPage<DebugConfigUI.UIEvent
     /** Maps a DebugCategory to its TextButton element ID in the .ui file. */
     private static String buttonId(DebugCategory category)
     {
-        String[] parts = category.name().split("_");
-        StringBuilder sb = new StringBuilder();
+        String[]      parts = category.name().split("_");
+        StringBuilder sb    = new StringBuilder();
         for (String part : parts)
         {
             sb.append(Character.toUpperCase(part.charAt(0)));

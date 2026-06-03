@@ -5,9 +5,10 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -107,7 +108,7 @@ public abstract class ActionSeekNextBlockBase extends ActionBase
             else
             {
                 // Valid target still exists -- just restore the NavTarget slot.
-                role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(pos.x + 0.5, (double)pos.y, pos.z + 0.5);
+                role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(pos.x + 0.5, (double)pos.y, pos.z + 0.5);
                 return true;
             }
         }
@@ -119,9 +120,9 @@ public abstract class ActionSeekNextBlockBase extends ActionBase
             return true;
         }
 
-        final Vector3i candidate = nextBlock;
-        final Role capturedRole = role;
-        final String claimLabel = getClaimLabel();
+        final Vector3i candidate    = nextBlock;
+        final Role     capturedRole = role;
+        final String   claimLabel   = getClaimLabel();
         world.execute(() -> {
             // Guard against duplicate callbacks in the same cycle.
             JobTargetComponent current = store.getComponent(ref, JobTargetComponent.getComponentType());
@@ -135,7 +136,7 @@ public abstract class ActionSeekNextBlockBase extends ActionBase
             }
 
             JobNavigationUtil.setJobTarget(store, ref, candidate);
-            capturedRole.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(candidate.x + 0.5, (double)candidate.y, candidate.z + 0.5);
+            capturedRole.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(candidate.x + 0.5, (double)candidate.y, candidate.z + 0.5);
 
             WorkStationComponent liveWorkStation = WorkStationUtil.getWorkStation(store, ref);
             if (liveWorkStation != null)

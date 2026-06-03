@@ -45,21 +45,21 @@ public class DebugConfig
                     .add()
                     .build();
 
-    private String generalLevel = "INFO";
-    private String movementLevel = "INFO";
-    private String jobSystemLevel = "INFO";
-    private String jobAssignmentLevel = "INFO";
-    private String woodsmanJobLevel = "INFO";
-    private String minerJobLevel = "INFO";
-    private String constructorJobLevel = "INFO";
-    private String treeScannerLevel = "INFO";
-    private String colonistDeliveryLevel = "INFO";
-    private String claimSystemLevel = "INFO";
-    private String colonistLifecycleLevel = "INFO";
-    private String performanceLevel = "WARNING";
-    private boolean drawColonistPaths = false;
-    private boolean drawTreeDetection = false;
-    private boolean drawConstructorOrders = false;
+    private String  generalLevel           = "INFO";
+    private String  movementLevel          = "INFO";
+    private String  jobSystemLevel         = "INFO";
+    private String  jobAssignmentLevel     = "INFO";
+    private String  woodsmanJobLevel       = "INFO";
+    private String  minerJobLevel          = "INFO";
+    private String  constructorJobLevel    = "INFO";
+    private String  treeScannerLevel       = "INFO";
+    private String  colonistDeliveryLevel  = "INFO";
+    private String  claimSystemLevel       = "INFO";
+    private String  colonistLifecycleLevel = "INFO";
+    private String  performanceLevel       = "WARNING";
+    private boolean drawColonistPaths      = false;
+    private boolean drawTreeDetection      = false;
+    private boolean drawConstructorOrders  = false;
 
     public DebugConfig() {}
 

@@ -29,8 +29,8 @@ public class SensorJobHasTaskItems extends SensorBase
         if (!super.matches(ref, role, dt, store))
             return false;
 
-        JobTaskComponent task = store.getComponent(ref, JobTaskComponent.getComponentType());
-        boolean result = task != null && task.requiredItems.length > 0;
+        JobTaskComponent task   = store.getComponent(ref, JobTaskComponent.getComponentType());
+        boolean          result = task != null && task.requiredItems.length > 0;
         DebugLog.fine(DebugCategory.COLONIST_DELIVERY, "[SensorJobHasTaskItems] [%s] result=%b.", DebugLog.npcId(ref, store), result);
         return result;
     }

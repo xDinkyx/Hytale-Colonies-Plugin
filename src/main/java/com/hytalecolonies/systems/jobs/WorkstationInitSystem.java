@@ -3,13 +3,14 @@ package com.hytalecolonies.systems.jobs;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefChangeSystem;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hytalecolonies.components.jobs.ConstructorWorkStationComponent;
@@ -50,7 +51,7 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
     }
 
     @Override
-    public void onComponentAdded(@Nonnull Ref<ChunkStore> ref,
+    public void onComponentAdded(@Nonnull Ref<ChunkStore>      ref,
                                  @Nonnull WorkStationComponent workStation,
                                  @Nonnull Store<ChunkStore> store,
                                  @Nonnull CommandBuffer<ChunkStore> commandBuffer)
@@ -67,9 +68,9 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
     }
 
     @Override
-    public void onComponentSet(@Nonnull Ref<ChunkStore> ref,
+    public void onComponentSet(@Nonnull Ref<ChunkStore>       ref,
                                @Nullable WorkStationComponent oldComponent,
-                               @Nonnull WorkStationComponent newComponent,
+                               @Nonnull WorkStationComponent  newComponent,
                                @Nonnull Store<ChunkStore> store,
                                @Nonnull CommandBuffer<ChunkStore> commandBuffer)
     {
@@ -77,7 +78,7 @@ public class WorkstationInitSystem extends RefChangeSystem<ChunkStore, WorkStati
     }
 
     @Override
-    public void onComponentRemoved(@Nonnull Ref<ChunkStore> ref,
+    public void onComponentRemoved(@Nonnull Ref<ChunkStore>      ref,
                                    @Nonnull WorkStationComponent component,
                                    @Nonnull Store<ChunkStore> store,
                                    @Nonnull CommandBuffer<ChunkStore> commandBuffer)

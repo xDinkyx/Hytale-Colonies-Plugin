@@ -2,11 +2,13 @@ package com.hytalecolonies.components.jobs;
 
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
-import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.math.vector.Vector3iUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.HytaleColoniesPlugin;
 
@@ -27,7 +29,7 @@ public class JobTargetComponent implements Component<EntityStore>
     // ===== Codec =====
     public static final BuilderCodec<JobTargetComponent> CODEC =
             BuilderCodec.builder(JobTargetComponent.class, JobTargetComponent::new)
-                    .append(new KeyedCodec<>("TargetPosition", Vector3i.CODEC), (o, v) -> o.targetPosition = v, o -> o.targetPosition)
+                    .append(new KeyedCodec<>("TargetPosition", Vector3iUtil.CODEC), (o, v) -> o.targetPosition = v, o -> o.targetPosition)
                     .add()
                     .build();
 
@@ -60,8 +62,8 @@ public class JobTargetComponent implements Component<EntityStore>
     public JobTargetComponent clone()
     {
         JobTargetComponent copy = new JobTargetComponent(this.targetPosition);
-        copy.lastKnownPosition = this.lastKnownPosition;
-        copy.stuckTicks = this.stuckTicks;
+        copy.lastKnownPosition  = this.lastKnownPosition;
+        copy.stuckTicks         = this.stuckTicks;
         return copy;
     }
 

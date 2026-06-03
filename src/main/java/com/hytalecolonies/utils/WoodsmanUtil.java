@@ -8,7 +8,8 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
@@ -23,9 +24,9 @@ public final class WoodsmanUtil
     @Nullable
     public static Vector3i findNextBaseBlock(@Nonnull Vector3i brokenPos, @Nonnull Set<String> woodKeys, @Nonnull World world)
     {
-        int baseY = brokenPos.y;
-        Set<Long> visited = new HashSet<>();
-        Deque<Vector3i> queue = new ArrayDeque<>();
+        int             baseY   = brokenPos.y;
+        Set<Long>       visited = new HashSet<>();
+        Deque<Vector3i> queue   = new ArrayDeque<>();
         visited.add(pack3i(brokenPos));
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
         for (int[] d : dirs)
@@ -44,7 +45,7 @@ public final class WoodsmanUtil
         while (!queue.isEmpty())
         {
             Vector3i cur = queue.poll();
-            String key = TreeDetector.getBlockKey(world, cur.x, cur.y, cur.z);
+            String   key = TreeDetector.getBlockKey(world, cur.x, cur.y, cur.z);
             DebugLog.fine(DebugCategory.WOODSMAN_JOB,
                           "[WoodsmanJob] findNextBaseBlock checking %s -- blockKey=%s isWood=%b.",
                           cur,

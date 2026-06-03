@@ -39,7 +39,7 @@ public class ConstructorWorkStationComponent implements Component<ChunkStore>
     public @Nullable Component<ChunkStore> clone()
     {
         ConstructorWorkStationComponent copy = new ConstructorWorkStationComponent();
-        copy.activeOrderId = activeOrderId;
+        copy.activeOrderId                   = activeOrderId;
         return copy;
     }
 }

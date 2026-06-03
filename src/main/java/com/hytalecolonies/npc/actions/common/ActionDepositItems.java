@@ -7,9 +7,10 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -77,7 +78,7 @@ public class ActionDepositItems extends ActionBase
             return true;
         }
 
-        World world = store.getExternalData().getWorld();
+        World           world    = store.getExternalData().getWorld();
         Ref<ChunkStore> blockRef = BlockEntityUtil.getBlockEntityAt(world, deliveryContainerPosition);
         if (blockRef == null || !blockRef.isValid())
         {
@@ -152,9 +153,9 @@ public class ActionDepositItems extends ActionBase
     private static void
     depositItems(@Nonnull String npcId, @Nonnull LivingEntity colonist, @Nonnull ItemContainer chestContainer, @Nonnull String[] requiredItems)
     {
-        ItemContainer colonistStorage = colonist.getInventory().getStorage();
-        short capacity = colonistStorage.getCapacity();
-        Map<String, Integer> deposited = new LinkedHashMap<>();
+        ItemContainer        colonistStorage = colonist.getInventory().getStorage();
+        short                capacity        = colonistStorage.getCapacity();
+        Map<String, Integer> deposited       = new LinkedHashMap<>();
 
         for (short slot = 0; slot < capacity; slot++)
         {
@@ -163,9 +164,9 @@ public class ActionDepositItems extends ActionBase
                 continue;
             if (shouldKeep(stack, requiredItems))
                 continue;
-            MoveTransaction<ItemStackTransaction> tx = colonistStorage.moveItemStackFromSlot(slot, chestContainer);
-            ItemStack remainder = tx.getAddTransaction().getRemainder();
-            int depositedQty = stack.getQuantity() - (remainder != null ? remainder.getQuantity() : 0);
+            MoveTransaction<ItemStackTransaction> tx           = colonistStorage.moveItemStackFromSlot(slot, chestContainer);
+            ItemStack                             remainder    = tx.getAddTransaction().getRemainder();
+            int                                   depositedQty = stack.getQuantity() - (remainder != null ? remainder.getQuantity() : 0);
             if (depositedQty > 0)
                 deposited.merge(stack.getItemId(), depositedQty, Integer::sum);
         }

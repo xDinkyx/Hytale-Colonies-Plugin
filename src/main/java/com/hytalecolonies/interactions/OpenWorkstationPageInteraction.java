@@ -3,10 +3,11 @@ package com.hytalecolonies.interactions;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -31,15 +32,15 @@ public class OpenWorkstationPageInteraction extends SimpleBlockInteraction
     @Override
     protected void interactWithBlock(@Nonnull World world,
                                      @Nonnull CommandBuffer<EntityStore> commandBuffer,
-                                     @Nonnull InteractionType type,
-                                     @Nonnull InteractionContext context,
-                                     @Nullable ItemStack itemInHand,
-                                     @Nonnull Vector3i blockPos,
-                                     @Nonnull CooldownHandler cooldownHandler)
+                                     @Nonnull InteractionType            type,
+                                     @Nonnull InteractionContext         context,
+                                     @Nullable ItemStack                 itemInHand,
+                                     @Nonnull Vector3i                   blockPos,
+                                     @Nonnull CooldownHandler            cooldownHandler)
     {
         Ref<EntityStore> ref = context.getEntity();
         commandBuffer.run(store -> {
-            Player player = store.getComponent(ref, Player.getComponentType());
+            Player    player        = store.getComponent(ref, Player.getComponentType());
             PlayerRef playerRefComp = store.getComponent(ref, PlayerRef.getComponentType());
             if (player == null || playerRefComp == null)
                 return;
@@ -48,11 +49,11 @@ public class OpenWorkstationPageInteraction extends SimpleBlockInteraction
     }
 
     @Override
-    protected void simulateInteractWithBlock(@Nonnull InteractionType type,
+    protected void simulateInteractWithBlock(@Nonnull InteractionType    type,
                                              @Nonnull InteractionContext context,
-                                             @Nullable ItemStack itemInHand,
-                                             @Nonnull World world,
-                                             @Nonnull Vector3i blockPos)
+                                             @Nullable ItemStack         itemInHand,
+                                             @Nonnull World              world,
+                                             @Nonnull Vector3i           blockPos)
     {
         // No client-side simulation for UI pages.
     }

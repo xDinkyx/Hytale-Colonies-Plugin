@@ -44,14 +44,14 @@ public final class DebugTiming
     public static final class Timer implements AutoCloseable
     {
         private final String label;
-        private final long slowThresholdMs;
-        private final long startNanos;
+        private final long   slowThresholdMs;
+        private final long   startNanos;
 
         private Timer(String label, long slowThresholdMs)
         {
-            this.label = label;
+            this.label           = label;
             this.slowThresholdMs = slowThresholdMs;
-            this.startNanos = System.nanoTime();
+            this.startNanos      = System.nanoTime();
         }
 
         @Override

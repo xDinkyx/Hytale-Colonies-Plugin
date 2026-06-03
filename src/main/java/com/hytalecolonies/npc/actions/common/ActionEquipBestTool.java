@@ -3,12 +3,13 @@ package com.hytalecolonies.npc.actions.common;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3d;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.util.MathUtil;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockBreakingDropType;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
@@ -34,8 +35,8 @@ import com.hytalecolonies.utils.ColonistToolUtil;
 public class ActionEquipBestTool extends ActionBase
 {
     @Nullable
-    private final String gatherType;
-    private final int minQuality;
+    private final String   gatherType;
+    private final int      minQuality;
     private final Vector3d targetVec = new Vector3d();
 
     public ActionEquipBestTool(@Nonnull BuilderActionEquipBestTool builder, @Nonnull BuilderSupport support)
@@ -79,8 +80,8 @@ public class ActionEquipBestTool extends ActionBase
 
         Vector3i blockPos = new Vector3i(MathUtil.floor(targetVec.x), MathUtil.floor(targetVec.y), MathUtil.floor(targetVec.z));
 
-        World world = store.getExternalData().getWorld();
-        long chunkIdx = ChunkUtil.indexChunkFromBlock(blockPos.x, blockPos.z);
+        World           world    = store.getExternalData().getWorld();
+        long            chunkIdx = ChunkUtil.indexChunkFromBlock(blockPos.x, blockPos.z);
         Ref<ChunkStore> chunkRef = world.getChunkStore().getChunkReference(chunkIdx);
         if (chunkRef == null || !chunkRef.isValid())
             return false;

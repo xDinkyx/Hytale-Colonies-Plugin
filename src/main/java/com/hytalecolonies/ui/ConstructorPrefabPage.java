@@ -39,19 +39,19 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
     public ConstructorPrefabPage(@Nonnull PlayerRef playerRef, @Nonnull BuilderToolsPlugin.BuilderState builderState)
     {
         super(playerRef, CustomPageLifetime.CanDismiss, FileBrowserEventData.CODEC);
-        FileBrowserConfig config = FileBrowserConfig.builder()
-                                           .listElementId("#FileList")
-                                           .searchInputId("#SearchInput")
-                                           .enableRootSelector(false)
-                                           .enableSearch(true)
-                                           .enableDirectoryNav(true)
-                                           .allowedExtensions(".prefab.json")
-                                           .maxResults(50)
-                                           .assetPackMode(true, "Server/Prefabs")
-                                           .build();
-        String savedPath = ConstructorBuildOrderFilter.lastBrowserPath.get(playerRef.getUuid());
-        Path initialDir = (savedPath != null && !savedPath.isEmpty()) ? Paths.get(savedPath) : null;
-        this.browser = new ServerFileBrowser(config, null, initialDir);
+        FileBrowserConfig config     = FileBrowserConfig.builder()
+                                               .listElementId("#FileList")
+                                               .searchInputId("#SearchInput")
+                                               .enableRootSelector(false)
+                                               .enableSearch(true)
+                                               .enableDirectoryNav(true)
+                                               .allowedExtensions(".prefab.json")
+                                               .maxResults(50)
+                                               .assetPackMode(true, "Server/Prefabs")
+                                               .build();
+        String            savedPath  = ConstructorBuildOrderFilter.lastBrowserPath.get(playerRef.getUuid());
+        Path              initialDir = (savedPath != null && !savedPath.isEmpty()) ? Paths.get(savedPath) : null;
+        this.browser                 = new ServerFileBrowser(config, null, initialDir);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
         {
             this.browser.handleEvent(data);
             UICommandBuilder commandBuilder = new UICommandBuilder();
-            UIEventBuilder eventBuilder = new UIEventBuilder();
+            UIEventBuilder   eventBuilder   = new UIEventBuilder();
             buildCurrentPath(commandBuilder);
             this.browser.buildFileList(commandBuilder, eventBuilder);
             this.sendUpdate(commandBuilder, eventBuilder, false);
@@ -89,7 +89,7 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
         {
             // Directory navigation — rebuild the list.
             UICommandBuilder commandBuilder = new UICommandBuilder();
-            UIEventBuilder eventBuilder = new UIEventBuilder();
+            UIEventBuilder   eventBuilder   = new UIEventBuilder();
             buildCurrentPath(commandBuilder);
             this.browser.buildFileList(commandBuilder, eventBuilder);
             this.sendUpdate(commandBuilder, eventBuilder, false);
@@ -104,7 +104,7 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
         }
         else
         {
-            String cur = this.browser.getAssetPackCurrentPath();
+            String cur  = this.browser.getAssetPackCurrentPath();
             virtualPath = cur.isEmpty() ? selectedPath : cur + "/" + selectedPath;
         }
 
@@ -179,9 +179,9 @@ public class ConstructorPrefabPage extends InteractiveCustomUIPage<FileBrowserEv
         else
         {
             String[] parts = cur.split("/", 2);
-            String pack = parts[0];
-            String sub = parts.length > 1 ? "/" + parts[1] : "";
-            displayPath = "HytaleAssets".equals(pack) ? pack + sub : "Mods/" + pack + sub;
+            String   pack  = parts[0];
+            String   sub   = parts.length > 1 ? "/" + parts[1] : "";
+            displayPath    = "HytaleAssets".equals(pack) ? pack + sub : "Mods/" + pack + sub;
         }
         commandBuilder.set("#CurrentPath.Text", displayPath);
     }

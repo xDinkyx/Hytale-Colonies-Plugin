@@ -27,7 +27,7 @@ import com.hytalecolonies.ui.ConstructorPrefabPage;
  */
 public class ConstructorPrefabPageFilter implements PlayerPacketFilter
 {
-    private static final int CHAT_MESSAGE_PACKET_ID = ChatMessage.PACKET_ID;
+    private static final int    CHAT_MESSAGE_PACKET_ID     = ChatMessage.PACKET_ID;
     private static final String COLONY_CONSTRUCTOR_ITEM_ID = "Tool_Colony_Constructor_PlacePrefab";
 
     @Override
@@ -71,17 +71,17 @@ public class ConstructorPrefabPageFilter implements PlayerPacketFilter
                 return;
             }
 
-            Store<EntityStore> store = entityRef.getStore();
-            Player player = store.getComponent(entityRef, Player.getComponentType());
-            PlayerRef playerRefComponent = store.getComponent(entityRef, PlayerRef.getComponentType());
+            Store<EntityStore> store              = entityRef.getStore();
+            Player             player             = store.getComponent(entityRef, Player.getComponentType());
+            PlayerRef          playerRefComponent = store.getComponent(entityRef, PlayerRef.getComponentType());
             if (player == null || playerRefComponent == null)
             {
                 DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorPageFilter] Player/PlayerRef component null on world thread.");
                 return;
             }
 
-            ItemStack activeItem = player.getInventory().getItemInHand();
-            boolean holdsConstructorTool = activeItem != null && COLONY_CONSTRUCTOR_ITEM_ID.equals(activeItem.getItemId());
+            ItemStack activeItem           = player.getInventory().getItemInHand();
+            boolean   holdsConstructorTool = activeItem != null && COLONY_CONSTRUCTOR_ITEM_ID.equals(activeItem.getItemId());
 
             if (holdsConstructorTool)
             {
@@ -95,7 +95,7 @@ public class ConstructorPrefabPageFilter implements PlayerPacketFilter
                               "[ConstructorPageFilter] Player '%s' holds '%s', not constructor tool -- executing native command.",
                               playerRef.getUsername(),
                               activeItem != null ? activeItem.getItemId() : "null");
-                CommandManager.get().handleCommand(player, originalCmd);
+                CommandManager.get().handleCommand(playerRefComponent, originalCmd);
             }
         });
 

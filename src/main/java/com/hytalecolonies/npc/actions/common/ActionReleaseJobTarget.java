@@ -3,9 +3,10 @@ package com.hytalecolonies.npc.actions.common;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
@@ -49,7 +50,7 @@ public class ActionReleaseJobTarget extends ActionBase
         Vector3i position = jobTarget.targetPosition;
         if (position != null)
         {
-            World world = store.getExternalData().getWorld();
+            World          world            = store.getExternalData().getWorld();
             final Vector3i capturedPosition = new Vector3i(position.x, position.y, position.z);
             world.execute(() -> ClaimBlockUtil.unclaimBlock(world, capturedPosition));
             jobTarget.setTargetPosition(null);

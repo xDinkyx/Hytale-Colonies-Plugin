@@ -10,7 +10,8 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.buildertool.config.BlockTypeListAsset;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -26,7 +27,7 @@ import com.hytalecolonies.debug.DebugLog;
 public final class MineOreDetector
 {
     private static final String ORE_BLOCK_LIST_KEY = "Ores";
-    private static final int MAX_VEIN_BLOCKS = 48;
+    private static final int    MAX_VEIN_BLOCKS    = 48;
 
     /** 6-connected face neighbours for BFS. */
     private static final int[][] FACE_NEIGHBOURS = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
@@ -107,9 +108,9 @@ public final class MineOreDetector
     @Nonnull
     private static List<Vector3i> floodFillVein(@Nonnull World world, @Nonnull Vector3i seed, @Nonnull Set<String> oreKeys)
     {
-        List<Vector3i> result = new ArrayList<>();
-        Set<String> visited = new HashSet<>();
-        Deque<Vector3i> queue = new ArrayDeque<>();
+        List<Vector3i>  result  = new ArrayList<>();
+        Set<String>     visited = new HashSet<>();
+        Deque<Vector3i> queue   = new ArrayDeque<>();
 
         queue.add(seed);
         visited.add(seed.x + "," + seed.y + "," + seed.z);
@@ -124,9 +125,9 @@ public final class MineOreDetector
 
             for (int[] d : FACE_NEIGHBOURS)
             {
-                int nx = current.x + d[0];
-                int ny = current.y + d[1];
-                int nz = current.z + d[2];
+                int    nx  = current.x + d[0];
+                int    ny  = current.y + d[1];
+                int    nz  = current.z + d[2];
                 String key = nx + "," + ny + "," + nz;
                 if (!visited.contains(key))
                 {
@@ -159,7 +160,7 @@ public final class MineOreDetector
                 if (cachedOreKeys == null)
                 {
                     BlockTypeListAsset asset = BlockTypeListAsset.getAssetMap().getAsset(ORE_BLOCK_LIST_KEY);
-                    cachedOreKeys = asset != null ? Collections.unmodifiableSet(new HashSet<>(asset.getBlockTypeKeys())) : Collections.emptySet();
+                    cachedOreKeys            = asset != null ? Collections.unmodifiableSet(new HashSet<>(asset.getBlockTypeKeys())) : Collections.emptySet();
                     DebugLog.fine(DebugCategory.MINER_JOB, "[MineOreDetector] Loaded %d ore block types.", cachedOreKeys.size());
                 }
             }

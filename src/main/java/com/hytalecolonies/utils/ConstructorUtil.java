@@ -12,9 +12,10 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3f;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.math.vector.Vector3f;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.AssetModule;
 import com.hypixel.hytale.server.core.asset.type.blockhitbox.BlockBoundingBoxes;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
@@ -85,7 +86,7 @@ public final class ConstructorUtil
             return true;
 
         BlockType expected = BlockType.getAssetMap().getAsset(prefabBlockId);
-        BlockType actual = BlockType.getAssetMap().getAsset(worldBlockId);
+        BlockType actual   = BlockType.getAssetMap().getAsset(worldBlockId);
         if (expected == null || actual == null)
             return false;
 
@@ -133,7 +134,7 @@ public final class ConstructorUtil
             BlockSelection cached = ConstructorBuildOrderFilter.pendingSelections.get(order.buildOrigin);
             if (cached != null)
             {
-                order.cachedSelection = cached;
+                order.cachedSelection    = cached;
                 order.cachedSortedBlocks = sortedPrefabBlocks(cached);
                 return cached;
             }
@@ -143,11 +144,11 @@ public final class ConstructorUtil
         // avoid cross-filesystem issues).
         try
         {
-            Path packRoot = AssetModule.get().getBaseAssetPack().getRoot();
-            Path prefabPath = packRoot.getFileSystem().getPath(order.prefabId);
-            BlockSelection loaded = PrefabStore.get().getPrefab(prefabPath);
-            order.cachedSelection = loaded;
-            order.cachedSortedBlocks = sortedPrefabBlocks(loaded);
+            Path           packRoot   = AssetModule.get().getBaseAssetPack().getRoot();
+            Path           prefabPath = packRoot.getFileSystem().getPath(order.prefabId);
+            BlockSelection loaded     = PrefabStore.get().getPrefab(prefabPath);
+            order.cachedSelection     = loaded;
+            order.cachedSortedBlocks  = sortedPrefabBlocks(loaded);
             return loaded;
         }
         catch (PrefabLoadException e)
@@ -184,9 +185,9 @@ public final class ConstructorUtil
             List<int[]> blocks = getSortedBlocks(order, prefab);
             for (int i = blocks.size() - 1; i >= 0; i--)
             {
-                int[] b = blocks.get(i);
-                int prefabBlockId = b[3];
-                boolean isAir = (prefabBlockId == 0 || prefabBlockId == emptyId);
+                int[]   b             = blocks.get(i);
+                int     prefabBlockId = b[3];
+                boolean isAir         = (prefabBlockId == 0 || prefabBlockId == emptyId);
 
                 int wx = b[0] + origin.x - prefab.getAnchorX();
                 int wy = b[1] + origin.y - prefab.getAnchorY();
@@ -255,15 +256,15 @@ public final class ConstructorUtil
     {
         if (order == null || order.buildOrigin == null || prefab == null)
             return;
-        Vector3i origin = order.buildOrigin;
-        float drawTime = 2.0f;
-        int emptyId = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
+        Vector3i origin   = order.buildOrigin;
+        float    drawTime = 2.0f;
+        int      emptyId  = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
 
         DebugUtils.addCube(world, origin.x + 0.5, origin.y + 0.5, origin.z + 0.5, DebugUtils.COLOR_WHITE, 1.4, drawTime);
 
         prefab.forEachBlock((lx, ly, lz, block) -> {
-            int prefabBlockId = block.blockId();
-            boolean isAir = (prefabBlockId == 0 || prefabBlockId == emptyId);
+            int     prefabBlockId = block.blockId();
+            boolean isAir         = (prefabBlockId == 0 || prefabBlockId == emptyId);
 
             int wx = lx + origin.x - prefab.getAnchorX();
             int wy = ly + origin.y - prefab.getAnchorY();
@@ -295,11 +296,11 @@ public final class ConstructorUtil
     {
         if (order == null || order.buildOrigin == null)
             return 0;
-        Vector3i origin = order.buildOrigin;
-        int lx = wx - origin.x + prefab.getAnchorX();
-        int ly = wy - origin.y + prefab.getAnchorY();
-        int lz = wz - origin.z + prefab.getAnchorZ();
-        BlockSelection.BlockHolder bh = prefab.getBlockHolderAtWorldPos(lx, ly, lz);
+        Vector3i                   origin = order.buildOrigin;
+        int                        lx     = wx - origin.x + prefab.getAnchorX();
+        int                        ly     = wy - origin.y + prefab.getAnchorY();
+        int                        lz     = wz - origin.z + prefab.getAnchorZ();
+        BlockSelection.BlockHolder bh     = prefab.getBlockHolderAtWorldPos(lx, ly, lz);
         return bh != null ? bh.rotation() : 0;
     }
 
@@ -350,8 +351,8 @@ public final class ConstructorUtil
     {
         if (order == null || order.buildOrigin == null || prefab == null)
             return null;
-        Vector3i origin = order.buildOrigin;
-        int emptyId = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
+        Vector3i origin  = order.buildOrigin;
+        int      emptyId = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
 
         try (var _ = DebugTiming.measure("ConstructorUtil.claimNextClearingTarget", 50))
         {
@@ -360,13 +361,13 @@ public final class ConstructorUtil
             List<int[]> blocks = getSortedBlocks(order, prefab);
             for (int i = blocks.size() - 1; i >= 0; i--)
             {
-                int[] b = blocks.get(i);
-                int prefabBlockId = b[3];
-                boolean isAir = (prefabBlockId == 0 || prefabBlockId == emptyId);
-                int wx = b[0] + origin.x - prefab.getAnchorX();
-                int wy = b[1] + origin.y - prefab.getAnchorY();
-                int wz = b[2] + origin.z - prefab.getAnchorZ();
-                int worldBlock = world.getBlock(wx, wy, wz);
+                int[]   b             = blocks.get(i);
+                int     prefabBlockId = b[3];
+                boolean isAir         = (prefabBlockId == 0 || prefabBlockId == emptyId);
+                int     wx            = b[0] + origin.x - prefab.getAnchorX();
+                int     wy            = b[1] + origin.y - prefab.getAnchorY();
+                int     wz            = b[2] + origin.z - prefab.getAnchorZ();
+                int     worldBlock    = world.getBlock(wx, wy, wz);
 
                 boolean needsClear = isAir ? (worldBlock != 0) : (worldBlock != 0 && !isBlockEquivalent(worldBlock, prefabBlockId));
                 if (!needsClear)
@@ -389,18 +390,18 @@ public final class ConstructorUtil
      */
     @Nonnull
     public static List<Vector3i> getAndClaimBuildTargets(@Nullable ConstructionOrderStore.Entry order,
-                                                         @Nonnull World world,
-                                                         @Nullable BlockSelection prefab,
-                                                         @Nonnull UUID colonistUuid,
-                                                         int maxCount)
+                                                         @Nonnull World                         world,
+                                                         @Nullable BlockSelection               prefab,
+                                                         @Nonnull UUID                          colonistUuid,
+                                                         int                                    maxCount)
     {
         if (order == null || order.buildOrigin == null || prefab == null || maxCount <= 0)
         {
             return Collections.emptyList();
         }
 
-        Vector3i origin = order.buildOrigin;
-        int emptyId = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
+        Vector3i       origin        = order.buildOrigin;
+        int            emptyId       = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
         List<Vector3i> claimedBlocks = new ArrayList<>();
 
         for (int[] b : getSortedBlocks(order, prefab))
@@ -426,8 +427,8 @@ public final class ConstructorUtil
             if (blockType == null)
                 continue;
 
-            int rotation = b[4];
-            Vector3i pos = new Vector3i(wx, wy, wz);
+            int      rotation = b[4];
+            Vector3i pos      = new Vector3i(wx, wy, wz);
 
             // We immediately claim the block before returning it, so no other colonist can claim the block.
             // If the claim fails, it was already claimed and we skip.
@@ -478,13 +479,13 @@ public final class ConstructorUtil
      * Returns {@code true} if at least one block was claimed.
      */
     public static boolean setupBuildRun(@Nonnull Ref<EntityStore> colonistRef,
-                                        @Nonnull EntityStore entityStore,
-                                        @Nonnull World world,
+                                        @Nonnull EntityStore      entityStore,
+                                        @Nonnull World            world,
                                         @Nonnull ConstructionOrderStore.Entry order,
-                                        @Nonnull BlockSelection prefab,
-                                        @Nonnull UUID colonistUuid,
-                                        int blockCount,
-                                        @Nonnull String npcId)
+                                        @Nonnull BlockSelection               prefab,
+                                        @Nonnull UUID                         colonistUuid,
+                                        int                                   blockCount,
+                                        @Nonnull String                       npcId)
     {
         // Claim blocks where colonist wants to build.
         List<Vector3i> claimedBlocks = getAndClaimBuildTargets(order, world, prefab, colonistUuid, blockCount);
@@ -523,7 +524,7 @@ public final class ConstructorUtil
                 buildingBlocks.stream().map(s -> new ItemRequirement(s.getItemId(), s.getQuantity())).toArray(ItemRequirement[] ::new);
 
         JobTaskComponent taskComponent = new JobTaskComponent();
-        taskComponent.requiredItems = requiredBuildingBlocks;
+        taskComponent.requiredItems    = requiredBuildingBlocks;
         entityStore.getStore().addComponent(colonistRef, JobTaskComponent.getComponentType(), taskComponent);
     }
 }

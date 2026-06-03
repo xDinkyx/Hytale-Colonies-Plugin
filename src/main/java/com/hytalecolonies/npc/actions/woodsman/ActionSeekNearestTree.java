@@ -7,10 +7,11 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -47,7 +48,7 @@ public class ActionSeekNearestTree extends ActionBase
         super.execute(ref, role, sensorInfo, dt, store);
 
         UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
-        String npcId = DebugLog.npcId(ref, store);
+        String        npcId         = DebugLog.npcId(ref, store);
 
         DebugLog.fine(DebugCategory.WOODSMAN_JOB, "[SeekNearestTree] [%s] Action started.", npcId);
 
@@ -73,7 +74,7 @@ public class ActionSeekNearestTree extends ActionBase
         }
         UUID colonistUuid = uuidComponent.getUuid();
 
-        World world = store.getExternalData().getWorld();
+        World    world       = store.getExternalData().getWorld();
         Vector3i nearestTree = findNearestAvailableTree(workStation, workStationPosition, world, npcId);
 
         if (nearestTree == null)
@@ -113,12 +114,12 @@ public class ActionSeekNearestTree extends ActionBase
 
     @Nullable
     private static Vector3i findNearestAvailableTree(@Nonnull WoodsmanWorkStationComponent workStation,
-                                                     @Nullable Vector3i workStationPosition,
-                                                     @Nonnull World world,
-                                                     @Nonnull String npcId)
+                                                     @Nullable Vector3i                    workStationPosition,
+                                                     @Nonnull World                        world,
+                                                     @Nonnull String                       npcId)
     {
-        List<Vector3i> candidates = new ArrayList<>();
-        Query<ChunkStore> treeQuery = Query.and(HarvestableTreeComponent.getComponentType());
+        List<Vector3i>    candidates = new ArrayList<>();
+        Query<ChunkStore> treeQuery  = Query.and(HarvestableTreeComponent.getComponentType());
 
         StoreUtil.forEachChunkMatchingQuery(world.getChunkStore().getStore(), treeQuery, (chunk, _unused) -> {
             for (int index = 0; index < chunk.size(); index++)
@@ -152,19 +153,19 @@ public class ActionSeekNearestTree extends ActionBase
             return candidates.isEmpty() ? null : candidates.get(0);
         }
 
-        Vector3i nearest = null;
-        double nearestDistanceSq = workStation.treeSearchRadius * workStation.treeSearchRadius;
+        Vector3i nearest           = null;
+        double   nearestDistanceSq = workStation.treeSearchRadius * workStation.treeSearchRadius;
 
         for (Vector3i candidate : candidates)
         {
-            double dx = candidate.x - workStationPosition.x;
-            double dy = candidate.y - workStationPosition.y;
-            double dz = candidate.z - workStationPosition.z;
+            double dx         = candidate.x - workStationPosition.x;
+            double dy         = candidate.y - workStationPosition.y;
+            double dz         = candidate.z - workStationPosition.z;
             double distanceSq = dx * dx + dy * dy + dz * dz;
             if (distanceSq < nearestDistanceSq)
             {
                 nearestDistanceSq = distanceSq;
-                nearest = candidate;
+                nearest           = candidate;
             }
         }
 

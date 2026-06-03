@@ -3,13 +3,14 @@ package com.hytalecolonies.systems.npc;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3d;
+
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefChangeSystem;
-import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -40,7 +41,7 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
     }
 
     @Override
-    public void onComponentAdded(@Nonnull Ref<EntityStore> ref,
+    public void onComponentAdded(@Nonnull Ref<EntityStore>      ref,
                                  @Nonnull MoveToTargetComponent component,
                                  @Nonnull Store<EntityStore> store,
                                  @Nonnull CommandBuffer<EntityStore> commandBuffer)
@@ -69,7 +70,7 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
         // every tick and activates the Seek body motion while the NPC is outside MinRange.
         try
         {
-            role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(component.target);
+            role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(component.target);
         }
         catch (NullPointerException e)
         {
@@ -94,9 +95,9 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
     }
 
     @Override
-    public void onComponentSet(@Nonnull Ref<EntityStore> ref,
+    public void onComponentSet(@Nonnull Ref<EntityStore>       ref,
                                @Nullable MoveToTargetComponent oldComponent,
-                               @Nonnull MoveToTargetComponent newComponent,
+                               @Nonnull MoveToTargetComponent  newComponent,
                                @Nonnull Store<EntityStore> store,
                                @Nonnull CommandBuffer<EntityStore> commandBuffer)
     {
@@ -105,7 +106,7 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
     }
 
     @Override
-    public void onComponentRemoved(@Nonnull Ref<EntityStore> ref,
+    public void onComponentRemoved(@Nonnull Ref<EntityStore>      ref,
                                    @Nonnull MoveToTargetComponent component,
                                    @Nonnull Store<EntityStore> store,
                                    @Nonnull CommandBuffer<EntityStore> commandBuffer)

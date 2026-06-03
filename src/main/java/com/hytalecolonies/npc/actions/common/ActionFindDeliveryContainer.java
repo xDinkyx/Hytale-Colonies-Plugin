@@ -3,9 +3,10 @@ package com.hytalecolonies.npc.actions.common;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
@@ -29,7 +30,7 @@ import com.hytalecolonies.utils.WorkstationContainerUtil;
 public class ActionFindDeliveryContainer extends ActionBase
 {
     private static final int NAV_TARGET_SLOT = 0;
-    private static final int SEARCH_RADIUS = 3;
+    private static final int SEARCH_RADIUS   = 3;
 
     public ActionFindDeliveryContainer(@Nonnull BuilderActionFindDeliveryContainer builder, @Nonnull BuilderSupport support)
     {
@@ -63,9 +64,9 @@ public class ActionFindDeliveryContainer extends ActionBase
             JobNavigationUtil.setJobTarget(store, ref, workStation.deliveryContainerPosition);
             role.getMarkedEntitySupport()
                     .getStoredPosition(NAV_TARGET_SLOT)
-                    .assign(workStation.deliveryContainerPosition.x + 0.5,
-                            (double)workStation.deliveryContainerPosition.y,
-                            workStation.deliveryContainerPosition.z + 0.5);
+                    .set(workStation.deliveryContainerPosition.x + 0.5,
+                         (double)workStation.deliveryContainerPosition.y,
+                         workStation.deliveryContainerPosition.z + 0.5);
             return true;
         }
 
@@ -79,7 +80,7 @@ public class ActionFindDeliveryContainer extends ActionBase
             return true;
         }
 
-        World world = store.getExternalData().getWorld();
+        World    world        = store.getExternalData().getWorld();
         Vector3i containerPos = WorkstationContainerUtil.findNearbyContainer(world, wsPos, SEARCH_RADIUS);
 
         if (containerPos == null)
@@ -95,7 +96,7 @@ public class ActionFindDeliveryContainer extends ActionBase
 
         workStation.deliveryContainerPosition = containerPos;
         JobNavigationUtil.setJobTarget(store, ref, containerPos);
-        role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(containerPos.x + 0.5, (double)containerPos.y, containerPos.z + 0.5);
+        role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(containerPos.x + 0.5, (double)containerPos.y, containerPos.z + 0.5);
 
         DebugLog.fine(DebugCategory.COLONIST_DELIVERY, "[FindDeliveryContainer] [%s] Container at %s -- navigating.", npcId, containerPos);
 

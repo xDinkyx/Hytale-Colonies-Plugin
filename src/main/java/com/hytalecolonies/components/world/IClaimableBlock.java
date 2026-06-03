@@ -1,6 +1,6 @@
 package com.hytalecolonies.components.world;
 
-import com.hypixel.hytale.math.vector.Vector3i;
+import org.joml.Vector3i;
 
 /**
  * Marker interface for {@code ChunkStore} components that represent a block a colonist can reserve for exclusive use during a job.

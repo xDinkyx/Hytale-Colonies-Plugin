@@ -44,14 +44,14 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore>
     }
 
     @Override
-    public void tick(float dt,
-                     int index,
+    public void tick(float    dt,
+                     int      index,
                      @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
                      @Nonnull Store<EntityStore> store,
                      @Nonnull CommandBuffer<EntityStore> commandBuffer)
     {
         JobComponent job = archetypeChunk.getComponent(index, JobComponent.getComponentType());
-        assert job != null;
+        assert       job != null;
 
         Ref<EntityStore> colonistRef = archetypeChunk.getReferenceTo(index);
 
@@ -80,7 +80,7 @@ public class ColonistJobSystem extends DelayedEntitySystem<EntityStore>
             return;
 
         String expectedRole = ColonistRoleMap.roleFor(workStation.getJobType());
-        String actualRole = NPCPlugin.get().getName(currentRole.getRoleIndex());
+        String actualRole   = NPCPlugin.get().getName(currentRole.getRoleIndex());
         if (!expectedRole.equals(actualRole))
         {
             DebugLog.info(DebugCategory.JOB_ASSIGNMENT,

@@ -90,7 +90,7 @@ import com.hytalecolonies.systems.world.TreeScannerSystem;
  */
 public class HytaleColoniesPlugin extends JavaPlugin
 {
-    public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    public static final HytaleLogger    LOGGER = HytaleLogger.forEnclosingClass();
     private static HytaleColoniesPlugin instance;
 
     private final Config<DebugConfig> debugConfig = this.withConfig("DebugConfig", DebugConfig.CODEC);
@@ -99,22 +99,22 @@ public class HytaleColoniesPlugin extends JavaPlugin
     private final Config<MineSegmentStore.StoreData> mineSegmentConfig = this.withConfig("MineSegments", MineSegmentStore.StoreData.CODEC);
 
     // ECS Component Types
-    private ComponentType<EntityStore, ColonistComponent> colonistComponentType;
-    private ComponentType<EntityStore, JobComponent> colonistJobComponentType;
-    private ComponentType<EntityStore, UnemployedComponent> unemployedComponentType;
-    private ComponentType<EntityStore, WoodsmanJobComponent> woodsmanJobComponentType;
-    private ComponentType<EntityStore, MinerJobComponent> minerJobComponentType;
-    private ComponentType<EntityStore, JobRunCounterComponent> jobRunCounterComponentType;
-    private ComponentType<EntityStore, ConstructorJobComponent> constructorJobComponentType;
-    private ComponentType<EntityStore, JobTaskComponent> jobTaskComponentType;
-    private ComponentType<ChunkStore, WorkStationComponent> workStationComponentType;
-    private ComponentType<ChunkStore, WoodsmanWorkStationComponent> woodsmanWorkStationComponentType;
-    private ComponentType<ChunkStore, MinerWorkStationComponent> minerWorkStationComponentType;
+    private ComponentType<EntityStore, ColonistComponent>              colonistComponentType;
+    private ComponentType<EntityStore, JobComponent>                   colonistJobComponentType;
+    private ComponentType<EntityStore, UnemployedComponent>            unemployedComponentType;
+    private ComponentType<EntityStore, WoodsmanJobComponent>           woodsmanJobComponentType;
+    private ComponentType<EntityStore, MinerJobComponent>              minerJobComponentType;
+    private ComponentType<EntityStore, JobRunCounterComponent>         jobRunCounterComponentType;
+    private ComponentType<EntityStore, ConstructorJobComponent>        constructorJobComponentType;
+    private ComponentType<EntityStore, JobTaskComponent>               jobTaskComponentType;
+    private ComponentType<ChunkStore, WorkStationComponent>            workStationComponentType;
+    private ComponentType<ChunkStore, WoodsmanWorkStationComponent>    woodsmanWorkStationComponentType;
+    private ComponentType<ChunkStore, MinerWorkStationComponent>       minerWorkStationComponentType;
     private ComponentType<ChunkStore, ConstructorWorkStationComponent> constructorWorkStationComponentType;
-    private ComponentType<EntityStore, MoveToTargetComponent> moveToTargetComponentType;
-    private ComponentType<ChunkStore, HarvestableTreeComponent> harvestableTreeComponentType;
-    private ComponentType<EntityStore, JobTargetComponent> jobTargetComponentType;
-    private ComponentType<ChunkStore, ClaimedBlockComponent> claimedBlockComponentType;
+    private ComponentType<EntityStore, MoveToTargetComponent>          moveToTargetComponentType;
+    private ComponentType<ChunkStore, HarvestableTreeComponent>        harvestableTreeComponentType;
+    private ComponentType<EntityStore, JobTargetComponent>             jobTargetComponentType;
+    private ComponentType<ChunkStore, ClaimedBlockComponent>           claimedBlockComponentType;
 
     public HytaleColoniesPlugin(@Nonnull JavaPluginInit init)
     {
@@ -208,15 +208,15 @@ public class HytaleColoniesPlugin extends JavaPlugin
      */
     private void registerComponents()
     {
-        colonistComponentType = getEntityStoreRegistry().registerComponent(ColonistComponent.class, "Colonist", ColonistComponent.CODEC);
-        colonistJobComponentType = getEntityStoreRegistry().registerComponent(JobComponent.class, "ColonistJob", JobComponent.CODEC);
-        unemployedComponentType = getEntityStoreRegistry().registerComponent(UnemployedComponent.class, "Unemployed", UnemployedComponent.CODEC);
-        woodsmanJobComponentType = getEntityStoreRegistry().registerComponent(WoodsmanJobComponent.class, "WoodsmanJob", WoodsmanJobComponent.CODEC);
-        minerJobComponentType = getEntityStoreRegistry().registerComponent(MinerJobComponent.class, "MinerJob", MinerJobComponent.CODEC);
+        colonistComponentType      = getEntityStoreRegistry().registerComponent(ColonistComponent.class, "Colonist", ColonistComponent.CODEC);
+        colonistJobComponentType   = getEntityStoreRegistry().registerComponent(JobComponent.class, "ColonistJob", JobComponent.CODEC);
+        unemployedComponentType    = getEntityStoreRegistry().registerComponent(UnemployedComponent.class, "Unemployed", UnemployedComponent.CODEC);
+        woodsmanJobComponentType   = getEntityStoreRegistry().registerComponent(WoodsmanJobComponent.class, "WoodsmanJob", WoodsmanJobComponent.CODEC);
+        minerJobComponentType      = getEntityStoreRegistry().registerComponent(MinerJobComponent.class, "MinerJob", MinerJobComponent.CODEC);
         jobRunCounterComponentType = getEntityStoreRegistry().registerComponent(JobRunCounterComponent.class, "JobRunCounter", JobRunCounterComponent.CODEC);
         constructorJobComponentType =
                 getEntityStoreRegistry().registerComponent(ConstructorJobComponent.class, "ConstructorJob", ConstructorJobComponent.CODEC);
-        jobTaskComponentType = getEntityStoreRegistry().registerComponent(JobTaskComponent.class, "JobTask", JobTaskComponent.CODEC);
+        jobTaskComponentType     = getEntityStoreRegistry().registerComponent(JobTaskComponent.class, "JobTask", JobTaskComponent.CODEC);
         workStationComponentType = getChunkStoreRegistry().registerComponent(WorkStationComponent.class, "WorkStation", WorkStationComponent.CODEC);
         woodsmanWorkStationComponentType =
                 getChunkStoreRegistry().registerComponent(WoodsmanWorkStationComponent.class, "WoodsmanWorkStation", WoodsmanWorkStationComponent.CODEC);
@@ -225,10 +225,10 @@ public class HytaleColoniesPlugin extends JavaPlugin
         constructorWorkStationComponentType = getChunkStoreRegistry().registerComponent(ConstructorWorkStationComponent.class,
                                                                                         "ConstructorWorkStation",
                                                                                         ConstructorWorkStationComponent.CODEC);
-        moveToTargetComponentType = getEntityStoreRegistry().registerComponent(MoveToTargetComponent.class, MoveToTargetComponent::new);
+        moveToTargetComponentType           = getEntityStoreRegistry().registerComponent(MoveToTargetComponent.class, MoveToTargetComponent::new);
         harvestableTreeComponentType =
                 getChunkStoreRegistry().registerComponent(HarvestableTreeComponent.class, "HarvestableTree", HarvestableTreeComponent.CODEC);
-        jobTargetComponentType = getEntityStoreRegistry().registerComponent(JobTargetComponent.class, "JobTarget", JobTargetComponent.CODEC);
+        jobTargetComponentType    = getEntityStoreRegistry().registerComponent(JobTargetComponent.class, "JobTarget", JobTargetComponent.CODEC);
         claimedBlockComponentType = getChunkStoreRegistry().registerComponent(ClaimedBlockComponent.class, "ClaimedBlock", ClaimedBlockComponent.CODEC);
 
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ECS components");

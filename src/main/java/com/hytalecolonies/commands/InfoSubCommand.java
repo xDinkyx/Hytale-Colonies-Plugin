@@ -18,8 +18,7 @@ public class InfoSubCommand extends CommandBase
     public InfoSubCommand(String pluginName, String pluginVersion)
     {
         super("info", "Show plugin information");
-        this.setPermissionGroup(null);
-        this.pluginName = pluginName;
+        this.pluginName    = pluginName;
         this.pluginVersion = pluginVersion;
     }
 

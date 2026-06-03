@@ -2,10 +2,11 @@ package com.hytalecolonies.commands.debug;
 
 import javax.annotation.Nonnull;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blockhitbox.BlockBoundingBoxes;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
@@ -96,7 +97,7 @@ public class BlockEntityInfoCommand extends AbstractWorldCommand
             int fillerY = FillerBlockUtil.unpackY(filler);
             int fillerZ = FillerBlockUtil.unpackZ(filler);
             // Subtract the filler local coordinates from the look position to get the main block's position.
-            position = Vector3i.add(position, new Vector3i(-fillerX, -fillerY, -fillerZ));
+            position = new Vector3i(position).add(-fillerX, -fillerY, -fillerZ);
             // Re-fetch blockId and blockType for the main block
             blockId = blockChunk.getBlock(fillerX, fillerY, fillerZ);
             blockType = BlockType.getAssetMap().getAsset(blockId);

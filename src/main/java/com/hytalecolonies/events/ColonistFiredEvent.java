@@ -4,18 +4,19 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.event.IEvent;
-import com.hypixel.hytale.math.vector.Vector3i;
 
 /** Fired when a colonist is removed from a workstation (fired/unassigned). */
 public class ColonistFiredEvent implements IEvent<Vector3i>
 {
-    private final UUID colonistUuid;
+    private final UUID     colonistUuid;
     private final Vector3i workstationPos;
 
     public ColonistFiredEvent(@Nonnull UUID colonistUuid, @Nonnull Vector3i workstationPos)
     {
-        this.colonistUuid = colonistUuid;
+        this.colonistUuid   = colonistUuid;
         this.workstationPos = workstationPos;
     }
 

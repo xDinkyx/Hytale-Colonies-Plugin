@@ -24,7 +24,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 public class ConstructSubCommand extends AbstractPlayerCommand
 {
     private static final Message MSG_PREFAB_NOT_FOUND = Message.translation("server.commands.colonies.construct.prefabNotFound");
-    private static final Message MSG_PREFAB_LOADED = Message.translation("server.commands.colonies.construct.prefabLoaded");
+    private static final Message MSG_PREFAB_LOADED    = Message.translation("server.commands.colonies.construct.prefabLoaded");
 
     private final RequiredArg<String> prefabNameArg =
             this.withRequiredArg("prefabName", "Name of the server prefab to load into clipboard", ArgTypes.GREEDY_STRING);
@@ -32,7 +32,6 @@ public class ConstructSubCommand extends AbstractPlayerCommand
     public ConstructSubCommand()
     {
         super("construct", "Load a server prefab into clipboard for ghost preview");
-        this.setPermissionGroup(null);
     }
 
     @Override
@@ -45,15 +44,15 @@ public class ConstructSubCommand extends AbstractPlayerCommand
     protected void execute(@Nonnull CommandContext context,
                            @Nonnull Store<EntityStore> store,
                            @Nonnull Ref<EntityStore> ref,
-                           @Nonnull PlayerRef playerRef,
-                           @Nonnull World world)
+                           @Nonnull PlayerRef        playerRef,
+                           @Nonnull World            world)
     {
         String prefabName = prefabNameArg.get(context);
-        Player player = store.getComponent(ref, Player.getComponentType());
+        Player player     = store.getComponent(ref, Player.getComponentType());
         if (player == null)
             return;
 
-        final String finalName = prefabName;
+        final String    finalName      = prefabName;
         final PlayerRef finalPlayerRef = playerRef;
 
         BuilderToolsPlugin.addToQueue(player, playerRef, (r, builderState, componentAccessor) -> {

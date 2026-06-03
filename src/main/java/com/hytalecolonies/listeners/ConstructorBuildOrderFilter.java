@@ -6,9 +6,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.builtin.buildertools.BuilderToolsPlugin;
 import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.Packet;
 import com.hypixel.hytale.protocol.packets.buildertools.BuilderToolPasteClipboard;
 import com.hypixel.hytale.server.core.Message;
@@ -75,9 +76,9 @@ public class ConstructorBuildOrderFilter implements PlayerPacketFilter
         pasteLocked.add(uuid);
 
         BuilderToolPasteClipboard pastePacket = (BuilderToolPasteClipboard)packet;
-        int pasteX = pastePacket.x;
-        int pasteY = pastePacket.y;
-        int pasteZ = pastePacket.z;
+        int                       pasteX      = pastePacket.x;
+        int                       pasteY      = pastePacket.y;
+        int                       pasteZ      = pastePacket.z;
 
         DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
                       "[ConstructorFilter] Intercepted paste from '%s' at %d,%d,%d -- scheduling order creation.",

@@ -3,9 +3,10 @@ package com.hytalecolonies.npc.actions.common;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
@@ -31,7 +32,7 @@ import com.hytalecolonies.utils.JobNavigationUtil;
 public class ActionNavigateTo extends ActionBase
 {
     private static final String TARGET_WORKSTATION = "Workstation";
-    private static final String TARGET_JOB_TARGET = "JobTarget";
+    private static final String TARGET_JOB_TARGET  = "JobTarget";
 
     /**
      * NavTarget stored-position slot index — must match Template_Colonist.json slot 0.
@@ -106,6 +107,6 @@ public class ActionNavigateTo extends ActionBase
 
     private void setNavTarget(@Nonnull Role role, double x, double y, double z)
     {
-        role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).assign(x, y, z);
+        role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(x, y, z);
     }
 }

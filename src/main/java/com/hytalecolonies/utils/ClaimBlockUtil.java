@@ -7,12 +7,13 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blockhitbox.BlockBoundingBoxes;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
@@ -96,7 +97,7 @@ public final class ClaimBlockUtil
             return false;
         }
 
-        long chunkIdx = ChunkUtil.indexChunkFromBlock(canonical.x, canonical.z);
+        long            chunkIdx = ChunkUtil.indexChunkFromBlock(canonical.x, canonical.z);
         Ref<ChunkStore> chunkRef = world.getChunkStore().getChunkReference(chunkIdx);
         if (chunkRef == null || !chunkRef.isValid())
         {
@@ -104,16 +105,16 @@ public final class ClaimBlockUtil
             return false;
         }
 
-        Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
-        BlockComponentChunk bcc = chunkStore.getComponent(chunkRef, BlockComponentChunk.getComponentType());
+        Store<ChunkStore>   chunkStore = world.getChunkStore().getStore();
+        BlockComponentChunk bcc        = chunkStore.getComponent(chunkRef, BlockComponentChunk.getComponentType());
         if (bcc == null)
         {
             DebugLog.fine(DebugCategory.CLAIM_SYSTEM, "[Claim] claimBlock(%s) -- no BlockComponentChunk.", canonical);
             return false;
         }
 
-        int blockIndex = ChunkUtil.indexBlockInColumn(canonical.x, canonical.y, canonical.z);
-        Ref<ChunkStore> blockRef = bcc.getEntityReference(blockIndex);
+        int             blockIndex = ChunkUtil.indexBlockInColumn(canonical.x, canonical.y, canonical.z);
+        Ref<ChunkStore> blockRef   = bcc.getEntityReference(blockIndex);
 
         if (blockRef != null && blockRef.isValid())
         {
@@ -156,9 +157,9 @@ public final class ClaimBlockUtil
     @Nullable
     public static Vector3i resolveCanonicalPosition(World world, Vector3i position)
     {
-        long chunkIndex = ChunkUtil.indexChunkFromBlock(position.x, position.z);
+        long              chunkIndex = ChunkUtil.indexChunkFromBlock(position.x, position.z);
         Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
-        Ref<ChunkStore> chunkRef = world.getChunkStore().getChunkReference(chunkIndex);
+        Ref<ChunkStore>   chunkRef   = world.getChunkStore().getChunkReference(chunkIndex);
 
         if (chunkRef == null || !chunkRef.isValid())
             return null;
@@ -175,17 +176,17 @@ public final class ClaimBlockUtil
         if (blockType == null)
             return position;
 
-        BlockSection blockSection = blockChunk.getSectionAtBlockY(position.y);
-        BlockBoundingBoxes hitbox = BlockBoundingBoxes.getAssetMap().getAsset(blockType.getHitboxTypeIndex());
+        BlockSection       blockSection = blockChunk.getSectionAtBlockY(position.y);
+        BlockBoundingBoxes hitbox       = BlockBoundingBoxes.getAssetMap().getAsset(blockType.getHitboxTypeIndex());
 
         if (blockSection != null && hitbox != null && hitbox.protrudesUnitBox())
         {
-            int idx = ChunkUtil.indexBlock(position.x, position.y, position.z);
-            int filler = blockSection.getFiller(idx);
+            int idx     = ChunkUtil.indexBlock(position.x, position.y, position.z);
+            int filler  = blockSection.getFiller(idx);
             int fillerX = FillerBlockUtil.unpackX(filler);
             int fillerY = FillerBlockUtil.unpackY(filler);
             int fillerZ = FillerBlockUtil.unpackZ(filler);
-            return Vector3i.add(position, new Vector3i(-fillerX, -fillerY, -fillerZ));
+            return new Vector3i(position).add(-fillerX, -fillerY, -fillerZ);
         }
 
         return position;
@@ -220,8 +221,8 @@ public final class ClaimBlockUtil
             return;
         }
 
-        Store<ChunkStore> chunkStore = blockRef.getStore();
-        ClaimedBlockComponent existing = chunkStore.getComponent(blockRef, ClaimedBlockComponent.getComponentType());
+        Store<ChunkStore>     chunkStore = blockRef.getStore();
+        ClaimedBlockComponent existing   = chunkStore.getComponent(blockRef, ClaimedBlockComponent.getComponentType());
         if (existing == null)
         {
             DebugLog.fine(DebugCategory.CLAIM_SYSTEM, "[Claim] unclaimBlock(%s) -- no ClaimedBlockComponent present, nothing to remove.", canonical);
@@ -276,7 +277,7 @@ public final class ClaimBlockUtil
             return true;
 
         List<Vector3i> claimedFillers = new ArrayList<>();
-        boolean[] success = {true};
+        boolean[]      success        = {true};
         FillerBlockUtil.forEachFillerBlock(hitbox.get(rotation), (fx, fy, fz) -> {
             if (!success[0] || (fx == 0 && fy == 0 && fz == 0))
                 return;

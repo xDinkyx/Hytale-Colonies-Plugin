@@ -2,10 +2,11 @@ package com.hytalecolonies.utils;
 
 import java.util.UUID;
 
+import org.joml.Vector3d;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
@@ -60,8 +61,8 @@ public final class JobNavigationUtil
     {
         if (!entityRef.isValid())
             return;
-        Vector3d navigationTarget = new Vector3d(block.x + 0.5, block.y, block.z + 0.5);
-        MoveToTargetComponent existingMove = entityStore.getComponent(entityRef, MoveToTargetComponent.getComponentType());
+        Vector3d              navigationTarget = new Vector3d(block.x + 0.5, block.y, block.z + 0.5);
+        MoveToTargetComponent existingMove     = entityStore.getComponent(entityRef, MoveToTargetComponent.getComponentType());
         if (existingMove != null)
         {
             existingMove.target = navigationTarget;

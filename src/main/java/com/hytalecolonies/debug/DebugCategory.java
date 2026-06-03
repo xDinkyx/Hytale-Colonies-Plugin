@@ -24,7 +24,7 @@ public enum DebugCategory
     CLAIM_SYSTEM("Claim System"),
     PERFORMANCE("Performance");
 
-    private final String displayName;
+    private final String   displayName;
     private volatile Level minLevel = Level.INFO;
 
     DebugCategory(String displayName)

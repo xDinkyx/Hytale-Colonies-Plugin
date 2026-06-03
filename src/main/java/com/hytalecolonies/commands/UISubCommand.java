@@ -24,7 +24,6 @@ public class UISubCommand extends AbstractPlayerCommand
     {
         super("ui", "Open the plugin dashboard");
         this.addAliases("dashboard", "gui");
-        this.setPermissionGroup(null);
     }
 
     @Override
@@ -40,8 +39,8 @@ public class UISubCommand extends AbstractPlayerCommand
     protected void execute(@Nonnull CommandContext context,
                            @Nonnull Store<EntityStore> store,
                            @Nonnull Ref<EntityStore> ref,
-                           @Nonnull PlayerRef playerRef,
-                           @Nonnull World world)
+                           @Nonnull PlayerRef        playerRef,
+                           @Nonnull World            world)
     {
         context.sendMessage(Message.raw("Opening HytaleColonies Dashboard..."));
 

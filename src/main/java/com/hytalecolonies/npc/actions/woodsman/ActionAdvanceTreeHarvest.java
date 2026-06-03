@@ -5,9 +5,10 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
@@ -54,10 +55,10 @@ public class ActionAdvanceTreeHarvest extends ActionBase
         }
 
         Vector3i treeBase = target.targetPosition;
-        World world = store.getExternalData().getWorld();
+        World    world    = store.getExternalData().getWorld();
 
-        WoodsmanWorkStationComponent workStation = WorkStationUtil.getWoodsmanWorkStation(store, ref);
-        Set<String> allowedTreeTypes = workStation != null ? workStation.getAllowedTreeTypes() : null;
+        WoodsmanWorkStationComponent workStation      = WorkStationUtil.getWoodsmanWorkStation(store, ref);
+        Set<String>                  allowedTreeTypes = workStation != null ? workStation.getAllowedTreeTypes() : null;
         if (allowedTreeTypes == null)
         {
             DebugLog.warning(DebugCategory.WOODSMAN_JOB, "[AdvanceTreeHarvest] [%s] No workstation -- delivering.", npcId);

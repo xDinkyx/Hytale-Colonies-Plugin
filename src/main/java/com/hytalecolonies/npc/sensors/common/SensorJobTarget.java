@@ -2,10 +2,11 @@ package com.hytalecolonies.npc.sensors.common;
 
 import javax.annotation.Nonnull;
 
+import org.joml.Vector3d;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
@@ -27,7 +28,7 @@ import com.hytalecolonies.components.jobs.JobTargetComponent;
  */
 public class SensorJobTarget extends SensorBase
 {
-    private final double range;
+    private final double           range;
     private final PositionProvider positionProvider = new PositionProvider();
 
     public SensorJobTarget(@Nonnull BuilderSensorJobTarget builder, @Nonnull BuilderSupport support)
@@ -67,8 +68,8 @@ public class SensorJobTarget extends SensorBase
         }
 
         Vector3d pos = transform.getPosition();
-        double dx = target.x + 0.5 - pos.x;
-        double dz = target.z + 0.5 - pos.z;
+        double   dx  = target.x + 0.5 - pos.x;
+        double   dz  = target.z + 0.5 - pos.z;
         if (dx * dx + dz * dz > range * range)
         {
             positionProvider.clear();

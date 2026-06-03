@@ -43,7 +43,7 @@ public class ActionOpenColonistInspectPage extends ActionBase
             return false;
 
         PlayerRef playerRefComp = store.getComponent(playerRef, PlayerRef.getComponentType());
-        Player player = store.getComponent(playerRef, Player.getComponentType());
+        Player    player        = store.getComponent(playerRef, Player.getComponentType());
         if (player == null || playerRefComp == null)
             return false;
 

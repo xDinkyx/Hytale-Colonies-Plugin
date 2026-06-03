@@ -5,11 +5,12 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3d;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -41,7 +42,7 @@ public class SensorHarvestableTree extends SensorBase
 {
     private static final Query<ChunkStore> TREE_QUERY = Query.and(HarvestableTreeComponent.getComponentType());
 
-    private final double range;
+    private final double           range;
     private final PositionProvider positionProvider = new PositionProvider();
 
     /** Position of the tree this sensor has optimistically claimed, or {@code null} if none. */
@@ -76,7 +77,7 @@ public class SensorHarvestableTree extends SensorBase
                 myUuid = uuidComp.getUuid();
         }
 
-        World world = store.getExternalData().getWorld();
+        World              world     = store.getExternalData().getWorld();
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform == null)
         {
@@ -122,8 +123,8 @@ public class SensorHarvestableTree extends SensorBase
         claimedTreePos = nearest;
         if (myUuid != null)
         {
-            final UUID claimUuid = myUuid;
-            final Vector3i claimPos = nearest;
+            final UUID     claimUuid = myUuid;
+            final Vector3i claimPos  = nearest;
             world.execute(() -> ClaimBlockUtil.claimBlock(world, claimPos, claimUuid, "Harvest"));
         }
 
@@ -147,9 +148,9 @@ public class SensorHarvestableTree extends SensorBase
     @Nullable
     private static Vector3i findNearestUnclaimedTree(@Nonnull World world, @Nonnull Vector3d entityPos, double range)
     {
-        double rangeSq = range * range;
-        Vector3i[] nearestRef = {null};
-        double[] nearestDistSq = {Double.MAX_VALUE};
+        double     rangeSq       = range * range;
+        Vector3i[] nearestRef    = {null};
+        double[]   nearestDistSq = {Double.MAX_VALUE};
 
         StoreUtil.forEachChunkMatchingQuery(world.getChunkStore().getStore(), TREE_QUERY, (chunk, unused) -> {
             for (int i = 0; i < chunk.size(); i++)
@@ -165,13 +166,13 @@ public class SensorHarvestableTree extends SensorBase
                 if (base == null)
                     continue;
 
-                double dx = base.x + 0.5 - entityPos.x;
-                double dz = base.z + 0.5 - entityPos.z;
+                double dx     = base.x + 0.5 - entityPos.x;
+                double dz     = base.z + 0.5 - entityPos.z;
                 double distSq = dx * dx + dz * dz;
 
                 if (distSq <= rangeSq && distSq < nearestDistSq[0])
                 {
-                    nearestRef[0] = base;
+                    nearestRef[0]    = base;
                     nearestDistSq[0] = distSq;
                 }
             }
@@ -187,9 +188,9 @@ public class SensorHarvestableTree extends SensorBase
     {
         if (claimedTreePos == null)
             return;
-        World world = store.getExternalData().getWorld();
-        final Vector3i pos = claimedTreePos;
-        claimedTreePos = null;
+        World          world = store.getExternalData().getWorld();
+        final Vector3i pos   = claimedTreePos;
+        claimedTreePos       = null;
         world.execute(() -> ClaimBlockUtil.unclaimBlock(world, pos));
     }
 }

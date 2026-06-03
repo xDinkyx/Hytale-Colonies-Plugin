@@ -1,11 +1,13 @@
 package com.hytalecolonies.components.world;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
-import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.math.vector.Vector3iUtil;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 /**
@@ -24,13 +26,13 @@ public class HarvestableTreeComponent implements Component<ChunkStore>
                     .add()
                     .append(new KeyedCodec<>("WoodCount", Codec.INTEGER), (o, v) -> o.woodCount = v, o -> o.woodCount)
                     .add()
-                    .append(new KeyedCodec<>("BasePosition", Vector3i.CODEC), (o, v) -> o.basePosition = v, o -> o.basePosition)
+                    .append(new KeyedCodec<>("BasePosition", Vector3iUtil.CODEC), (o, v) -> o.basePosition = v, o -> o.basePosition)
                     .add()
                     .build();
 
     // ===== Fields =====
-    String treeTypeKey;    // The tree wood block type.
-    int woodCount;         // Number of wood (trunk) blocks in this tree.
+    String   treeTypeKey;  // The tree wood block type.
+    int      woodCount;    // Number of wood (trunk) blocks in this tree.
     Vector3i basePosition; // World position of the lowest wood block (the "base" of the tree).
 
     // ===== Constructors =====
@@ -38,8 +40,8 @@ public class HarvestableTreeComponent implements Component<ChunkStore>
 
     public HarvestableTreeComponent(String treeTypeKey, int woodCount, Vector3i basePosition)
     {
-        this.treeTypeKey = treeTypeKey;
-        this.woodCount = woodCount;
+        this.treeTypeKey  = treeTypeKey;
+        this.woodCount    = woodCount;
         this.basePosition = basePosition;
     }
 
@@ -54,9 +56,9 @@ public class HarvestableTreeComponent implements Component<ChunkStore>
     public HarvestableTreeComponent clone()
     {
         HarvestableTreeComponent clone = new HarvestableTreeComponent();
-        clone.treeTypeKey = this.treeTypeKey;
-        clone.woodCount = this.woodCount;
-        clone.basePosition = this.basePosition;
+        clone.treeTypeKey              = this.treeTypeKey;
+        clone.woodCount                = this.woodCount;
+        clone.basePosition             = this.basePosition;
         return clone;
     }
 

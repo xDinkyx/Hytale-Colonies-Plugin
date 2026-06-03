@@ -36,7 +36,7 @@ public class ClaimedBlockComponent implements Component<ChunkStore>
                     .build();
 
     // ===== Fields =====
-    UUID claimedByUuid;
+    UUID   claimedByUuid;
     String claimType;
 
     // ===== Constructors =====
@@ -45,7 +45,7 @@ public class ClaimedBlockComponent implements Component<ChunkStore>
     public ClaimedBlockComponent(UUID claimedByUuid, String claimType)
     {
         this.claimedByUuid = claimedByUuid;
-        this.claimType = claimType;
+        this.claimType     = claimType;
     }
 
     // ===== Component Type =====
@@ -59,8 +59,8 @@ public class ClaimedBlockComponent implements Component<ChunkStore>
     public ClaimedBlockComponent clone()
     {
         ClaimedBlockComponent copy = new ClaimedBlockComponent();
-        copy.claimedByUuid = this.claimedByUuid;
-        copy.claimType = this.claimType;
+        copy.claimedByUuid         = this.claimedByUuid;
+        copy.claimType             = this.claimType;
         return copy;
     }
 

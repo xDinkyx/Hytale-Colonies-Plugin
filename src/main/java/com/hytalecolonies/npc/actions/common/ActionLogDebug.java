@@ -21,16 +21,16 @@ import com.hytalecolonies.debug.DebugLog;
  */
 public class ActionLogDebug extends ActionBase
 {
-    private final String message;
+    private final String        message;
     private final DebugCategory category;
-    private final Level level;
+    private final Level         level;
 
     public ActionLogDebug(@Nonnull BuilderActionLogDebug builder, @Nonnull BuilderSupport support)
     {
         super(builder);
-        this.message = builder.getMessage(support);
+        this.message  = builder.getMessage(support);
         this.category = builder.getCategory(support);
-        this.level = builder.getLevel(support);
+        this.level    = builder.getLevel(support);
     }
 
     @Override

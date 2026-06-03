@@ -32,7 +32,7 @@ public final class ColonistInventoryUtil
     public static boolean
     openForPlayer(@Nonnull Ref<EntityStore> colonistRef, @Nonnull Ref<EntityStore> playerRef, @Nonnull Player player, @Nonnull Store<EntityStore> store)
     {
-        InventoryComponent.Hotbar hotbarComp = store.getComponent(colonistRef, InventoryComponent.Hotbar.getComponentType());
+        InventoryComponent.Hotbar  hotbarComp  = store.getComponent(colonistRef, InventoryComponent.Hotbar.getComponentType());
         InventoryComponent.Storage storageComp = store.getComponent(colonistRef, InventoryComponent.Storage.getComponentType());
 
         if (hotbarComp == null && storageComp == null)

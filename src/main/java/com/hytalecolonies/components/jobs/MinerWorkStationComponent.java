@@ -38,7 +38,7 @@ public class MinerWorkStationComponent implements Component<ChunkStore>
     public @Nullable Component<ChunkStore> clone()
     {
         MinerWorkStationComponent copy = new MinerWorkStationComponent();
-        copy.activeSegmentId = this.activeSegmentId;
+        copy.activeSegmentId           = this.activeSegmentId;
         return copy;
     }
 }

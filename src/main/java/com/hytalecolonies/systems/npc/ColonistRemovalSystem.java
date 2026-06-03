@@ -6,6 +6,9 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3d;
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.AddReason;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Holder;
@@ -14,9 +17,7 @@ import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
-import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.math.vector.Rotation3f;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
@@ -41,7 +42,7 @@ public class ColonistRemovalSystem extends RefSystem<EntityStore>
 
     @Override
     public void onEntityAdded(@Nonnull Ref<EntityStore> ref,
-                              @Nonnull AddReason reason,
+                              @Nonnull AddReason        reason,
                               @Nonnull Store<EntityStore> store,
                               @Nonnull CommandBuffer<EntityStore> commandBuffer)
     {
@@ -50,7 +51,7 @@ public class ColonistRemovalSystem extends RefSystem<EntityStore>
 
     @Override
     public void onEntityRemove(@Nonnull Ref<EntityStore> ref,
-                               @Nonnull RemoveReason reason,
+                               @Nonnull RemoveReason     reason,
                                @Nonnull Store<EntityStore> store,
                                @Nonnull CommandBuffer<EntityStore> commandBuffer)
     {
@@ -65,8 +66,8 @@ public class ColonistRemovalSystem extends RefSystem<EntityStore>
         if (colonist == null)
             return;
 
-        UUIDComponent uuid = store.getComponent(ref, UUIDComponent.getComponentType());
-        String uuidStr = uuid != null ? uuid.getUuid().toString() : "<unknown>";
+        UUIDComponent uuid    = store.getComponent(ref, UUIDComponent.getComponentType());
+        String        uuidStr = uuid != null ? uuid.getUuid().toString() : "<unknown>";
 
         DebugLog.info(DebugCategory.COLONIST_LIFECYCLE,
                       "[ColonistRemoval] Colonist '%s' (UUID: %s) removed from world (reason: %s).",
@@ -85,8 +86,8 @@ public class ColonistRemovalSystem extends RefSystem<EntityStore>
     {
         ClaimBlockUtil.releasePendingBuildClaims(ref, store);
 
-        JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
-        Vector3i clearingTarget = jobTarget != null ? jobTarget.targetPosition : null;
+        JobTargetComponent jobTarget      = store.getComponent(ref, JobTargetComponent.getComponentType());
+        Vector3i           clearingTarget = jobTarget != null ? jobTarget.targetPosition : null;
         if (clearingTarget == null)
             return;
 
@@ -126,8 +127,8 @@ public class ColonistRemovalSystem extends RefSystem<EntityStore>
             return;
         }
 
-        Vector3d dropPosition = transform.getPosition().clone().add(0.0, 0.5, 0.0);
-        Holder<EntityStore>[] drops = ItemComponent.generateItemDrops(store, toDrop, dropPosition, Vector3f.ZERO);
+        Vector3d              dropPosition = new Vector3d(transform.getPosition()).add(0.0, 0.5, 0.0);
+        Holder<EntityStore>[] drops        = ItemComponent.generateItemDrops(store, toDrop, dropPosition, Rotation3f.ZERO);
         commandBuffer.addEntities(drops, AddReason.SPAWN);
 
         DebugLog.info(DebugCategory.COLONIST_LIFECYCLE,

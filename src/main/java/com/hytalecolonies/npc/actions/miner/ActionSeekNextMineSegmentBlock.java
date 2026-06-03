@@ -3,9 +3,10 @@ package com.hytalecolonies.npc.actions.miner;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.joml.Vector3i;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -66,7 +67,7 @@ public class ActionSeekNextMineSegmentBlock extends ActionSeekNextBlockBase
         // We must sync cachedSortedBlocks back to the segment to avoid re-sorting every tick.
         com.hytalecolonies.ConstructionOrderStore.Entry adapter =
                 new com.hytalecolonies.ConstructionOrderStore.Entry(segment.id, segment.prefabId, segment.origin);
-        adapter.cachedSelection = segment.cachedSelection;
+        adapter.cachedSelection    = segment.cachedSelection;
         adapter.cachedSortedBlocks = segment.cachedSortedBlocks;
 
         Vector3i next = ConstructorUtil.findNextClearingTarget(adapter, world, prefab);
@@ -104,7 +105,7 @@ public class ActionSeekNextMineSegmentBlock extends ActionSeekNextBlockBase
                 new com.hytalecolonies.ConstructionOrderStore.Entry(segment.id, segment.prefabId, segment.origin);
         BlockSelection loaded = ConstructorUtil.loadPrefab(adapter);
         // Sync both cache fields back to the segment.
-        segment.cachedSelection = adapter.cachedSelection;
+        segment.cachedSelection    = adapter.cachedSelection;
         segment.cachedSortedBlocks = adapter.cachedSortedBlocks;
         return loaded;
     }

@@ -51,8 +51,8 @@ public class WoodsmanWorkStationComponent implements Component<ChunkStore>
     public @Nullable Component<ChunkStore> clone()
     {
         WoodsmanWorkStationComponent copy = new WoodsmanWorkStationComponent();
-        copy.treeSearchRadius = this.treeSearchRadius;
-        copy.allowedTreeTypes = this.allowedTreeTypes != null ? new HashSet<>(this.allowedTreeTypes) : null;
+        copy.treeSearchRadius             = this.treeSearchRadius;
+        copy.allowedTreeTypes             = this.allowedTreeTypes != null ? new HashSet<>(this.allowedTreeTypes) : null;
         return copy;
     }
 
@@ -62,7 +62,7 @@ public class WoodsmanWorkStationComponent implements Component<ChunkStore>
         if (allowedTreeTypes == null)
         {
             BlockTypeListAsset asset = BlockTypeListAsset.getAssetMap().getAsset(DEFAULT_TREE_TYPE_LIST);
-            allowedTreeTypes = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
+            allowedTreeTypes         = asset != null ? asset.getBlockTypeKeys() : Collections.emptySet();
         }
         return allowedTreeTypes;
     }
