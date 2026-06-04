@@ -14,10 +14,10 @@ import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 
 /**
- * Maps {@link JobType} values to their corresponding NPC role names and provides the utility method to request a live role switch via {@link RoleChangeSystem}.
+ * Mapping {@link JobType} values with corresponding NPC json role names and switch role logic using native {@link RoleChangeSystem}.
  *
  * <p>
- * Edit the {@link #roleFor} method when adding new job types or renaming role JSON files.
+ * Update {@link #roleFor(JobType)} for new/updated json roles.
  */
 public final class ColonistRoleMap
 {
@@ -42,11 +42,7 @@ public final class ColonistRoleMap
     }
 
     /**
-     * Requests a live NPC role switch for the given colonist entity. Safe to call from {@link com.hypixel.hytale.component.system.RefChangeSystem} callbacks --
-     * the actual swap is deferred to {@link RoleChangeSystem}'s tick.
-     *
-     * <p>
-     * No-ops if the entity has no {@link NPCEntity} component, no role loaded yet, or a role change is already in-flight.
+     * Requests a role switch for a colonist NPC. The swap is deferred to native {@link RoleChangeSystem}'s tick.
      */
     public static void switchRole(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store, @Nonnull String roleName)
     {
@@ -59,17 +55,20 @@ public final class ColonistRoleMap
                              roleName);
             return;
         }
+
         Role currentRole = npcEntity.getRole();
         if (currentRole == null || currentRole.isRoleChangeRequested())
         {
             return; // Already changing or no role loaded yet.
         }
+
         int newRoleIndex = NPCPlugin.get().getIndex(roleName);
         if (newRoleIndex < 0)
         {
             DebugLog.warning(DebugCategory.JOB_ASSIGNMENT, "[RoleSwitch] [%s] Unknown NPC role '%s' -- cannot switch.", DebugLog.npcId(ref, store), roleName);
             return;
         }
+        
         DebugLog.info(DebugCategory.JOB_ASSIGNMENT,
                       "[RoleSwitch] [%s] Switching colonist role to '%s' (index %d).",
                       DebugLog.npcId(ref, store),
