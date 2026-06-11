@@ -194,7 +194,7 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         JobRunCounterComponent liveCounter = entityStore.getStore().getComponent(colonistRef, JobRunCounterComponent.getComponentType());
         if (liveCounter != null)
             liveCounter.count = 0;
-        ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.PerformWork);
+        ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Harvesting);
         DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorJob] [%s] Dispatched to clearing block at %s.", npcId, claimed);
     }
 

@@ -26,7 +26,7 @@
     },
     "PerformWorkComponent": {
       "Value": "Component_Instruction_NoOp",
-      "Description": "Unified work-loop body for PerformWork sub-state. Override per job."
+      "Description": "The main work-loop body. Override per job with substate behaviors."
     },
     "WaitingForWorkComponent": {
       "Value": "Component_Instruction_WaitingForWork_NoOp",
@@ -38,7 +38,7 @@
     },
     "ClaimWorkComponent": {
       "Value": "Component_Instruction_ClaimWork_NoOp",
-      "Description": "Claim all blocks planned for current work run."
+      "Description": "Claim all block positions needed for current work run."
     },
     "WaitingForClaimReleaseComponent": {
       "Value": "Component_Instruction_WaitingForClaimRelease_Default",
@@ -136,11 +136,11 @@
       },
       "Instructions": [
         {
-          "$Comment": "PerformWork -- unified work loop (job-specific body).",
+          "$Comment": "PerformWork -- fires on any active work sub-state.",
           "Continue": true,
           "Sensor": {
-            "Type": "State",
-            "State": ".PerformWork",
+            "Type": "AnyState",
+            "States": [".Harvesting", ".Constructing"],
             "IgnoreMissingSetState": true
           },
           "Instructions": [
@@ -149,35 +149,6 @@
                 "Compute": "PerformWorkComponent"
               },
               "Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"]
-            }
-          ]
-        },
-        {
-          "$Comment": "PerformWork notification -- when block is air, notify ECS. Runs alongside main body via Continue.",
-          "Continue": true,
-          "Sensor": {
-            "Type": "State",
-            "State": ".PerformWork",
-            "IgnoreMissingSetState": true
-          },
-          "Instructions": [
-            {
-              "Sensor": {
-                "Type": "JobTargetBroken"
-              },
-              "Actions": [
-                {
-                  "Type": "LogDebug",
-                  "Message": "PerformWork: block broken -- notifying ECS.",
-                  "Category": {
-                    "Compute": "DebugCategory"
-                  },
-                  "Level": "FINE"
-                },
-                {
-                  "Type": "NotifyBlockBroken"
-                }
-              ]
             }
           ]
         },

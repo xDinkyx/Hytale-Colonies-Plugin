@@ -71,7 +71,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
 
         JobState state = job.getCurrentTask();
 
-        if (state == JobState.PerformWork && constructorJob.clearingBlockBrokenNotification)
+        if (state == JobState.Harvesting && constructorJob.clearingBlockBrokenNotification)
         {
             constructorJob.clearingBlockBrokenNotification = false;
             counter.count++;
@@ -79,7 +79,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
             return;
         }
 
-        if ((state == JobState.WorkingRetrievingItems || state == JobState.PerformWork) && constructorJob.itemsRetrievedNotification)
+        if ((state == JobState.WorkingRetrievingItems || state == JobState.Constructing) && constructorJob.itemsRetrievedNotification)
         {
             constructorJob.itemsRetrievedNotification = false;
             counter.count = 0;
@@ -87,7 +87,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
             return;
         }
 
-        if (state == JobState.PerformWork && constructorJob.blockPlacedNotification)
+        if (state == JobState.Constructing && constructorJob.blockPlacedNotification)
         {
             constructorJob.blockPlacedNotification = false;
             dispatchBuildAdvance(chunk.getReferenceTo(index), store, job, constructorJob);
@@ -208,7 +208,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
                                         @Nonnull String npcId)
     {
         JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
-        if (liveJob == null || liveJob.getCurrentTask() != JobState.PerformWork)
+        if (liveJob == null || liveJob.getCurrentTask() != JobState.Harvesting)
             return;
 
         if (currentPos != null)
@@ -273,7 +273,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
         if (liveJob == null)
             return;
         JobState liveState = liveJob.getCurrentTask();
-        if (liveState != JobState.WorkingRetrievingItems && liveState != JobState.PerformWork)
+        if (liveState != JobState.WorkingRetrievingItems && liveState != JobState.Constructing)
             return;
 
         ConstructorJobComponent liveConstructorJob = entityStore.getStore().getComponent(colonistRef, ConstructorJobComponent.getComponentType());
@@ -288,7 +288,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
         Vector3i first = liveConstructorJob.pendingBuildQueue.peekFirst();
         JobNavigationUtil.setJobTarget(entityStore.getStore(), colonistRef, first);
         JobNavigationUtil.dispatchNavigation(entityStore.getStore(), colonistRef, first);
-        ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.PerformWork);
+        ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Constructing);
         DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[ConstructorWorking] [%s] Items retrieved. Building first block at %s.", npcId, first);
     }
 
@@ -300,7 +300,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
                                           @Nonnull String npcId)
     {
         JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
-        if (liveJob == null || liveJob.getCurrentTask() != JobState.PerformWork)
+        if (liveJob == null || liveJob.getCurrentTask() != JobState.Constructing)
             return;
 
         ConstructorJobComponent liveConstructorJob = entityStore.getStore().getComponent(colonistRef, ConstructorJobComponent.getComponentType());
@@ -377,7 +377,7 @@ public class ConstructorWorkingSystem extends EntityTickingSystem<EntityStore>
 
                     setWorkAvailable(liveJob, world);
 
-                    ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.PerformWork);
+                    ColonistStateUtil.setJobState(colonistRef, entityStore.getStore(), liveJob, JobState.Harvesting);
                     DebugLog.info(DebugCategory.CONSTRUCTOR_JOB,
                                   "[ConstructorWorking] [%s] Wrong block detected after build -- switching to clearing at %s.",
                                   npcId,

@@ -420,11 +420,9 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore>
                 return;
             JobState state = job.getCurrentTask();
 
-            // Reset states where a claimed block (JobTargetComponent) was active -- the claim
-            // is gone after a server restart or role switch. TravelingToWorkstation and
-            // TravelingToHome do not involve claimed blocks; their handlers re-establish nav
-            // naturally, so we preserve those states rather than looping back through Idle.
-            boolean needsReset = state == JobState.PerformWork || state == JobState.TravelingToWorkSite;
+            // Reset states where blocks where claimed.
+            // ToDo: I think we should instead do this on state changes. This is too complicated and hard to maintain.
+            boolean needsReset = state == JobState.Harvesting || state == JobState.Constructing || state == JobState.TravelingToWorkSite;
             if (needsReset)
             {
                 DebugLog.info(DebugCategory.JOB_ASSIGNMENT,

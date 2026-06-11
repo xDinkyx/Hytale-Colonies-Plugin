@@ -60,6 +60,7 @@ import com.hytalecolonies.npc.actions.miner.BuilderActionSeekNextOreVeinBlock;
 import com.hytalecolonies.npc.actions.woodsman.BuilderActionAdvanceTreeHarvest;
 import com.hytalecolonies.npc.actions.woodsman.BuilderActionFindNextTrunkBlock;
 import com.hytalecolonies.npc.actions.woodsman.BuilderActionSeekNearestTree;
+import com.hytalecolonies.npc.sensors.common.BuilderSensorAnyState;
 import com.hytalecolonies.npc.sensors.common.BuilderSensorJobHasTaskItems;
 import com.hytalecolonies.npc.sensors.common.BuilderSensorJobTarget;
 import com.hytalecolonies.npc.sensors.common.BuilderSensorJobTargetBroken;
@@ -373,6 +374,7 @@ public class HytaleColoniesPlugin extends JavaPlugin
                 .registerCoreComponentType("JobTarget", BuilderSensorJobTarget::new)
                 .registerCoreComponentType("JobTargetExists", BuilderSensorJobTargetExists::new)
                 .registerCoreComponentType("JobTargetBroken", BuilderSensorJobTargetBroken::new)
+                .registerCoreComponentType("AnyState", BuilderSensorAnyState::new)
                 .registerCoreComponentType("RunQuotaReached", BuilderSensorRunQuotaReached::new)
                 .registerCoreComponentType("NoWorkAvailable", BuilderSensorNoWorkAvailable::new)
                 .registerCoreComponentType("OreVeinPending", BuilderSensorOreVeinPending::new)

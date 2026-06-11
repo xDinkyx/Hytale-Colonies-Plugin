@@ -30,8 +30,8 @@ public final class ColonistStateUtil
     {
         JobState previousState = job.getCurrentTask();
 
-        // When leaving PerformWork, release any remaining pre-claimed build blocks.
-        if (previousState == JobState.PerformWork && state != JobState.PerformWork)
+        // When leaving Harvesting or Constructing, release any remaining pre-claimed blocks.
+        if (previousState == JobState.Harvesting || previousState == JobState.Constructing)
             ClaimBlockUtil.releasePendingBuildClaims(ref, store);
 
         job.setCurrentTask(INSTANCE, state);

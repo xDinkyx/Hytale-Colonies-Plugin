@@ -9,12 +9,14 @@ public enum JobState
 {
     // Idle group
     Idle(Group.Idle, null),
-    Sleeping(Group.Idle, "Sleeping"), // reserved
+    Sleeping(Group.Idle, "Sleeping"), // ToDo: Not implemented yet.
     TravelingToWorkstation(Group.Idle, "TravelingToWorkstation"),
     TravelingToHome(Group.Idle, "TravelingToHome"),
 
     // Working group
-    PerformWork(Group.Working, "PerformWork"),
+    Working(Group.Working, "Working"),
+    Harvesting(Group.Working, "Harvesting"),
+    Constructing(Group.Working, "Constructing"),
     WorkingRetrievingItems(Group.Working, "RetrievingItems"),
     WaitingForWork(Group.Working, "WaitingForWork"),
     ClaimWork(Group.Working, "ClaimWork"),
@@ -23,7 +25,7 @@ public enum JobState
     DeliveringItems(Group.Working, "DeliveringItems"),
 
     // Recharging group
-    Recharging(Group.Recharging, null); // reserved
+    Recharging(Group.Recharging, null); // ToDo: Not implemented yet, different types of npcs have different ways to recharge energy.
 
     /** Maps 1-to-1 with the NPC role main-state name. */
     public enum Group

@@ -24,8 +24,8 @@
         "Sensor": { "Type": "JobTarget", "Range": 2.5 },
         "ActionsBlocking": true,
         "Actions": [
-          { "Type": "PlayAnimation", "Slot": "Status", "Animation": "Interact" },
           { "Type": "LogDebug", "Message": "PerformWork: breaking block.", "Category": "WOODSMAN_JOB", "Level": "FINE" },
+          { "Type": "PlayAnimation", "Slot": "Status", "Animation": "Interact" },
           { "Type": "EquipBestTool" },
           { "Type": "HarvestBlock", "DamageScale": 0.1 },
           { "Type": "Timeout", "Delay": [0.5, 0.5] }
