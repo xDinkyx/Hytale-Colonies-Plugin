@@ -5,9 +5,9 @@ This is a Hytale plugin project. Hytale plugins are used to extend the functiona
 - When you want to build the plugin, run the task build plugin
 - Hytale uses an Entity Component System (ECS) architecture. Very data driven. Do not hard code values.
 - Before implementing new features, review the ECS patterns and existing components in the Hytale server code.
-- The source code for the Hytale server can be found in the `lib/hytale-server/src/main/java/com/hypixel` directory.
+- The source code for the Hytale server can be found in `lib/hytale-shared-source/HytaleServer/`. It is a multi-module Maven project — Java sources live under `<Module>/src/main/java/com/hypixel/` (e.g., `NPC/`, `CoreServer/`, `Common/`, `Codec/`, etc.). Search across `lib/hytale-shared-source/HytaleServer/` to locate any class.
 - The games JSON that makes up all items, blocks, and other in-game assets can be found in the `lib/Server` directory. you can use this to look up item IDs, block IDs, and other in-game assets. Do not modify these files directly, they are for reference.
-- To update lib/ with the latest Hytale server, use the `update-server-lib` skill (`.github/skills/update-server-lib/`). Run `Full-Update.cmd` — it downloads the latest pre-release server, decompiles the JAR, syncs assets, and copies the JAR to `server/HytaleServer.jar` automatically.
+- To update lib/ with the latest Hytale server, use the `update-server-lib` skill (`.github/skills/update-server-lib/`). Run `Full-Update.cmd` — it downloads the latest server, syncs assets, syncs the official source to `lib/hytale-shared-source`, and copies the JAR to `server/HytaleServer.jar` automatically.
 - **Version discipline:** `lib/HytaleServer.jar`, `server/HytaleServer.jar`, `server/Assets.zip`, and the Maven compile artifact must always match. `build.gradle` auto-reads the version from `server/HytaleServer.jar`'s manifest — never edit the version string manually. `Full-Update.cmd` keeps all four in sync (JAR + Assets.zip). When in doubt, use `javap -cp server/HytaleServer.jar <ClassName>` to verify the actual runtime API.
 - To update hytale-* skills after a server update or when docs change, use the `update-hytale-skills` skill (`.github/skills/update-hytale-skills/`). This checks the HytaleModding/site GitHub repo for content changes and reconciles skill content.
 - Avoid enums, this is data driven from JSON files via resources. Reference `lib/Server` directory for structure and json examples.
@@ -29,7 +29,7 @@ This is a Hytale plugin project. Hytale plugins are used to extend the functiona
 
 When looking up Hytale API classes, methods, or packages, use these sources in order:
 
-1. **Decompiled server source** — `lib/hytale-server/src/main/java/com/hypixel/` (100% accurate — always check here first)
+1. **Official server source** — `lib/hytale-shared-source/HytaleServer/` (multi-module Maven project with comments and documentation — always check here first; sources are under `<Module>/src/main/java/com/hypixel/`)
 2. **Official Javadocs** — `https://release.server.docs.hytale.com/`
    - Full class list: `https://release.server.docs.hytale.com/allclasses-index.html`
    - Class URL pattern: `https://release.server.docs.hytale.com/<package/ClassName>.html` (dots become slashes)

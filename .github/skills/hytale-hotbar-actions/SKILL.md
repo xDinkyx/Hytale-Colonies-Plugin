@@ -63,18 +63,17 @@ import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.protocol.packets.interaction.SyncInteractionChain;
 import com.hypixel.hytale.protocol.packets.interaction.SyncInteractionChains;
 import com.hypixel.hytale.protocol.packets.inventory.SetActiveSlot;
-import com.hypixel.hytale.server.core.io.adapter.PlayerPacketFilter;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.inventory.Inventory;  // @Deprecated(forRemoval=true) — use InventoryComponent
 import com.hypixel.hytale.server.core.io.adapter.PacketAdapters;
 import com.hypixel.hytale.server.core.io.adapter.PacketFilter;
+import com.hypixel.hytale.server.core.io.adapter.PlayerPacketFilter;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.inventory.Inventory;
-import com.hypixel.hytale.server.core.universe.Store;
-import com.hypixel.hytale.server.core.universe.entity.EntityStore;
-import com.hypixel.hytale.server.core.universe.entity.Ref;
-import com.hypixel.hytale.server.player.Player;
-import com.hypixel.hytale.server.world.World;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
-import java.util.logging.Level;
 ```
 
 ### Handler Class
@@ -132,11 +131,12 @@ public class AbilitySlotHandler implements PlayerPacketFilter {
             }
             
             // Fix client desync - restore original slot
+            // NOTE: Inventory is @Deprecated(forRemoval=true). Use InventoryUtils/InventoryComponent for new code.
             playerComponent.getInventory().setActiveHotbarSlot((byte) originalSlot);
-            
+
             SetActiveSlot setActiveSlotPacket = new SetActiveSlot(
-                Inventory.HOTBAR_SECTION_ID,  // -1 indicates the hotbar
-                originalSlot                   // The slot index to select
+                Inventory.HOTBAR_SECTION_ID,  // @Deprecated — prefer InventoryComponent.HOTBAR_SECTION_ID
+                originalSlot
             );
             playerRef.getPacketHandler().write(setActiveSlotPacket);
             
@@ -198,12 +198,14 @@ Send `SetActiveSlot` packet to force the client to the correct slot:
 
 ```java
 // Update server-side state
+// NOTE: Inventory is @Deprecated(forRemoval=true). Use InventoryUtils/InventoryComponent for new code.
 playerComponent.getInventory().setActiveHotbarSlot((byte) originalSlot);
 
 // Send packet to force client to the correct slot
+// Prefer InventoryComponent.HOTBAR_SECTION_ID over the deprecated Inventory.HOTBAR_SECTION_ID
 SetActiveSlot setActiveSlotPacket = new SetActiveSlot(
-    Inventory.HOTBAR_SECTION_ID,  // -1 indicates the hotbar
-    originalSlot                   // The slot index to select
+    Inventory.HOTBAR_SECTION_ID,
+    originalSlot
 );
 playerRef.getPacketHandler().write(setActiveSlotPacket);
 ```
@@ -363,16 +365,16 @@ import com.hypixel.hytale.protocol.packets.inventory.SetActiveSlot;
 import com.hypixel.hytale.server.HytaleServerPlugin;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.Color;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.inventory.Inventory;  // @Deprecated(forRemoval=true)
 import com.hypixel.hytale.server.core.io.adapter.PacketAdapters;
 import com.hypixel.hytale.server.core.io.adapter.PacketFilter;
 import com.hypixel.hytale.server.core.io.adapter.PlayerPacketFilter;
-import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.Store;
-import com.hypixel.hytale.server.core.universe.entity.EntityStore;
-import com.hypixel.hytale.server.core.universe.entity.Ref;
-import com.hypixel.hytale.server.player.Player;
-import com.hypixel.hytale.server.world.World;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
@@ -464,6 +466,7 @@ class AbilitySlotHandler implements PlayerPacketFilter {
     }
     
     private void fixClientSlot(PlayerRef playerRef, int slot) {
+        // Inventory.HOTBAR_SECTION_ID is @Deprecated(forRemoval=true); prefer InventoryComponent.HOTBAR_SECTION_ID
         SetActiveSlot packet = new SetActiveSlot(Inventory.HOTBAR_SECTION_ID, slot);
         playerRef.getPacketHandler().write(packet);
     }

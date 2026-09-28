@@ -72,7 +72,7 @@ Load relevant skills before implementing — they contain authoritative API refe
 ## Workflow
 
 1. **Identify skills** — Load relevant skills for API reference.
-2. **Check server source** — Search `lib/hytale-server/src/main/java/com/hypixel` and `lib/Server`. **If `lib/hytale-server/` is missing or empty, stop and tell the user to run `Full-Update.cmd` from `.github/skills/update-server-lib/` before continuing** — the decompiled source is required for accurate API usage.
+2. **Check server source** — Search `lib/hytale-shared-source/HytaleServer/` and `lib/Server`. Sources are under `<Module>/src/main/java/com/hypixel/` (e.g., `NPC/`, `CoreServer/`, `Common/`). **If `lib/hytale-shared-source/` is missing, stop and tell the user to run `Full-Update.cmd` (or `git clone https://github.com/HypixelStudios/hytale-shared-source lib/hytale-shared-source`) before continuing** — the official server source is required for accurate API usage.
 3. **Review existing code** — Check `src/` and any TODOs that may relate to the task.
 4. **Implement** — Java code, JSON, UI files, translations.
 5. **Validate** — Run the **build plugin** task; zero errors required.
@@ -94,6 +94,6 @@ If either is missing, load the `hytale-env-setup` skill and set up the environme
 | Custom game data | `src/main/resources/Server/Hyforged` |
 | Plugin manifest | `src/main/resources/manifest.json` |
 | Translations | `src/main/resources/Server/Languages/` |
-| Decompiled server | `lib/hytale-server/src/main/java/com/hypixel` |
+| Official server source | `lib/hytale-shared-source/HytaleServer/` (multi-module; sources under `<Module>/src/main/java/`) |
 | Vanilla game JSON | `lib/Server` |
 | Client UI reference | `lib/UI` |

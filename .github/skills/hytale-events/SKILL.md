@@ -18,7 +18,7 @@ Use this skill when working with events in Hytale plugins. This covers the three
 | Listen to player join | `registerGlobal(PlayerReadyEvent.class, handler)` in `setup()` |
 | Listen to player disconnect | `registerGlobal(PlayerDisconnectEvent.class, handler)` in `setup()` |
 | Listen to player leaving world | `registerGlobal(PlayerRemovedFromWorldEvent.class, handler)` in `setup()` |
-| Listen to chat messages | `registerAsync(PlayerChatEvent.class, handler)` in `setup()` |
+| Listen to chat messages | `registerAsync(PlayerChatEvent.class, future -> future.thenAccept(handler))` in `setup()` |
 | Cancel block break | Extend `EntityEventSystem<EntityStore, BreakBlockEvent>`, call `setCancelled(true)` |
 | Cancel crafting | Extend `EntityEventSystem<EntityStore, CraftRecipeEvent.Pre>` |
 | Handle entity damage | Extend `EntityEventSystem<EntityStore, Damage>` |
@@ -31,6 +31,9 @@ Use this skill when working with events in Hytale plugins. This covers the three
 | Dispatch custom event (keyed) | `HytaleServer.get().getEventBus().dispatchFor(MyEvent.class, key).dispatch(event)` |
 | Subscribe to custom event (keyed) | `HytaleServer.get().getEventBus().register(MyEvent.class, key, handler)` → `EventRegistration` |
 | Unsubscribe | `eventRegistration.unregister()` |
+| Register async event globally (all keys) | `this.getEventRegistry().registerAsyncGlobal(EventClass.class, future -> future.thenAccept(...))` |
+| Register sync handler for unhandled events | `this.getEventRegistry().registerUnhandled(EventClass.class, handler)` |
+| Register async handler for unhandled events | `this.getEventRegistry().registerAsyncUnhandled(EventClass.class, future -> future.thenAccept(...))` |
 
 ---
 
@@ -158,10 +161,13 @@ Async events run off the main tick thread. Register in `setup()` using `register
 
 ### Registration Pattern
 
+`IAsyncEvent` handlers use `Function<CompletableFuture<EventType>, CompletableFuture<EventType>>` — NOT a simple Consumer. Use `future.thenAccept(...)` to process the event.
+
 ```java
 @Override
 protected void setup() {
-    this.getEventRegistry().registerAsync(PlayerChatEvent.class, MyEventHandler::onPlayerChat);
+    this.getEventRegistry().registerAsync(PlayerChatEvent.class,
+        future -> future.thenAccept(MyEventHandler::onPlayerChat));
 }
 ```
 
@@ -377,11 +383,11 @@ protected void start() {
 A full plugin demonstrating all three event categories:
 
 ```java
-import com.hypixel.hytale.server.plugin.JavaPlugin;
-import com.hypixel.hytale.server.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.plugin.JavaPlugin;
+import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.event.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.event.player.PlayerDisconnectEvent;
-import com.hypixel.hytale.server.event.PlayerChatEvent;
+import com.hypixel.hytale.server.core.event.events.player.PlayerChatEvent;
 import javax.annotation.Nonnull;
 
 public class MyPlugin extends JavaPlugin {
@@ -398,9 +404,9 @@ public class MyPlugin extends JavaPlugin {
         this.getEventRegistry().registerGlobal(PlayerDisconnectEvent.class,
             EventHandlers::onPlayerDisconnect);
 
-        // IAsyncEvent — async events
+        // IAsyncEvent — async events (Function<CompletableFuture<E>, CompletableFuture<E>>)
         this.getEventRegistry().registerAsync(PlayerChatEvent.class,
-            EventHandlers::onPlayerChat);
+            future -> future.thenAccept(EventHandlers::onPlayerChat));
     }
 
     @Override
@@ -551,6 +557,10 @@ public class ColonistHiredEvent implements IEvent<Vector3i> {
 - `IEvent<Void>` — for global (un-keyed) events; dispatch with key `null`
 - No registration in plugin `setup()` needed — the `EventBus` auto-creates registries on first use
 
+> **`IEvent<K>` is an interface, not a class.** Use `implements IEvent<KeyType>` — there is no super constructor to call.
+> `KeyType` is a type-safety marker only; it is **not** stored inside the event object.
+> The key exists only at dispatch time (`dispatchFor(class, key)`) and subscription time (`register(class, key, consumer)`).
+
 ### Step 2 — Dispatch
 
 ```java
@@ -677,7 +687,10 @@ import com.hypixel.hytale.server.core.HytaleServer;
 
 ## Official Javadoc References
 
+- [`IEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/event/IEvent.html) — synchronous event interface (`IEvent<KeyType>`)
 - [`IAsyncEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/event/IAsyncEvent.html) — async event interface
+- [`EventBus`](https://release.server.docs.hytale.com/com/hypixel/hytale/event/EventBus.html) — `register(class, key, consumer)`, `dispatchFor(class, key).dispatch(event)`
+- [`EventRegistration`](https://release.server.docs.hytale.com/com/hypixel/hytale/event/EventRegistration.html) — returned by all `register*` calls; call `unregister()` on cleanup
 - [`EcsEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/component/system/EcsEvent.html) — ECS-scoped event base
 - [`EventPriority`](https://release.server.docs.hytale.com/com/hypixel/hytale/event/EventPriority.html) — listener priority levels
 - [`PlayerReadyEvent`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/core/event/events/player/PlayerReadyEvent.html) — player fully ready in world

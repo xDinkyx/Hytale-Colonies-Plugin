@@ -24,6 +24,7 @@ Use this skill when managing permission nodes and groups in Hytale plugins. Perm
 | Add user to group | `PermissionsModule.get().addUserToGroup(uuid, groupName)` |
 | Remove user from group | `PermissionsModule.get().removeUserFromGroup(uuid, groupName)` |
 | Get user's groups | `PermissionsModule.get().getGroupsForUser(uuid)` |
+| Get all groups | `PermissionsModule.get().getAllRegisteredGroups()` |
 
 ---
 
@@ -38,12 +39,15 @@ Use this skill when managing permission nodes and groups in Hytale plugins. Perm
 
 ### Permission Check Order
 
-1. **User's direct permissions** — Permissions granted directly to the player
-2. **Group permissions** — Permissions from groups the player belongs to
-3. **Virtual groups** — Game-mode-based permissions (e.g., Creative mode grants builder tools)
-4. **Default value** — Falls back to `false` if no match found
+Full resolution (deny-wins within each layer, first definitive result wins):
 
-> The first definitive match wins. If a player has a permission granted at the user level, group permissions won't override it.
+1. **User's direct permissions** — Permissions granted directly to the player
+2. **Group direct permissions** — Permissions from each group the player belongs to
+3. **Virtual group permissions** — Game-mode-based and statically registered permissions for those groups
+4. **Parent group chain** — Walk group inheritance chain with cycle protection
+5. **Default value** — Falls back to `false` (or provided default) if no match found
+
+> Deny permissions (prefixed with `-`) win over grants at the same resolution layer. The first definitive match in order wins.
 
 ---
 
@@ -56,10 +60,9 @@ PermissionsModule perms = PermissionsModule.get();
 ### Limitations
 
 The module does **not** support:
-- Listing all defined groups
-- Deleting a group entirely
+- Deleting a group entirely (groups are implicitly created on first use)
 
-Groups are implicitly created when you first add permissions to them.
+Groups are implicitly created when you first add permissions to them. Use `getAllRegisteredGroups()` to enumerate all known groups across providers and virtual groups.
 
 ---
 
@@ -171,7 +174,7 @@ PermissionsModule perms = PermissionsModule.get();
 perms.removeUserFromGroup(playerUUID, "VIP");
 ```
 
-### Getting a User's Groups
+## Getting a User's Groups
 
 ```java
 PermissionsModule perms = PermissionsModule.get();
@@ -180,6 +183,28 @@ for (String group : groups) {
     System.out.println("Player is in group: " + group);
 }
 ```
+
+## Listing All Registered Groups
+
+Returns all groups known across all providers plus virtual groups:
+
+```java
+Set<String> allGroups = PermissionsModule.get().getAllRegisteredGroups();
+```
+
+## Registering Known Permission Nodes
+
+Register permission constants at class-load time so they appear in autocomplete and are known to the system. This is a static call and does not require the module to be initialized yet:
+
+```java
+// Register a node without any group association
+PermissionsModule.registerPermission("myplugin.feature.use");
+
+// Register a node and associate it with a virtual group
+PermissionsModule.registerPermission("myplugin.admin.manage", "Admin");
+```
+
+> **Best practice:** Call `registerPermission` from a `static` block or constant declaration in your permissions constants class so registration happens at class-load time.
 
 ---
 

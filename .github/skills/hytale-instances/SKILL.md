@@ -46,12 +46,14 @@ All instance operations (spawn, teleport, remove) should be executed within the 
 ```java
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.Universe;
-import com.hypixel.hytale.server.world.World;
-import com.hypixel.hytale.server.world.Transform;
-import com.hypixel.hytale.server.world.ISpawnProvider;
-import com.hypixel.hytale.server.player.Player;
-import com.hypixel.hytale.server.player.PlayerRef;
-import com.hypixel.hytale.server.instances.InstancesPlugin;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.math.vector.Transform;
+import com.hypixel.hytale.server.core.universe.world.spawn.ISpawnProvider;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.builtin.instances.InstancesPlugin;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -109,7 +111,7 @@ InstancesPlugin.teleportPlayerToInstance(
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `playerRef` | `Ref<EntityStore>` | The player's entity reference |
-| `componentAccessor` | `EntityStore` | The store/component accessor for the player |
+| `componentAccessor` | `Store<EntityStore>` | The store/component accessor for the player |
 | `instanceWorld` | `World` | The active instance world to teleport into |
 | `overrideReturnPoint` | `Transform` | Optional override for the return point; pass `null` to use the one set during spawn |
 
@@ -131,7 +133,7 @@ InstancesPlugin.teleportPlayerToLoadingInstance(
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `playerRef` | `Ref<EntityStore>` | The player's entity reference |
-| `componentAccessor` | `EntityStore` | The store/component accessor for the player |
+| `componentAccessor` | `Store<EntityStore>` | The store/component accessor for the player |
 | `worldFuture` | `CompletableFuture<World>` | The future returned by `spawnInstance` |
 | `overrideReturnPoint` | `Transform` | Optional override for the return point; pass `null` to use the one set during spawn |
 
@@ -148,7 +150,7 @@ InstancesPlugin.exitInstance(playerRef, componentAccessor);
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `playerRef` | `Ref<EntityStore>` | The player's entity reference |
-| `componentAccessor` | `EntityStore` | The store/component accessor for the player |
+| `componentAccessor` | `Store<EntityStore>` | The store/component accessor for the player |
 
 ---
 
@@ -168,18 +170,18 @@ InstancesPlugin.safeRemoveInstance(instanceWorld);
 
 ## Getting Player Ref and Store
 
-In most contexts you need the player's `Ref<EntityStore>` and the `EntityStore`:
+In most contexts you need the player's `Ref<EntityStore>` and the `Store<EntityStore>`:
 
 ```java
 // From a PlayerRef
 PlayerRef playerRef = Universe.get().getPlayer(playerUUID);
 Ref<EntityStore> ref = playerRef.getReference();
-EntityStore store = playerRef.getReference().getStore();
+Store<EntityStore> store = playerRef.getReference().getStore();
 
 // From a Player object (e.g., in a command)
 Player player = (Player) ctx.sender();
 Ref<EntityStore> ref = player.getReference();
-EntityStore store = player.getReference().getStore();
+Store<EntityStore> store = player.getReference().getStore();
 ```
 
 ### Getting a Return Point from Spawn Provider

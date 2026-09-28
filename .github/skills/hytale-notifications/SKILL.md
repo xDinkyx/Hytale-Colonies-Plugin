@@ -39,7 +39,8 @@ import com.hypixel.hytale.server.core.Universe;
 import com.hypixel.hytale.server.item.ItemStack;
 import com.hypixel.hytale.server.item.ItemWithAllMetadata;
 import com.hypixel.hytale.server.player.PlayerRef;
-import com.hypixel.hytale.server.util.NotificationUtil;
+import com.hypixel.hytale.server.core.util.NotificationUtil;
+import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
 ```
 
 ---
@@ -60,12 +61,18 @@ var packetHandler = playerRef.getPacketHandler();
 
 ### NotificationUtil.sendNotification()
 
+The primary overload for sending to a specific player:
+
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `packetHandler` | `PacketHandler` | The player's packet handler |
-| `primaryMessage` | `Message` | Main notification text |
-| `secondaryMessage` | `Message` | Secondary text below primary |
-| `icon` | `ItemWithAllMetadata` | Item icon to display |
+| `handler` | `PacketHandler` | The player's packet handler |
+| `message` | `Message` | Main notification text |
+| `secondaryMessage` | `Message` (nullable) | Secondary text below primary |
+| `icon` | `String` (nullable) | Icon name string (e.g. `"Icon_Quest"`) |
+| `item` | `ItemWithAllMetadata` (nullable) | Item displayed as the icon |
+| `style` | `NotificationStyle` | Visual style (`NotificationStyle.Default`, etc.) |
+
+> **Additional overloads:** Simpler overloads exist: `sendNotification(handler, message)` and `sendNotification(handler, message, iconString)`. World broadcast helpers `sendNotificationToUniverse(...)` and `sendNotificationToWorld(...)` accept similar parameters and broadcast to all connected players.
 
 ---
 
@@ -77,7 +84,8 @@ import com.hypixel.hytale.server.core.Universe;
 import com.hypixel.hytale.server.event.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.item.ItemStack;
 import com.hypixel.hytale.server.item.ItemWithAllMetadata;
-import com.hypixel.hytale.server.util.NotificationUtil;
+import com.hypixel.hytale.server.core.util.NotificationUtil;
+import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle;
 
 public class NotificationExample {
     
@@ -90,15 +98,17 @@ public class NotificationExample {
         var primaryMessage = Message.raw("THIS WORKS!!!").color("#00FF00");
         var secondaryMessage = Message.raw("This is the secondary message").color("#228B22");
         
-        // Create icon from item
-        var icon = new ItemStack("Weapon_Sword_Mithril", 1).toPacket();
+        // Create item icon
+        var item = (ItemWithAllMetadata) new ItemStack("Weapon_Sword_Mithril", 1).toPacket();
         
-        // Send notification
+        // Send notification (icon=null uses item instead)
         NotificationUtil.sendNotification(
             packetHandler,
             primaryMessage,
             secondaryMessage,
-            (ItemWithAllMetadata) icon
+            null,
+            item,
+            NotificationStyle.Default
         );
     }
 }

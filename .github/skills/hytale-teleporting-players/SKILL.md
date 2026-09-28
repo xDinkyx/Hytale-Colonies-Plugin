@@ -16,9 +16,12 @@ Use this skill when teleporting players to a position or world in Hytale plugins
 | Concept | Description |
 |---------|-------------|
 | **Teleport** | ECS component that triggers player teleportation when added to an entity |
-| **Transform** | Represents a position (`Vector3d`) and rotation (`Rotation`) |
-| **Rotation** | Represents yaw, pitch, and roll (roll is always `0`) |
-| **createForPlayer** | Factory method on `Teleport` to create a player teleport |
+| **Transform** | Represents a position (`Vector3d`) and rotation (`Rotation3f`) |
+| **Rotation3f** | Represents pitch, yaw, and roll — constructor is `new Rotation3f(pitch, yaw, roll)` |
+| **createForPlayer** | Factory method on `Teleport`; automatically sets yaw-only body rotation and full head rotation |
+| **createExact** | Factory for correction teleports — preserves exact body and head rotation as given |
+| **withoutVelocityReset()** | Chainable builder option; prevents velocity being zeroed on teleport |
+| **setOnComplete / getOnComplete** | `CompletableFuture<Void>` callback fired when the teleport finishes |
 | **getComponentType** | Returns the `Teleport` component type for store operations |
 
 ---
@@ -45,15 +48,13 @@ A `Transform` encapsulates a position and rotation:
 ## Required Imports
 
 ```java
-import com.hypixel.hytale.server.world.World;
-import com.hypixel.hytale.server.world.Transform;
-import com.hypixel.hytale.server.world.Rotation;
-import com.hypixel.hytale.server.world.Teleport;
-
-import com.hypixel.ecs.Ref;
-import com.hypixel.ecs.Store;
-import com.hypixel.ecs.EntityStore;
-
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.vector.Rotation3f;
+import com.hypixel.hytale.math.vector.Transform;
+import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.joml.Vector3d;
 ```
 
@@ -93,20 +94,20 @@ public static void teleportPlayer(Ref<EntityStore> ref, Store<EntityStore> store
                                    float yaw, float pitch) {
     Transform transform = new Transform(
         new Vector3d(x, y, z),
-        new Rotation(yaw, pitch, 0)  // Roll is always 0
+        new Rotation3f(pitch, yaw, 0)  // (pitch, yaw, roll) — roll is always 0
     );
     Teleport teleport = Teleport.createForPlayer(targetWorld, transform);
     store.addComponent(ref, Teleport.getComponentType(), teleport);
 }
 ```
 
-### Rotation Values
+### Rotation Values (`Rotation3f` constructor order: pitch, yaw, roll)
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `yaw` | `float` | Horizontal rotation (left/right) |
-| `pitch` | `float` | Vertical rotation (up/down) |
-| `roll` | `float` | Always `0` |
+| `pitch` | `float` | Vertical rotation (up/down) — constructor position 0 |
+| `yaw` | `float` | Horizontal rotation (left/right) — constructor position 1 |
+| `roll` | `float` | Always `0` — constructor position 2 |
 
 ---
 
@@ -122,8 +123,8 @@ Transform transform = new Transform(x, y, z);
 
 ```java
 Transform transform = new Transform(
-    new Vector3d(x, y, z),       // Position
-    new Rotation(yaw, pitch, 0)  // Rotation (roll always 0)
+    new Vector3d(x, y, z),          // Position
+    new Rotation3f(pitch, yaw, 0)   // Rotation3f(pitch, yaw, roll) — roll always 0
 );
 ```
 
@@ -141,13 +142,13 @@ Transform transform = new Transform(
 ## Complete Example: Teleport Command Utility
 
 ```java
-import com.hypixel.ecs.EntityStore;
-import com.hypixel.ecs.Ref;
-import com.hypixel.ecs.Store;
-import com.hypixel.hytale.server.world.Transform;
-import com.hypixel.hytale.server.world.Rotation;
-import com.hypixel.hytale.server.world.Teleport;
-import com.hypixel.hytale.server.world.World;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.vector.Rotation3f;
+import com.hypixel.hytale.math.vector.Transform;
+import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.joml.Vector3d;
 
 public class TeleportUtil {
@@ -167,10 +168,10 @@ public class TeleportUtil {
      */
     public static void teleport(Ref<EntityStore> ref, Store<EntityStore> store,
                                 World targetWorld, double x, double y, double z,
-                                float yaw, float pitch) {
+                                float pitch, float yaw) {
         Transform transform = new Transform(
             new Vector3d(x, y, z),
-            new Rotation(yaw, pitch, 0)
+            new Rotation3f(pitch, yaw, 0)
         );
         Teleport teleport = Teleport.createForPlayer(targetWorld, transform);
         store.addComponent(ref, Teleport.getComponentType(), teleport);

@@ -1,6 +1,6 @@
 ﻿---
 name: hytale-npc-templates
-version: 7
+version: 8
 source: https://hytalemodding.com/official-documentation/npc/
 authors:
   - name: "HytaleModding"
@@ -60,6 +60,16 @@ Use when creating or modifying NPC behavior templates, defining NPC states, work
 - Appearance
 - NameTranslationKey
 - MotionControllerList
+- Abstract template
+- Variant template
+- Component file
+- Reference Compute
+- role lifecycle
+- loaded spawned unloaded removed
+- ResetInstructions
+- named instruction
+- InstructionIndex
+- IndexedInstructions
 
 ### Variant with No Overrides
 
@@ -98,6 +108,140 @@ The safest base for a custom plugin NPC. Mirrors `Empty_Role.json` from `lib/Ser
   "NameTranslationKey": "server.npcRoles.My_NPC.name"
 }
 ```
+
+---
+
+## Template / Variant / Component Architecture
+
+Hytale NPC roles support three complementary file types that keep state-machine logic in one place while allowing many concrete NPC variants.
+
+### File Types
+
+| Type | `"Type"` field | Purpose |
+|---|---|---|
+| Abstract template | `"Abstract"` | Full state machine with parameterized component placeholders. Never spawned directly. |
+| Variant | `"Variant"` | References an abstract template, overrides parameter values via `"Modify"`. Spawnable. |
+| Component | `"Component"` | Reusable instruction sub-tree injected at a named parameter slot. |
+
+### Abstract Template
+
+Declares all states, sensors, and `StateTransitions`. Leaf instruction bodies are **placeholders**: a `Parameters` entry whose default value is a fallback component path, overridden per variant.
+
+```json
+// Templates/Template_Colonist.json (excerpt)
+{
+  "$Comment": "Abstract base for all colonist roles.",
+  "Type": "Abstract",
+  "StartState": "Idle",
+  "DefaultPlayerAttitude": "Friendly",
+  "Parameters": {
+    "PerformWorkComponent": {
+      "Value": "Component_Instruction_NoOp",
+      "Description": "Leaf instruction body for the PerformWork sub-states. Override per job."
+    },
+    "WaitingForWorkComponent": {
+      "Value": "Component_Instruction_WaitingForWork_NoOp",
+      "Description": "Target-scan and idle-wander body for WaitingForWork. Override per job."
+    }
+  },
+  "Appearance": { "Compute": "Appearance" },
+  "MaxHealth": { "Compute": "MaxHealth" },
+  "Instructions": [
+    {
+      "Continue": true,
+      "Sensor": { "Type": "State", "State": "Working", "IgnoreMissingSetState": true },
+      "Instructions": [
+        {
+          "Sensor": { "Type": "AnyState", "States": [".Harvesting", ".Constructing"], "IgnoreMissingSetState": true },
+          "Instructions": [
+            {
+              "Reference": { "Compute": "PerformWorkComponent" },
+              "Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Variant
+
+Provides concrete parameter values for one NPC kind. Uses `"Reference"` to name the abstract template and `"Modify"` for overrides.
+
+```json
+// Colonist_Miner.json
+{
+  "$Comment": "Miner colonist -- mines rock blocks and ores.",
+  "Type": "Variant",
+  "Reference": "Template_Colonist",
+  "Modify": {
+    "NameTranslationKey": "server.npcRoles.Colonist_Miner.name",
+    "DebugCategory": "MINER_JOB",
+    "PerformWorkComponent": "Component_Instruction_PerformWork_Miner",
+    "WaitingForWorkComponent": "Component_Instruction_WaitingForWork_Miner",
+    "TravelingToWorkSiteComponent": "Component_Instruction_TravelingToWorkSite_Default"
+  }
+}
+```
+
+**Variant rules:**
+- Use `"Reference"` (not `"BaseRole"`) to identify the abstract template.
+- Use `"Modify"` (not `"Parameters"`) to supply overrides — `"Parameters"` in a Variant is silently ignored.
+- The variant and its template must be in the same asset pack, or the template must be in an included asset pack.
+- Parameters not present in `"Modify"` keep the template's `"Parameters"` defaults.
+
+### Component File
+
+A component is a self-contained instruction body stored separately for reuse.
+
+```json
+// Components/Component_Instruction_PerformWork_Miner.json
+{
+  "$Comment": "PerformWork loop body for the Miner.",
+  "Type": "Component",
+  "Class": "Instruction",
+  "Interface": "HytaleColonies.Instruction.Colonist.StateBody",
+  "Content": {
+    "Sensor": { "Type": "Any" },
+    "Instructions": [
+      {
+        "Sensor": { "Type": "JobTarget", "Range": 2.5 },
+        "ActionsBlocking": true,
+        "Actions": [
+          { "Type": "HarvestBlock", "DamageScale": 0.1 },
+          { "Type": "Timeout", "Delay": [0.5, 0.5] }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Component file fields:**
+
+| Field | Required | Description |
+|---|---|---|
+| `"Type"` | Yes | Must be `"Component"` |
+| `"Class"` | Yes | `"Instruction"` or `"Sensor"` |
+| `"Interface"` | Recommended | Contract name validated against the referencing instruction slot's `"Interfaces"` list |
+| `"Content"` | Yes | The instruction (or sensor) JSON body |
+
+### Injecting a Component
+
+Use `"Reference": { "Compute": "ParameterName" }` on an instruction node to inject a component at load time. Optionally declare the expected interface contract:
+
+```json
+{
+  "Reference": { "Compute": "PerformWorkComponent" },
+  "Interfaces": ["HytaleColonies.Instruction.Colonist.StateBody"]
+}
+```
+
+The `Compute` expression resolves the parameter to a file name (relative to the asset pack's `NPC/Roles/` root). The server merges the component's `Content` into the instruction tree at that slot.
+
+> **File location:** Component files live under `Server/NPC/Roles/Components/` in the asset pack. Reference them by name only (no path prefix) when the `Components/` folder is inside the same asset pack's `NPC/Roles/` root.
 
 ---
 
@@ -301,6 +445,8 @@ Official attribute reference for the `Instruction` type (status in parentheses):
 
 > `Once` is a sensor-level flag, not an instruction flag — set it on the `Sensor` object to fire only once per state entry.
 
+> **Named instructions:** The `Name` field (see table above) does more than labelling — the server registers a named instruction into an integer slot that `ResetInstructions` can target by name. See the [Named Instructions & `ResetInstructions`](#named-instructions--resetinstructions) section for details.
+
 ### Constraints
 
 - At most one of `BodyMotion` or `Instructions` may be provided (not both).
@@ -318,12 +464,16 @@ The engine iterates siblings and for each matching instruction calls `execute()`
 - You **cannot** have both `BodyMotion` and `Instructions` on the same instruction (enforced by a validation constraint). Leaf instructions carry motion/actions; nested instruction lists carry children only.
 - Only **one** `BodyMotion` and one `HeadMotion` are active per tick (the last `setNextBodyMotionStep`/`setNextHeadMotionStep` call wins). Two `Continue: true` siblings setting `BodyMotion` will have the second one override the first.
 
-**Consequence for state-gated blocks**: if each ECS state is wrapped in a sensorless outer `{ "Instructions": [...] }`, the first wrapper always matches and stops the loop. The correct pattern is `Continue: true` + sensor placed directly on each instruction:
+**Consequence for state-gated blocks**: if each ECS state is wrapped in a sensorless outer `{ "Instructions": [...] }`, the first wrapper always matches and stops the loop. The recommended pattern for **flat sibling state blocks** is `Continue: true` + sensor placed directly on each instruction:
 
 ```json
 { "Continue": true, "Sensor": { "Type": "State", "State": "Idle" }, "Instructions": [ ... ] },
 { "Continue": true, "Sensor": { "Type": "State", "State": "Combat" }, "Instructions": [ ... ] }
 ```
+
+> **Note:** `Continue: true` is needed only when siblings must all be evaluated in the same tick (e.g., flat state blocks). It is **not** a universal rule:
+> - When `TreeMode: true` is set on an instruction, the constraint `If TreeMode is true, Continue must be false` is enforced — the engine manages `continueAfter` dynamically.
+> - Inside deeply nested `Instructions` arrays, each level is evaluated independently within its parent, so inner children do not need `Continue: true` unless they themselves have siblings that must all be evaluated.
 
 ### ActionsBlocking — sequential action execution (source-verified)
 
@@ -451,6 +601,50 @@ An empty `"From"` or `"To"` array means **all states**.
   ]
 }
 ```
+
+---
+
+## Role Lifecycle Events
+
+`Role.java` fires four lifecycle hooks per NPC entity, propagated to all instructions, the interaction instruction, the death instruction, and the state transition controller.
+
+| Method | Trigger | Notes |
+|---|---|---|
+| `loaded(ref, accessor)` | NPC loaded from BSON and added to the world | Runs instruction `loaded()` callbacks; establishes execution support |
+| `spawned(holder, npcEntity, store)` | Fresh entity spawned into the world | Runs `spawned()` callbacks, picks display name, initializes inventories |
+| `unloaded(ref, accessor)` | Chunk unloaded (entity may be re-loaded later) | Resets entity/world/marked-entity supports; propagates `unloaded()` |
+| `removed(ref, accessor)` | Entity permanently removed | Calls `resetAllBlockSensors()` first, then propagates `removed()` |
+
+There is also a `teleported(ref, accessor, from, to)` hook when the NPC moves between worlds.
+
+**Key note on `removed`:** Block sensor reservations are released automatically via `resetAllBlockSensors()` at removal time. You do not need a `StateTransition` clean-up for this.
+
+**Plugin usage:** These hooks are called automatically by the server. Plugin Java code that must react to NPC lifecycle should use ECS `RefChangeSystem` listeners on relevant components rather than subclassing `Role`.
+
+---
+
+## Named Instructions & `ResetInstructions`
+
+Any instruction node can be given a `"Name"` string. The server assigns each named instruction a unique integer slot internally (`BuilderSupport.getInstructionSlot(name)`). The `ResetInstructions` action references instructions by these names to reset their internal state (blocked action index, once-fired sensors, etc.).
+
+```json
+// Mark an instruction with a name
+{
+  "Name": "WorkLoop",
+  "Sensor": { "Type": "State", "State": ".PerformWork", "IgnoreMissingSetState": true },
+  "Instructions": [ ... ]
+}
+```
+
+```json
+// Reset that instruction from a StateTransition or action list
+{ "Type": "ResetInstructions", "Instructions": ["WorkLoop"] }
+
+// Omit Instructions to reset all named instructions at once
+{ "Type": "ResetInstructions" }
+```
+
+The `IndexedInstructions` object (accessible in Java via `executionSupport.getIndexedInstructions()` inside a system that holds an `ExecutionSupport`) maps names to slots and is used internally by `ResetInstructions`.
 
 ---
 

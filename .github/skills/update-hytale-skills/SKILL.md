@@ -1,23 +1,105 @@
 ---
 name: update-hytale-skills
-description: Updates existing hytale-* skills and detects new documentation pages on the HytaleModding site. Checks the GitHub source repo (HytaleModding/site) for content changes, fetches updated MDX source files, and reconciles skill content. Also cross-references decompiled server source for skills without upstream doc URLs. Use after server updates, periodically, or when new modding docs are published. Triggers - update skills, refresh skills, sync docs, check for skill updates, new documentation, skill maintenance, hytalemodding site changes, update modding docs.
+description: Updates existing hytale-* skills and detects new documentation pages on the HytaleModding site. Checks the GitHub source repo (HytaleModding/site) for content changes, fetches updated MDX source files, and reconciles skill content. Cross-references official server source (hytale-shared-source) as the primary authority for package paths and API correctness. Use after server updates, periodically, or when new modding docs are published. Triggers - update skills, refresh skills, sync docs, check for skill updates, new documentation, skill maintenance, hytalemodding site changes, update modding docs.
 ---
 
 # Update Hytale Skills
 
-Procedural skill for keeping all `hytale-*` skills in `.github/skills/` synchronized with upstream documentation from the [HytaleModding site](https://hytalemodding.dev/en/docs) and the decompiled server source in `lib/`.
+Procedural skill for keeping all `hytale-*` skills in `.github/skills/` synchronized with the **official Hytale server source** (primary authority) and the [HytaleModding community site](https://hytalemodding.dev/en/docs) (secondary reference).
 
-> **Related skills:** `update-server-lib` handles updating `lib/` with the latest Hytale server JAR and decompiled source. Run that skill **first** if a new server version is available, then run this skill to update knowledge skills.
+> **Related skills:** `update-server-lib` handles updating `lib/` with the latest Hytale server JAR and source. Run that skill **first** if a new server version is available, then run this skill to update knowledge skills.
+
+> **Authority hierarchy:** Official source in `lib/hytale-shared-source/HytaleServer/` is the **ground truth** for package paths, method signatures, and class names. Community docs may lag behind or contain outdated examples. When they conflict, the official source wins.
 
 ---
 
 ## When to Use This Skill
 
-- After running `update-server-lib` (new server version deployed)
+- After running `update-server-lib` (new server version deployed) — run a full source audit
 - When the HytaleModding documentation site has been updated
 - Periodically (e.g., weekly) to catch community doc improvements
 - When you notice a skill's code examples or API references are outdated
 - When a new guide or doc page appears on hytalemodding.dev that has no matching skill
+
+---
+
+## CRITICAL: Official Source is Now Available
+
+As of 2026, Hypixel Studios released the **official Hytale server shared source** at:
+`https://github.com/HypixelStudios/hytale-shared-source`
+
+This is a multi-module Maven project available locally at `lib/hytale-shared-source/HytaleServer/`. It contains full source code with comments and documentation for all server APIs.
+
+**This completely changes the skill update workflow.** The official source is the primary reference — community docs are now a supplementary discovery tool only.
+
+### Verified Correct Package Paths (from official source, 2026-06-25 audit)
+
+These were confirmed during the first full source audit. Overrides any earlier skill content that said otherwise:
+
+| Class | Correct Package |
+|-------|----------------|
+| `Store` | `com.hypixel.hytale.component.Store` |
+| `Ref` | `com.hypixel.hytale.component.Ref` |
+| `Holder` | `com.hypixel.hytale.component.Holder` |
+| `CommandBuffer` | `com.hypixel.hytale.component.CommandBuffer` |
+| `Component` | `com.hypixel.hytale.component.Component` |
+| `Query` | `com.hypixel.hytale.component.query.Query` |
+| `SystemGroup` | `com.hypixel.hytale.component.SystemGroup` |
+| `EntityTickingSystem` | `com.hypixel.hytale.component.system.tick.EntityTickingSystem` |
+| `TickingSystem` | `com.hypixel.hytale.component.system.tick.TickingSystem` |
+| `DelayedEntitySystem` | `com.hypixel.hytale.component.system.tick.DelayedEntitySystem` |
+| `RefSystem` | `com.hypixel.hytale.component.system.RefSystem` |
+| `RefChangeSystem` | `com.hypixel.hytale.component.system.RefChangeSystem` |
+| `EcsEvent` | `com.hypixel.hytale.component.system.EcsEvent` |
+| `CancellableEcsEvent` | `com.hypixel.hytale.component.system.CancellableEcsEvent` |
+| `EntityStore` | `com.hypixel.hytale.server.core.universe.world.storage.EntityStore` |
+| `ChunkStore` | `com.hypixel.hytale.server.core.universe.world.storage.ChunkStore` |
+| `Codec` | `com.hypixel.hytale.codec.Codec` |
+| `KeyedCodec` | `com.hypixel.hytale.codec.KeyedCodec` |
+| `BuilderCodec` | `com.hypixel.hytale.codec.builder.BuilderCodec` |
+| `MapCodec` | `com.hypixel.hytale.codec.codecs.map.MapCodec` |
+| `Validators` | `com.hypixel.hytale.codec.validation.Validators` |
+| `Player` | `com.hypixel.hytale.server.core.entity.entities.Player` |
+| `EntityStatMap` | `com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap` |
+| `DefaultEntityStatTypes` | `com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes` |
+| `Teleport` | `com.hypixel.hytale.server.core.modules.entity.teleport.Teleport` |
+| `DeathSystems` | `com.hypixel.hytale.server.core.modules.entity.damage.DeathSystems` |
+| `DeathComponent` | `com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent` |
+| `InventoryComponent` | `com.hypixel.hytale.server.core.inventory.InventoryComponent` |
+| `Inventory` | `com.hypixel.hytale.server.core.inventory.Inventory` **(DEPRECATED forRemoval)** |
+| `ItemStack` | `com.hypixel.hytale.server.core.inventory.ItemStack` |
+| `ItemContainer` | `com.hypixel.hytale.server.core.inventory.container.ItemContainer` |
+| `Page` (enum) | `com.hypixel.hytale.protocol.packets.interface_.Page` |
+| `IEvent` | `com.hypixel.hytale.event.IEvent` |
+| `IAsyncEvent` | `com.hypixel.hytale.event.IAsyncEvent` |
+| `EventRegistry` | `com.hypixel.hytale.event.EventRegistry` |
+| `EventBus` | `com.hypixel.hytale.event.EventBus` |
+| `PlayerChatEvent` | `com.hypixel.hytale.server.core.event.events.player.PlayerChatEvent` |
+| `HudManager` | `com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager` |
+| `CustomUIHud` | `com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud` |
+| `PageManager` | `com.hypixel.hytale.server.core.entity.entities.player.pages.PageManager` |
+| `CustomUIPage` | `com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage` |
+| `BasicCustomUIPage` | `com.hypixel.hytale.server.core.entity.entities.player.pages.BasicCustomUIPage` |
+| `InteractiveCustomUIPage` | `com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage` |
+| `NotificationUtil` | `com.hypixel.hytale.server.core.util.NotificationUtil` |
+| `SoundUtil` | `com.hypixel.hytale.server.core.universe.world.SoundUtil` |
+| `Config` | `com.hypixel.hytale.server.core.util.Config` |
+| `JavaPlugin` | `com.hypixel.hytale.server.core.plugin.JavaPlugin` |
+| `PluginBase` | `com.hypixel.hytale.server.core.plugin.PluginBase` |
+| `PermissionsModule` | `com.hypixel.hytale.server.core.permissions.PermissionsModule` |
+| `InteractionContext` | `com.hypixel.hytale.server.core.entity.InteractionContext` |
+| `SimpleInstantInteraction` | `com.hypixel.hytale.server.core.modules.interaction.interaction.config.SimpleInstantInteraction` |
+| `InstancesPlugin` | `com.hypixel.hytale.builtin.instances.InstancesPlugin` |
+| `NPCPlugin` | `com.hypixel.hytale.server.npc.NPCPlugin` |
+| `NPCEntity` | `com.hypixel.hytale.server.npc.entities.NPCEntity` |
+| `INonPlayerCharacter` | `com.hypixel.hytale.server.core.universe.world.npc.INonPlayerCharacter` |
+| `ZonePatternGenerator` | `com.hypixel.hytale.server.worldgen.zone.ZonePatternGenerator` |
+| `BiomePatternGenerator` | `com.hypixel.hytale.server.worldgen.biome.BiomePatternGenerator` |
+| `HytaleLogger` | `com.hypixel.hytale.logger.HytaleLogger` |
+| `AssetRegistry` | `com.hypixel.hytale.assetstore.AssetRegistry` |
+
+**Known deprecated APIs:**
+- `Inventory` — `@Deprecated(forRemoval = true)`; prefer `InventoryComponent`
 
 ---
 
@@ -129,24 +211,39 @@ The table below maps each `hytale-*` skill to its upstream documentation source(
 | `hytale-commands` | `guides/plugin/creating-commands.mdx` | [creating-commands](https://hytalemodding.dev/en/docs/guides/plugin/creating-commands) |
 | `hytale-items` | `guides/plugin/item-interaction.mdx`, `guides/plugin/item-registry.mdx` | [item-interaction](https://hytalemodding.dev/en/docs/guides/plugin/item-interaction), [item-registry](https://hytalemodding.dev/en/docs/guides/plugin/item-registry) |
 
-### Skills Without Upstream Doc URLs (Server Source Only)
+### Skills Without Upstream Doc URLs (Official Server Source Only)
 
-These skills were built primarily from decompiled server source and do not have matching pages on the docs site. Update them by reviewing changes in `lib/hytale-server/src/main/java/com/hypixel/`.
+These skills were built from the official server source in `lib/hytale-shared-source/HytaleServer/`. Update them by reviewing changes in the relevant module packages.
 
-| Skill | Primary Server Source Packages |
-|-------|-------------------------------|
-| `hytale-entity-effects` | `com.hypixel.server.ecs.components.effects`, `com.hypixel.server.entity.effect` |
-| `hytale-logging` | `com.hypixel.server.log`, `com.hypixel.common.log` |
-| `hytale-permissions` | `com.hypixel.server.permission` |
-| `hytale-player-input` | `com.hypixel.server.network.packet`, `com.hypixel.server.input` |
-| `hytale-plugin-config` | `com.hypixel.server.plugin` |
-| `hytale-tag-system` | `com.hypixel.server.asset`, `com.hypixel.server.registry` |
+| Skill | Official Source Module | Primary Packages |
+|-------|----------------------|-----------------|
+| `hytale-entity-effects` | `CoreServer` | `com.hypixel.hytale.server.core.entity.effect` |
+| `hytale-logging` | `Logger` | `com.hypixel.hytale.logger` |
+| `hytale-permissions` | `CoreServer` | `com.hypixel.hytale.server.core.permissions` |
+| `hytale-player-input` | `Protocol`, `CoreServer` | `com.hypixel.hytale.protocol.packets.*`, `com.hypixel.hytale.server.core.io` |
+| `hytale-plugin-config` | `CoreServer` | `com.hypixel.hytale.server.core.plugin`, `com.hypixel.hytale.server.core.util` |
+| `hytale-tag-system` | `AssetStore` | `com.hypixel.hytale.assetstore` |
+| `hytale-npc-sensors` | `NPC` | `com.hypixel.hytale.server.npc.corecomponents` |
+| `hytale-npc-actions` | `NPC` | `com.hypixel.hytale.server.npc.corecomponents` |
+| `hytale-npc-combat` | `NPC` | `com.hypixel.hytale.server.npc.corecomponents` |
+| `hytale-npc-pathfinding` | `NPC` | `com.hypixel.hytale.server.npc.navigation`, `com.hypixel.hytale.server.npc.movement` |
+| `hytale-npc-components` | `NPC` | `com.hypixel.hytale.server.npc.instructions` |
+| `hytale-npc-custom-components` | `NPC` | `com.hypixel.hytale.server.npc.instructions` |
 
 ---
 
 ## Update Procedure
 
-### Step 1: Check for Upstream Changes
+### Step 0: Verify Official Source Against Compiled JAR (ALWAYS DO THIS FIRST)
+
+All skill updates must start with the source, not docs.
+
+1. Search `lib/hytale-shared-source/HytaleServer/` for the relevant classes (sources under `<Module>/src/main/java/com/hypixel/`)
+2. Read the actual class files to get exact package paths, method signatures, constructor signatures
+3. Compare against what the skill documents — fix any discrepancies immediately
+4. The verified package table in the **CRITICAL: Official Source is Now Available** section above is authoritative
+
+### Step 1: Check for Upstream Doc Changes
 
 Use the GitHub API to check recent commits affecting the docs content directory. Fetch the commit history for the content path:
 
@@ -178,6 +275,8 @@ https://raw.githubusercontent.com/HytaleModding/site/main/content/docs/en/{path}
    - New code examples or updated examples
    - Deprecated or removed functionality
    - New sections or reorganized content
+
+> **Important:** When community docs conflict with official source, the official source wins. Update skills to match the source, not the community docs.
 
 ### Step 2: Discover New Documentation Pages & Skills
 
@@ -252,7 +351,7 @@ From the fetched MDX content, extract:
 
 **4. Cross-reference with decompiled server source:**
 
-Search `lib/hytale-server/src/main/java/com/hypixel/` for the classes mentioned in the doc. This often reveals:
+Search `lib/hytale-shared-source/HytaleServer/` for the classes mentioned in the doc (sources are under `<Module>/src/main/java/com/hypixel/`, e.g. `NPC/`, `CoreServer/`, `Common/`). This often reveals:
 - Additional methods not documented yet
 - Constructor signatures for proper usage
 - Related classes the doc doesn't mention
@@ -296,7 +395,7 @@ For each skill with detected changes:
    - New sections or concepts → Incorporate into skill
    - Removed/deprecated content → Remove or mark as deprecated
 
-4. **Cross-reference with decompiled server source** in `lib/hytale-server/src/main/java/com/hypixel/`:
+4. **Cross-reference with official server source** in `lib/hytale-shared-source/HytaleServer/`:
    - Verify that code examples in the updated docs are correct against the actual server JAR
    - Check for API changes that the docs may not yet reflect
    - Look for new classes or methods that supplement the doc content
@@ -336,7 +435,7 @@ When a new doc page is detected that warrants its own skill (see Step 2c), follo
 
 2. **Search the decompiled server source** for key classes mentioned in the doc:
    ```
-   lib/hytale-server/src/main/java/com/hypixel/
+   lib/hytale-shared-source/HytaleServer/
    ```
    Use grep/search to find:
    - The main API classes referenced in the doc
@@ -574,7 +673,7 @@ Use this as a single checklist when running the full update cycle:
 - [ ] Update description trigger keywords if new concepts were added
 
 ### Phase 4: Server-Source-Only Skills
-- [ ] Check `lib/hytale-server/` for changes in relevant packages
+- [ ] Check `lib/hytale-shared-source/HytaleServer/` for changes in relevant packages
 - [ ] Update skills with new/changed APIs from decompiled source
 
 ### Phase 5: Validate

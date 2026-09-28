@@ -36,13 +36,9 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.math.vector.Rotation3f;
+import com.hypixel.hytale.math.vector.Rotation3fc;
 import com.hypixel.hytale.server.core.inventory.Inventory;
-import com.hypixel.hytale.server.core.inventory.InventoryHelper;
-import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.command.system.CommandContext;
-import it.unimi.dsi.fastutil.Pair;
-import java.util.Objects;
 ```
 
 ---
@@ -68,8 +64,8 @@ Pair<Ref<EntityStore>, INonPlayerCharacter> result = NPCPlugin.get().spawnNPC(
 | `store` | `Store<EntityStore>` | The entity store where the NPC will exist |
 | `npcType` | `String` | The NPC role name to spawn (e.g., `"Kweebec_Sapling"`) |
 | `groupType` | `@Nullable String` | Reference to a group definition to spawn; pass `null` for none |
-| `position` | `Vector3d` | World position to spawn the NPC |
-| `rotation` | `Vector3f` | Facing direction of the NPC |
+| `position` | `Vector3dc` | World position to spawn the NPC |
+| `rotation` | `Rotation3fc` | Facing direction of the NPC |
 
 ### 2. Handle the Result
 
@@ -91,16 +87,13 @@ INonPlayerCharacter npc = result.second();       // NPC-specific interface
 
 ### 3. Access the NPC Inventory
 
-Retrieve the `NPCEntity` component to access inventory settings:
+Retrieve the `NPCEntity` component to access inventory settings. Note that inventory size is configured in the NPC role JSON via `InventorySize`, `HotbarSize`, and `OffHandSlots` fields — there is no runtime `setInventorySize` call.
 
 ```java
 NPCEntity npcComponent = store.getComponent(
     npcRef, 
     Objects.requireNonNull(NPCEntity.getComponentType())
 );
-
-// Initialize inventory size (rows, columns, offset)
-npcComponent.setInventorySize(3, 9, 0);
 ```
 
 ### 4. Add Items and Armor
@@ -122,6 +115,44 @@ inventory.setActiveHotbarSlot((byte) 0);
 
 ---
 
+## Additional Spawn Helpers
+
+Two additional methods on `NPCPlugin` handle common edge cases:
+
+### `spawnNPCWithSpaceValidation`
+
+Validates that the exact spawn position has enough clear space before spawning. Returns a `SpawnTestResult` enum instead of the entity pair.
+
+```java
+SpawnTestResult result = NPCPlugin.get().spawnNPCWithSpaceValidation(
+    store, "Kweebec_Sapling", null, position, rotation);
+if (result == SpawnTestResult.TEST_OK) {
+    // NPC was spawned successfully
+}
+```
+
+| Return value | Meaning |
+|---|---|
+| `TEST_OK` | Spawned successfully |
+| `FAIL_INVALID_POSITION` | Not enough space or chunk unloaded |
+| `FAIL_NOT_SPAWNABLE` | NPC type invalid or not spawnable |
+| `FAIL_SPAWN` | Error during entity creation |
+
+### `spawnNPCWithColumnProbe`
+
+Probes an entire block column for the best valid Y position before spawning. Useful for ground placement when the exact Y is unknown.
+
+```java
+SpawnTestResult result = NPCPlugin.get().spawnNPCWithColumnProbe(
+    store, "Kweebec_Sapling", null,
+    world,
+    worldBlockX, worldBlockZ,
+    yHint,       // vertical hint for span selection
+    rotation);
+```
+
+---
+
 ## Complete Example - NPC Spawn Command
 
 ```java
@@ -131,7 +162,8 @@ import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.math.vector.Rotation3f;
+import com.hypixel.hytale.math.vector.Rotation3fc;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.InventoryHelper;
@@ -162,7 +194,7 @@ public class SpawnNpcCommand extends AbstractPlayerCommand {
         Vector3d position = playerRef.getTransform().getPosition();
 
         // Define the initial rotation (facing direction)
-        Vector3f rotation = new Vector3f(0, 0, 0);
+        Rotation3f rotation = new Rotation3f(0, 0, 0);
 
         // Spawn the NPC using NPCPlugin helper
         // npcType = role name, groupType = null (no group)
@@ -188,10 +220,7 @@ public class SpawnNpcCommand extends AbstractPlayerCommand {
         if (npcComponent == null)
             return;
 
-        // Initialize inventory size (3 rows, 9 columns, 0 offset)
-        npcComponent.setInventorySize(3, 9, 0);
-
-        // Add items to the initialized inventory
+        // Add items to the NPC's inventory (size is set in the role JSON)
         addItemsToNPCInventory(npcComponent.getInventory());
     }
 
@@ -232,7 +261,7 @@ public class MyHytaleMod extends JavaPlugin {
 
 1. **NPCPlugin simplifies spawning**: Abstracts Holder boilerplate — creates the entity, attaches the model, and positions it automatically.
 2. **Always null-check the result**: `spawnNPC()` can return `null` if spawning fails.
-3. **Initialize inventory before adding items**: Call `npcComponent.setInventorySize(rows, cols, offset)` before accessing the inventory.
+3. **Inventory size is role JSON config**: Set `InventorySize`, `HotbarSize`, and `OffHandSlots` in the NPC role JSON — there is no runtime `setInventorySize` method on `NPCEntity`.
 4. **InventoryHelper for armor**: Use `InventoryHelper.useArmor()` — a Hytale API utility — to equip armor pieces.
 5. **Entity key is the model/type name**: Pass the NPC type key (e.g., `"Kweebec_Sapling"`) matching assets in the server data.
 6. **ECS reference for further modification**: Use `result.first()` (`Ref<EntityStore>`) to add/remove components on the NPC after spawning.
@@ -244,10 +273,10 @@ public class MyHytaleMod extends JavaPlugin {
 | Issue | Solution |
 |-------|----------|
 | `spawnNPC()` returns `null` | Verify the entity key (e.g., `"Kweebec_Sapling"`) matches a valid entity type |
-| NPC has no items | Ensure `setInventorySize()` is called before adding items |
+| NPC has no items | Verify `InventorySize`/`HotbarSize` are set in the NPC role JSON |
 | NPC not visible | Confirm the spawn position is within a loaded chunk |
 | `NPCEntity.getComponentType()` returns `null` | Verify NPCPlugin dependency is loaded and entity module is available |
-| NPC facing wrong direction | Adjust the `Vector3f rotation` values |
+| NPC facing wrong direction | Adjust the `Rotation3f rotation` values |
 
 ---
 
@@ -262,5 +291,7 @@ public class MyHytaleMod extends JavaPlugin {
 ## Reference
 
 - [`NPCPlugin` Javadoc](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html)
-- [`NPCPlugin.spawnNPC()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html#spawnNPC(com.hypixel.hytale.component.Store,java.lang.String,java.lang.String,com.hypixel.hytale.math.vector.Vector3d,com.hypixel.hytale.math.vector.Vector3f))
+- [`NPCPlugin.spawnNPC()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html#spawnNPC(com.hypixel.hytale.component.Store,java.lang.String,java.lang.String,org.joml.Vector3dc,com.hypixel.hytale.math.vector.Rotation3fc))
+- [`NPCPlugin.spawnNPCWithSpaceValidation()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html#spawnNPCWithSpaceValidation(com.hypixel.hytale.component.Store,java.lang.String,java.lang.String,org.joml.Vector3dc,com.hypixel.hytale.math.vector.Rotation3fc)) — validates that the exact position has enough space before spawning
+- [`NPCPlugin.spawnNPCWithColumnProbe()`](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/NPCPlugin.html#spawnNPCWithColumnProbe(com.hypixel.hytale.component.Store,java.lang.String,java.lang.String,com.hypixel.hytale.server.core.universe.world.World,int,int,double,com.hypixel.hytale.math.vector.Rotation3fc)) — probes a block column for the best spawn Y before spawning
 - [`Role` Javadoc](https://release.server.docs.hytale.com/com/hypixel/hytale/server/npc/role/Role.html)

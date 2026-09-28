@@ -1,21 +1,19 @@
 ---
 name: update-server-lib
-description: Updates the Hytale server reference files in lib/ by downloading the latest release server (or pre-release via Full-Update-Prerelease.cmd), decompiling the JAR using Vineflower, and updating server assets. Use when needing to update to a new Hytale server version, refreshing decompiled source code, or syncing with the latest server. Triggers - update server, download server, decompile jar, vineflower, update lib, new server version, sync server, refresh server.
+description: Updates the Hytale server reference files in lib/ by downloading the latest release server (or pre-release via Full-Update-Prerelease.cmd), syncing the official server source (hytale-shared-source), and updating server assets. Use when needing to update to a new Hytale server version, syncing the official source, or refreshing server assets. Triggers - update server, download server, update lib, new server version, sync server, refresh server, hytale-shared-source.
 ---
 
 # Update Server Lib Skill
 
-Updates the `lib/` folder with the latest Hytale server files (release by default, pre-release optional) including decompiled source code and server assets.
+Updates the `lib/` folder with the latest Hytale server files (release by default, pre-release optional) including official server source and server assets.
 
 ## Prerequisites
 
 Before running these scripts, ensure the following are installed and on PATH:
 
 - **Hytale Downloader**: The `hytale-downloader-windows-amd64.exe` binary (already authenticated). Default location: `C:\hytale-downloader\` (configurable via `HYTALE_DOWNLOADER_PATH` env var)
-- **Python 3+**: For running the patcher tool (`py --version` or `python --version`)
 - **Java 25+**: `java --version` should show 25.x
-- **Maven**: `mvn --version` should work
-- **Git**: `git --version` should work
+- **Git**: `git --version` should work (also used to clone/pull `lib/hytale-shared-source`)
 
 ## Directory Structure
 
@@ -49,7 +47,7 @@ Run the CMD scripts from anywhere (they use absolute paths):
 
 Downloads the **release** patchline by default. This runs all three steps in sequence:
 1. Downloads the latest release server
-2. Decompiles it and updates `lib/`
+2. Syncs `lib/hytale-shared-source` (release branch) and copies assets/JAR to `lib/`
 3. Copies `lib/HytaleServer.jar` → `server/HytaleServer.jar` **and** copies `Assets.zip` → `server/Assets.zip`
 
 `build.gradle` automatically resolves the Hytale dependency version from `server/HytaleServer.jar`'s manifest, so no manual version bump is needed after running this.
@@ -61,6 +59,27 @@ Downloads the **release** patchline by default. This runs all three steps in seq
 ```
 
 Same as above but targets the **pre-release** patchline. Useful when a feature requires API changes only available in the latest pre-release. Equivalent to `Full-Update.cmd pre-release`.
+
+### Sync Source Only (no JAR download)
+
+Use this when you want to pull the latest official source comments/docs without re-downloading the server JAR. Hypixel Studios pushes source updates on a regular cadence independently of JAR releases.
+
+```cmd
+REM Release patchline (default):
+.\.github\skills\update-server-lib\scripts\Sync-Source.cmd
+
+REM Pre-release patchline:
+.\.github\skills\update-server-lib\scripts\Sync-Source.cmd pre-release
+```
+
+### Update Skills (AI-driven, no script needed)
+
+Skill updates are done via Copilot — just ask: **"update hytale skills"** or **"check for skill updates"**. This triggers the `update-hytale-skills` skill which:
+- Fetches the latest MDX docs from HytaleModding/site
+- Cross-references against `lib/hytale-shared-source/HytaleServer/`
+- Updates the relevant `SKILL.md` files in `.github/skills/`
+
+Run this after a source sync when you want to bring Copilot's knowledge in sync with the updated API.
 
 ### Step 1: Download and Extract Latest Server
 
@@ -89,11 +108,9 @@ Or specify a version:
 ```
 
 This script:
-- Clones/updates the HytaleModding/patcher tool
-- Sets up Python virtual environment
-- Runs Vineflower decompilation on HytaleServer.jar
-- Copies decompiled source to `lib/hytale-server/src/main/java`
+- Clones or pulls `lib/hytale-shared-source` (official source with comments, matching the patchline branch)
 - Copies Server assets to `lib/Server`
+- Copies Common assets to `lib/Common`
 - Copies UI assets to `lib/UI`
 - Updates HytaleServer.jar in lib root
 
@@ -111,7 +128,6 @@ set HYTALE_DOWNLOADER_PATH=D:\my-hytale-tools
 | `HYTALE_DOWNLOADER_PATH` | `C:\hytale-downloader` | Path to hytale-downloader folder (env var) |
 | `DOWNLOAD_DIR` | `<HYTALE_DOWNLOADER_PATH>\downloads` | Where to save downloaded zips |
 | `EXTRACT_DIR` | `<HYTALE_DOWNLOADER_PATH>\extracted` | Where to extract server files |
-| `PATCHER_DIR` | `<HYTALE_DOWNLOADER_PATH>\patcher` | Where to clone/use patcher tool |
 | `PATCHLINE` | `release` | Patchline to download from (`release` or `pre-release`) |
 
 ## Troubleshooting
@@ -119,10 +135,8 @@ set HYTALE_DOWNLOADER_PATH=D:\my-hytale-tools
 ### Authentication Errors
 If you get 401 or authentication errors, delete `.hytale-downloader-credentials.json` in your downloader directory (default: `C:\hytale-downloader\`) and run the downloader manually to re-authenticate.
 
-### Decompilation Fails
-- Ensure Python 3.13+ is installed: `py -3.13 --version`
-- Ensure Java 25 is on PATH: `java --version`
-- Ensure Maven is on PATH: `mvn --version`
+### Source Access Denied
+If `git clone` for `hytale-shared-source` fails with a 403 or 404, your GitHub account may not yet have org access. Visit https://accounts.hytale.com/shared-source to enroll.
 - Check the patcher output for specific errors
 
 ### Incomplete Extraction

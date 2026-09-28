@@ -952,13 +952,13 @@ Entity effects support **conditional application and removal**. This enables eff
 
 ### What This Enables
 
-- Effects that apply only when the entity is buffed or debuffed
+- Effects that apply only when the entity has a specific active effect
 - Effects that auto-remove when a condition is no longer met
-- NPC attacks and sensors that react specifically to buff/debuff status
+- NPC sensors that react to specific entity effect states (see `EntityEffect` filter type)
 
-### NPC Sensor: Buff/Debuff Conditions
+### NPC Sensor: Entity Effect Filter
 
-NPC sensors and actions can now filter based on whether a target is currently buffed or debuffed. Use this in NPC templates to allow NPCs to exploit status-effect opportunities:
+NPC sensors can filter targets based on whether they have a **specific active entity effect**. Use the `EntityEffect` filter type with a required `EffectId` field. This allows NPCs to exploit or react to specific status conditions:
 
 ```json
 {
@@ -966,7 +966,7 @@ NPC sensors and actions can now filter based on whether a target is currently bu
     "Type": "Target",
     "Range": { "Compute": "AttackDistance" },
     "Filters": [
-      { "Type": "Debuffed" }
+      { "Type": "EntityEffect", "EffectId": "Status/Poison" }
     ]
   },
   "Actions": [
@@ -978,7 +978,7 @@ NPC sensors and actions can now filter based on whether a target is currently bu
 }
 ```
 
-Similarly, `{ "Type": "Buffed" }` matches targets currently under a buff effect.
+> **Note:** The filter type is `EntityEffect` (not `Buffed` or `Debuffed`). A specific `EffectId` is required — there is no generic "any buff" or "any debuff" filter type in the current source.
 
 > **Related skills:** For NPC template sensor/action patterns, see `hytale-npc-templates`.
 

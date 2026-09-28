@@ -50,7 +50,7 @@ Load when building combat-capable NPCs, implementing attack chaining, configurin
 - spawn beacon
 - edible critter
 - NPC spawning beacon
-- TriggerSpawnBeacon
+- TriggerSpawners
 - WarnGroups
 
 ---
@@ -377,7 +377,7 @@ Define groups for filtering:
   "Sensor": { "Type": "Any", "Once": true },
   "Actions": [
     {
-      "Type": "TriggerSpawnBeacon",
+      "Type": "TriggerSpawners",
       "BeaconSpawn": { "Compute": "FoodNPCBeacon" },
       "Range": 15
     }

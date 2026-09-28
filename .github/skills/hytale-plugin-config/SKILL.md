@@ -18,7 +18,7 @@ This skill documents how to create, load, save, and use configuration files in H
 | Save config to file | `config.save()` in `setup()` (creates file if missing) |
 | Read config value | `config.get().getSomeValue()` |
 | Modify config value | `config.get().setSomeValue(newVal)` then `config.save()` |
-| Config file location | Server `mods/` folder |
+| Config file location | Plugin's data directory (resolved by server from plugin identity) |
 
 ---
 
@@ -95,8 +95,8 @@ public class MyConfig {
 ### Plugin Setup Template
 
 ```java
-import com.hypixel.hytale.server.plugin.Config;
-import com.hypixel.hytale.server.plugin.JavaPlugin;
+import com.hypixel.hytale.server.core.util.Config;
+import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 
 public class ExamplePlugin extends JavaPlugin {
 
@@ -111,7 +111,7 @@ public class ExamplePlugin extends JavaPlugin {
 }
 ```
 
-The first argument to `withConfig()` is the config file name (without extension). The file is created in the server's `mods/` folder.
+The first argument to `withConfig()` is the config file name (without extension). The file is created in the plugin's data directory.
 
 ---
 
@@ -266,8 +266,8 @@ public class ServerConfig {
 ### Plugin Class
 
 ```java
-import com.hypixel.hytale.server.plugin.Config;
-import com.hypixel.hytale.server.plugin.JavaPlugin;
+import com.hypixel.hytale.server.core.util.Config;
+import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 
 public class MyPlugin extends JavaPlugin {
 
@@ -281,10 +281,10 @@ public class MyPlugin extends JavaPlugin {
     @Override
     public void start() {
         ServerConfig cfg = config.get();
-        getLogger().info("Max players: " + cfg.getMaxPlayers());
-        getLogger().info("PvP enabled: " + cfg.isPvpEnabled());
-        getLogger().info("MOTD: " + cfg.getMotd());
-        getLogger().info("Damage multiplier: " + cfg.getDamageMultiplier());
+        getLogger().atInfo().log("Max players: %d", cfg.getMaxPlayers());
+        getLogger().atInfo().log("PvP enabled: %b", cfg.isPvpEnabled());
+        getLogger().atInfo().log("MOTD: %s", cfg.getMotd());
+        getLogger().atInfo().log("Damage multiplier: %f", cfg.getDamageMultiplier());
     }
 
     public Config<ServerConfig> getServerConfig() {

@@ -66,13 +66,13 @@ Each stat type (e.g., `DefaultEntityStatTypes.getHealth()`) returns a stat index
 ## Required Imports
 
 ```java
-import com.hypixel.hytale.server.ecs.entity.component.stats.EntityStatMap;
-import com.hypixel.hytale.server.ecs.entity.component.stats.DefaultEntityStatTypes;
-import com.hypixel.hytale.server.world.World;
+import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
+import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
+import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.Message;
-import com.hypixel.server.ecs.store.EntityStore;
-import com.hypixel.server.ecs.store.Ref;
-import com.hypixel.server.ecs.store.Store;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 ```
 
 ---

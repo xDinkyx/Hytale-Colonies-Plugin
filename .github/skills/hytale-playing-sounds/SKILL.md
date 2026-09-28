@@ -14,10 +14,14 @@ Use this skill when playing sounds to players in Hytale plugins. Sounds are play
 | Concept | Description |
 |---------|-------------|
 | **SoundEvent** | Asset map for resolving sound IDs to numeric indexes |
-| **SoundUtil** | Utility class for playing sounds to players |
-| **SoundCategory** | Classifies sound type (`SFX`, `UI`, `Music`, `Ambient`) |
+| **SoundUtil** | Utility class for playing sounds to players (`com.hypixel.hytale.server.core.universe.world.SoundUtil`) |
+| **SoundCategory** | Classifies sound type (`SFX`, `UI`, `Music`, `Ambient`) — `com.hypixel.hytale.protocol.SoundCategory` |
 | **TransformComponent** | Provides the 3D position where the sound plays |
 | **World.execute()** | Required thread-safe execution context for sound playback |
+| **playSoundEvent3dToPlayer** | Play 3D positional audio to a specific player |
+| **playSoundEvent2dToPlayer** | Play flat 2D audio (UI sounds) to a specific player |
+| **playLocalPlayerSoundEvent** | Send both local (2D) and world (3D) sound indexes; client picks based on camera mode |
+| **playSoundEventEntity** | Broadcast a sound from an entity's network ID to all nearby players |
 
 ---
 
@@ -39,9 +43,9 @@ import com.hypixel.hytale.server.core.modules.entity.component.TransformComponen
 import com.hypixel.hytale.server.core.modules.entity.EntityModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.sound.SoundCategory;
-import com.hypixel.hytale.server.sound.SoundEvent;
-import com.hypixel.hytale.server.util.SoundUtil;
+import com.hypixel.hytale.protocol.SoundCategory;
+import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
+import com.hypixel.hytale.server.core.universe.world.SoundUtil;
 import com.hypixel.hytale.store.Ref;
 ```
 

@@ -29,15 +29,20 @@ Use this skill when customizing the player camera in Hytale plugins. The camera 
 
 ```java
 import com.hypixel.hytale.protocol.ApplyLookType;
+import com.hypixel.hytale.protocol.ApplyMovementType;
+import com.hypixel.hytale.protocol.AttachedToType;
+import com.hypixel.hytale.protocol.CanMoveType;
 import com.hypixel.hytale.protocol.ClientCameraView;
 import com.hypixel.hytale.protocol.Direction;
+import com.hypixel.hytale.protocol.MouseInputTargetType;
 import com.hypixel.hytale.protocol.MouseInputType;
 import com.hypixel.hytale.protocol.MovementForceRotationType;
 import com.hypixel.hytale.protocol.PositionDistanceOffsetType;
 import com.hypixel.hytale.protocol.RotationType;
 import com.hypixel.hytale.protocol.ServerCameraSettings;
-import com.hypixel.hytale.protocol.Vector3f;
 import com.hypixel.hytale.protocol.packets.camera.SetServerCamera;
+import org.joml.Vector2f;
+import org.joml.Vector3f;
 ```
 
 ---
@@ -193,6 +198,14 @@ playerRef.getPacketHandler().writeNoCache(
 | `isFirstPerson` | `boolean` | `true` for first-person, `false` for third-person. |
 | `allowPitchControls` | `boolean` | Allow player to adjust pitch. Set `false` to lock vertical angle. |
 | `applyLookType` | `ApplyLookType` | `ApplyLookType.Rotation` forces the camera rotation to be server-controlled. |
+| `mouseInputTargetType` | `MouseInputTargetType` | Which entities receive mouse-look input. Default: `MouseInputTargetType.Any`. |
+| `sendMouseMotion` | `boolean` | Send mouse motion events to the server. Default: `false`. |
+| `skipCharacterPhysics` | `boolean` | Skip character physics simulation for the camera entity. Default: `false`. |
+| `attachedToType` | `AttachedToType` | What the camera attaches to. Default: `AttachedToType.LocalPlayer`. |
+| `attachedToEntityId` | `int` | Network entity ID to attach to when `attachedToType` is not `LocalPlayer`. |
+| `canMoveType` | `CanMoveType` | Who can move the camera position. Default: `CanMoveType.AttachedToLocalPlayer`. |
+| `applyMovementType` | `ApplyMovementType` | How player movement is applied to the camera. Default: `ApplyMovementType.CharacterController`. |
+| `lookMultiplier` | `Vector2fc` (nullable) | Scale mouse-look input per axis (X=horizontal, Y=vertical). `null` = no scaling. |
 
 ---
 

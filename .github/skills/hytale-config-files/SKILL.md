@@ -40,7 +40,7 @@ Keys in `KeyedCodec` must start with a **capital letter**. Lowercase keys will t
 
 ### Config File Location
 
-Configuration files are stored in the `mods` folder of the server, persisting across restarts.
+Configuration files are stored in the plugin's **data directory** (provided by `PluginBase.getDataDirectory()`), not in a hardcoded folder. The exact path is resolved by the server from the plugin's identity.
 
 ---
 
@@ -124,9 +124,9 @@ Register the config as a **field initializer** in your `JavaPlugin` class using 
 Call `config.save()` in `setup()` to ensure the file is created on first run.
 
 ```java
-import com.hypixel.hytale.server.plugin.JavaPlugin;
-import com.hypixel.hytale.server.plugin.JavaPluginInit;
-import com.hypixel.hytale.server.plugin.config.Config;
+import com.hypixel.hytale.server.core.plugin.JavaPlugin;
+import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.util.Config;
 
 import javax.annotation.Nonnull;
 
@@ -213,7 +213,7 @@ For complex types (maps, lists, sets), see the `hytale-persistent-data` skill wh
 | | Config (`Config<T>`) | Persistent Data (`Component<EntityStore>`) |
 |---|---|---|
 | **Purpose** | Plugin-wide settings | Per-entity/per-player data |
-| **Storage** | File in `mods/` folder | BSON on entity store |
+| **Storage** | File in plugin's data directory | BSON on entity store |
 | **Registration** | `this.withConfig(...)` | `getEntityStoreRegistry().registerComponent(...)` |
 | **Requires** | `BuilderCodec<T>` only | `BuilderCodec<T>`, `Component<EntityStore>`, `clone()` |
 | **Access** | `config.get()` | `store.getComponent(ref, type)` |
@@ -268,9 +268,9 @@ public class WelcomeConfig {
 
 ```java
 // === WelcomePlugin.java ===
-import com.hypixel.hytale.server.plugin.JavaPlugin;
-import com.hypixel.hytale.server.plugin.JavaPluginInit;
-import com.hypixel.hytale.server.plugin.config.Config;
+import com.hypixel.hytale.server.core.plugin.JavaPlugin;
+import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.util.Config;
 
 import javax.annotation.Nonnull;
 

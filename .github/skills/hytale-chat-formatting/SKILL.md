@@ -50,7 +50,7 @@ Use `Message` API directly for basic formatting without external dependencies.
 ```java
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.Color;
-import com.hypixel.hytale.server.event.player.PlayerChatEvent;
+import com.hypixel.hytale.server.core.event.events.player.PlayerChatEvent;
 import com.hypixel.hytale.server.player.PlayerRef;
 
 public class ChatFormatter {

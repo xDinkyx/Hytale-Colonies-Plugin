@@ -67,111 +67,153 @@ Load alongside `hytale-npc-templates` when defining NPC detection logic, buildin
 
 Sensors are conditions that gate instruction execution. All names are the exact JSON `"Type"` strings registered in the engine.
 
+### Global Sensor Base Keys
+
+All sensors inherit:
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `Once` | `false` | If true, sensor fires at most once per instruction lifetime |
+| `Enabled` | `true` | If false, sensor is permanently disabled |
+
+### SensorEntityBase Inherited Keys
+
+`Player`, `Mob`, `Target`, and `Count` sensors all inherit these keys in addition to the global base:
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `MinRange` | `0` | Minimum detection distance |
+| `Range` | *(required)* | Maximum detection radius |
+| `LockOnTarget` | `false` | Lock the matched entity into `LockedTargetSlot` |
+| `Rebind` | `false` | Re-evaluate and update the locked target each tick |
+| `LockedTargetSlot` | `"LockedTarget"` | Target slot name to write the locked entity into |
+| `AutoUnlockTarget` | `false` | Automatically clear the slot when sensor no longer matches |
+| `OnlyLockedTarget` | `false` | Only match if the entity is already in `LockedTargetSlot` |
+| `IgnoredTargetSlot` | `null` | Target slot to exclude from search results |
+| `UseProjectedDistance` | `false` | Use projected (forward-facing) distance instead of Euclidean |
+| `Prioritiser` | *(optional)* | Sort/prioritise matched entities before selecting |
+| `Collector` | *(optional)* | Override how matched entities are collected |
+| `Filters` | *(optional)* | Array of entity filters (see Entity Filters section) |
+
 ### Logic / Composition
 
 | Sensor Type | Description | Key Fields |
 |------------|-------------|------------|
-| `State` | Matches current NPC state | `State`, `IgnoreMissingSetState` |
-| `Any` | Always matches | `Once` |
-| `And` | All sub-sensors must match | `Sensors` (array), `AutoUnlockTargetSlot` |
-| `Or` | Any sub-sensor must match | `Sensors` (array), `AutoUnlockTargetSlot` |
-| `Not` | Negate a sub-sensor | `Sensor`, `UseTargetSlot`, `AutoUnlockTargetSlot` |
-| `Eval` *(Experimental)* | Evaluate JavaScript expression; accessible vars: `health`, `blocked` | `Expression` |
-| `Switch` | Check if a computed boolean is `true` | `Switch` (computable boolean) |
-| `Random` | Alternates returning `true`/`false` for random durations | `TrueDurationRange`, `FalseDurationRange` |
+| `Any` | Always true | — |
+| `And` | All child sensors must match | `Sensors` (required array), `AutoUnlockTargetSlot` |
+| `Or` | Any child sensor can match | `Sensors` (required array), `AutoUnlockTargetSlot` |
+| `Not` | Negates a wrapped sensor | `Sensor` (required), `UseTargetSlot`, `AutoUnlockTargetSlot` |
+| `Switch` | Constant boolean switch | `Switch` (required, computable boolean) |
+| `Random` | Alternates true/false windows by random duration | `TrueDurationRange` (required), `FalseDurationRange` (required) |
+| `Eval` *(Experimental)* | Evaluate JS expression | `Expression` (required) |
+| `Many` | Compound sensor combining multiple sensor configs | *(multiple sensor sub-configs)* |
+| `ValueProviderWrapper` | Wraps a sensor and forwards its value outputs to parameter overrides | `Sensor` (required), `ValueToParameterMappings` (required), `PassValues` (default true) |
+| `AdjustPosition` | Offsets the position output of a wrapped sensor | `Sensor` (required), `Offset` (required) |
 
 ### Entity Detection
 
 | Sensor Type | Description | Key Fields |
 |------------|-------------|------------|
-| `Player` | Detect nearby players; provides player target | `Range`, `MinRange`, `Filters[]`, `LockOnTarget`, `LockedTargetSlot` |
-| `Mob` | Detect nearby NPCs/mobs; provides NPC target | `Range`, `MinRange`, `GetPlayers`, `GetNPCs`, `Filters[]`, `LockOnTarget` |
-| `Self` | Test if the NPC itself matches entity filters | `Filters[]`; provides vector position |
-| `Target` | Check if NPC has a marked target in a slot | `TargetSlot` (default `LockedTarget`), `Range`, `Filters[]` |
-| `Beacon` | Listen for inter-NPC broadcasts | `Message`, `Range`, `TargetSlot`, `ConsumeMessage` |
-| `Kill` | Detect when NPC makes a kill | `TargetSlot`; provides vector position |
-| `Damage` | Detect incoming damage; provides player/NPC/item target | `Combat`, `Friendly`, `Drowning`, `Environment`, `Other`, `TargetSlot` |
-| `Count` | Check if a count of NPCs or players in range is within bounds | `Count` ([min,max]), `Range` ([min,max]), `IncludeGroups`, `ExcludeGroups` |
-| `HasHostileTargetMemory` | Check if hostile target memory has an entry | — |
-| `EntityEvent` | Detect damage/death/interaction of an NPC group entity | `NPCGroup`, `Range`, `EventType` (DAMAGE/DEATH/INTERACTION), `TargetSlot`, `SearchType` |
+| `Player` | Finds matching players | *SensorEntityBase keys* (`Range` required) |
+| `Mob` | Finds matching NPCs/entities | *SensorEntityBase keys* + `GetPlayers` (default false), `GetNPCs` (default true), `ExcludeOwnType` (default true) |
+| `Self` | Applies entity filters to the NPC itself | `Filters` (required); provides vector position |
+| `Target` | Validates locked target in a slot with optional filters/range | `TargetSlot` (default `"LockedTarget"`), `Range`, `AutoUnlockTarget` (default false), `Filters` |
+| `Beacon` | Receives broadcast beacon messages from other NPCs | `Message` (required), `Range` (default 64), `TargetSlot`, `ConsumeMessage` (default true), `Rebind` (default false) |
+| `Kill` | Matches when NPC killed an entity | `TargetSlot` (default null); provides vector position |
+| `Damage` | Matches incoming damage by category; optionally locks attacker target | `Combat` (default true), `Friendly` (default false), `Drowning` (default false), `Environment` (default false), `Other` (default false), `TargetSlot` |
+| `Count` | Counts entities in range; matches if count within bounds | `Count` (required range [min,max]), `Range` (required range [min,max]), `IncludeGroups`, `ExcludeGroups` |
+| `HasHostileTargetMemory` | Checks if hostile target memory has an entry | — |
+| `EntityEvent` | Matches entity event messages by group/type | `Range` (required), `NPCGroup` (required), `EventType` (default DAMAGE: DAMAGE/DEATH/INTERACTION), `TargetSlot`, `SearchType` (default PlayerOnly), `Rebind` (default false), `FlockOnly` (default false) |
 
-### World / Block
+### Combat Sensors
 
 | Sensor Type | Description | Key Fields |
 |------------|-------------|------------|
-| `Block` | Detect block at offset; provides block position | `Offset`, `Tag` / `BlockType` |
-| `BlockType` | Check block type at position | `Offset`, `BlockType` |
-| `BlockChange` | Detect nearby block breaks/placements | `Range` |
-| `CanPlaceBlock` | Check if NPC can place at offset | `Direction`, `Offset` |
-| `SearchRay` | Raycast for blocks or entities | `Range`, `Direction` |
-| `Light` | Check light level at NPC position | `Min`, `Max` |
-| `Time` | Check in-game time of day | `Min`, `Max` |
-| `ReadPosition` | Retrieve a stored position slot; provides position | `Slot`, `Range`, `MinRange` |
-| `Path` | Check pathfinding status | `PathType` (`Found`, `Failed`, `None`) |
+| `ChargeState` | Matches BodyMotionCharge phase/state | `States` (required) |
+| `ChargeBlockCollisions` | Reports block collisions during a charge | `BlockFilter` (default empty blockset) |
+| `ChargeEntityCollisions` | Reports entity collisions during a charge | `GetPlayers` (default true), `GetNPCs` (default true), `ExcludeOwnType` (default false) |
+
+### World / Block / Environment
+
+| Sensor Type | Description | Key Fields |
+|------------|-------------|------------|
+| `Block` | Scans for matching blocks around NPC; cached; provides position | `Range` (required), `Blocks` (required blockset), `MaxHeight`, `Random` (default false), `Reserve` (default false) |
+| `BlockType` | Wraps a position-providing sensor and checks block type at that position | `Sensor` (required), `BlockSet` (required) |
+| `BlockChange` | Matches block event stream for a blockset | `BlockSet` (required), `EventType` (default DAMAGE: DAMAGE/DESTRUCTION/INTERACTION) |
+| `CanPlaceBlock` | Checks block placeability with retry throttling | `Direction` (default Forward), `Offset` (default BodyPosition), `RetryDelay` (default 5), `AllowEmptyMaterials` (default false) |
+| `SearchRay` | Raycasts for blockset at a fixed angle; cached; provides position | `Name` (required), `Angle` (required, degrees -90..90), `Range` (required), `Blocks` (required blockset), `MinRetestAngle` (default 5), `MinRetestMove` (default 1), `ThrottleTime` (default 0.5) |
+| `Light` | Matches light channel ranges at NPC position | `LightRange`, `SkyLightRange`, `SunlightRange`, `RedLightRange`, `GreenLightRange`, `BlueLightRange`, `UseTargetSlot` |
+| `Path` | Finds nearest/specified path | `Path`, `Range` (default 10), `PathType` (default AnyPrefabPath) |
+| `ReadPosition` | Checks distance to stored position or target slot; provides position | `Slot` (required), `Range` (required), `MinRange` (default 0), `UseMarkedTarget` (default false) |
+| `SensorAge` | Matches NPC temporal age range | `AgeRange` (required) |
+| `Time` | Matches world time period | `Period` (required), `CheckDay` (default true), `CheckYear` (default false), `ScaleDayTimeRange` (default true) |
+| `Weather` | Matches weather id/pattern | `Weathers` (required) |
+| `Leash` | True when NPC exceeds leash distance | `Range` (required) |
 
 ### Items
 
 | Sensor Type | Description | Key Fields |
 |------------|-------------|------------|
-| `DroppedItem` | Detect nearby dropped items; provides position | `Range`, `Items[]` (glob patterns) |
+| `DroppedItem` | Finds dropped items in range; provides position | `Range` (required), `ViewSector` (default 0=360), `LineOfSight` (default false), `Items` (glob patterns), `Attitudes` |
 
 ### State Machine
 
 | Sensor Type | Description | Key Fields |
 |------------|-------------|------------|
-| `IsBusy` | Check if NPC is in a `BusyStates` state defined on the role | — |
-| `Flag` | Check a named boolean flag | `Name`, `Set` |
-| `Timer` | Check if a named timer exists and is in a given state/range | `Name`, `State` (RUNNING/PAUSED/STOPPED/ANY), `TimeRemainingRange` |
-| `Alarm` | Check alarm state (SET/UNSET/PASSED) | `Name`, `State`, `Clear` |
-| `Animation` | Check if a specific animation is playing | `Slot`, `Animation` |
-| `Age` | Trigger when NPC age falls in a range (ISO-8601 duration/period) | `AgeRange` ([from, to]) |
+| `State` | Matches current NPC state/substate | `State` (required), `IgnoreMissingSetState` (default false) |
+| `IsBusy` | Matches NPC busy state | — |
+| `Flag` | Matches named flag boolean value | `Name` (required), `Set` (default true) |
+| `Timer` | Matches timer state or time-remaining range | `Name` (required), `State` (default ANY: RUNNING/PAUSED/STOPPED/ANY), `TimeRemainingRange` |
+| `Alarm` | Matches alarm set/unset/passed; optional clear on pass | `Name` (required), `State` (required: SET/UNSET/PASSED), `Clear` (default false) |
+| `Animation` | Matches current animation slot/id | `Slot` (required), `Animation` (required) |
 
 ### Interaction
 
-| Sensor Type | Description |
-|------------|-------------|
-| `HasInteracted` | Detect that a player has interacted with this NPC |
-| `CanInteract` | Check if interaction is possible |
-| `InteractionContext` | Access data from the current interaction |
+| Sensor Type | Description | Key Fields |
+|------------|-------------|------------|
+| `CanInteract` | Matches interactable players in view/attitude set | `ViewSector` (default 0=360), `Attitudes` (default neutral/friendly/revered) |
+| `HasInteracted` | True if interaction occurred this tick | — |
+| `InteractionContext` | Matches interaction context key | `Context` (required) |
 
-### Environment / Movement
+### Movement
 
 | Sensor Type | Description | Key Fields |
 |------------|-------------|------------|
-| `Leash` | Check distance from leash point | `Range` |
-| `InAir` | NPC is airborne | — |
-| `OnGround` | NPC is on the ground | — |
-| `InWater` | NPC is in water | — |
-| `Weather` | Check current weather | — |
-| `Nav` | Check navigation/pathfinding state | — |
-| `MotionController` | Check active motion controller type | — |
+| `InAir` | Matches when NPC is airborne | — |
+| `OnGround` | Matches when NPC is grounded | — |
+| `InWater` | Matches when NPC is in water | — |
+| `IsBackingAway` | Matches combat backing-away state | — |
+| `Nav` | Matches nav/pathfinder state | `NavStates` (default empty=all states: INIT/PROGRESSING/BLOCKED/DEFER/AT_GOAL/ABORTED), `ThrottleDuration` (default 0), `TargetDelta` (default 0) |
+| `MotionController` | Matches active motion controller id | `MotionController` (required) |
 
 ---
 
 ## Entity Filters
 
-Used in `Filters[]` on `Player`, `Mob`, and `Target` sensors.
+Used in `Filters` arrays on `Player`, `Mob`, `Target`, and `DroppedItem` sensors.
 
-| Filter Type | Description |
-|-------------|-------------|
-| `Attitude` | Filter by attitude toward the **locked target** (HOSTILE/FRIENDLY/NEUTRAL/IGNORE/REVERED) |
-| `LineOfSight` | Only entities in unobstructed line of sight |
-| `HeightDifference` | Filter by vertical height difference between NPC and entity |
-| `ViewSector` | Filter to entities within a view cone angle |
-| `Combat` | Filter to entities currently in a given combat state (`Mode`: Melee/Ranged/Attacking/Any/None…) |
-| `ItemInHand` | Filter by item the entity is holding (`Items` glob array) |
-| `NPCGroup` | Filter by NPC group (`IncludeGroups` or `ExcludeGroups`; exactly one required) |
-| `MovementState` | Filter by movement state (WALKING/RUNNING/CROUCHING/IDLE/JUMPING/FALLING…) |
-| `SpotsMe` | Filter to entities that can see the NPC (configurable `ViewAngle`, `ViewTest`, `TestLineOfSight`) |
-| `StandingOnBlock` | Filter by the block directly beneath the entity (`BlockSet`) |
-| `InsideBlock` | Filter to entities inside a specific block (`BlockSet`) |
-| `Stat` | Filter by entity stat value comparison (`Stat`, `StatTarget`, `RelativeTo`, `RelativeToTarget`) |
-| `Inventory` | Filter by inventory contents |
-| `Flock` | Filter by flock membership/status (`FlockStatus`, `FlockPlayerStatus`, `Size`, `CheckCanJoin`) |
-| `Altitude` | Filter by height above ground (`min`, `max`) |
-| `Not` | Negate a filter |
-| `And` | All filters must match |
-| `Or` | Any filter must match |
+| Filter Type | Description | Key Fields |
+|-------------|-------------|------------|
+| `Attitude` | Matches relation attitude set | `Attitudes` (required: HOSTILE/FRIENDLY/NEUTRAL/IGNORE/REVERED) |
+| `LineOfSight` | Requires unobstructed line of sight | — |
+| `HeightDifference` | Matches vertical delta range between NPC and entity | `HeightDifference` (range), `UseEyePosition` (default true) |
+| `ViewSector` | Matches entities within a view cone angle | `ViewSector` (default 0=360) |
+| `Combat` | Matches combat history/state | `Sequence`, `TimeElapsedRange`, `Mode` (default Attacking: Melee/Ranged/Attacking/Any/None) |
+| `ItemInHand` | Matches held item patterns | `Items` (required, glob array), `Hand` (default Both: MainHand/OffHand/Both) |
+| `NPCGroup` | Matches NPC group tags | `IncludeGroups`, `ExcludeGroups` |
+| `MovementState` | Matches movement state enum | `State` (required: WALKING/RUNNING/CROUCHING/IDLE/JUMPING/FALLING) |
+| `SpotsMe` | True if the candidate entity can see this NPC | `ViewAngle` (default 90), `ViewTest` (default VIEW_SECTOR), `TestLineOfSight` (default true) |
+| `StandingOnBlock` | Matches block stood on | `BlockSet` (required) |
+| `InsideBlock` | Matches if entity is inside blockset | `BlockSet` (required) |
+| `Stat` | Compares entity stat ratio/range | `Stat`, `StatTarget`, `RelativeTo`, `RelativeToTarget`, `ValueRange` (required) |
+| `Inventory` | Matches inventory composition or free slots | `Items`, `CountRange`, `FreeSlotRange` |
+| `Flock` | Matches flock membership/status | `FlockStatus`, `FlockPlayerStatus`, `Size`, `CheckCanJoin` |
+| `Altitude` | Matches altitude above ground | `AltitudeRange` (required) |
+| `EntityEffect` | Matches active effect present on entity | `EffectId` (required) |
+| `IsDead` | Matches dead entities | — |
+| `Not` | Negates a wrapped filter | *(wrapped filter config)* |
+| `And` | All child filters must match | *(child filter array)* |
+| `Or` | Any child filter can match | *(child filter array)* |
 
 ### Filter uniqueness rule
 

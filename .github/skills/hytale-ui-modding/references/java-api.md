@@ -319,6 +319,12 @@ public class MyPage extends InteractiveCustomUIPage<MyPage.PageEventData> {
         }
     }
 
+    @Override
+    public void onDismiss(Ref<EntityStore> ref, Store<EntityStore> store) {
+        // Called when the page is closed (ESC, close(), or interaction).
+        // Unregister any event listeners subscribed in build().
+    }
+
     // User-defined event data class — keys must match EventData keys used in build()
     public static class PageEventData {
         public static final BuilderCodec<PageEventData> CODEC = BuilderCodec
@@ -345,16 +351,125 @@ public class MyPage extends InteractiveCustomUIPage<MyPage.PageEventData> {
 | `EventData.of("@Query", "#SearchInput.Value")` | `@` prefix: reads `#SearchInput.Value` from the UI at event time |
 | Key in `KeyedCodec<>("Action", ...)` | Must match the key used in `EventData.of()` exactly |
 
-### When to call `sendUpdate`
+### `sendUpdate` overloads
 
-- Call `sendUpdate(commands, events, false)` when updating content on an **open** page.
-- Do **not** call `sendUpdate` when closing the page — just call `setPage(ref, store, Page.None)`.
+`InteractiveCustomUIPage<T>` has three overloads — the 3-param form is the only one that sends event bindings:
+
+```java
+// 3-param — sends commands AND replaces event bindings on the client
+protected void sendUpdate(UICommandBuilder commands, UIEventBuilder events, boolean clear);
+
+// 2-param (inherited from CustomUIPage) — sends commands; event bindings sent as EMPTY array
+protected void sendUpdate(UICommandBuilder commands, boolean clear);
+
+// 1-param (inherited from CustomUIPage) — commands only, clear=false, events=EMPTY
+protected void sendUpdate(UICommandBuilder commands);
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `commands` | UI commands to apply; `null` sends no commands |
+| `events` | New event bindings; only the 3-param form accepts this |
+| `clear` | `true` = client clears page content before applying commands |
+
+**Warning — using 2-param sends an empty event array**: The 2-param overload (and passing `null` for `events`) causes the server to send `EMPTY_EVENT_BINDING_ARRAY`. If the client replaces its bindings on each update, buttons will stop responding. Always use the 3-param form and pass a rebuilt `UIEventBuilder` when events must remain active.
+
+Typical update pattern:
+```java
+UICommandBuilder cmds = new UICommandBuilder();
+UIEventBuilder evts = new UIEventBuilder();
+// ... populate cmds and evts ...
+sendUpdate(cmds, evts, false); // false = incremental; bindings replaced
+```
 
 ### Closing a Page
 
 ```java
+// Convenience method — available from within the page class
+close(); // calls setPage(ref, store, Page.None) internally
+
+// Or explicitly:
 Player playerComponent = store.getComponent(ref, Player.getComponentType());
 playerComponent.getPageManager().setPage(ref, store, Page.None);
+```
+
+Do **not** call `sendUpdate` when closing — just call `close()` or `setPage(Page.None)`.
+
+---
+
+## Auto-Refresh Pattern
+
+Use this when a page must update itself in response to server-side events while it is open (e.g., a colonist is hired or fired while the workstation page is visible).
+
+**Key requirements:**
+- Store `capturedRef` in `build()` so background callbacks can reach the world thread.
+- Register event listeners in `build()` — call the unregister helper first to guard against double-registration.
+- Unregister in `onDismiss()`, not only in `close()` (the player can dismiss via ESC without `close()`).
+- Event callbacks from `EventBus.register` arrive on an arbitrary thread — always dispatch to `world.execute(...)` before touching ECS state.
+
+```java
+public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationInspectPage.UIEventData> {
+
+    private final Vector3i blockPos;
+    private Ref<EntityStore>        capturedRef;  // set in build(), used by scheduleRefresh
+    private EventRegistration<?, ?> hiredReg;
+    private EventRegistration<?, ?> firedReg;
+
+    public WorkstationInspectPage(PlayerRef playerRef, Vector3i blockPos) {
+        super(playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, UIEventData.CODEC);
+        this.blockPos = new Vector3i(blockPos);
+    }
+
+    @Override
+    public void build(Ref<EntityStore> ref, UICommandBuilder cmd, UIEventBuilder evt, Store<EntityStore> store) {
+        this.capturedRef = ref;
+        unregisterListeners(); // guard against double-registration if build() is called again
+        hiredReg = HytaleServer.get().getEventBus().register(ColonistHiredEvent.class, blockPos, e -> scheduleRefresh());
+        firedReg = HytaleServer.get().getEventBus().register(ColonistFiredEvent.class, blockPos, e -> scheduleRefresh());
+        cmd.append(LAYOUT);
+        populatePage(cmd, evt, store);
+    }
+
+    @Override
+    public void handleDataEvent(Ref<EntityStore> ref, Store<EntityStore> store, UIEventData data) {
+        // ... handle action ...
+        // then rebuild and push update:
+        UICommandBuilder cmd = new UICommandBuilder();
+        UIEventBuilder evt = new UIEventBuilder();
+        populatePage(cmd, evt, store);
+        sendUpdate(cmd, evt, false);
+    }
+
+    @Override
+    public void onDismiss(Ref<EntityStore> ref, Store<EntityStore> store) {
+        unregisterListeners();
+    }
+
+    /** Called from an arbitrary thread — must dispatch to world thread. */
+    private void scheduleRefresh() {
+        if (capturedRef == null || !capturedRef.isValid()) return;
+        capturedRef.getStore().getExternalData().getWorld().execute(this::refreshPage);
+    }
+
+    /** Called on the world thread. */
+    private void refreshPage() {
+        if (capturedRef == null || !capturedRef.isValid()) return;
+        Store<EntityStore> store = capturedRef.getStore();
+        UICommandBuilder cmd = new UICommandBuilder();
+        UIEventBuilder evt = new UIEventBuilder();
+        populatePage(cmd, evt, store);
+        sendUpdate(cmd, evt, false);
+    }
+
+    private void unregisterListeners() {
+        if (hiredReg != null) { hiredReg.unregister(); hiredReg = null; }
+        if (firedReg != null) { firedReg.unregister(); firedReg = null; }
+    }
+
+    private void populatePage(UICommandBuilder cmd, UIEventBuilder evt, Store<EntityStore> store) {
+        // ... build UI content and register event bindings ...
+    }
+}
 ```
 
 ---
@@ -532,7 +647,7 @@ LocalizableString.fromMessageId("server.ui.greeting", Map.of("name", playerName)
 4. Run UI operations on the world thread
 5. Use `openCustomPage(ref, store, page)` to open custom pages — NOT `setPage(...)` (that takes a `Page` enum)
 6. Use `setPage(ref, store, Page.None)` to close pages
-7. Call `sendUpdate(commands, events, false)` when updating an open interactive page
-8. Do NOT call `sendUpdate` when closing — just call `setPage(Page.None)`
+7. Call `sendUpdate(commands, events, false)` (3-param form) when updating an open interactive page — always pass a rebuilt `UIEventBuilder` so bindings stay active
+8. Do NOT call `sendUpdate` when closing — call `close()` (or `setPage(ref, store, Page.None)` from outside the page)
 9. Event data keys in `EventData.of(...)` must match `KeyedCodec` keys in the `BuilderCodec`
 10. `@` key prefix in `EventData` = live UI element value read at event time

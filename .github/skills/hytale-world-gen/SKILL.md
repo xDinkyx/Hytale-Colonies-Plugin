@@ -275,23 +275,23 @@ if (borderDistance < customBiome.getFadeContainer().getMaskFadeSum()) {
 
 ## Key Classes Summary
 
-| Class | Package Area | Purpose |
-|-------|-------------|---------|
-| `ZonePatternGenerator` | worldgen | Generates zones at world positions |
-| `ZoneGeneratorResult` | worldgen | Result of zone lookup (zone + border distance) |
-| `Zone` | worldgen | Zone definition (biomes, caves, prefabs, discovery) |
-| `ZoneDiscoveryConfig` | worldgen | Player notification on zone entry |
-| `BiomePatternGenerator` | worldgen | Biome layout within a zone |
-| `Biome` | worldgen | Biome data (ID, properties) |
-| `CustomBiome` | worldgen | Custom biome with fade/transition support |
-| `TileBiome` | worldgen | Tile-level biome data |
-| `IPointGenerator` | worldgen | Point distribution for biome placement |
-| `IWeightedMap<T>` | worldgen | Weighted map for biome selection |
-| `CaveGenerator` | worldgen | Cave configuration for a zone |
-| `CaveType` | worldgen | Individual cave type definition |
-| `Int2FlagsCondition` | worldgen | Biome mask evaluator for caves |
-| `CaveBiomeMaskFlags` | worldgen | Flag utility for cave biome masks |
-| `FadeContainer` | worldgen | Border fade/transition controller |
+| Class | Package | Purpose |
+|-------|---------|---------|
+| `ZonePatternGenerator` | `com.hypixel.hytale.server.worldgen.zone` | Generates zones at world positions |
+| `ZoneGeneratorResult` | `com.hypixel.hytale.server.worldgen.zone` | Result of zone lookup (zone + border distance) |
+| `Zone` | `com.hypixel.hytale.server.worldgen.zone` | Zone definition (biomes, caves, prefabs, discovery) |
+| `ZoneDiscoveryConfig` | `com.hypixel.hytale.server.worldgen.zone` | Player notification on zone entry |
+| `BiomePatternGenerator` | `com.hypixel.hytale.server.worldgen.biome` | Biome layout within a zone |
+| `Biome` | `com.hypixel.hytale.server.worldgen.biome` | Biome data (ID, properties) |
+| `CustomBiome` | `com.hypixel.hytale.server.worldgen.biome` | Custom biome with fade/transition support |
+| `TileBiome` | `com.hypixel.hytale.server.worldgen.biome` | Tile-level biome data |
+| `IPointGenerator` | `com.hypixel.hytale.procedurallib.logic.point` | Point distribution for biome placement |
+| `IWeightedMap<T>` | `com.hypixel.hytale.common.map` | Weighted map for biome selection |
+| `CaveGenerator` | `com.hypixel.hytale.server.worldgen.cave` | Cave configuration for a zone |
+| `CaveType` | `com.hypixel.hytale.server.worldgen.cave` | Individual cave type definition |
+| `Int2FlagsCondition` | `com.hypixel.hytale.server.worldgen.util.condition.flag` | Biome mask evaluator for caves |
+| `CaveBiomeMaskFlags` | `com.hypixel.hytale.server.worldgen.cave` | Flag utility for cave biome masks |
+| `FadeContainer` | `com.hypixel.hytale.server.worldgen.container` | Border fade/transition controller |
 
 ---
 

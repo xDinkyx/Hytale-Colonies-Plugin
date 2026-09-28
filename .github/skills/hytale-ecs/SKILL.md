@@ -21,15 +21,16 @@ Comprehensive reference for Hytale's ECS architecture. This is the foundation of
 | Global tick logic | Extend `TickingSystem<EntityStore>` |
 | Interval-based logic | Extend `DelayedEntitySystem<EntityStore>` |
 | React to entity add/remove (death, despawn) | Extend `RefSystem<EntityStore>`, implement `onEntityRemove` (skip `UNLOAD`) |
-| React to component changes | Extend `RefChangeSystem<EntityStore, T>` — fires on explicit API mutations only, NOT on entity deletion |
+| React to component changes | Extend `RefChangeSystem<EntityStore, T>` — fires on explicit API mutations; may also fire during entity deletion depending on removal path — do not rely on it NOT firing for cleanup |
 | Filter entities | `Query.and(componentTypes...)`, `Query.not(componentType)` |
 | Register component | `getEntityStoreRegistry().registerComponent(Class, factory)` in `setup()` |
 | Register system | `getEntityStoreRegistry().registerSystem(system)` in `start()` |
 | Register block component | `getChunkStoreRegistry().registerComponent(Class, name, CODEC)` in `setup()` |
 | Register block system | `getChunkStoreRegistry().registerSystem(system)` in `start()` |
 | Look up block entity | `BlockModule.getBlockEntity(world, x, y, z)` → `Ref<ChunkStore>` or `null` (never creates) |
-| Get entity ref from chunk | `blockComponentChunk.getEntityReference(blockIndex)` → `Ref<ChunkStore>` or `null` |
-| Create block entity on-demand | `ChunkStore.REGISTRY.newHolder()` + add `BlockStateInfo` + call `chunkStore.addEntity(holder, AddReason.SPAWN)` |
+| Resolve a section ref from a block position (Update 6+) | `world.getChunkStore().getChunkSectionReferenceAtBlock(x, y, z)` → `Ref<ChunkStore>` (section entity, not column) |
+| Get entity ref from a section (Update 6+) | `blockComponentSection.getBlockReference(index)` where `index = ChunkUtil.indexBlock(x, y, z)` (section-local, 0-31 per axis) → `Ref<ChunkStore>` or `null` |
+| Create block entity on-demand | `ChunkStore.REGISTRY.newHolder()` + add `BlockStateInfo(index, sectionRef)` + call `chunkStore.addEntity(holder, AddReason.SPAWN)` |
 | Inspect entity component count | `store.getArchetype(ref).length()` — total number of component types on the entity |
 | Atomic world-thread operation | `world.execute(() -> { ... })` — use when you need read-check-then-write across stores |
 
@@ -171,7 +172,7 @@ public class PoisonComponent implements Component<EntityStore> {
 }
 ```
 
-> **Important:** KeyedCodec identifier strings must be **Uppercase** and **globally unique across your entire mod**. See `hytale-persistent-data` skill for full Codec reference including validators, MapCodec, and complex types.
+> **Important:** KeyedCodec identifier strings must start with an **uppercase letter** — the API throws `IllegalArgumentException` at definition time if they do not. Keeping them globally unique across your mod is best practice. See `hytale-persistent-data` skill for full Codec reference including validators, MapCodec, and complex types.
 
 ### Block Component Template
 
@@ -334,7 +335,7 @@ This is useful when `tick()` is called multiple times per cycle (once per matchi
 
 Reacts when an **entity** matching the query is added to or removed from the store. Use when you need to react to entity death, despawn, or removal — not just to individual component changes.
 
-> **Critical distinction:** `RefSystem` fires on entity lifecycle events (entity added/removed). `RefChangeSystem` fires only when a component is explicitly added/removed via the API (e.g. `commandBuffer.removeComponent`). `RefChangeSystem.onComponentRemoved` does **NOT** fire when an entity is deleted from the store — use `RefSystem.onEntityRemove` for that.
+> **Critical distinction:** `RefSystem` fires on entity lifecycle events (entity added/removed). `RefChangeSystem` fires on explicit component API mutations (e.g. `commandBuffer.removeComponent`). `RefChangeSystem.onComponentRemoved` **may also fire during entity deletion** depending on the removal path — do not rely on it NOT firing for entity lifecycle cleanup. Use `RefSystem.onEntityRemove` for reliable entity death/despawn handling.
 
 ```java
 public class MyEntityRemovalSystem extends RefSystem<EntityStore> {
@@ -376,7 +377,7 @@ Register with: `getEntityStoreRegistry().registerSystem(new MyEntityRemovalSyste
 
 Reacts to component add/set/remove events **via the API**. Use for caching, side effects, and initialization logic triggered by explicit component mutations.
 
-> **Does NOT fire on entity deletion.** If an entity is deleted from the store (e.g. NPC dies), `onComponentRemoved` is not called. Use `RefSystem.onEntityRemove` for entity lifecycle events instead.
+> **May fire on entity deletion** depending on removal path — do not rely on `onComponentRemoved` NOT being called when an entity is deleted. For reliable entity lifecycle cleanup, use `RefSystem.onEntityRemove` instead.
 
 Works with **both** `EntityStore` (entities) and `ChunkStore` (block components) — just swap the generic type parameter.
 
@@ -571,37 +572,48 @@ Block components use `ChunkStore` instead of `EntityStore`. They require a diffe
 Ref<ChunkStore> blockRef = BlockModule.getBlockEntity(world, x, y, z);
 ```
 
-Alternatively, get the entity reference directly from a `BlockComponentChunk` (useful inside systems):
+> **Since Update 6, blocks are addressed per-section, not per-column.** The legacy column-level
+> `BlockComponentChunk` (`getEntityReference`, `WorldChunk.getChunkRef()`-style resolution) is
+> `@Deprecated(forRemoval = true)` and no longer even exposes `getEntityReference()` — it only
+> supports migrating pre-section worlds. Always resolve a **section** ref first, then use
+> `BlockComponentSection` (`com.hypixel.hytale.server.core.universe.world.chunk.section.BlockComponentSection`).
+> `BlockModule.BlockStateInfo`'s constructor is now `(int index, Ref<ChunkStore> sectionRef)` and
+> `index` is **local to the 32x32x32 section** (`ChunkUtil.SIZE == 32`), not the whole column.
 
 ```java
-// Access the chunk's block-component index:
-BlockComponentChunk blockComponentChunk = ...;
-int blockIndex = ChunkUtil.indexBlockInColumn(localX, localY, localZ);
-Ref<ChunkStore> blockRef = blockComponentChunk.getEntityReference(blockIndex); // null if no entity
+// Resolve the section ref for a block position (never triggers a chunk load):
+Ref<ChunkStore> sectionRef = world.getChunkStore().getChunkSectionReferenceAtBlock(x, y, z);
+if (sectionRef == null || !sectionRef.isValid()) return; // section not loaded
+
+BlockComponentSection bcs = chunkStore.getComponent(sectionRef, BlockComponentSection.getComponentType());
+int blockIndex = ChunkUtil.indexBlock(localX, localY, localZ); // section-local coords, 0-31 each
+Ref<ChunkStore> blockRef = bcs.getBlockReference(blockIndex); // null if no entity
 ```
 
 When you need to attach a component to a plain block that has no entity, **create one on demand**:
 
 ```java
-// 1. Find the chunk's BlockComponentChunk to get the chunk ref:
-BlockComponentChunk bcc = ...; // from block ticking system context
-Ref<ChunkStore> chunkRef = bcc.getChunkRef(); // or from BlockStateInfo.getChunkRef()
-int blockIndex = ChunkUtil.indexBlockInColumn(localX, localY, localZ);
-
-// 2. Check whether an entity already exists:
-Ref<ChunkStore> existing = bcc.getEntityReference(blockIndex);
+// 1. Resolve the section (see above) and check whether an entity already exists:
+Ref<ChunkStore> existing = bcs.getBlockReference(blockIndex);
 if (existing != null && existing.isValid()) {
     // Entity exists — just add your component to it:
     chunkStore.putComponent(existing, MyBlockComponent.getComponentType(), new MyBlockComponent());
 } else {
-    // No entity — create a minimal one:
+    // No entity — create a minimal one. BlockStateInfoRefSystem wires the new entity's
+    // Ref<ChunkStore> into BlockComponentSection on AddReason.SPAWN automatically.
     Holder<ChunkStore> holder = ChunkStore.REGISTRY.newHolder();
     holder.putComponent(BlockModule.BlockStateInfo.getComponentType(),
-            new BlockModule.BlockStateInfo(blockIndex, chunkRef));
+            new BlockModule.BlockStateInfo(blockIndex, sectionRef));
     holder.putComponent(MyBlockComponent.getComponentType(), new MyBlockComponent());
     chunkStore.addEntity(holder, AddReason.SPAWN);
 }
 ```
+
+To go from a `BlockStateInfo`/section back to a world `Vector3i` position, fetch the `ChunkSection`
+component from `blockStateInfo.getSectionRef()` and combine its `getX()/getY()/getZ()` (section-grid
+coords; Y is a *section index*, not a block Y) with `ChunkUtil.xFromIndex/yFromIndex/zFromIndex` and
+`ChunkUtil.worldCoordFromLocalCoord` — see `BlockStateInfoUtil.GetBlockWorldPosition` in
+HytaleColonies for a reference implementation.
 
 > **Important:** Any entity you create for a plain block is your responsibility to destroy. Consider using a `RefChangeSystem<ChunkStore, MyBlockComponent>.onComponentRemoved` to clean it up reactively (see the RefChangeSystem section above).
 
@@ -621,14 +633,15 @@ public class ExampleInitializer extends RefSystem {
         ExampleBlock generator = (ExampleBlock) commandBuffer
             .getComponent(ref, ExamplePlugin.get().getExampleBlockComponentType());
         if (generator != null) {
-            int x = ChunkUtil.xFromBlockInColumn(info.getIndex());
-            int y = ChunkUtil.yFromBlockInColumn(info.getIndex());
-            int z = ChunkUtil.zFromBlockInColumn(info.getIndex());
+            int x = ChunkUtil.xFromIndex(info.getIndex()); // section-local, 0-31
+            int y = ChunkUtil.yFromIndex(info.getIndex());
+            int z = ChunkUtil.zFromIndex(info.getIndex());
 
-            WorldChunk worldChunk = (WorldChunk) commandBuffer
-                .getComponent(info.getChunkRef(), WorldChunk.getComponentType());
-            if (worldChunk != null) {
-                worldChunk.setTicking(x, y, z, true);
+            // WorldChunk.setTicking is gone -- mark the block ticking on its BlockSection component.
+            BlockSection blockSection = (BlockSection) commandBuffer
+                .getComponent(info.getSectionRef(), BlockSection.getComponentType());
+            if (blockSection != null) {
+                blockSection.setTicking(x, y, z, true);
             }
         }
     }
@@ -660,27 +673,31 @@ public class ExampleSystem extends EntityTickingSystem {
         if (blocks.getTickingBlocksCountCopy() != 0) {
             ChunkSection section = (ChunkSection) archetypeChunk
                 .getComponent(index, ChunkSection.getComponentType());
-            BlockComponentChunk blockComponentChunk = (BlockComponentChunk) commandBuffer
-                .getComponent(section.getChunkColumnReference(), BlockComponentChunk.getComponentType());
+            // Section ref for this chunk section (archetypeChunk index IS the section entity).
+            Ref<ChunkStore> sectionRef = archetypeChunk.getReferenceTo(index);
+            BlockComponentSection blockComponentSection = (BlockComponentSection) commandBuffer
+                .getComponent(sectionRef, BlockComponentSection.getComponentType());
 
-            blocks.forEachTicking(blockComponentChunk, commandBuffer, section.getY(),
-                (bcc, cb, localX, localY, localZ, blockId) -> {
-                    Ref<ChunkStore> blockRef = bcc
-                        .getEntityReference(ChunkUtil.indexBlockInColumn(localX, localY, localZ));
+            blocks.forEachTicking(blockComponentSection, commandBuffer, section.getY(),
+                (bcs, cb, localX, localY, localZ, blockId) -> {
+                    Ref<ChunkStore> blockRef = bcs
+                        .getBlockReference(ChunkUtil.indexBlock(localX, localY, localZ));
                     if (blockRef == null) return BlockTickStrategy.IGNORED;
 
                     ExampleBlock exampleBlock = (ExampleBlock) cb
                         .getComponent(blockRef, ExampleBlock.getComponentType());
                     if (exampleBlock != null) {
-                        WorldChunk worldChunk = (WorldChunk) commandBuffer
-                            .getComponent(section.getChunkColumnReference(), WorldChunk.getComponentType());
-                        World world = worldChunk.getWorld();
-                        int globalX = localX + (worldChunk.getX() * 32);
-                        int globalZ = localZ + (worldChunk.getZ() * 32);
+                        World world = commandBuffer.getExternalData().getWorld();
+                        // section.getX()/getZ() are chunk-column coords (SIZE == 32), shared by every
+                        // section in that column; section.getY() is a *section index*, not a block Y.
+                        int globalX = localX + (section.getX() * 32);
+                        int globalZ = localZ + (section.getZ() * 32);
+                        int globalY = localY + (section.getY() * 32);
 
-                        // Must execute setBlock on world thread
+                        // Must execute setBlock on world thread. WorldChunk.setBlock is deprecated;
+                        // prefer BlockOperations.setBlock resolved from ChunkStore.getChunkSectionReferenceAtBlock.
                         world.execute(() -> {
-                            world.setBlock(globalX + 1, localY, globalZ, "Rock_Ice");
+                            world.setBlock(globalX + 1, globalY, globalZ, "Rock_Ice");
                         });
                         return BlockTickStrategy.CONTINUE;
                     }
@@ -697,10 +714,10 @@ public class ExampleSystem extends EntityTickingSystem {
 ```
 
 **Key points:**
-- `worldChunk.setTicking(x, y, z, true)` marks a block for ticking
+- `blockSection.setTicking(x, y, z, true)` marks a block for ticking (`WorldChunk.setTicking` was removed)
 - `BlockTickStrategy.CONTINUE` keeps it ticking next tick; `IGNORED` skips
 - `world.execute(() -> ...)` schedules work on the world thread (cannot call store functions from a system directly)
-- Coordinate conversion: `globalX = localX + (worldChunk.getX() * 32)`
+- Coordinate conversion: `globalX = localX + (section.getX() * 32)`, and similarly for Z; Y needs `section.getY() * 32 + localY` since `ChunkSection.getY()` is a section index, not a block Y
 
 ---
 
@@ -776,6 +793,18 @@ If working with block components, add dependencies in `manifest.json` to ensure 
 ```
 
 Without these, you'll get `NullPointerException: Cannot invoke "Query.validateRegistry"` on startup.
+
+---
+
+## Advanced Store API
+
+Additional `Store` methods for specialized use cases:
+
+| Method | Description |
+|--------|-------------|
+| `store.getComponentConcurrent(ref, componentType)` | Lock-free read — safe to call from off-world-thread contexts |
+| `store.removeComponentIfExists(ref, componentType, commandBuffer)` | Safe conditional removal — no-op if component is absent |
+| `store.forEachEntityParallel(query, ...)` | Parallel iteration over matching entities for performance-critical work |
 
 ---
 

@@ -18,7 +18,7 @@ This skill provides comprehensive documentation for storing persistent data on p
 | Get or create component | `store.ensureAndGetComponent(ref, componentType)` |
 | Check if exists | `store.getComponent(ref, componentType) != null` |
 | Serialize primitives | `Codec.INTEGER`, `Codec.STRING`, `Codec.BOOLEAN`, `Codec.FLOAT`, `Codec.DOUBLE` |
-| Serialize collections | `MapCodec`, `ListCodec`, `SetCodec` |
+| Serialize collections | `MapCodec`, `SetCodec` (`ListCodec` does not exist in the current API) |
 
 ---
 
@@ -37,11 +37,11 @@ Every persistent component must have:
 ### Basic Template
 
 ```java
-import com.hypixel.hytale.codec.BuilderCodec;
+import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
-import com.hypixel.hytale.ecs.Component;
-import com.hypixel.hytale.ecs.entity.store.EntityStore;
+import com.hypixel.hytale.component.Component;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 
@@ -99,7 +99,7 @@ public class CustomPlayerData implements Component<EntityStore> {
 
 ### KeyedCodec Requirements
 
-> **IMPORTANT**: The key in `KeyedCodec` must start with a Capital Letter, otherwise serialization may fail.
+> **IMPORTANT**: The key in `KeyedCodec` must start with a Capital Letter — the API throws `IllegalArgumentException` at definition time if it does not.
 
 ```java
 // ✅ Correct - Capital first letter
@@ -127,14 +127,12 @@ new KeyedCodec<>("someInteger", Codec.INTEGER)
 new KeyedCodec<>("SomeMap", 
     new MapCodec<>(Codec.STRING, HashMap::new, false))
 
-// List<String>
-new KeyedCodec<>("SomeList",
-    new ListCodec<>(Codec.STRING, ArrayList::new))
-
 // Set<Integer>
 new KeyedCodec<>("SomeSet",
     new SetCodec<>(Codec.INTEGER, HashSet::new))
 ```
+
+> **Note**: `ListCodec` does not exist in the current Hytale codec API. For list-like serialization, use arrays or a `MapCodec` with integer string keys.
 
 ### BuilderCodec Chain Pattern
 
@@ -199,10 +197,12 @@ public class MyPlugin extends JavaPlugin {
 
 ### addComponent vs putComponent
 
-| Method | Persistence | Use Case |
-|--------|-------------|----------|
-| `addComponent` | Temporary | Component removed when entity leaves world |
-| `putComponent` | Persistent | Component saved and loaded across sessions |
+| Method | Purpose |
+|--------|----------|
+| `addComponent` | Adds component to entity; does not mark it dirty for serialization |
+| `putComponent` | Adds or updates component and marks it dirty for serialization |
+
+> **Important**: Actual persistence across sessions depends on whether the component type was registered with a `BuilderCodec`. A component registered without a codec will not be serialized regardless of which method was used. Use `putComponent` for any data you want saved, and always register the component with a codec.
 
 ### Adding/Updating Data
 
@@ -277,13 +277,13 @@ public class MyCommand extends AbstractPlayerCommand {
 ```java
 package com.example.plugin.components;
 
-import com.hypixel.hytale.codec.BuilderCodec;
+import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
-import com.hypixel.hytale.codec.MapCodec;
-import com.hypixel.hytale.codec.Validators;
-import com.hypixel.hytale.ecs.Component;
-import com.hypixel.hytale.ecs.entity.store.EntityStore;
+import com.hypixel.hytale.codec.codecs.map.MapCodec;
+import com.hypixel.hytale.codec.validation.Validators;
+import com.hypixel.hytale.component.Component;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
 import java.util.HashMap;
@@ -365,8 +365,8 @@ public class PlayerStats implements Component<EntityStore> {
 package com.example.plugin;
 
 import com.example.plugin.components.PlayerStats;
-import com.hypixel.hytale.ecs.entity.store.EntityStore;
-import com.hypixel.hytale.ecs.query.ComponentType;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.component.query.ComponentType;
 import com.hypixel.hytale.plugin.JavaPlugin;
 import com.hypixel.hytale.plugin.JavaPluginInit;
 
@@ -423,7 +423,7 @@ public class MyPlugin extends JavaPlugin {
 
 | Issue | Solution |
 |-------|----------|
-| Data not persisting | Use `putComponent` instead of `addComponent` |
+| Data not persisting | Ensure component is registered with a `BuilderCodec` AND use `putComponent` to mark it dirty for serialization |
 | Serialization fails | Ensure KeyedCodec keys start with capital letter |
 | NullPointerException | Initialize collections in default constructor |
 | Clone issues | Deep copy collections in copy constructor |
@@ -435,7 +435,7 @@ public class MyPlugin extends JavaPlugin {
 - [ECS Theory Guide](https://hytalemodding.dev/en/docs/guides/ecs/hytale-ecs-theory)
 - [Entity Component System](https://hytalemodding.dev/en/docs/guides/ecs/entity-component-system)
 - [Systems Guide](https://hytalemodding.dev/en/docs/guides/ecs/systems)
-- Codec types: `lib/hytale-server/src/main/java/com/hypixel/hytale/codec/`
+- Codec types: `lib/hytale-shared-source/HytaleServer/Codec/src/main/java/com/hypixel/hytale/codec/`
 
 ## Official Javadoc References
 

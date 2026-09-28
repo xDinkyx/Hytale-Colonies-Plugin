@@ -19,6 +19,10 @@ Use this skill when adding logging to Hytale plugins. Hytale provides `HytaleLog
 | **Arguments** | `printf`-style format specifiers (`%s`, `%d`, `%f`, `%b`, `%c`) |
 | **Exceptions** | `.withCause(exception)` to attach stack traces |
 | **Backend** | `HytaleLoggerBackend` — manages log levels and sinks |
+| **`forEnclosingClass()`** | Creates logger named after the simple class name (recommended) |
+| **`forEnclosingClassFull()`** | Creates logger named after the fully-qualified class name |
+| **`getSubLogger(name)`** | Returns a child logger sharing the same backend |
+| **`getLevel()` / `setLevel(Level)`** | Read or override the active log level at runtime |
 
 ---
 
@@ -147,7 +151,7 @@ try {
 
 ```java
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.pluginframework.JavaPlugin;
+import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 
 public class MyPlugin extends JavaPlugin {
     public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
