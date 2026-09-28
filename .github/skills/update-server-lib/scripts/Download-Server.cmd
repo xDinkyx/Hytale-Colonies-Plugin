@@ -48,12 +48,11 @@ echo Download path: %DOWNLOAD_ZIP%
 echo.
 
 REM Change to downloader directory for credentials file
-REM Capture output to parse version
+REM Stream output live (via Tee-Object) while also capturing it to parse version afterward
 set "DL_OUTPUT=%TEMP%\hytale-dl-output-%TIMESTAMP%.txt"
 pushd "%DOWNLOADER_PATH%"
-"%DOWNLOADER_EXE%" -patchline %PATCHLINE% -download-path "%DOWNLOAD_ZIP%" -skip-update-check > "%DL_OUTPUT%" 2>&1
+powershell -NoProfile -Command "& '%DOWNLOADER_EXE%' -patchline %PATCHLINE% -download-path '%DOWNLOAD_ZIP%' -skip-update-check 2>&1 | Tee-Object -FilePath '%DL_OUTPUT%'; exit $LASTEXITCODE"
 set "DL_RESULT=!ERRORLEVEL!"
-type "%DL_OUTPUT%"
 popd
 
 if not exist "%DOWNLOAD_ZIP%" (
@@ -67,13 +66,9 @@ echo Download complete!
 echo.
 
 REM Parse version from downloader output (e.g., "version 2026.01.29-301e13929")
+REM Tee-Object writes UTF-16, so use PowerShell (not findstr) to read/match it reliably
 set "SERVER_VERSION="
-for /f "tokens=2 delims=()" %%v in ('findstr /i "version" "%DL_OUTPUT%"') do (
-    set "VER_LINE=%%v"
-    for /f "tokens=2" %%w in ("!VER_LINE!") do (
-        set "SERVER_VERSION=%%w"
-    )
-)
+for /f "usebackq delims=" %%v in (`powershell -NoProfile -Command "$m = Select-String -Path '%DL_OUTPUT%' -Pattern 'version ([^)]+)\)' | Select-Object -First 1; if ($m) { $m.Matches[0].Groups[1].Value }"`) do set "SERVER_VERSION=%%v"
 if exist "%DL_OUTPUT%" del "%DL_OUTPUT%"
 
 if "%SERVER_VERSION%"=="" (
@@ -100,7 +95,8 @@ if exist "%SERVER_EXTRACT_PATH%" (
 
 echo.
 echo Extracting server package to: %SERVER_EXTRACT_PATH%
-powershell -NoProfile -Command "Expand-Archive -Path '%DOWNLOAD_ZIP%' -DestinationPath '%SERVER_EXTRACT_PATH%' -Force"
+REM Expand-Archive is very slow on zips with many small entries; use .NET ZipFile instead
+powershell -NoProfile -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory('%DOWNLOAD_ZIP%', '%SERVER_EXTRACT_PATH%')"
 if !ERRORLEVEL! neq 0 (
     echo ERROR: Failed to extract server package
     exit /b 1
@@ -117,7 +113,8 @@ for /r "%SERVER_EXTRACT_PATH%" %%f in (Assets.zip) do (
 if defined ASSETS_ZIP (
     echo Extracting Assets.zip...
     set "ASSETS_DIR=%SERVER_EXTRACT_PATH%\Assets"
-    powershell -NoProfile -Command "Expand-Archive -Path '!ASSETS_ZIP!' -DestinationPath '!ASSETS_DIR!' -Force"
+    if exist "!ASSETS_DIR!" rmdir /s /q "!ASSETS_DIR!"
+    powershell -NoProfile -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory('!ASSETS_ZIP!', '!ASSETS_DIR!')"
     if !ERRORLEVEL! neq 0 (
         echo WARNING: Failed to extract Assets.zip
     ) else (

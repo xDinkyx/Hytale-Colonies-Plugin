@@ -75,22 +75,15 @@ tasks.named('build') {
     dependsOn shadowJar
 }
 
-// Sync plugin resources as an unpacked directory-based asset pack for the Hytale Asset Editor.
+// Sync plugin resources as an unpacked directory-based asset pack.
 //
-// Why this is needed:
-// The AssetEditorPlugin (a builtin server plugin) scans AssetModule.getAssetPacks() during its
-// setup() phase to build its DataSource list. Plugin JAR asset packs (IncludesAssetPack: true)
-// are only registered via JavaPlugin.setup0(), which runs AFTER AssetEditorPlugin.setup() in the
-// topological load order (builtin plugins set up before user mods). The AssetPackRegisterEvent
-// that would normally notify the editor about new packs is also never dispatched during the setup
-// phase (hasLoaded == false), so the JAR pack is permanently invisible to the in-game editor.
+// NOTE: As of server 0.5.5, AssetModule.setup() loads JAR files from mods/ directly, so the JAR
+// is now visible to the asset editor without a directory mirror. Using a directory mirror alongside
+// the JAR causes a "Duplicate asset pack" SEVERE error and server shutdown. Do NOT run this task
+// at the same time as the JAR is present in mods/.
 //
-// AssetModule.setup() does scan mods/ for non-JAR entries (directories and .zip files) and
-// registers them BEFORE any plugin setup, so a directory pack IS visible to the asset editor.
-// The JAR's own pack registration is quietly skipped (ignoreIfExists: true) since the directory
-// pack already registered the same Group:Name identifier.
-//
-// This only affects the local dev server — production deploys use the JAR alone as normal.
+// This task is kept for situations where you want to iterate on assets without rebuilding the JAR
+// (e.g., remove the JAR from mods/ first, then sync the directory). Normally, use deployToServer.
 tasks.register('syncAssetsDir', Sync) {
     // Sync from the processResources output so manifest.json already has ServerVersion expanded.
     dependsOn 'processResources'
@@ -109,8 +102,12 @@ tasks.register('deployToServer', Copy) {
     into 'server/mods'
     // Always re-deploy — the server may delete/replace the JAR between builds
     outputs.upToDateWhen { false }
-    // Also sync the unpacked assets directory so the Asset Editor can find the pack.
-    dependsOn 'syncAssetsDir'
+    // Clean up the legacy assets directory if present — having both the JAR and the directory
+    // causes a "Duplicate asset pack" error in server 0.5.5+ (AssetModule now loads JAR packs
+    // directly, so the directory mirror is no longer needed).
+    doFirst {
+        delete 'server/mods/HytaleColonies-Assets'
+    }
     doLast {
         println "Deployed to server/mods/"
     }

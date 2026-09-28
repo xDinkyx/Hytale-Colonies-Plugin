@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 REM ============================================
 REM Hytale Server Lib Updater
-REM Decompiles and updates lib folder
+REM Updates lib folder (source sync + assets)
 REM Usage: Update-Lib.cmd [version] [release|pre-release]
 REM   version   - explicit version string (optional; auto-detected from downloads)
 REM   patchline - used to prefer the matching LATEST_VERSION_<patchline>.txt file
@@ -12,7 +12,6 @@ REM ============================================
 REM Use HYTALE_DOWNLOADER_PATH env var if set, otherwise default
 if not defined HYTALE_DOWNLOADER_PATH set "HYTALE_DOWNLOADER_PATH=C:\hytale-downloader"
 set "EXTRACT_DIR=%HYTALE_DOWNLOADER_PATH%\extracted"
-set "PATCHER_DIR=%HYTALE_DOWNLOADER_PATH%\patcher"
 set "DOWNLOAD_DIR=%HYTALE_DOWNLOADER_PATH%\downloads"
 
 REM Get workspace root (4 levels up from script location)
@@ -100,22 +99,6 @@ echo ============================================
 echo.
 
 set "PREREQ_FAIL="
-set "PYTHON_CMD=py -3"
-
-REM Check Python
-where py >nul 2>nul
-if errorlevel 1 (
-    where python >nul 2>nul
-    if errorlevel 1 (
-        echo [FAIL] Python not found
-        set "PREREQ_FAIL=1"
-    ) else (
-        echo [OK] Python found
-        set "PYTHON_CMD=python"
-    )
-) else (
-    echo [OK] Python found
-)
 
 REM Check Java
 where java >nul 2>nul
@@ -135,15 +118,6 @@ if errorlevel 1 (
     echo [OK] Git found
 )
 
-REM Check jar command
-where jar >nul 2>nul
-if errorlevel 1 (
-    echo [FAIL] jar command not found
-    set "PREREQ_FAIL=1"
-) else (
-    echo [OK] jar found
-)
-
 if defined PREREQ_FAIL (
     echo.
     echo ERROR: Prerequisites check failed. Please install missing tools.
@@ -152,112 +126,46 @@ if defined PREREQ_FAIL (
 
 echo.
 echo ============================================
-echo   Setting up Patcher Tool
+echo   Syncing Official Source (hytale-shared-source)
 echo ============================================
 echo.
 
-REM Clone or update patcher repo
-if exist "%PATCHER_DIR%" (
-    echo Updating patcher repository...
-    pushd "%PATCHER_DIR%"
-    git pull --ff-only
-    popd
-) else (
-    echo Cloning patcher repository...
-    git clone "https://github.com/HytaleModding/patcher.git" "%PATCHER_DIR%"
-    if errorlevel 1 (
-        echo ERROR: Failed to clone patcher repository
-        exit /b 1
-    )
-)
+set "SHARED_SOURCE_DIR=%LIB_DIR%\hytale-shared-source"
 
-REM Setup Python venv
-set "VENV_PATH=%PATCHER_DIR%\.venv"
-set "VENV_PYTHON=%VENV_PATH%\Scripts\python.exe"
+REM Use patchline as the git branch (release by default, matching Full-Update.cmd)
+set "GIT_BRANCH=release"
+if /i "%PATCHLINE%"=="pre-release" set "GIT_BRANCH=pre-release"
+if exist "%SHARED_SOURCE_DIR%\.git" goto :sync_pull
+goto :sync_clone
 
-if not exist "%VENV_PYTHON%" (
-    echo.
-    echo Creating Python virtual environment...
-    pushd "%PATCHER_DIR%"
-    %PYTHON_CMD% -m venv .venv
-    popd
-)
+:sync_pull
+echo Pulling latest official source (branch: %GIT_BRANCH%)...
+git -C "%SHARED_SOURCE_DIR%" fetch origin >nul 2>nul
+git -C "%SHARED_SOURCE_DIR%" checkout %GIT_BRANCH% >nul 2>nul
+git -C "%SHARED_SOURCE_DIR%" pull --ff-only
+if errorlevel 1 echo Warning: git pull failed. Source may be out of date.
+goto :sync_done
 
-REM Install requirements
-echo.
-echo Installing Python dependencies...
-if exist "%PATCHER_DIR%\requirements.txt" (
-    "%VENV_PYTHON%" -m pip install -r "%PATCHER_DIR%\requirements.txt" --quiet
-)
+:sync_clone
+echo Cloning hytale-shared-source (branch: %GIT_BRANCH%)...
+echo   Requires HypixelStudios org access. See: https://accounts.hytale.com/shared-source
+git clone -b %GIT_BRANCH% "https://github.com/HypixelStudios/hytale-shared-source" "%SHARED_SOURCE_DIR%"
+if errorlevel 1 goto :clone_failed
+goto :sync_done
 
-REM Copy HytaleServer.jar to patcher directory
-echo.
-echo Copying HytaleServer.jar to patcher...
-copy /y "%HYTALE_JAR%" "%PATCHER_DIR%\HytaleServer.jar" >nul
+:clone_failed
+echo ERROR: Failed to clone hytale-shared-source
+echo        Ensure your GitHub account has access to HypixelStudios org
+exit /b 1
 
-echo.
-echo ============================================
-echo   Running Decompilation
-echo ============================================
-echo.
+:sync_done
+echo   Official source synced to: %SHARED_SOURCE_DIR%
 
-REM Check if patcher already has decompiled output - if so, clean it for fresh decompile
-set "PATCHER_OUTPUT=%PATCHER_DIR%\hytale-server"
-if exist "%PATCHER_OUTPUT%" (
-    echo Cleaning previous decompilation output...
-    rmdir /s /q "%PATCHER_OUTPUT%"
-)
-
-REM Also clean work directory for fresh decompile
-if exist "%PATCHER_DIR%\work" (
-    rmdir /s /q "%PATCHER_DIR%\work"
-)
-
-echo This may take several minutes...
-echo Decompiling com.hypixel package using Vineflower...
-echo.
-
-pushd "%PATCHER_DIR%"
-set "HYTALESERVER_JAR_PATH=%PATCHER_DIR%\HytaleServer.jar"
-"%VENV_PYTHON%" run.py setup
-set "DECOMPILE_RESULT=!ERRORLEVEL!"
-popd
-
-if !DECOMPILE_RESULT! neq 0 (
-    echo.
-    echo ERROR: Decompilation failed with exit code: !DECOMPILE_RESULT!
-    exit /b 1
-)
-
-echo.
-echo Decompilation complete!
 echo.
 echo ============================================
 echo   Updating lib folder
 echo ============================================
 echo.
-
-REM Copy decompiled source
-set "DECOMPILE_PATH=%PATCHER_DIR%\hytale-server\src\main\java\com"
-set "LIB_SERVER_SRC=%LIB_DIR%\hytale-server\src\main\java"
-
-if exist "%DECOMPILE_PATH%" (
-    echo Copying decompiled source code...
-    
-    if exist "%LIB_SERVER_SRC%\com" (
-        echo   Removing existing source...
-        rmdir /s /q "%LIB_SERVER_SRC%\com"
-    )
-    
-    if not exist "%LIB_SERVER_SRC%" mkdir "%LIB_SERVER_SRC%"
-    
-    echo   Copying new source...
-    xcopy /s /e /i /q "%DECOMPILE_PATH%" "%LIB_SERVER_SRC%\com" >nul
-    
-    echo   Source code copied to: %LIB_SERVER_SRC%
-) else (
-    echo Warning: Decompiled source not found at: %DECOMPILE_PATH%
-)
 
 REM Copy HytaleServer.jar
 echo.
@@ -343,12 +251,10 @@ echo.
 echo Lib folder structure:
 echo   lib/
 echo     HytaleServer.jar          (original JAR)
-echo     hytale-server/src/main/   (decompiled source)
+echo     hytale-shared-source/     (official server source with comments and docs)
 echo     Server/                   (server assets)
 echo     Common/                   (common assets - textures, models, sounds, VFX, UI)
 echo     UI/                       (UI assets)
-echo.
-echo Remember: Decompiled code may have errors - it's for reference only.
 echo.
 
 exit /b 0

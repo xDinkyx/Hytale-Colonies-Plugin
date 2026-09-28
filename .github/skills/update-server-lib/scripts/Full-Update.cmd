@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 REM ============================================
 REM Hytale Server Full Update
-REM Downloads, decompiles, and updates lib
+REM Downloads, syncs official source, and updates lib
 REM ============================================
 
 set "SCRIPT_DIR=%~dp0"
