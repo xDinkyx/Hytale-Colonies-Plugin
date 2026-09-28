@@ -29,8 +29,8 @@ import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockComponentSection;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hytalecolonies.HytaleColoniesPlugin;
@@ -43,7 +43,6 @@ import com.hytalecolonies.debug.DebugTiming;
 import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
 
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
 /**
@@ -262,23 +261,22 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
             return -2;
         }
 
-        WorldChunk baseChunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(base.x, base.z));
-        if (baseChunk == null)
+        Ref<ChunkStore> sectionRef = world.getChunkStore().getChunkSectionReferenceAtBlock(base.x, base.y, base.z);
+        if (sectionRef == null || !sectionRef.isValid())
         {
-            DebugLog.fine(DebugCategory.TREE_SCANNER, "[TreeScanner] Chunk not in memory for tree base %s -- skipping registration.", base);
+            DebugLog.fine(DebugCategory.TREE_SCANNER, "[TreeScanner] Chunk section not loaded for tree base %s -- skipping registration.", base);
             return -2;
         }
 
-        Ref<ChunkStore>     chunkRef            = baseChunk.getReference();
-        BlockComponentChunk blockComponentChunk = chunkStore.getComponent(chunkRef, BlockComponentChunk.getComponentType());
-        if (blockComponentChunk == null)
+        BlockComponentSection blockComponentSection = chunkStore.getComponent(sectionRef, BlockComponentSection.getComponentType());
+        if (blockComponentSection == null)
         {
-            DebugLog.warning(DebugCategory.TREE_SCANNER, "[TreeScanner] No BlockComponentChunk at tree base %s -- skipping registration.", base);
+            DebugLog.warning(DebugCategory.TREE_SCANNER, "[TreeScanner] No BlockComponentSection at tree base %s -- skipping registration.", base);
             return -2;
         }
 
-        int             blockIndex  = ChunkUtil.indexBlockInColumn(base.x, base.y, base.z);
-        Ref<ChunkStore> existingRef = blockComponentChunk.getEntityReference(blockIndex);
+        int             blockIndex  = ChunkUtil.indexBlock(base.x, base.y, base.z);
+        Ref<ChunkStore> existingRef = blockComponentSection.getBlockReference(blockIndex);
 
         if (existingRef != null && existingRef.isValid())
         {
@@ -307,9 +305,9 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
 
         // Plain blocks have no block entity -- create one now.
         // BlockStateInfo is the mandatory anchor; BlockStateInfoRefSystem wires the
-        // new Ref<ChunkStore> into BlockComponentChunk on AddReason.SPAWN automatically.
+        // new Ref<ChunkStore> into BlockComponentSection on AddReason.SPAWN automatically.
         Holder<ChunkStore> holder = ChunkStore.REGISTRY.newHolder();
-        holder.putComponent(BlockModule.BlockStateInfo.getComponentType(), new BlockModule.BlockStateInfo(blockIndex, chunkRef));
+        holder.putComponent(BlockModule.BlockStateInfo.getComponentType(), new BlockModule.BlockStateInfo(blockIndex, sectionRef));
         holder.putComponent(HarvestableTreeComponent.getComponentType(), new HarvestableTreeComponent(blockType.getId(), tree.woodCount(), base));
 
         if (commandBuffer != null)
@@ -326,7 +324,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
             // re-checks whether the entity was already added by a preceding callback and
             // no-ops if it was, making the whole registration idempotent within a tick.
             world.execute(() -> {
-                Ref<ChunkStore> existingCheck = blockComponentChunk.getEntityReference(blockIndex);
+                Ref<ChunkStore> existingCheck = blockComponentSection.getBlockReference(blockIndex);
                 if (existingCheck != null && existingCheck.isValid())
                     return;
                 chunkStore.addEntity(holder, AddReason.SPAWN);
@@ -364,17 +362,17 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
     }
 
     /**
-     * Counts all tree-wood blocks in the chunk via the palette-based {@link BlockChunk#blockCounts()} map -- O(unique block types), not O(volume).
+     * Counts all tree-wood blocks in the chunk via the chunk's unique block ID set -- O(unique block types), not O(volume).
      */
     private int countWoodBlocksInChunk(BlockChunk blockChunk, Set<String> treeWoodKeys)
     {
         int total = 0;
-        for (Int2IntMap.Entry entry : blockChunk.blockCounts().int2IntEntrySet())
+        for (int blockId : blockChunk.blocks())
         {
-            BlockType bt = BlockType.getAssetMap().getAsset(entry.getIntKey());
+            BlockType bt = BlockType.getAssetMap().getAsset(blockId);
             if (bt != null && treeWoodKeys.contains(bt.getId()))
             {
-                total += entry.getIntValue();
+                total += blockChunk.count(blockId);
             }
         }
         return total;
@@ -408,20 +406,21 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
      */
     private void scanChunkForTreeWood(int chunkX, int chunkZ, BlockChunk blockChunk, Set<String> treeWoodKeys, List<Vector3i> segmentBottoms)
     {
-        BlockSection[] sections = blockChunk.getChunkSections();
-        for (int sectionIdx = 0; sectionIdx < sections.length; sectionIdx++)
+        // BlockChunk.getChunkSections() is gone -- getSectionAtBlockY(y) is still available (not slated
+        // for removal) and is bounded to the legacy 0..HEIGHT_SECTIONS-1 column range.
+        for (int sectionIdx = 0; sectionIdx < ChunkUtil.HEIGHT_SECTIONS; sectionIdx++)
         {
-            BlockSection section = sections[sectionIdx];
+            BlockSection section = blockChunk.getSectionAtBlockY(sectionIdx * ChunkUtil.SIZE);
             if (section.isSolidAir())
                 continue;
 
-            int sectionBaseY = sectionIdx * 32;
-            for (int localY = 0; localY < 32; localY++)
+            int sectionBaseY = sectionIdx * ChunkUtil.SIZE;
+            for (int localY = 0; localY < ChunkUtil.SIZE; localY++)
             {
                 int worldY = sectionBaseY + localY;
-                for (int localX = 0; localX < 32; localX++)
+                for (int localX = 0; localX < ChunkUtil.SIZE; localX++)
                 {
-                    for (int localZ = 0; localZ < 32; localZ++)
+                    for (int localZ = 0; localZ < ChunkUtil.SIZE; localZ++)
                     {
                         int blockId = section.get(localX, worldY, localZ);
                         if (blockId == 0)

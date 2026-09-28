@@ -67,22 +67,9 @@ public final class WorkstationContainerUtil
             if (blockStateInfo == null)
                 continue;
 
-            var chunkRef = blockStateInfo.getChunkRef();
-            if (chunkRef == null || !chunkRef.isValid())
-                continue;
+            Vector3i pos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, ref.getStore());
 
-            var worldChunk = chunkRef.getStore().getComponent(chunkRef, com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk.getComponentType());
-            if (worldChunk == null)
-                continue;
-
-            int idx = blockStateInfo.getIndex();
-            int wx  = com.hypixel.hytale.math.util.ChunkUtil.worldCoordFromLocalCoord(worldChunk.getX(),
-                                                                                      com.hypixel.hytale.math.util.ChunkUtil.xFromBlockInColumn(idx));
-            int wy  = com.hypixel.hytale.math.util.ChunkUtil.yFromBlockInColumn(idx);
-            int wz  = com.hypixel.hytale.math.util.ChunkUtil.worldCoordFromLocalCoord(worldChunk.getZ(),
-                                                                                      com.hypixel.hytale.math.util.ChunkUtil.zFromBlockInColumn(idx));
-
-            return new Vector3i(wx, wy, wz);
+            return pos;
         }
         return null;
     }

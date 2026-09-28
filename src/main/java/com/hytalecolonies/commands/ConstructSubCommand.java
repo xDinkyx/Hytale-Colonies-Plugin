@@ -32,12 +32,7 @@ public class ConstructSubCommand extends AbstractPlayerCommand
     public ConstructSubCommand()
     {
         super("construct", "Load a server prefab into clipboard for ghost preview");
-    }
-
-    @Override
-    protected boolean canGeneratePermission()
-    {
-        return false;
+        requireNoPermission();
     }
 
     @Override

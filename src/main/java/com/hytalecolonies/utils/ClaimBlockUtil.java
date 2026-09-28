@@ -19,7 +19,7 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockComponentChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockComponentSection;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -97,24 +97,23 @@ public final class ClaimBlockUtil
             return false;
         }
 
-        long            chunkIdx = ChunkUtil.indexChunkFromBlock(canonical.x, canonical.z);
-        Ref<ChunkStore> chunkRef = world.getChunkStore().getChunkReference(chunkIdx);
-        if (chunkRef == null || !chunkRef.isValid())
+        Ref<ChunkStore> sectionRef = world.getChunkStore().getChunkSectionReferenceAtBlock(canonical.x, canonical.y, canonical.z);
+        if (sectionRef == null || !sectionRef.isValid())
         {
-            DebugLog.fine(DebugCategory.CLAIM_SYSTEM, "[Claim] claimBlock(%s) -- chunk ref not available.", canonical);
+            DebugLog.fine(DebugCategory.CLAIM_SYSTEM, "[Claim] claimBlock(%s) -- chunk section ref not available.", canonical);
             return false;
         }
 
-        Store<ChunkStore>   chunkStore = world.getChunkStore().getStore();
-        BlockComponentChunk bcc        = chunkStore.getComponent(chunkRef, BlockComponentChunk.getComponentType());
+        Store<ChunkStore>     chunkStore = world.getChunkStore().getStore();
+        BlockComponentSection bcc        = chunkStore.getComponent(sectionRef, BlockComponentSection.getComponentType());
         if (bcc == null)
         {
-            DebugLog.fine(DebugCategory.CLAIM_SYSTEM, "[Claim] claimBlock(%s) -- no BlockComponentChunk.", canonical);
+            DebugLog.fine(DebugCategory.CLAIM_SYSTEM, "[Claim] claimBlock(%s) -- no BlockComponentSection.", canonical);
             return false;
         }
 
-        int             blockIndex = ChunkUtil.indexBlockInColumn(canonical.x, canonical.y, canonical.z);
-        Ref<ChunkStore> blockRef   = bcc.getEntityReference(blockIndex);
+        int             blockIndex = ChunkUtil.indexBlock(canonical.x, canonical.y, canonical.z);
+        Ref<ChunkStore> blockRef   = bcc.getBlockReference(blockIndex);
 
         if (blockRef != null && blockRef.isValid())
         {
@@ -138,7 +137,7 @@ public final class ClaimBlockUtil
             // ClaimedBlockCleanupSystem automatically destroys this entity when the
             // claim is released if no other components are present.
             Holder<ChunkStore> holder = ChunkStore.REGISTRY.newHolder();
-            holder.putComponent(BlockModule.BlockStateInfo.getComponentType(), new BlockModule.BlockStateInfo(blockIndex, chunkRef));
+            holder.putComponent(BlockModule.BlockStateInfo.getComponentType(), new BlockModule.BlockStateInfo(blockIndex, sectionRef));
             holder.putComponent(ClaimedBlockComponent.getComponentType(), new ClaimedBlockComponent(claimedByUuid, claimType));
             chunkStore.addEntity(holder, AddReason.SPAWN);
             DebugLog.info(DebugCategory.CLAIM_SYSTEM, "[Claim] Created claim entity at %s for %s (type=%s).", canonical, claimedByUuid, claimType);

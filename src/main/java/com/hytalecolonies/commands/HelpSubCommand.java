@@ -14,12 +14,7 @@ public class HelpSubCommand extends CommandBase
     public HelpSubCommand()
     {
         super("help", "Show available commands");
-    }
-
-    @Override
-    protected boolean canGeneratePermission()
-    {
-        return false;
+        requireNoPermission();
     }
 
     @Override

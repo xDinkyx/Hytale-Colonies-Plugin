@@ -23,13 +23,8 @@ public class UISubCommand extends AbstractPlayerCommand
     public UISubCommand()
     {
         super("ui", "Open the plugin dashboard");
+        requireNoPermission();
         this.addAliases("dashboard", "gui");
-    }
-
-    @Override
-    protected boolean canGeneratePermission()
-    {
-        return false;
     }
 
     /**

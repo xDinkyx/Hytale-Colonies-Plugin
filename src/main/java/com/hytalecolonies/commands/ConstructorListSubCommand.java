@@ -19,12 +19,7 @@ public class ConstructorListSubCommand extends AbstractPlayerCommand
     public ConstructorListSubCommand()
     {
         super("list", "Open the constructor prefab picker");
-    }
-
-    @Override
-    protected boolean canGeneratePermission()
-    {
-        return false;
+        requireNoPermission();
     }
 
     @Override

@@ -15,12 +15,7 @@ public class ReloadSubCommand extends CommandBase
     public ReloadSubCommand()
     {
         super("reload", "Reload plugin configuration");
-    }
-
-    @Override
-    protected boolean canGeneratePermission()
-    {
-        return false;
+        requireNoPermission();
     }
 
     @Override

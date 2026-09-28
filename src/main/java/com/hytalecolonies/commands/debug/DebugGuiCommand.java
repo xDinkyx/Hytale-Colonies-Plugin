@@ -24,12 +24,7 @@ public class DebugGuiCommand extends AbstractPlayerCommand
     public DebugGuiCommand()
     {
         super("debuggui", "Open the debug configuration panel");
-    }
-
-    @Override
-    protected boolean canGeneratePermission()
-    {
-        return false;
+        requireNoPermission();
     }
 
     @Override

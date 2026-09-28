@@ -11,7 +11,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
-import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.npc.instructions.ExecutionSupport;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
@@ -38,9 +38,9 @@ public class ActionFindDeliveryContainer extends ActionBase
     }
 
     @Override
-    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
+    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull ExecutionSupport executionSupport, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
     {
-        super.execute(ref, role, sensorInfo, dt, store);
+        super.execute(ref, executionSupport, sensorInfo, dt, store);
 
         String npcId = DebugLog.npcId(ref, store);
 
@@ -62,7 +62,7 @@ public class ActionFindDeliveryContainer extends ActionBase
         if (workStation.deliveryContainerPosition != null)
         {
             JobNavigationUtil.setJobTarget(store, ref, workStation.deliveryContainerPosition);
-            role.getMarkedEntitySupport()
+            executionSupport.getMarkedEntitySupport()
                     .getStoredPosition(NAV_TARGET_SLOT)
                     .set(workStation.deliveryContainerPosition.x + 0.5,
                          (double)workStation.deliveryContainerPosition.y,
@@ -96,7 +96,7 @@ public class ActionFindDeliveryContainer extends ActionBase
 
         workStation.deliveryContainerPosition = containerPos;
         JobNavigationUtil.setJobTarget(store, ref, containerPos);
-        role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(containerPos.x + 0.5, (double)containerPos.y, containerPos.z + 0.5);
+        executionSupport.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(containerPos.x + 0.5, (double)containerPos.y, containerPos.z + 0.5);
 
         DebugLog.fine(DebugCategory.COLONIST_DELIVERY, "[FindDeliveryContainer] [%s] Container at %s -- navigating.", npcId, containerPos);
 

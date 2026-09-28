@@ -107,7 +107,7 @@ public class JobAssignmentSystems extends DelayedEntitySystem<ChunkStore>
         }
 
         // Guard against concurrent chunk unloads invalidating the chunk ref.
-        if (!blockStateInfo.getChunkRef().isValid())
+        if (!blockStateInfo.getSectionRef().isValid())
         {
             DebugLog.fine(DebugCategory.JOB_ASSIGNMENT, "[JobAssignment] WorkStation chunk ref is invalid (chunk unloading) -- skipping.");
             return;

@@ -7,7 +7,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.SensorBase;
-import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.npc.instructions.ExecutionSupport;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import com.hytalecolonies.components.jobs.JobTaskComponent;
 import com.hytalecolonies.debug.DebugCategory;
@@ -24,9 +24,9 @@ public class SensorJobHasTaskItems extends SensorBase
     }
 
     @Override
-    public boolean matches(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, double dt, @Nonnull Store<EntityStore> store)
+    public boolean matches(@Nonnull Ref<EntityStore> ref, @Nonnull ExecutionSupport executionSupport, double dt, @Nonnull Store<EntityStore> store)
     {
-        if (!super.matches(ref, role, dt, store))
+        if (!super.matches(ref, executionSupport, dt, store))
             return false;
 
         JobTaskComponent task   = store.getComponent(ref, JobTaskComponent.getComponentType());

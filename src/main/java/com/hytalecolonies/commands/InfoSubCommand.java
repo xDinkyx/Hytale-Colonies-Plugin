@@ -18,14 +18,9 @@ public class InfoSubCommand extends CommandBase
     public InfoSubCommand(String pluginName, String pluginVersion)
     {
         super("info", "Show plugin information");
+        requireNoPermission();
         this.pluginName    = pluginName;
         this.pluginVersion = pluginVersion;
-    }
-
-    @Override
-    protected boolean canGeneratePermission()
-    {
-        return false;
     }
 
     @Override

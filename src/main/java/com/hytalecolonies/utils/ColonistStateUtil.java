@@ -6,7 +6,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
-import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.npc.role.support.StateSupport;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.debug.DebugCategory;
@@ -42,10 +42,10 @@ public final class ColonistStateUtil
         if (npc == null)
             return;
 
-        Role role = npc.getRole();
-        if (role == null)
+        StateSupport stateSupport = store.getComponent(ref, StateSupport.getComponentType());
+        if (stateSupport == null)
             return;
 
-        role.getStateSupport().setState(ref, state.npcMainState(), state.npcSubState, store);
+        stateSupport.setState(ref, state.npcMainState(), state.npcSubState, store);
     }
 }

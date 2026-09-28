@@ -10,7 +10,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
-import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.npc.instructions.ExecutionSupport;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
@@ -34,7 +34,7 @@ public class ActionLogDebug extends ActionBase
     }
 
     @Override
-    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
+    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull ExecutionSupport executionSupport, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
     {
         DebugLog.log(category, level, "[LogDebug] [%s] %s", DebugLog.npcId(ref, store), message);
         return true;

@@ -10,7 +10,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
-import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.npc.instructions.ExecutionSupport;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
@@ -48,17 +48,17 @@ public class ActionNavigateTo extends ActionBase
     }
 
     @Override
-    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
+    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull ExecutionSupport executionSupport, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
     {
-        super.execute(ref, role, sensorInfo, dt, store);
+        super.execute(ref, executionSupport, sensorInfo, dt, store);
 
         if (TARGET_WORKSTATION.equals(target))
         {
-            navigateToWorkstation(ref, role, store);
+            navigateToWorkstation(ref, executionSupport, store);
         }
         else if (TARGET_JOB_TARGET.equals(target))
         {
-            navigateToJobTarget(ref, role, store);
+            navigateToJobTarget(ref, executionSupport, store);
         }
         else
         {
@@ -68,7 +68,7 @@ public class ActionNavigateTo extends ActionBase
         return true;
     }
 
-    private void navigateToJobTarget(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nonnull Store<EntityStore> store)
+    private void navigateToJobTarget(@Nonnull Ref<EntityStore> ref, @Nonnull ExecutionSupport executionSupport, @Nonnull Store<EntityStore> store)
     {
         JobTargetComponent jobTarget = store.getComponent(ref, JobTargetComponent.getComponentType());
         if (jobTarget == null || jobTarget.getTargetPosition() == null)
@@ -77,11 +77,11 @@ public class ActionNavigateTo extends ActionBase
             return;
         }
         Vector3i pos = jobTarget.getTargetPosition();
-        setNavTarget(role, pos.x + 0.5, (double)pos.y, pos.z + 0.5);
+        setNavTarget(executionSupport, pos.x + 0.5, (double)pos.y, pos.z + 0.5);
         JobNavigationUtil.dispatchNavigation(store, ref, pos);
     }
 
-    private void navigateToWorkstation(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nonnull Store<EntityStore> store)
+    private void navigateToWorkstation(@Nonnull Ref<EntityStore> ref, @Nonnull ExecutionSupport executionSupport, @Nonnull Store<EntityStore> store)
     {
         JobComponent job = store.getComponent(ref, JobComponent.getComponentType());
         if (job == null)
@@ -100,13 +100,13 @@ public class ActionNavigateTo extends ActionBase
         // instruction
         // pass, so dispatching via MoveToTargetComponent alone would leave slot stale
         // for one tick and briefly navigate toward the old position.
-        setNavTarget(role, wsPos.x + 0.5, (double)wsPos.y, wsPos.z + 0.5);
+        setNavTarget(executionSupport, wsPos.x + 0.5, (double)wsPos.y, wsPos.z + 0.5);
         JobNavigationUtil.dispatchNavigation(store, ref, wsPos);
         ColonistLeashUtil.setLeashToBlockCenter(ref, store, wsPos);
     }
 
-    private void setNavTarget(@Nonnull Role role, double x, double y, double z)
+    private void setNavTarget(@Nonnull ExecutionSupport executionSupport, double x, double y, double z)
     {
-        role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(x, y, z);
+        executionSupport.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(x, y, z);
     }
 }

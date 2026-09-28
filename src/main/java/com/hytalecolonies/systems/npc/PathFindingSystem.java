@@ -16,7 +16,7 @@ import com.hypixel.hytale.server.core.modules.entity.component.TransformComponen
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
-import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.npc.role.support.MarkedEntitySupport;
 import com.hytalecolonies.HytaleColoniesPlugin;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.debug.DebugCategory;
@@ -56,10 +56,10 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
             return;
         }
 
-        Role role = npcEntity.getRole();
-        if (role == null)
+        MarkedEntitySupport markedEntitySupport = store.getComponent(ref, MarkedEntitySupport.getComponentType());
+        if (markedEntitySupport == null)
         {
-            DebugLog.warning(DebugCategory.MOVEMENT, "PathFindingSystem: [%s] NPC role is null, cannot navigate.", DebugLog.npcId(ref, store));
+            DebugLog.warning(DebugCategory.MOVEMENT, "PathFindingSystem: [%s] NPC has no MarkedEntitySupport, cannot navigate.", DebugLog.npcId(ref, store));
             return;
         }
 
@@ -70,7 +70,7 @@ public class PathFindingSystem extends RefChangeSystem<EntityStore, MoveToTarget
         // every tick and activates the Seek body motion while the NPC is outside MinRange.
         try
         {
-            role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(component.target);
+            markedEntitySupport.getStoredPosition(NAV_TARGET_SLOT).set(component.target);
         }
         catch (NullPointerException e)
         {

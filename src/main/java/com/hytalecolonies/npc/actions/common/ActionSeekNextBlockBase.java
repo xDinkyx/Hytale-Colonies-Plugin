@@ -15,7 +15,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
 import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase;
-import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.npc.instructions.ExecutionSupport;
+import com.hypixel.hytale.server.npc.role.support.MarkedEntitySupport;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
@@ -62,9 +63,9 @@ public abstract class ActionSeekNextBlockBase extends ActionBase
     }
 
     @Override
-    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull Role role, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
+    public boolean execute(@Nonnull Ref<EntityStore> ref, @Nonnull ExecutionSupport executionSupport, @Nullable InfoProvider sensorInfo, double dt, @Nonnull Store<EntityStore> store)
     {
-        super.execute(ref, role, sensorInfo, dt, store);
+        super.execute(ref, executionSupport, sensorInfo, dt, store);
         String npcId = DebugLog.npcId(ref, store);
 
         WorkStationComponent workStation = WorkStationUtil.getWorkStation(store, ref);
@@ -108,7 +109,7 @@ public abstract class ActionSeekNextBlockBase extends ActionBase
             else
             {
                 // Valid target still exists -- just restore the NavTarget slot.
-                role.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(pos.x + 0.5, (double)pos.y, pos.z + 0.5);
+                executionSupport.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(pos.x + 0.5, (double)pos.y, pos.z + 0.5);
                 return true;
             }
         }
@@ -120,9 +121,12 @@ public abstract class ActionSeekNextBlockBase extends ActionBase
             return true;
         }
 
-        final Vector3i candidate    = nextBlock;
-        final Role     capturedRole = role;
-        final String   claimLabel   = getClaimLabel();
+        final Vector3i          candidate                = nextBlock;
+        // ExecutionSupport is a pooled, per-tick struct (see ExecutionSupport.acquire()/clearForReuse()) --
+        // it must NOT be captured for use inside a deferred world.execute() callback that may run on a
+        // later tick. Capture the actual (persistent) MarkedEntitySupport component instead.
+        final MarkedEntitySupport capturedMarkedEntitySupport = executionSupport.getMarkedEntitySupport();
+        final String            claimLabel               = getClaimLabel();
         world.execute(() -> {
             // Guard against duplicate callbacks in the same cycle.
             JobTargetComponent current = store.getComponent(ref, JobTargetComponent.getComponentType());
@@ -136,7 +140,7 @@ public abstract class ActionSeekNextBlockBase extends ActionBase
             }
 
             JobNavigationUtil.setJobTarget(store, ref, candidate);
-            capturedRole.getMarkedEntitySupport().getStoredPosition(NAV_TARGET_SLOT).set(candidate.x + 0.5, (double)candidate.y, candidate.z + 0.5);
+            capturedMarkedEntitySupport.getStoredPosition(NAV_TARGET_SLOT).set(candidate.x + 0.5, (double)candidate.y, candidate.z + 0.5);
 
             WorkStationComponent liveWorkStation = WorkStationUtil.getWorkStation(store, ref);
             if (liveWorkStation != null)

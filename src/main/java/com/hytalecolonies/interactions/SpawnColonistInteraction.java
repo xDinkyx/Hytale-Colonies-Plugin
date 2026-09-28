@@ -116,7 +116,7 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction
 
             assert worldChunkComponent != null;
 
-            BlockType blockType = worldChunkComponent.getBlockType(targetBlock.x, targetBlock.y, targetBlock.z);
+            BlockType blockType = BlockType.getAssetMap().getAsset(worldChunkComponent.getBlock(targetBlock.x, targetBlock.y, targetBlock.z));
             if (blockType == null)
             {
                 return new SpawnColonistInteraction.SpawnData(

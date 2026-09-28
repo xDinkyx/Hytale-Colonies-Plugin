@@ -51,7 +51,7 @@ public class ConstructionOrderDispatchSystem extends DelayedEntitySystem<ChunkSt
         }
 
         BlockModule.BlockStateInfo blockStateInfo = archetypeChunk.getComponent(index, BlockModule.BlockStateInfo.getComponentType());
-        if (blockStateInfo == null || !blockStateInfo.getChunkRef().isValid())
+        if (blockStateInfo == null || !blockStateInfo.getSectionRef().isValid())
         {
             DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[ConstructionOrderDispatch] Workstation has no valid BlockStateInfo -- skipping.");
             return;

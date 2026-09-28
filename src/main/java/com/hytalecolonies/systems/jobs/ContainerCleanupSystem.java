@@ -13,10 +13,8 @@ import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.block.components.ItemContainerBlock;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.components.jobs.JobComponent;
@@ -26,6 +24,7 @@ import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.BlockStateInfoUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
 import com.hytalecolonies.utils.StoreUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
@@ -65,17 +64,8 @@ public class ContainerCleanupSystem extends RefSystem<ChunkStore>
             return;
 
         BlockModule.BlockStateInfo blockStateInfo = commandBuffer.getComponent(ref, blockStateInfoType);
-        Ref<ChunkStore> chunkRef = blockStateInfo.getChunkRef();
-        BlockChunk blockChunk = commandBuffer.getComponent(chunkRef, BlockChunk.getComponentType());
 
-        // ToDo: Helper method to get world position from BlockStateInfo. Use the one from BlockStateInfoUtil.
-        int idx = blockStateInfo.getIndex();
-        int localX = ChunkUtil.xFromBlockInColumn(idx);
-        int localY = ChunkUtil.yFromBlockInColumn(idx);
-        int localZ = ChunkUtil.zFromBlockInColumn(idx);
-        Vector3i blockPos = new Vector3i(ChunkUtil.worldCoordFromLocalCoord(blockChunk.getX(), localX),
-                                         localY,
-                                         ChunkUtil.worldCoordFromLocalCoord(blockChunk.getZ(), localZ));
+        Vector3i blockPos = new BlockStateInfoUtil().GetBlockWorldPosition(blockStateInfo, commandBuffer);
 
         DebugLog.info(DebugCategory.COLONIST_DELIVERY, "[ContainerCleanupSystem] Container removed at %s -- scanning colonists.", blockPos);
 

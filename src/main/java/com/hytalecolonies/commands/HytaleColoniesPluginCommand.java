@@ -17,6 +17,7 @@ public class HytaleColoniesPluginCommand extends AbstractCommandCollection
     public HytaleColoniesPluginCommand(String pluginName, String pluginVersion)
     {
         super("hc", "HytaleColonies plugin commands");
+        requireNoPermission();
         this.addAliases("colony", "col");
 
         this.addSubCommand(new HelpSubCommand());
@@ -28,11 +29,5 @@ public class HytaleColoniesPluginCommand extends AbstractCommandCollection
         this.addSubCommand(new ConstructSubCommand());
         this.addSubCommand(new ConstructorListSubCommand());
         this.addSubCommand(new DebugGuiCommand());
-    }
-
-    @Override
-    protected boolean canGeneratePermission()
-    {
-        return false;
     }
 }
