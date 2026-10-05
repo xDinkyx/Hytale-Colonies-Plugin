@@ -443,9 +443,10 @@ com.hytalecolonies/
 |   `-- world/                       ClaimableBlock, ClaimedBlockComponent,
 |                                    ClaimedBlockRegistry, HarvestableTreeComponent
 |-- debug/                           DebugCategory, DebugConfig, DebugLog, DebugLogUtil, DebugTiming
-|-- interactions/                    SpawnColonistInteraction, OpenWorkstationPageInteraction
-|-- listeners/                       PlayerListener, ConstructorBuildOrderFilter,
-|                                    ConstructorPrefabPageFilter
+|-- interactions/                    SpawnColonistInteraction, OpenWorkstationPageInteraction,
+|                                    OpenConstructionPickerInteraction, PlaceConstructionGhostInteraction,
+|                                    ConfirmConstructionPlacementInteraction
+|-- listeners/                       PlayerListener
 |-- npc/
 |   |-- actions/
 |   |   |-- common/                  Shared: HarvestBlock, EquipBestTool, DepositItems,
@@ -872,26 +873,17 @@ Rotation3f rotation = new Rotation3f(0.0F,
 
 **Risk**: NPCs spawn facing the wrong direction by ~57x the intended angle when offsets are non-trivial.
 
-### Issue 8 -- Hardcoded packet ID (`ConstructorBuildOrderFilter`)
+### Issue 8 -- RESOLVED (removed with the BuilderTools-clipboard rework, 2026-09-29)
 
-**Location**: `listeners/ConstructorBuildOrderFilter.java` line 31
+Used to document a hardcoded packet ID in `listeners/ConstructorBuildOrderFilter.java`. That file (and `ConstructorPrefabPageFilter`) was deleted when the
+constructor tool moved to its own `Interaction`-based placement flow (`OpenConstructionPickerInteraction`, `PlaceConstructionGhostInteraction`,
+`ConfirmConstructionPlacementInteraction`) -- no more BuilderTools clipboard/paste-packet interception, so the issue no longer applies.
 
-**Problem**: `BUILD_TOOL_PASTE_PACKET_ID = 407` is a magic number. The class already imports `BuilderToolPasteClipboard` but does not use its constant.
+### Issue 9 -- Deprecated `Inventory` API (`ColonistToolUtil`)
 
-**Current code**:
-```java
-private static final int BUILD_TOOL_PASTE_PACKET_ID = 407;
-```
+**Location**: `utils/ColonistToolUtil.java` (line 16 import, lines 141/152/163 methods)
 
-**Fix**: Replace with `BuilderToolPasteClipboard.PACKET_ID` so a protocol version change is caught at compile time.
-
-**Risk**: If the packet ID changes in a server update, the filter silently stops working with no compile error.
-
-### Issue 9 -- Deprecated `Inventory` API (`ColonistToolUtil`, `ConstructorPrefabPageFilter`)
-
-**Location**: `utils/ColonistToolUtil.java` (line 16 import, lines 141/152/163 methods), `listeners/ConstructorPrefabPageFilter.java`
-
-**Problem**: Both files use `com.hypixel.hytale.server.core.inventory.Inventory` (imported and passed as a parameter), which is `@Deprecated(forRemoval = true)`. Methods like `getItemInHand()` and `setActiveHotbarSlot()` will be removed in a future server update.
+**Problem**: The file uses `com.hypixel.hytale.server.core.inventory.Inventory` (imported and passed as a parameter), which is `@Deprecated(forRemoval = true)`. Methods like `getItemInHand()` and `setActiveHotbarSlot()` will be removed in a future server update.
 
 **Fix**: Replace with the `InventoryComponent` API -- retrieve the component via `store.getComponent(ref, InventoryComponent.getComponentType())`, then access containers with `.getContainer(InventoryComponent.Hotbar)` etc.
 

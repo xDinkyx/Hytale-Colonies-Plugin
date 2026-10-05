@@ -29,6 +29,9 @@ Comprehensive reference for Hytale's ECS architecture. This is the foundation of
 | Register block system | `getChunkStoreRegistry().registerSystem(system)` in `start()` |
 | Look up block entity | `BlockModule.getBlockEntity(world, x, y, z)` → `Ref<ChunkStore>` or `null` (never creates) |
 | Resolve a section ref from a block position (Update 6+) | `world.getChunkStore().getChunkSectionReferenceAtBlock(x, y, z)` → `Ref<ChunkStore>` (section entity, not column) |
+| Resolve a section ref from section coords (not block coords) | `chunkStore.getChunkSectionReference(sectionX, sectionY, sectionZ)` — for iterating a known grid of sections, e.g. all sections in a column |
+| Read a block id at a world position (Update 7 Part 5+) | No `World.getBlock`/`WorldChunk.getBlock` anymore — resolve a section ref, then `BlockSection.get(x, y, z)` (world coords, masked internally) |
+| Write a block at a world position (Update 7 Part 5+) | `BlockOperations.setBlock(chunkStore, sectionRef, x, y, z, blockId, blockType, rotation, filler, settings)` — `settings` is bitflags from `SetBlockSettings` (`NONE` = full physics/heightmap/particles/filler pipeline) |
 | Get entity ref from a section (Update 6+) | `blockComponentSection.getBlockReference(index)` where `index = ChunkUtil.indexBlock(x, y, z)` (section-local, 0-31 per axis) → `Ref<ChunkStore>` or `null` |
 | Create block entity on-demand | `ChunkStore.REGISTRY.newHolder()` + add `BlockStateInfo(index, sectionRef)` + call `chunkStore.addEntity(holder, AddReason.SPAWN)` |
 | Inspect entity component count | `store.getArchetype(ref).length()` — total number of component types on the entity |
@@ -61,7 +64,7 @@ Every entity has a `UUIDComponent` and `NetworkId` for these lookups.
 
 ### ChunkStore
 
-`ChunkStore` manages block/chunk components. Contains `WorldChunk` components (which hold `EntityChunk` for entities in the chunk and `BlockChunk` with `BlockSection`s). Use for block systems and ticking blocks.
+`ChunkStore` manages block/chunk components. Contains `WorldChunk` components (pure column lifecycle bookkeeping only — flags, keep-alive timers, saving state) and `BlockChunk` (tint/heightmap/environment-run-cursor state only). **As of Update 7 Part 5, neither `WorldChunk` nor `BlockChunk` holds or exposes block contents anymore** — `getBlock`, `setBlock`, `getSectionAtBlockY`, `blocks()`, `count()`, `getBlockComponentEntity`, `getBlockChunk()` etc. are all gone from both classes (not deprecated — deleted). Block contents live entirely on the per-section components (`BlockSection`, `BlockComponentSection`, `BlockHealthSection`, `EnvironmentSection`, `ChunkSection`) fetched from a **section** ref. See "Block Components (ChunkStore)" below for the resolve-a-section pattern, and the Quick Reference table above for the one-line read/write replacements.
 
 ### Holder (Entity Blueprint)
 
@@ -617,6 +620,47 @@ HytaleColonies for a reference implementation.
 
 > **Important:** Any entity you create for a plain block is your responsibility to destroy. Consider using a `RefChangeSystem<ChunkStore, MyBlockComponent>.onComponentRemoved` to clean it up reactively (see the RefChangeSystem section above).
 
+### Reading and Writing Raw Blocks (Update 7 Part 5+)
+
+As of Update 7 Part 5, `World.getBlock`, `World.getChunkIfInMemory`/`getNonTickingChunk`, and every
+block-content method on `WorldChunk`/`BlockChunk` (`getBlock`, `setBlock`, `getSectionAtBlockY`,
+`blocks()`, `count()`, `getBlockComponentEntity`, `getBlockChunk()`, `getRotationIndex`, `getFiller`)
+are **fully deleted**, not deprecated. There is no column-level shortcut anymore — always resolve a
+section first:
+
+```java
+// Read:
+Ref<ChunkStore> sectionRef = world.getChunkStore().getChunkSectionReferenceAtBlock(x, y, z);
+int blockId = 0;
+if (sectionRef != null && sectionRef.isValid()) {
+    BlockSection section = world.getChunkStore().getStore().getComponent(sectionRef, BlockSection.getComponentType());
+    if (section != null) blockId = section.get(x, y, z); // world coords -- masked internally
+}
+
+// Write (must run on the world thread, e.g. inside world.execute()):
+BlockOperations.setBlock(chunkStore, sectionRef, x, y, z, blockId, blockType,
+    rotation, FillerBlockUtil.NO_FILLER, SetBlockSettings.NONE);
+```
+
+For a one-off read, consider a small shared helper (e.g. `BlockReadUtil.getBlockId(world, x, y, z)`
+in HytaleColonies) wrapping the section-resolve-and-read boilerplate, since this pattern now shows up
+at every call site that used to say `world.getBlock(x, y, z)`.
+
+Two different `ChunkStore` methods resolve sections — don't mix them up:
+- `getChunkSectionReferenceAtBlock(blockX, blockY, blockZ)` — takes **world block coordinates**.
+- `getChunkSectionReference(sectionX, sectionY, sectionZ)` — takes **section-grid coordinates**
+  (chunk coords for X/Z, section index for Y); use this when iterating a known grid of sections
+  (e.g. every section in a column: `for (y = 0; y < ChunkUtil.HEIGHT_SECTIONS; y++) getChunkSectionReference(cx, y, cz)`).
+
+For bulk "does this chunk contain any block of interest" pre-filtering (previously done with
+`BlockChunk.blocks()` across a whole column), use `BlockSection.values()` (IntSet of unique block ids
+in that section) per-section instead — there's no more whole-column shortcut.
+
+Column-level `BlockChunk` methods that **do** still exist (tint, not block content):
+`getTint(x, z)`/`setTint(x, z, tint)`. These still need a **column** ref (`chunkStore.getChunkReference(chunkIndex)`),
+not a section ref — don't conflate the two ref kinds. Per-block environment id moved to
+`EnvironmentSection.get(x, y, z)` (section ref), replacing the removed `BlockChunk.getEnvironment(x, y, z)`.
+
 ### Block RefSystem (Block Initializer)
 
 Reacts when block entities with your component are added. Use to mark blocks as ticking:
@@ -694,10 +738,18 @@ public class ExampleSystem extends EntityTickingSystem {
                         int globalZ = localZ + (section.getZ() * 32);
                         int globalY = localY + (section.getY() * 32);
 
-                        // Must execute setBlock on world thread. WorldChunk.setBlock is deprecated;
-                        // prefer BlockOperations.setBlock resolved from ChunkStore.getChunkSectionReferenceAtBlock.
+                        // Must execute setBlock on world thread. WorldChunk.setBlock/World.setBlock are gone
+                        // (Update 7 Part 5) -- use BlockOperations.setBlock resolved from
+                        // ChunkStore.getChunkSectionReferenceAtBlock. BlockType must be resolved first.
                         world.execute(() -> {
-                            world.setBlock(globalX + 1, globalY, globalZ, "Rock_Ice");
+                            ChunkStore cs = world.getChunkStore();
+                            Ref<ChunkStore> targetSectionRef = cs.getChunkSectionReferenceAtBlock(globalX + 1, globalY, globalZ);
+                            if (targetSectionRef == null || !targetSectionRef.isValid()) return;
+                            BlockType iceType = BlockType.getAssetMap().getAsset("Rock_Ice");
+                            if (iceType == null) return;
+                            BlockOperations.setBlock(cs, targetSectionRef, globalX + 1, globalY, globalZ,
+                                iceType.getIndex(), iceType, RotationTuple.NONE_INDEX,
+                                FillerBlockUtil.NO_FILLER, SetBlockSettings.NONE);
                         });
                         return BlockTickStrategy.CONTINUE;
                     }

@@ -238,3 +238,109 @@ world.execute(() -> {
 > **Requirement:** `BuilderTools` must be listed as a dependency in `manifest.json` and be present on the server.
 > `builderState.getSelection()` returns `null` if the player has no clipboard loaded.
 
+---
+
+## 3D Prefab Preview (interactive UI widget, Update 5+)
+
+The vanilla prefab browser (`Pages/PrefabListPage.ui`, used by `PrefabPage` in `BuilderTools`) shows a rotate/tilt/zoom/pan-able live 3D preview via the
+`PrefabPreviewComponent` widget. This is available to any custom server UI, not just the vanilla browser.
+
+**`.ui` markup:**
+
+```
+PrefabPreviewComponent #PrefabPreview {
+  AllowDragYaw: true;
+  AllowDragPitch: true;
+  AllowZoom: true;
+  AllowPan: true;
+  ShowAnchor: true;
+}
+```
+
+**Feeding it block data** — the widget has no server-side handle; the client renders whatever block data was last delivered via a
+`com.hypixel.hytale.protocol.packets.buildertools.BuilderToolPrefabPreview` packet sent directly to the viewing player (not through `UICommandBuilder`):
+
+```java
+import com.hypixel.hytale.protocol.packets.buildertools.BuilderToolPrefabPreview;
+
+BuilderToolPrefabPreview packet = new BuilderToolPrefabPreview();
+packet.tilt = 23;            // degrees
+packet.spinSpeed = 27;       // auto-rotate speed; 0 = static
+packet.previewScale = 100;   // max on-screen size
+if (selection.getBlockCount() > BuilderToolsPlugin.STREAM_TO_CLIENT_LIMIT) {
+    packet.blocksOmitted = true;
+    packet.bounds = selection.toEditorSelectionBounds(); // shows a bounding box instead of blocks
+} else {
+    var editorPacket = selection.toPacket();
+    packet.blocksChange = editorPacket.blocksChange;
+    packet.fluidsChange = editorPacket.fluidsChange;
+    packet.entityChanges = editorPacket.entityChanges;
+}
+packet.biomeTint = ...; // sample from the viewer's local chunk, see PrefabPage.applyTintFromPlayerPosition
+packet.waterTint = ...;
+playerRef.getPacketHandler().write(packet); // sent directly, bypasses the UI command builder
+```
+
+Send an empty packet (`blocksChange`/`fluidsChange` left null) to clear the preview. Only one preview is shown per player at a time — sending a new packet
+replaces it. `BuilderToolsPlugin.STREAM_TO_CLIENT_LIMIT` (4,000,000 blocks) is the cutoff for streaming full block data vs. just a bounding box.
+
+> A real custom-UI example: `com.hytalecolonies.ui.ConstructorPrefabPage` (HytaleColonies plugin) embeds this in a construction-order prefab picker —
+> single click on a file previews it (packet above), an explicit `#LoadButton` (bound to `FileBrowserEventData.KEY_BROWSE`) confirms the selection and arms
+> a `com.hytalecolonies.ConstructionPlacementSession` (the plugin's own state, not a BuilderTools clipboard).
+
+---
+
+## Prefab Preview Holograms (world-placed ghosts, Update 6+)
+
+`PersistentPrefabPreview` (`com.hypixel.hytale.server.core.modules.entity.component`) spawns a ghost/hologram entity in the world showing an unrotated prefab,
+optionally revealed bottom-up one layer at a time. Distinct from the `.ui` widget above — this is a real (but non-solid, non-colliding) world entity.
+
+```java
+import com.hypixel.hytale.server.core.modules.entity.component.PersistentPrefabPreview;
+import com.hypixel.hytale.math.vector.Rotation3f;
+
+// Spawn: key is resolved via PrefabStore.findBrowsablePrefabPath (path relative to a pack's
+// "Server/Prefabs/" dir, no .prefab.json/.lpf suffix), layers = how many bottom layers to reveal
+// (Integer.MAX_VALUE = show everything).
+Ref<EntityStore> previewRef = PersistentPrefabPreview.spawn(store, position, new Rotation3f(), "Monuments/MyStructure", Integer.MAX_VALUE);
+
+// Reveal progressively (e.g. driven by real build progress, or a timer for a guided-build effect).
+PersistentPrefabPreview.updateLayers(store, previewRef, 3);
+
+// Remove when done.
+PersistentPrefabPreview.remove(store, previewRef);
+```
+
+Also exposed to players directly via `/prefabpreview spawn <key> [layers]`, `/prefabpreview layers <n>`, `/prefabpreview remove [radius]` (builtin
+`BuilderTools` command, `HytalePermissionsProvider.GROUP_WORLD_EDITOR`).
+
+**Important details (verified from `PrefabPreviewSystems.PrefabPreviewSetup`):**
+- The component only persists a `prefabKey` + layer count; on (re)load it **always re-resolves the prefab fresh from disk** via
+  `PrefabStore.findBrowsablePrefabPath` + `getPrefab`. There is no way to feed it an already-rotated/mutated `BlockSelection` object directly. This is NOT a
+  dead end: the hologram entity has a normal `TransformComponent` (the `spawn()` overloads all take a `Rotation3f`), so a rotated placement is shown
+  correctly by orienting the whole hologram via that rotation, the same way any other rotated entity/prop works -- exactly like base-game rotated prefabs.
+  The catch is *sourcing* the angle: `BuilderToolsPlugin.BuilderState` tracks the clipboard's cumulative rotation (`cumulativeRotX/Y/Z`) but does not expose
+  a public getter, so a plugin cannot read "how much did the player rotate the vanilla clipboard". **Don't build on top of the vanilla clipboard/paste tool
+  for this reason** -- own the rotation value yourself instead (see the HytaleColonies pattern below), which sidesteps the problem entirely and needs no
+  detection/guessing of any kind.
+- Tint (biome/water) is auto-derived from the anchor's world position (`PrefabPreviewSystems.deriveTint`) unless you use the tint-override `spawn`
+  overload (persists an explicit tint that survives restarts, e.g. for previews floating away from loaded chunks).
+- Block data is resolved once and cached (`PrefabPreview.getBlocks()`); a viewer receives the full list only the first time the entity becomes visible to
+  them. Calling `updateLayers` after that only re-sends the layer count (cheap), not the block list.
+- `visibleLayerCount` reveal semantics are local-Y-based (relative to the prefab's own bounding box), independent of the entity's world Y position.
+
+**Real usage in this codebase -- a fully self-owned placement tool, not a BuilderTools reskin:** HytaleColonies' constructor tool
+(`Tool_Colony_Constructor_PlacePrefab`) does not use `BuilderTool`/`Builder_Tool` interactions, the clipboard, or paste-packet interception at all. Instead:
+  - `Use` -> `ConstructionOpenPicker` interaction opens `ConstructorPrefabPage` (the 3D-preview picker above), which arms a
+    `com.hytalecolonies.ConstructionPlacementSession` (per-player, plugin-owned state: prefab id, position, rotation, ghost ref) with the chosen prefab.
+  - `Primary` -> `PlaceConstructionGhostInteraction` (`SimpleBlockInteraction`, gets the target block position for free from the standard Interaction
+    system) snaps the player's current body yaw to 0/90/180/270 and (re)spawns a `PersistentPrefabPreview` ghost there via
+    `com.hytalecolonies.utils.ConstructionPlacementUtil` -- repeatable, so the player can reposition before confirming.
+  - `Secondary` -> `ConfirmConstructionPlacementInteraction` finalizes the session into a real order, storing the exact `rotationDegrees` the player
+    chose directly on the order entry -- no detection, no clipboard, no guessing, because the plugin was the one that decided the rotation in the first
+    place.
+  - `com.hytalecolonies.utils.ConstructionPreviewUtil` then drives a *second*, independent hologram per active order (toggled Off/Progress/Full from the
+    constructor workstation UI), reusing the same `rotationDegrees` value stored on the order.
+  - Item JSON declares its own `Interactions`/`Interaction`/`RootInteraction` asset chain (`Server/Item/{Interactions,RootInteractions}/Colony/*.json`) --
+    the same pattern used by any custom Java interaction in this codebase, registered via `Interaction.CODEC.register(...)`. See `hytale-items` skill.
+
