@@ -18,6 +18,13 @@ Group {
         Style: (FontSize: 12, TextColor: #7a8fa8, HorizontalAlignment: Center);
     }
 
+    TextButton #PreviewButton {
+        Text: "Preview: Off";
+        Anchor: (Height: 32, Top: 6, Horizontal: 40);
+        Visible: false;
+        Style: (Default: (Background: #23303f, LabelStyle: (FontSize: 12, TextColor: #96b9d4, HorizontalAlignment: Center, VerticalAlignment: Center)), Hovered: (Background: #2f4256, LabelStyle: (FontSize: 12, TextColor: #ffffff, HorizontalAlignment: Center, VerticalAlignment: Center)));
+    }
+
     Group { Anchor: (Height: 1); Background: #2b3542; }
     Group { Anchor: (Height: 10); }
 

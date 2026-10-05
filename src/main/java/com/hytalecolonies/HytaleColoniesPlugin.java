@@ -7,7 +7,6 @@ import javax.annotation.Nonnull;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.io.adapter.PacketAdapters;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -33,10 +32,11 @@ import com.hytalecolonies.components.npc.MoveToTargetComponent;
 import com.hytalecolonies.components.world.ClaimedBlockComponent;
 import com.hytalecolonies.components.world.HarvestableTreeComponent;
 import com.hytalecolonies.debug.DebugConfig;
+import com.hytalecolonies.interactions.ConfirmConstructionPlacementInteraction;
+import com.hytalecolonies.interactions.OpenConstructionPickerInteraction;
 import com.hytalecolonies.interactions.OpenWorkstationPageInteraction;
+import com.hytalecolonies.interactions.PlaceConstructionGhostInteraction;
 import com.hytalecolonies.interactions.SpawnColonistInteraction;
-import com.hytalecolonies.listeners.ConstructorBuildOrderFilter;
-import com.hytalecolonies.listeners.ConstructorPrefabPageFilter;
 import com.hytalecolonies.listeners.PlayerListener;
 import com.hytalecolonies.npc.actions.common.BuilderActionDepositItems;
 import com.hytalecolonies.npc.actions.common.BuilderActionEquipBestTool;
@@ -336,6 +336,11 @@ public class HytaleColoniesPlugin extends JavaPlugin
     {
         Interaction.CODEC.register("SpawnColonist", SpawnColonistInteraction.class, SpawnColonistInteraction.CODEC);
         Interaction.CODEC.register("OpenWorkstationPage", OpenWorkstationPageInteraction.class, OpenWorkstationPageInteraction.CODEC);
+        Interaction.CODEC.register("ConstructionOpenPicker", OpenConstructionPickerInteraction.class, OpenConstructionPickerInteraction.CODEC);
+        Interaction.CODEC.register("ConstructionPlaceGhost", PlaceConstructionGhostInteraction.class, PlaceConstructionGhostInteraction.CODEC);
+        Interaction.CODEC.register("ConstructionConfirmPlacement",
+                                   ConfirmConstructionPlacementInteraction.class,
+                                   ConfirmConstructionPlacementInteraction.CODEC);
         LOGGER.at(Level.INFO).log("[HytaleColonies] Registered plugin interactions");
     }
 
@@ -429,26 +434,6 @@ public class HytaleColoniesPlugin extends JavaPlugin
         catch (Exception e)
         {
             LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register listeners");
-        }
-
-        try
-        {
-            PacketAdapters.registerInbound(new ConstructorBuildOrderFilter());
-            LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ConstructorBuildOrderFilter");
-        }
-        catch (Exception e)
-        {
-            LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register ConstructorBuildOrderFilter");
-        }
-
-        try
-        {
-            PacketAdapters.registerInbound(new ConstructorPrefabPageFilter());
-            LOGGER.at(Level.INFO).log("[HytaleColonies] Registered ConstructorPrefabPageFilter");
-        }
-        catch (Exception e)
-        {
-            LOGGER.at(Level.WARNING).withCause(e).log("[HytaleColonies] Failed to register ConstructorPrefabPageFilter");
         }
     }
 

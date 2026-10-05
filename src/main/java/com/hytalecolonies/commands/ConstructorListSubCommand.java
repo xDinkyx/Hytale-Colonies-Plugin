@@ -2,7 +2,6 @@ package com.hytalecolonies.commands;
 
 import javax.annotation.Nonnull;
 
-import com.hypixel.hytale.builtin.buildertools.BuilderToolsPlugin;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
@@ -33,7 +32,7 @@ public class ConstructorListSubCommand extends AbstractPlayerCommand
         if (player == null)
             return;
 
-        BuilderToolsPlugin.BuilderState builderState = BuilderToolsPlugin.getState(player, playerRef);
-        player.getPageManager().openCustomPage(ref, store, new ConstructorPrefabPage(playerRef, builderState));
+        player.getPageManager().openCustomPage(ref, store, new ConstructorPrefabPage(playerRef));
     }
 }
+

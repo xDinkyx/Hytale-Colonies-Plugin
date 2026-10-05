@@ -16,12 +16,14 @@ import org.joml.Vector3f;
 import org.joml.Vector3i;
 
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.math.Axis;
 import com.hypixel.hytale.server.core.asset.AssetModule;
 import com.hypixel.hytale.server.core.asset.type.blockhitbox.BlockBoundingBoxes;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
+import com.hypixel.hytale.server.core.modules.entity.component.PersistentPrefabPreview;
 import com.hypixel.hytale.server.core.prefab.PrefabLoadException;
 import com.hypixel.hytale.server.core.prefab.PrefabStore;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
@@ -35,12 +37,14 @@ import com.hytalecolonies.components.jobs.JobTaskComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.debug.DebugTiming;
-import com.hytalecolonies.listeners.ConstructorBuildOrderFilter;
 
 /** Utility methods for the Constructor colonist job. */
 public final class ConstructorUtil
 {
-    private static final String EMPTY_BLOCK_KEY = "Empty";
+    private static final String EMPTY_BLOCK_KEY   = "Empty";
+    private static final String PREFABS_PREFIX     = "Server/Prefabs/";
+    private static final String JSON_SUFFIX        = ".prefab.json";
+    private static final String LPF_SUFFIX         = ".lpf";
 
     private ConstructorUtil() {}
 
@@ -127,28 +131,19 @@ public final class ConstructorUtil
         if (order.cachedSelection != null)
             return order.cachedSelection;
 
-        // Next, prefer the runtime selection from the build-order filter -- it has the
-        // player's rotation baked in.
-        if (order.buildOrigin != null)
-        {
-            BlockSelection cached = ConstructorBuildOrderFilter.pendingSelections.get(order.buildOrigin);
-            if (cached != null)
-            {
-                order.cachedSelection    = cached;
-                order.cachedSortedBlocks = sortedPrefabBlocks(cached);
-                return cached;
-            }
-        }
-
         // Fall back to the asset-pack ZipFS path (must use the live ZipFileSystem to
-        // avoid cross-filesystem issues).
+        // avoid cross-filesystem issues). Always loaded raw (unrotated) -- the order's own
+        // rotationDegrees (chosen by the player at placement time) is applied explicitly here so
+        // there is exactly one, deterministic source of truth for rotation.
         try
         {
             Path           packRoot   = AssetModule.get().getBaseAssetPack().getRoot();
             Path           prefabPath = packRoot.getFileSystem().getPath(order.prefabId);
             BlockSelection loaded     = PrefabStore.get().getPrefab(prefabPath);
-            order.cachedSelection     = loaded;
-            order.cachedSortedBlocks  = sortedPrefabBlocks(loaded);
+            if (order.rotationDegrees != 0)
+                loaded = loaded.rotate(Axis.Y, order.rotationDegrees);
+            order.cachedSelection    = loaded;
+            order.cachedSortedBlocks = sortedPrefabBlocks(loaded);
             return loaded;
         }
         catch (PrefabLoadException e)
@@ -165,6 +160,32 @@ public final class ConstructorUtil
                              e.getClass().getSimpleName());
             return null;
         }
+    }
+
+    /**
+     * Converts a stored prefab file identifier (e.g. {@code /Server/Prefabs/Foo.prefab.json}) into the browsable key {@link PrefabStore#findBrowsablePrefabPath}
+     * expects (path relative to a pack's {@code Server/Prefabs/} dir, no suffix). Shared by the placement ghost and the construction-order hologram, both of
+     * which resolve prefabs through {@link PersistentPrefabPreview}, which only accepts this key form.
+     */
+    @Nullable
+    public static String derivePrefabKey(@Nullable String prefabId)
+    {
+        if (prefabId == null || prefabId.isEmpty())
+            return null;
+
+        String path = prefabId.replace('\\', '/');
+        int    idx  = path.indexOf(PREFABS_PREFIX);
+        if (idx >= 0)
+            path = path.substring(idx + PREFABS_PREFIX.length());
+        else if (path.startsWith("/"))
+            path = path.substring(1);
+
+        if (path.endsWith(JSON_SUFFIX))
+            path = path.substring(0, path.length() - JSON_SUFFIX.length());
+        else if (path.endsWith(LPF_SUFFIX))
+            path = path.substring(0, path.length() - LPF_SUFFIX.length());
+
+        return path.isEmpty() ? null : path;
     }
 
     /**
@@ -193,7 +214,7 @@ public final class ConstructorUtil
                 int wy = b[1] + origin.y - prefab.getAnchorY();
                 int wz = b[2] + origin.z - prefab.getAnchorZ();
 
-                int worldBlock = world.getBlock(wx, wy, wz);
+                int worldBlock = BlockReadUtil.getBlockId(world, wx, wy, wz);
 
                 if (isAir)
                 {
@@ -236,7 +257,7 @@ public final class ConstructorUtil
                 int wy = b[1] + origin.y - prefab.getAnchorY();
                 int wz = b[2] + origin.z - prefab.getAnchorZ();
 
-                int worldBlock = world.getBlock(wx, wy, wz);
+                int worldBlock = BlockReadUtil.getBlockId(world, wx, wy, wz);
                 if (isBlockEquivalent(worldBlock, prefabBlockId))
                     continue; // already correct
 
@@ -250,7 +271,9 @@ public final class ConstructorUtil
     }
 
     /**
-     * White = origin, red = needs clearing, yellow = needs filling, green = already correct.
+     * White = origin, red/magenta = needs clearing (magenta if a colonist has already claimed it), yellow/lime = needs building (lime if a colonist has
+     * already claimed it). Used by both the developer debug overlay ({@code DebugConfig.isDrawConstructorOrders()}) and the player-facing preview toggle on
+     * the constructor workstation UI ({@link com.hytalecolonies.utils.ConstructionPreviewUtil}).
      */
     public static void drawConstructionOrderOverlay(@Nullable ConstructionOrderStore.Entry order, @Nullable BlockSelection prefab, World world)
     {
@@ -270,23 +293,67 @@ public final class ConstructorUtil
             int wy = ly + origin.y - prefab.getAnchorY();
             int wz = lz + origin.z - prefab.getAnchorZ();
 
-            int worldBlock = world.getBlock(wx, wy, wz);
+            int worldBlock = BlockReadUtil.getBlockId(world, wx, wy, wz);
 
+            boolean needsClear = worldBlock != 0 && (isAir || !isBlockEquivalent(worldBlock, prefabBlockId));
+            boolean needsBuild = !needsClear && !isAir && worldBlock == 0;
+            if (!needsClear && !needsBuild)
+                return;
+
+            String   claimType = ClaimBlockUtil.peekClaimType(world, new Vector3i(wx, wy, wz));
             Vector3f color;
-            if (isAir ? worldBlock != 0 : (worldBlock != 0 && !isBlockEquivalent(worldBlock, prefabBlockId)))
-            {
-                color = DebugUtils.COLOR_RED;
-                DebugUtils.addCube(world, wx + 0.5, wy + 0.5, wz + 0.5, color, 1.1, drawTime);
-            }
-            // else if (!isAir && worldBlock == 0)
-            // {
-            // color = DebugUtils.COLOR_YELLOW;
-            // }
-            // else
-            // {
-            // color = DebugUtils.COLOR_LIME;
-            // }
+            if (needsClear)
+                color = "Clear".equals(claimType) ? DebugUtils.COLOR_MAGENTA : DebugUtils.COLOR_RED;
+            else
+                color = "Build".equals(claimType) ? DebugUtils.COLOR_LIME : DebugUtils.COLOR_YELLOW;
+
+            DebugUtils.addCube(world, wx + 0.5, wy + 0.5, wz + 0.5, color, 1.1, drawTime);
         });
+    }
+
+    /**
+     * Returns how many bottom layers of {@code prefab} a {@link com.hypixel.hytale.server.core.modules.entity.component.PersistentPrefabPreview} hologram
+     * should reveal. {@code full} returns {@code Integer.MAX_VALUE} (show everything); otherwise returns the number of fully-completed local-Y layers plus
+     * one, so the layer currently being worked on is also visible (matches the "reveal bottom-up" guided-building use case).
+     */
+    public static int computeVisibleLayerCount(@Nullable ConstructionOrderStore.Entry order, @Nonnull World world, @Nullable BlockSelection prefab, boolean full)
+    {
+        if (full || order == null || order.buildOrigin == null || prefab == null)
+            return Integer.MAX_VALUE;
+
+        List<int[]> blocks = getSortedBlocks(order, prefab);
+        if (blocks.isEmpty())
+            return Integer.MAX_VALUE;
+
+        Vector3i origin  = order.buildOrigin;
+        int      emptyId = BlockType.getAssetMap().getIndex(EMPTY_BLOCK_KEY);
+        int      minLy   = blocks.get(0)[1];
+        int      lastCompleteLy = minLy - 1;
+
+        int i = 0;
+        while (i < blocks.size())
+        {
+            int     ly        = blocks.get(i)[1];
+            boolean layerDone = true;
+            while (i < blocks.size() && blocks.get(i)[1] == ly)
+            {
+                int[]   b             = blocks.get(i++);
+                int     prefabBlockId = b[3];
+                boolean isAir         = (prefabBlockId == 0 || prefabBlockId == emptyId);
+                int     wx            = b[0] + origin.x - prefab.getAnchorX();
+                int     wy            = b[1] + origin.y - prefab.getAnchorY();
+                int     wz            = b[2] + origin.z - prefab.getAnchorZ();
+                int     worldBlock    = BlockReadUtil.getBlockId(world, wx, wy, wz);
+                boolean correct       = isAir ? worldBlock == 0 : isBlockEquivalent(worldBlock, prefabBlockId);
+                if (!correct)
+                    layerDone = false;
+            }
+            if (!layerDone)
+                break;
+            lastCompleteLy = ly;
+        }
+
+        return (lastCompleteLy - minLy) + 2;
     }
 
     /**
@@ -311,8 +378,8 @@ public final class ConstructorUtil
     {
         BlockBoundingBoxes hitbox = BlockBoundingBoxes.getAssetMap().getAsset(blockType.getHitboxTypeIndex());
         if (hitbox == null)
-            return world.getBlock(wx, wy, wz) == 0;
-        return FillerBlockUtil.testFillerBlocks(hitbox.get(rotation), (fx, fy, fz) -> world.getBlock(wx + fx, wy + fy, wz + fz) == 0);
+            return BlockReadUtil.getBlockId(world, wx, wy, wz) == 0;
+        return FillerBlockUtil.testFillerBlocks(hitbox.get(rotation), (fx, fy, fz) -> BlockReadUtil.getBlockId(world, wx + fx, wy + fy, wz + fz) == 0);
     }
 
     /**
@@ -367,7 +434,7 @@ public final class ConstructorUtil
                 int     wx            = b[0] + origin.x - prefab.getAnchorX();
                 int     wy            = b[1] + origin.y - prefab.getAnchorY();
                 int     wz            = b[2] + origin.z - prefab.getAnchorZ();
-                int     worldBlock    = world.getBlock(wx, wy, wz);
+                int     worldBlock    = BlockReadUtil.getBlockId(world, wx, wy, wz);
 
                 boolean needsClear = isAir ? (worldBlock != 0) : (worldBlock != 0 && !isBlockEquivalent(worldBlock, prefabBlockId));
                 if (!needsClear)
@@ -417,7 +484,7 @@ public final class ConstructorUtil
             int wy = b[1] + origin.y - prefab.getAnchorY();
             int wz = b[2] + origin.z - prefab.getAnchorZ();
 
-            int worldBlock = world.getBlock(wx, wy, wz);
+            int worldBlock = BlockReadUtil.getBlockId(world, wx, wy, wz);
             if (isBlockEquivalent(worldBlock, prefabBlockId))
                 continue; // already correct
             if (worldBlock != 0)

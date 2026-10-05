@@ -24,6 +24,7 @@ import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
+import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -31,9 +32,11 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
+import com.hytalecolonies.ConstructionOrderStore;
 import com.hytalecolonies.components.jobs.JobComponent;
 import com.hytalecolonies.components.jobs.JobState;
 import com.hytalecolonies.components.jobs.JobTargetComponent;
+import com.hytalecolonies.components.jobs.JobType;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.components.npc.ColonistComponent;
 import com.hytalecolonies.debug.DebugCategory;
@@ -43,6 +46,8 @@ import com.hytalecolonies.events.ColonistHiredEvent;
 import com.hytalecolonies.systems.jobs.JobAssignmentSystems;
 import com.hytalecolonies.utils.ColonistInventoryUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
+import com.hytalecolonies.utils.ConstructionPreviewUtil;
+import com.hytalecolonies.utils.ConstructorUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
 
 /**
@@ -122,6 +127,10 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
                 handleRecall(store);
                 break;
 
+            case "togglePreview":
+                handleTogglePreview(store);
+                break;
+
             default:
                 break;
         }
@@ -173,6 +182,7 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
             cmd.set("#StationTitle.Text", "Workstation");
             cmd.set("#StationStats.Text", "(removed)");
             cmd.set("#EmptyLabel.Visible", true);
+            cmd.set("#PreviewButton.Visible", false);
             hideAllRows(cmd);
             bindClose(evt);
             return;
@@ -201,6 +211,18 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
 
         bindClose(evt);
         evt.addEventBinding(CustomUIEventBindingType.Activating, "#RecallButton", new EventData().append("Action", "recall"), false);
+        populatePreviewButton(ws, world, cmd, evt);
+    }
+
+    private void populatePreviewButton(WorkStationComponent ws, World world, UICommandBuilder cmd, UIEventBuilder evt)
+    {
+        ConstructionOrderStore.Entry order = ws.getJobType() == JobType.Constructor ? WorkStationUtil.getConstructionOrderForWorkstation(world, blockPos) : null;
+        cmd.set("#PreviewButton.Visible", order != null);
+        if (order != null)
+        {
+            cmd.set("#PreviewButton.Text", "Preview: " + ConstructionPreviewUtil.getMode(order).name());
+            evt.addEventBinding(CustomUIEventBindingType.Activating, "#PreviewButton", new EventData().append("Action", "togglePreview"), false);
+        }
     }
 
     private void populateRow(int i, UUID uuid, UICommandBuilder cmd, UIEventBuilder evt, Store<EntityStore> store)
@@ -346,6 +368,22 @@ public class WorkstationInspectPage extends InteractiveCustomUIPage<WorkstationI
         }
 
         DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "[WorkstationUI] Recalled %d colonist(s) to %s.", count, blockPos);
+    }
+
+    private void handleTogglePreview(Store<EntityStore> store)
+    {
+        World                 world = store.getExternalData().getWorld();
+        WorkStationComponent  ws    = WorkStationUtil.getWorkStationAt(world, blockPos);
+        if (ws == null || ws.getJobType() != JobType.Constructor)
+            return;
+
+        ConstructionOrderStore.Entry order = WorkStationUtil.getConstructionOrderForWorkstation(world, blockPos);
+        if (order == null)
+            return;
+
+        BlockSelection prefab = ConstructorUtil.loadPrefab(order);
+        ConstructionPreviewUtil.Mode mode = ConstructionPreviewUtil.cycle(order, store, world, prefab);
+        DebugLog.info(DebugCategory.JOB_ASSIGNMENT, "[WorkstationUI] Preview toggled to %s for order %s at %s.", mode, order.id, blockPos);
     }
 
     // -------------------------------------------------------------------------

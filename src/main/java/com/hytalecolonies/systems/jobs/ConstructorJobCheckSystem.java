@@ -31,6 +31,7 @@ import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.utils.BlockEntityUtil;
 import com.hytalecolonies.utils.ColonistStateUtil;
+import com.hytalecolonies.utils.ConstructionPreviewUtil;
 import com.hytalecolonies.utils.ConstructorUtil;
 import com.hytalecolonies.utils.JobNavigationUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
@@ -54,19 +55,26 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
         if (job == null)
             return;
 
-        if (HytaleColoniesPlugin.getInstance().getDebugConfig().get().isDrawConstructorOrders())
+        boolean debugDrawEnabled = HytaleColoniesPlugin.getInstance().getDebugConfig().get().isDrawConstructorOrders();
+        Vector3i drawWsPos       = job.getWorkStationBlockPosition();
+        if (drawWsPos != null)
         {
-            Vector3i drawWsPos = job.getWorkStationBlockPosition();
-            if (drawWsPos != null)
+            World drawWorld = store.getExternalData().getWorld();
+            ConstructionOrderStore.Entry drawOrder = WorkStationUtil.getConstructionOrderForWorkstation(drawWorld, drawWsPos);
+            if (drawOrder != null)
             {
-                World drawWorld = store.getExternalData().getWorld();
-                ConstructionOrderStore.Entry drawOrder = WorkStationUtil.getConstructionOrderForWorkstation(drawWorld, drawWsPos);
-                if (drawOrder != null)
+                boolean previewActive = ConstructionPreviewUtil.getMode(drawOrder) != ConstructionPreviewUtil.Mode.OFF;
+                if (debugDrawEnabled || previewActive)
                 {
                     BlockSelection drawPrefab = ConstructorUtil.loadPrefab(drawOrder);
                     // world.getBlock() can trigger chunk loading which mutates the EntityStore.
                     // Must not be called from inside a system tick -- defer to world.execute().
-                    drawWorld.execute(() -> ConstructorUtil.drawConstructionOrderOverlay(drawOrder, drawPrefab, drawWorld));
+                    drawWorld.execute(() -> {
+                        if (debugDrawEnabled || previewActive)
+                            ConstructorUtil.drawConstructionOrderOverlay(drawOrder, drawPrefab, drawWorld);
+                        if (previewActive)
+                            ConstructionPreviewUtil.refreshProgress(drawOrder, drawWorld, drawPrefab);
+                    });
                 }
             }
         }
@@ -212,6 +220,9 @@ public class ConstructorJobCheckSystem extends DelayedEntitySystem<EntityStore>
             if (liveWs != null)
                 liveWs.activeOrderId = null;
         }
+        ConstructionOrderStore.Entry completedOrder = ConstructionOrderStore.get().get(orderId);
+        if (completedOrder != null)
+            ConstructionPreviewUtil.remove(completedOrder);
         ConstructionOrderStore.get().remove(orderId);
         JobComponent liveJob = entityStore.getStore().getComponent(colonistRef, JobComponent.getComponentType());
         if (liveJob != null)

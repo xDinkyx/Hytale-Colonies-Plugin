@@ -16,8 +16,10 @@ import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.vector.Vector3iUtil;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 
 /** Server-side store for construction orders, backed by a Config file. Survives server restarts. */
@@ -40,18 +42,29 @@ public final class ConstructionOrderStore
                         .add()
                         .append(new KeyedCodec<>("Status", Codec.STRING), (o, v) -> o.status = v, o -> o.status)
                         .add()
+                        .append(new KeyedCodec<>("RotationDegrees", Codec.INTEGER), (o, v) -> o.rotationDegrees = v, o -> o.rotationDegrees)
+                        .add()
                         .build();
 
-        public UUID     id          = UUID.randomUUID();
-        public String   prefabId    = "";
-        public Vector3i buildOrigin = null;
-        public String   status      = STATUS_PENDING;
+        public UUID     id              = UUID.randomUUID();
+        public String   prefabId        = "";
+        public Vector3i buildOrigin     = null;
+        public String   status          = STATUS_PENDING;
+
+        /** Y-axis rotation (degrees, 0/90/180/270) chosen by the player at placement time, via {@code ConstructionPlacementUtil.snapYawToRotationDegrees}. */
+        public int rotationDegrees = 0;
 
         /** Transient -- loaded prefab selection (rotation included). Not persisted. */
         public transient BlockSelection cachedSelection;
 
         /** Transient -- prefab blocks sorted Y ascending (build order); iterate in reverse for clearing. Not persisted. */
         public transient List<int[]> cachedSortedBlocks;
+
+        /** Transient -- spawned hologram preview entity, or null if no preview is active. Not persisted. */
+        public transient Ref<EntityStore> previewRef;
+
+        /** Transient -- true shows the entire prefab in the hologram, false shows only completed + in-progress layers. Not persisted. */
+        public transient boolean previewFullMode;
 
         public Entry() {}
 

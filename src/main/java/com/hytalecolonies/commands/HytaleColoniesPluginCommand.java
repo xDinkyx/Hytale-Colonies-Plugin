@@ -26,7 +26,6 @@ public class HytaleColoniesPluginCommand extends AbstractCommandCollection
         this.addSubCommand(new UISubCommand());
         this.addSubCommand(new BlockEntityInfoCommand());
         this.addSubCommand(new TestMoveCommand());
-        this.addSubCommand(new ConstructSubCommand());
         this.addSubCommand(new ConstructorListSubCommand());
         this.addSubCommand(new DebugGuiCommand());
     }
