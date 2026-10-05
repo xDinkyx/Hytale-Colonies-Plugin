@@ -18,7 +18,6 @@ import com.hypixel.hytale.server.core.asset.type.blockhitbox.BlockBoundingBoxes;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockComponentSection;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -148,6 +147,23 @@ public final class ClaimBlockUtil
     // ===== Claim resolution =====
 
     /**
+     * Returns the claim type at {@code position} (e.g. {@code "Build"}, {@code "Clear"}), or {@code null} if the block is unclaimed or its chunk is not
+     * loaded. Read-only -- does not mutate anything, safe to call from any read context (e.g. building a debug/preview overlay).
+     */
+    @Nullable
+    public static String peekClaimType(World world, Vector3i position)
+    {
+        Vector3i canonical = resolveCanonicalPosition(world, position);
+        if (canonical == null)
+            return null;
+        Ref<ChunkStore> blockRef = BlockEntityUtil.getBlockEntityAt(world, canonical);
+        if (blockRef == null || !blockRef.isValid())
+            return null;
+        ClaimedBlockComponent claim = blockRef.getStore().getComponent(blockRef, ClaimedBlockComponent.getComponentType());
+        return claim != null ? claim.getClaimType() : null;
+    }
+
+    /**
      * Maps a block position to the canonical (main-block) position, following filler-block indirection for multi-space blocks (e.g. large doors, multi-block
      * workstations).
      *
@@ -156,18 +172,17 @@ public final class ClaimBlockUtil
     @Nullable
     public static Vector3i resolveCanonicalPosition(World world, Vector3i position)
     {
-        long              chunkIndex = ChunkUtil.indexChunkFromBlock(position.x, position.z);
         Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
-        Ref<ChunkStore>   chunkRef   = world.getChunkStore().getChunkReference(chunkIndex);
+        Ref<ChunkStore>   sectionRef = world.getChunkStore().getChunkSectionReferenceAtBlock(position.x, position.y, position.z);
 
-        if (chunkRef == null || !chunkRef.isValid())
+        if (sectionRef == null || !sectionRef.isValid())
             return null;
 
-        BlockChunk blockChunk = chunkStore.getComponent(chunkRef, BlockChunk.getComponentType());
-        if (blockChunk == null)
+        BlockSection blockSection = chunkStore.getComponent(sectionRef, BlockSection.getComponentType());
+        if (blockSection == null)
             return position;
 
-        int blockId = blockChunk.getBlock(position.x, position.y, position.z);
+        int blockId = blockSection.get(position.x, position.y, position.z);
         if (blockId == 0)
             return position;
 
@@ -175,10 +190,9 @@ public final class ClaimBlockUtil
         if (blockType == null)
             return position;
 
-        BlockSection       blockSection = blockChunk.getSectionAtBlockY(position.y);
-        BlockBoundingBoxes hitbox       = BlockBoundingBoxes.getAssetMap().getAsset(blockType.getHitboxTypeIndex());
+        BlockBoundingBoxes hitbox = BlockBoundingBoxes.getAssetMap().getAsset(blockType.getHitboxTypeIndex());
 
-        if (blockSection != null && hitbox != null && hitbox.protrudesUnitBox())
+        if (hitbox != null && hitbox.protrudesUnitBox())
         {
             int idx     = ChunkUtil.indexBlock(position.x, position.y, position.z);
             int filler  = blockSection.getFiller(idx);

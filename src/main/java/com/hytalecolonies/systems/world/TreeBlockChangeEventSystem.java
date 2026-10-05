@@ -18,6 +18,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.BlockReadUtil;
 
 /**
  * Reacts to players breaking or placing tree-wood blocks and immediately updates the {@link com.hytalecolonies.components.world.HarvestableTreeComponent}
@@ -98,7 +99,7 @@ public class TreeBlockChangeEventSystem
 
         private static void tryRegisterNewTree(@Nonnull World world, @Nonnull Vector3i pos, @Nonnull TreeScannerSystem scanner)
         {
-            int       blockId   = world.getBlock(pos);
+            int       blockId   = BlockReadUtil.getBlockId(world, pos.x, pos.y, pos.z);
             BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
             if (blockType == null)
                 return;

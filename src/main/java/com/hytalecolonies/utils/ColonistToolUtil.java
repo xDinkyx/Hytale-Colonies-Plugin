@@ -17,8 +17,6 @@ import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
-import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
@@ -48,12 +46,9 @@ public final class ColonistToolUtil
      * Returns the {@link BlockBreakingDropType} config for the block at {@code pos}, or {@code null} if the block has no breaking config.
      */
     @Nullable
-    public static BlockBreakingDropType getBreakingConfig(@Nonnull World world, @Nonnull Ref<ChunkStore> chunkRef, @Nonnull Vector3i pos)
+    public static BlockBreakingDropType getBreakingConfig(@Nonnull World world, @Nonnull Vector3i pos)
     {
-        WorldChunk worldChunk = world.getChunkStore().getStore().getComponent(chunkRef, WorldChunk.getComponentType());
-        if (worldChunk == null)
-            return null;
-        int       blockId   = worldChunk.getBlock(pos.x, pos.y, pos.z);
+        int       blockId   = BlockReadUtil.getBlockId(world, pos.x, pos.y, pos.z);
         BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
         if (blockType == null)
             return null;
@@ -67,9 +62,9 @@ public final class ColonistToolUtil
      * Returns the {@code GatherType} string that the block at {@code pos} requires to be broken, or {@code null} if the block has no breaking config.
      */
     @Nullable
-    public static String getRequiredGatherType(@Nonnull World world, @Nonnull Ref<ChunkStore> chunkRef, @Nonnull Vector3i pos)
+    public static String getRequiredGatherType(@Nonnull World world, @Nonnull Vector3i pos)
     {
-        BlockBreakingDropType breaking = getBreakingConfig(world, chunkRef, pos);
+        BlockBreakingDropType breaking = getBreakingConfig(world, pos);
         return breaking != null ? breaking.getGatherType() : null;
     }
 

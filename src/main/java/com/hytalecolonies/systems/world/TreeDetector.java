@@ -7,13 +7,13 @@ import javax.annotation.Nullable;
 
 import org.joml.Vector3i;
 
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.asset.type.buildertool.config.BlockTypeListAsset;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 
 /**
  * Determines whether a candidate wood block is the base of a harvestable tree.
@@ -89,22 +89,16 @@ public class TreeDetector implements ITreeDetector
         if (wy < 0 || wy >= ChunkUtil.HEIGHT)
             return null;
 
-        int        chunkX = ChunkUtil.chunkCoordinate(wx);
-        int        chunkZ = ChunkUtil.chunkCoordinate(wz);
-        WorldChunk chunk  = world.getChunkIfInMemory(ChunkUtil.indexChunk(chunkX, chunkZ));
-        if (chunk == null)
+        ChunkStore      chunkStore = world.getChunkStore();
+        Ref<ChunkStore> sectionRef = chunkStore.getChunkSectionReferenceAtBlock(wx, wy, wz);
+        if (sectionRef == null || !sectionRef.isValid())
             return null;
 
-        BlockChunk blockChunk = chunk.getBlockChunk();
-        if (blockChunk == null)
+        BlockSection section = chunkStore.getStore().getComponent(sectionRef, BlockSection.getComponentType());
+        if (section == null)
             return null;
 
-        // Mask to local 0-31 range -- works correctly for negative world coordinates.
-        int localX = wx & ChunkUtil.SIZE_MASK;
-        int localZ = wz & ChunkUtil.SIZE_MASK;
-
-        BlockSection section = blockChunk.getSectionAtBlockY(wy);
-        int          blockId = section.get(localX, wy, localZ);
+        int blockId = section.get(wx, wy, wz);
         if (blockId == 0)
             return null;
 

@@ -17,7 +17,6 @@ import com.hypixel.hytale.server.core.command.system.arguments.types.RelativeInt
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractWorldCommand;
 import com.hypixel.hytale.server.core.command.system.exceptions.GeneralCommandException;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -65,31 +64,29 @@ public class BlockEntityInfoCommand extends AbstractWorldCommand
             }
         }
 
-        // 2. Get chunk reference and store
-        long chunkIndex = ChunkUtil.indexChunkFromBlock(position.x, position.z);
+        // 2. Get chunk section reference and store
         var chunkStore = world.getChunkStore().getStore();
-        var chunkRef = world.getChunkStore().getChunkReference(chunkIndex);
+        var sectionRef = world.getChunkStore().getChunkSectionReferenceAtBlock(position.x, position.y, position.z);
 
-        if (chunkRef == null || !chunkRef.isValid())
+        if (sectionRef == null || !sectionRef.isValid())
         {
             context.sendMessage(Message.raw("Chunk not loaded at " + position));
             return;
         }
 
         // 3. Get block and block type
-        BlockChunk blockChunk = chunkStore.getComponent(chunkRef, BlockChunk.getComponentType());
-        if (blockChunk == null)
+        BlockSection blockSection = chunkStore.getComponent(sectionRef, BlockSection.getComponentType());
+        if (blockSection == null)
         {
-            context.sendMessage(Message.raw("No BlockChunk found at " + position));
+            context.sendMessage(Message.raw("No BlockSection found at " + position));
             return;
         }
-        int blockId = blockChunk.getBlock(position.x, position.y, position.z);
+        int blockId = blockSection.get(position.x, position.y, position.z);
         BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
 
         // 4. Check for filler block
-        BlockSection blockSection = blockChunk.getSectionAtBlockY(position.y);
         BlockBoundingBoxes hitbox = BlockBoundingBoxes.getAssetMap().getAsset(blockType.getHitboxTypeIndex());
-        if (blockSection != null && hitbox != null && hitbox.protrudesUnitBox())
+        if (hitbox != null && hitbox.protrudesUnitBox())
         {
             int idx = ChunkUtil.indexBlock(position.x, position.y, position.z);
             int filler = blockSection.getFiller(idx);
@@ -99,7 +96,7 @@ public class BlockEntityInfoCommand extends AbstractWorldCommand
             // Subtract the filler local coordinates from the look position to get the main block's position.
             position = new Vector3i(position).add(-fillerX, -fillerY, -fillerZ);
             // Re-fetch blockId and blockType for the main block
-            blockId = blockChunk.getBlock(fillerX, fillerY, fillerZ);
+            blockId = blockSection.get(fillerX, fillerY, fillerZ);
             blockType = BlockType.getAssetMap().getAsset(blockId);
         }
 

@@ -23,6 +23,7 @@ import com.hytalecolonies.components.jobs.JobTargetComponent;
 import com.hytalecolonies.components.jobs.WorkStationComponent;
 import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
+import com.hytalecolonies.utils.BlockReadUtil;
 import com.hytalecolonies.utils.ClaimBlockUtil;
 import com.hytalecolonies.utils.JobNavigationUtil;
 import com.hytalecolonies.utils.WorkStationUtil;
@@ -99,7 +100,7 @@ public abstract class ActionSeekNextBlockBase extends ActionBase
         if (existingTarget != null && existingTarget.targetPosition != null)
         {
             Vector3i pos = existingTarget.targetPosition;
-            if (world.getBlock(pos.x, pos.y, pos.z) == 0)
+            if (BlockReadUtil.getBlockId(world, pos.x, pos.y, pos.z) == 0)
             {
                 // Block already air -- release stale claim and fall through to re-scan.
                 final Vector3i stalePos = new Vector3i(pos.x, pos.y, pos.z);

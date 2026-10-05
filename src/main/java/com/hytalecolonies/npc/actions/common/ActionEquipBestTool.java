@@ -8,14 +8,12 @@ import org.joml.Vector3i;
 
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.util.MathUtil;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockBreakingDropType;
 import com.hypixel.hytale.server.core.entity.EntityUtils;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
@@ -81,12 +79,8 @@ public class ActionEquipBestTool extends ActionBase
         Vector3i blockPos = new Vector3i(MathUtil.floor(targetVec.x), MathUtil.floor(targetVec.y), MathUtil.floor(targetVec.z));
 
         World           world    = store.getExternalData().getWorld();
-        long            chunkIdx = ChunkUtil.indexChunkFromBlock(blockPos.x, blockPos.z);
-        Ref<ChunkStore> chunkRef = world.getChunkStore().getChunkReference(chunkIdx);
-        if (chunkRef == null || !chunkRef.isValid())
-            return false;
 
-        BlockBreakingDropType breaking = ColonistToolUtil.getBreakingConfig(world, chunkRef, blockPos);
+        BlockBreakingDropType breaking = ColonistToolUtil.getBreakingConfig(world, blockPos);
         if (breaking == null)
         {
             DebugLog.fine(DebugCategory.JOB_SYSTEM, "[EquipBestTool] [%s] Action finished (no tool required).", npcId);

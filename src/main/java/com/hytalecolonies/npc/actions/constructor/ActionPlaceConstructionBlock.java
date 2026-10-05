@@ -7,12 +7,14 @@ import org.joml.Vector3i;
 
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
+import com.hypixel.hytale.server.core.universe.world.SetBlockSettings;
+import com.hypixel.hytale.server.core.universe.world.chunk.BlockOperations;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.util.FillerBlockUtil;
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport;
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase;
 import com.hypixel.hytale.server.npc.instructions.ExecutionSupport;
@@ -102,10 +104,11 @@ public class ActionPlaceConstructionBlock extends ActionBase
         final int blockRotation = ConstructorUtil.getDesiredBlockRotation(order, prefab, wx, wy, wz);
 
         world.execute(() -> {
-            WorldChunk chunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(wx, wz));
-            if (chunk == null)
+            ChunkStore      chunkStore = world.getChunkStore();
+            Ref<ChunkStore> sectionRef = chunkStore.getChunkSectionReferenceAtBlock(wx, wy, wz);
+            if (sectionRef == null || !sectionRef.isValid())
             {
-                DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] Chunk not in memory at %d,%d -- cannot place.", wx, wz);
+                DebugLog.warning(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] Chunk not in memory at %d,%d,%d -- cannot place.", wx, wy, wz);
                 return;
             }
             BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
@@ -125,7 +128,7 @@ public class ActionPlaceConstructionBlock extends ActionBase
                                  blockKey);
                 return;
             }
-            chunk.setBlock(wx, wy, wz, blockId, blockType, blockRotation, 0, 0);
+            BlockOperations.setBlock(chunkStore, sectionRef, wx, wy, wz, blockId, blockType, blockRotation, FillerBlockUtil.NO_FILLER, SetBlockSettings.NONE);
             DebugLog.info(DebugCategory.CONSTRUCTOR_JOB, "[PlaceConstructionBlock] Placed '%s' (rot=%d) at %d,%d,%d.", blockKey, blockRotation, wx, wy, wz);
         });
 

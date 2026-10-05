@@ -12,7 +12,6 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Rotation3f;
 import com.hypixel.hytale.math.vector.Rotation3fc;
 import com.hypixel.hytale.math.vector.Vector3dUtil;
@@ -24,8 +23,6 @@ import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.SimpleBlockInteraction;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.npc.INonPlayerCharacter;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -106,17 +103,20 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction
     @Nonnull
     private SpawnColonistInteraction.SpawnData computeSpawnData(@Nonnull World world, @Nonnull Vector3i targetBlock)
     {
-        long            chunkIndex = ChunkUtil.indexChunkFromBlock(targetBlock.x, targetBlock.z);
         ChunkStore      chunkStore = world.getChunkStore();
-        Ref<ChunkStore> chunkRef   = chunkStore.getChunkReference(chunkIndex);
+        Ref<ChunkStore> sectionRef = chunkStore.getChunkSectionReferenceAtBlock(targetBlock.x, targetBlock.y, targetBlock.z);
 
-        if (chunkRef != null && chunkRef.isValid())
+        if (sectionRef != null && sectionRef.isValid())
         {
-            WorldChunk worldChunkComponent = chunkStore.getStore().getComponent(chunkRef, WorldChunk.getComponentType());
+            BlockSection section = chunkStore.getStore().getComponent(sectionRef, BlockSection.getComponentType());
+            if (section == null)
+            {
+                return new SpawnColonistInteraction.SpawnData(
+                        new Vector3d(this.spawnOffset).add(targetBlock.x, targetBlock.y, targetBlock.z).add(0.5, 0.5, 0.5),
+                        Rotation3f.ZERO);
+            }
 
-            assert worldChunkComponent != null;
-
-            BlockType blockType = BlockType.getAssetMap().getAsset(worldChunkComponent.getBlock(targetBlock.x, targetBlock.y, targetBlock.z));
+            BlockType blockType = BlockType.getAssetMap().getAsset(section.get(targetBlock.x, targetBlock.y, targetBlock.z));
             if (blockType == null)
             {
                 return new SpawnColonistInteraction.SpawnData(
@@ -125,25 +125,14 @@ public class SpawnColonistInteraction extends SimpleBlockInteraction
             }
             else
             {
-                BlockChunk blockChunkComponent = chunkStore.getStore().getComponent(chunkRef, BlockChunk.getComponentType());
-                if (blockChunkComponent == null)
-                {
-                    return new SpawnColonistInteraction.SpawnData(
-                            new Vector3d(this.spawnOffset).add(targetBlock.x, targetBlock.y, targetBlock.z).add(0.5, 0.5, 0.5),
-                            Rotation3f.ZERO);
-                }
-                else
-                {
-                    BlockSection  section       = blockChunkComponent.getSectionAtBlockY(targetBlock.y);
-                    int           rotationIndex = section.getRotationIndex(targetBlock.x, targetBlock.y, targetBlock.z);
-                    RotationTuple rotationTuple = RotationTuple.get(rotationIndex);
-                    Vector3d      position      = rotationTuple.rotatedVector(this.spawnOffset);
-                    Vector3d      blockCenter   = new Vector3d();
-                    blockType.getBlockCenter(rotationIndex, blockCenter);
-                    position.add(blockCenter).add(targetBlock.x, targetBlock.y, targetBlock.z);
-                    Rotation3f rotation = new Rotation3f(0.0F, (float)(rotationTuple.yaw().getRadians() + Math.toRadians(this.spawnYawOffset)), 0.0F);
-                    return new SpawnColonistInteraction.SpawnData(position, rotation);
-                }
+                int           rotationIndex = section.getRotationIndex(targetBlock.x, targetBlock.y, targetBlock.z);
+                RotationTuple rotationTuple = RotationTuple.get(rotationIndex);
+                Vector3d      position      = rotationTuple.rotatedVector(this.spawnOffset);
+                Vector3d      blockCenter   = new Vector3d();
+                blockType.getBlockCenter(rotationIndex, blockCenter);
+                position.add(blockCenter).add(targetBlock.x, targetBlock.y, targetBlock.z);
+                Rotation3f rotation = new Rotation3f(0.0F, (float)(rotationTuple.yaw().getRadians() + Math.toRadians(this.spawnYawOffset)), 0.0F);
+                return new SpawnColonistInteraction.SpawnData(position, rotation);
             }
         }
         else

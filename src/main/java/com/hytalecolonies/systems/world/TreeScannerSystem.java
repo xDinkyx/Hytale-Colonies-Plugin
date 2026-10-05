@@ -28,8 +28,6 @@ import com.hypixel.hytale.server.core.asset.type.buildertool.config.BlockTypeLis
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.debug.DebugUtils;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockComponentSection;
 import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -41,9 +39,9 @@ import com.hytalecolonies.debug.DebugCategory;
 import com.hytalecolonies.debug.DebugLog;
 import com.hytalecolonies.debug.DebugTiming;
 import com.hytalecolonies.systems.jobs.WorkstationInitSystem;
+import com.hytalecolonies.utils.BlockEntityUtil;
+import com.hytalecolonies.utils.BlockReadUtil;
 import com.hytalecolonies.utils.BlockStateInfoUtil;
-
-import it.unimi.dsi.fastutil.ints.IntSet;
 
 /**
  * Periodically scans a configurable chunk radius around each Woodsman workstation for new TreeWood blocks (e.g. saplings that have grown). The initial full
@@ -144,24 +142,25 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
     {
         int            centerChunkX   = ChunkUtil.chunkCoordinate(centerPos.x);
         int            centerChunkZ   = ChunkUtil.chunkCoordinate(centerPos.z);
+        ChunkStore     chunkStore     = world.getChunkStore();
         List<Vector3i> segmentBottoms = new ArrayList<>();
 
         for (int cx = centerChunkX - SCAN_RADIUS_CHUNKS; cx <= centerChunkX + SCAN_RADIUS_CHUNKS; cx++)
         {
             for (int cz = centerChunkZ - SCAN_RADIUS_CHUNKS; cz <= centerChunkZ + SCAN_RADIUS_CHUNKS; cz++)
             {
-                WorldChunk worldChunk = world.getChunkIfInMemory(ChunkUtil.indexChunk(cx, cz));
-                if (worldChunk == null)
-                    continue;
+                for (int sectionY = 0; sectionY < ChunkUtil.HEIGHT_SECTIONS; sectionY++)
+                {
+                    Ref<ChunkStore> sectionRef = chunkStore.getChunkSectionReference(cx, sectionY, cz);
+                    if (sectionRef == null || !sectionRef.isValid())
+                        continue;
 
-                BlockChunk blockChunk = worldChunk.getBlockChunk();
-                if (blockChunk == null)
-                    continue;
+                    BlockSection section = chunkStore.getStore().getComponent(sectionRef, BlockSection.getComponentType());
+                    if (section == null || !sectionContainsTreeWood(section, treeWoodKeys))
+                        continue;
 
-                if (!chunkContainsTreeWood(blockChunk, treeWoodKeys))
-                    continue;
-
-                scanChunkForTreeWood(cx, cz, blockChunk, treeWoodKeys, segmentBottoms);
+                    scanSectionForTreeWood(cx, sectionY, cz, section, world, treeWoodKeys, segmentBottoms);
+                }
             }
         }
         return segmentBottoms;
@@ -253,7 +252,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
     {
         Vector3i base = tree.base();
 
-        int       blockId   = world.getBlock(base);
+        int       blockId   = BlockReadUtil.getBlockId(world, base.x, base.y, base.z);
         BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
         if (blockType == null)
         {
@@ -362,30 +361,14 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
     }
 
     /**
-     * Counts all tree-wood blocks in the chunk via the chunk's unique block ID set -- O(unique block types), not O(volume).
+     * Uses the section's unique block ID set to quickly determine whether any TreeWood block type is present before doing a full per-block iteration.
      */
-    private int countWoodBlocksInChunk(BlockChunk blockChunk, Set<String> treeWoodKeys)
+    private boolean sectionContainsTreeWood(BlockSection section, Set<String> treeWoodKeys)
     {
-        int total = 0;
-        for (int blockId : blockChunk.blocks())
-        {
-            BlockType bt = BlockType.getAssetMap().getAsset(blockId);
-            if (bt != null && treeWoodKeys.contains(bt.getId()))
-            {
-                total += blockChunk.count(blockId);
-            }
-        }
-        return total;
-    }
+        if (section.isSolidAir())
+            return false;
 
-    /**
-     * Uses the chunk's unique block ID set to quickly determine whether any TreeWood block type is present before doing a full per-block iteration.
-     */
-    private boolean chunkContainsTreeWood(BlockChunk blockChunk, Set<String> treeWoodKeys)
-    {
-        IntSet blockIds = blockChunk.blocks();
-
-        for (int blockId : blockIds)
+        for (int blockId : section.values())
         {
             BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
 
@@ -399,61 +382,59 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
     }
 
     /**
-     * Iterates every block in the chunk section-by-section and adds all <em>segment bottoms</em> to {@code segmentBottoms}.
+     * Iterates every block in the given chunk section and adds all <em>segment bottoms</em> to {@code segmentBottoms}.
      *
      * <p>
-     * A segment bottom is a TreeWood block whose block directly below is NOT a TreeWood block. These are the independent trunk-start candidates.
+     * A segment bottom is a TreeWood block whose block directly below is NOT a TreeWood block. These are the independent trunk-start candidates. The
+     * below-check uses {@link BlockReadUtil} so it transparently reads across a section boundary when {@code localY == 0}.
      */
-    private void scanChunkForTreeWood(int chunkX, int chunkZ, BlockChunk blockChunk, Set<String> treeWoodKeys, List<Vector3i> segmentBottoms)
+    private void scanSectionForTreeWood(int             chunkX,
+                                        int             sectionY,
+                                        int             chunkZ,
+                                        BlockSection    section,
+                                        World           world,
+                                        Set<String>     treeWoodKeys,
+                                        List<Vector3i>  segmentBottoms)
     {
-        // BlockChunk.getChunkSections() is gone -- getSectionAtBlockY(y) is still available (not slated
-        // for removal) and is bounded to the legacy 0..HEIGHT_SECTIONS-1 column range.
-        for (int sectionIdx = 0; sectionIdx < ChunkUtil.HEIGHT_SECTIONS; sectionIdx++)
+        int sectionBaseY = sectionY * ChunkUtil.SIZE;
+        for (int localY = 0; localY < ChunkUtil.SIZE; localY++)
         {
-            BlockSection section = blockChunk.getSectionAtBlockY(sectionIdx * ChunkUtil.SIZE);
-            if (section.isSolidAir())
-                continue;
-
-            int sectionBaseY = sectionIdx * ChunkUtil.SIZE;
-            for (int localY = 0; localY < ChunkUtil.SIZE; localY++)
+            int worldY = sectionBaseY + localY;
+            for (int localX = 0; localX < ChunkUtil.SIZE; localX++)
             {
-                int worldY = sectionBaseY + localY;
-                for (int localX = 0; localX < ChunkUtil.SIZE; localX++)
+                for (int localZ = 0; localZ < ChunkUtil.SIZE; localZ++)
                 {
-                    for (int localZ = 0; localZ < ChunkUtil.SIZE; localZ++)
+                    int blockId = section.get(localX, worldY, localZ);
+                    if (blockId == 0)
+                        continue;
+
+                    BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
+                    if (blockType == null || !treeWoodKeys.contains(blockType.getId()))
+                        continue;
+
+                    // Only trunk/roots blocks are valid segment bottoms -- branches should never
+                    // be a tree base candidate (a low-hanging branch would otherwise be mistaken
+                    // for the trunk base).
+                    if (blockType.getId().contains("_Branch_"))
+                        continue;
+
+                    int worldX = ChunkUtil.worldCoordFromLocalCoord(chunkX, localX);
+                    int worldZ = ChunkUtil.worldCoordFromLocalCoord(chunkZ, localZ);
+
+                    // Check if the block directly below is also wood.
+                    // If it is, this block is mid-trunk -- not a segment bottom.
+                    if (worldY > 0)
                     {
-                        int blockId = section.get(localX, worldY, localZ);
-                        if (blockId == 0)
-                            continue;
-
-                        BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
-                        if (blockType == null || !treeWoodKeys.contains(blockType.getId()))
-                            continue;
-
-                        // Only trunk/roots blocks are valid segment bottoms -- branches should never
-                        // be a tree base candidate (a low-hanging branch would otherwise be mistaken
-                        // for the trunk base).
-                        if (blockType.getId().contains("_Branch_"))
-                            continue;
-
-                        // Check if the block directly below is also wood.
-                        // If it is, this block is mid-trunk -- not a segment bottom.
-                        if (worldY > 0)
+                        int belowId = BlockReadUtil.getBlockId(world, worldX, worldY - 1, worldZ);
+                        if (belowId != 0)
                         {
-                            BlockSection belowSection = blockChunk.getSectionAtBlockY(worldY - 1);
-                            int          belowId      = belowSection.get(localX, worldY - 1, localZ);
-                            if (belowId != 0)
-                            {
-                                BlockType belowType = BlockType.getAssetMap().getAsset(belowId);
-                                if (belowType != null && treeWoodKeys.contains(belowType.getId()))
-                                    continue; // mid-trunk, skip
-                            }
+                            BlockType belowType = BlockType.getAssetMap().getAsset(belowId);
+                            if (belowType != null && treeWoodKeys.contains(belowType.getId()))
+                                continue; // mid-trunk, skip
                         }
-
-                        int worldX = ChunkUtil.worldCoordFromLocalCoord(chunkX, localX);
-                        int worldZ = ChunkUtil.worldCoordFromLocalCoord(chunkZ, localZ);
-                        segmentBottoms.add(new Vector3i(worldX, worldY, worldZ));
                     }
+
+                    segmentBottoms.add(new Vector3i(worldX, worldY, worldZ));
                 }
             }
         }
@@ -479,7 +460,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
 
         // Check if there is any wood directly below the broken block.
         // If not, the base was at pos and its block entity is auto-cleaned by the engine.
-        int       belowBlockId = world.getBlock(new Vector3i(pos.x, pos.y - 1, pos.z));
+        int       belowBlockId = BlockReadUtil.getBlockId(world, pos.x, pos.y - 1, pos.z);
         BlockType belowType    = BlockType.getAssetMap().getAsset(belowBlockId);
         if (belowType == null || !woodKeys.contains(belowType.getId()))
             return;
@@ -488,19 +469,15 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
         int baseY = pos.y - 1;
         while (baseY > 0)
         {
-            int       belowId = world.getBlock(new Vector3i(pos.x, baseY - 1, pos.z));
+            int       belowId = BlockReadUtil.getBlockId(world, pos.x, baseY - 1, pos.z);
             BlockType btBelow = BlockType.getAssetMap().getAsset(belowId);
             if (btBelow == null || !woodKeys.contains(btBelow.getId()))
                 break;
             baseY--;
         }
 
-        Vector3i   basePos   = new Vector3i(pos.x, baseY, pos.z);
-        WorldChunk baseChunk = world.getChunkIfInMemory(ChunkUtil.indexChunkFromBlock(basePos.x, basePos.z));
-        if (baseChunk == null)
-            return;
-
-        Ref<ChunkStore> blockRef = baseChunk.getBlockComponentEntity(basePos.x, basePos.y, basePos.z);
+        Vector3i        basePos  = new Vector3i(pos.x, baseY, pos.z);
+        Ref<ChunkStore> blockRef = BlockEntityUtil.getBlockEntityAt(world, basePos);
         if (blockRef == null || !blockRef.isValid())
             return;
 
@@ -536,7 +513,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
      */
     void onTreeWoodBlockAdded(Vector3i pos, World world, Store<ChunkStore> chunkStore)
     {
-        int       blockId   = world.getBlock(pos);
+        int       blockId   = BlockReadUtil.getBlockId(world, pos.x, pos.y, pos.z);
         BlockType blockType = BlockType.getAssetMap().getAsset(blockId);
         if (blockType == null)
             return;
@@ -552,7 +529,7 @@ public class TreeScannerSystem extends DelayedEntitySystem<ChunkStore>
         int baseY = pos.y;
         while (baseY > 0)
         {
-            int       belowId = world.getBlock(new Vector3i(pos.x, baseY - 1, pos.z));
+            int       belowId = BlockReadUtil.getBlockId(world, pos.x, baseY - 1, pos.z);
             BlockType btBelow = BlockType.getAssetMap().getAsset(belowId);
             if (btBelow == null || !woodKeys.contains(btBelow.getId()))
                 break;

@@ -142,7 +142,7 @@ public final class MineOreDetector
 
     private static boolean isOre(@Nonnull World world, int x, int y, int z, @Nonnull Set<String> oreKeys)
     {
-        int blockId = world.getBlock(x, y, z);
+        int blockId = BlockReadUtil.getBlockId(world, x, y, z);
         if (blockId == 0)
             return false;
         BlockType bt = BlockType.getAssetMap().getAsset(blockId);
